@@ -54,4 +54,7 @@ private:
 	void Look(const FInputActionValue& Value);
 	//void Interact(const FInputActionValue& Value);
 	//void Attack(const FInputActionValue& Value);
+
+	UPROPERTY(EditAnywhere)
+	class UCameraComponent* MainCam;
 };
