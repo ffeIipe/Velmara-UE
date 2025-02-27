@@ -8,6 +8,8 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "Camera/CameraComponent.h"
+#include "GameFramework/SpringArmComponent.h"
+
 
 APlayerMain::APlayerMain()
 {
@@ -19,10 +21,13 @@ APlayerMain::APlayerMain()
 
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 
-	AutoPossessPlayer = EAutoReceiveInput::Player0;
+	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("Camera Boom"));
+	CameraBoom->SetupAttachment(GetRootComponent());
 
 	MainCam = CreateDefaultSubobject<UCameraComponent>(TEXT("Player Camera"));
-	MainCam->SetupAttachment(GetRootComponent());
+	MainCam->SetupAttachment(CameraBoom);
+
+	AutoPossessPlayer = EAutoReceiveInput::Player0;
 }
 
 void APlayerMain::BeginPlay()

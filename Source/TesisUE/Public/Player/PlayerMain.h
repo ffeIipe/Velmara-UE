@@ -6,6 +6,9 @@
 #include "GameFramework/Character.h"
 #include "PlayerMain.generated.h"
 
+class UCameraComponent;
+class USpringArmComponent;
+
 class UInputMappingContext;
 class UInputAction;
 struct FInputActionValue;
@@ -50,11 +53,16 @@ protected:
 
 private:	
 	
+	UPROPERTY(EditAnywhere)
+	UCameraComponent* MainCam;
+
+	UPROPERTY(EditAnywhere)
+	USpringArmComponent* CameraBoom;
+
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
 	//void Interact(const FInputActionValue& Value);
 	//void Attack(const FInputActionValue& Value);
 
-	UPROPERTY(EditAnywhere)
-	class UCameraComponent* MainCam;
+	
 };
