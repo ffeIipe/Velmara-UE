@@ -21,11 +21,11 @@ APlayerMain::APlayerMain()
 
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 
-	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("Camera Boom"));
-	CameraBoom->SetupAttachment(GetRootComponent());
+	//CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("Camera Boom"));
+	//CameraBoom->SetupAttachment(GetRootComponent());
 
-	MainCam = CreateDefaultSubobject<UCameraComponent>(TEXT("Player Camera"));
-	MainCam->SetupAttachment(CameraBoom);
+	//MainCam = CreateDefaultSubobject<UCameraComponent>(TEXT("Player Camera"));
+	//MainCam->SetupAttachment(CameraBoom);
 
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 }
@@ -41,16 +41,16 @@ void APlayerMain::BeginPlay()
 
 void APlayerMain::Move(const FInputActionValue& Value)
 {
-	const FVector2D MoveVector = Value.Get<FVector2D>();
+	//const FVector2D MoveVector = Value.Get<FVector2D>();
 
-	const FRotator ControlRotation = GetControlRotation();
-	const FRotator YawRotation(0.f, ControlRotation.Yaw, 0.f);
+	//const FRotator ControlRotation = GetControlRotation();
+	//const FRotator YawRotation(0.f, ControlRotation.Yaw, 0.f);
 
-	const FVector DirectionForward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-	const FVector DirectionSideward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+	//const FVector DirectionForward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+	//const FVector DirectionSideward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
-	AddMovementInput(DirectionForward, MoveVector.Y);
-	AddMovementInput(DirectionSideward, MoveVector.X);
+	//AddMovementInput(DirectionForward, MoveVector.Y);
+	//AddMovementInput(DirectionSideward, MoveVector.X);
 }
 
 void APlayerMain::Look(const FInputActionValue& Value)
