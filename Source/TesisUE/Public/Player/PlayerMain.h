@@ -29,6 +29,8 @@ public:
 protected:
 	
 	virtual void BeginPlay() override;
+	
+	void PlayAttackMontage();
 
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputMappingContext* CharacterContext;
@@ -59,9 +61,15 @@ private:
 	UPROPERTY(EditAnywhere)
 	USpringArmComponent* CameraBoom;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Montages")
+	UAnimMontage* AttackMontage;
+
 	void Move(const FInputActionValue& Value);
+
 	void Look(const FInputActionValue& Value);
+
 	//void Interact(const FInputActionValue& Value);
+	
 	//void Attack(const FInputActionValue& Value);
 
 	

@@ -39,6 +39,11 @@ void APlayerMain::BeginPlay()
 			Subsystem->AddMappingContext(CharacterContext, 0);
 }
 
+void APlayerMain::PlayAttackMontage()
+{
+
+}
+
 void APlayerMain::Move(const FInputActionValue& Value)
 {
 	//const FVector2D MoveVector = Value.Get<FVector2D>();
