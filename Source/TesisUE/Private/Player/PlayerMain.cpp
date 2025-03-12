@@ -42,7 +42,7 @@ void APlayerMain::BeginPlay()
 void APlayerMain::PerformLightAttack(int AttackIndex)
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance && AttackMontage)
+	if (AnimInstance)
 	{
 		if (GetCharacterState() != ECharacterStates::ECS_Attack)
 		{
@@ -59,9 +59,29 @@ void APlayerMain::PerformLightAttack(int AttackIndex)
 	}
 }
 
+void APlayerMain::PerformHeavyAttack(int AttackIndex)
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance)
+	{
+		if (GetCharacterState() != ECharacterStates::ECS_Attack)
+		{
+			HeavyAttackMontage = HeavyAttackCombo[AttackIndex];
+			SetCharacterState(ECharacterStates::ECS_Attack);
+			AnimInstance->Montage_Play(HeavyAttackMontage);
+			HeavyAttackIndex++;
+
+			if (HeavyAttackIndex >= HeavyAttackCombo.Num())
+			{
+				HeavyAttackIndex = 0;
+			}
+		}
+	}
+}
+
 ECharacterStates APlayerMain::SetCharacterState(ECharacterStates NewState)
 {
-	if (NewState != CharacterState)//todo make it like the IsStateEqualToAny
+	if (NewState != CharacterState)
 	{
 		CharacterState = NewState;
 	}

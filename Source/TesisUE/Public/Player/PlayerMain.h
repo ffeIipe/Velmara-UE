@@ -44,8 +44,20 @@ protected:
 	UPROPERTY(BlueprintReadWrite, Category = "LightAttack")
 	bool IsSaveLightAttack;
 
+	UPROPERTY(BlueprintReadWrite, Category = "HeavyAttack")
+	int HeavyAttackIndex = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "HeavyAttack")
+	TArray<UAnimMontage*> HeavyAttackCombo;
+
+	UPROPERTY(BlueprintReadWrite, Category = "HeavyAttack")
+	bool IsSaveHeavyAttack;
+
 	UFUNCTION(BlueprintCallable, Category = "FSM")
 	void PerformLightAttack(int AttackIndex);
+
+	UFUNCTION(BlueprintCallable, Category = "FSM")
+	void PerformHeavyAttack(int AttackIndex);
 
 	UFUNCTION(BlueprintCallable, Category = "FSM")
 	ECharacterStates SetCharacterState(ECharacterStates NewState);
@@ -57,26 +69,29 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputMappingContext* CharacterContext;
 
-	UPROPERTY(EditAnywhere, Category = "Input")
+	UPROPERTY(EditAnywhere, Category = "Input | Movement")
 	UInputAction* MoveAction;
 	
-	UPROPERTY(EditAnywhere, Category = "Input")
+	UPROPERTY(EditAnywhere, Category = "Input | Movement")
 	UInputAction* LookAction;
 	
-	UPROPERTY(EditAnywhere, Category = "Input")
+	UPROPERTY(EditAnywhere, Category = "Input | Movement")
 	UInputAction* JumpAction;
 	
-	UPROPERTY(EditAnywhere, Category = "Input")
+	UPROPERTY(EditAnywhere, Category = "Input | Movement")
 	UInputAction* DodgeAction;
+	
+	UPROPERTY(EditAnywhere, Category = "Input | Movement")
+	UInputAction* CrouchAction;
 
-	UPROPERTY(EditAnywhere, Category = "Input")
+	UPROPERTY(EditAnywhere, Category = "Input | Actions")
 	UInputAction* InteractAction;
 
-	UPROPERTY(EditAnywhere, Category = "Input")
+	UPROPERTY(EditAnywhere, Category = "Input | Actions")
 	UInputAction* AttackAction;
-
-	//UFUNCTION(BlueprintImplementableEvent)
-	//void LightAttackEvent;
+	
+	UPROPERTY(EditAnywhere, Category = "Input | Actions")
+	UInputAction* HeavyAttackAction;
 
 private:	
 	
@@ -88,8 +103,11 @@ private:
 	UPROPERTY(EditAnywhere)
 	USpringArmComponent* CameraBoom;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Montages")
+	UPROPERTY(VisibleDefaultsOnly, Category = "Montages")
 	UAnimMontage* AttackMontage;
+	
+	UPROPERTY(VisibleDefaultsOnly, Category = "Montages")
+	UAnimMontage* HeavyAttackMontage;
 
 	void Move(const FInputActionValue& Value);
 
@@ -98,6 +116,7 @@ private:
 	//void Interact(const FInputActionValue& Value);
 	
 	void Attack(const FInputActionValue& Value);
-
 	
+	void HeavyAttack(const FInputActionValue& Value);
+
 };
