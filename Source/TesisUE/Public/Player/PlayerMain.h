@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "CharacterStates.h"
 #include "PlayerMain.generated.h"
 
 class UCameraComponent;
@@ -26,12 +27,33 @@ public:
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	UFUNCTION(BlueprintPure, Category = "FSM")
+	FORCEINLINE ECharacterStates GetCharacterState() const { return CharacterState; }
+
 protected:
-	
+	//Base
 	virtual void BeginPlay() override;
 	
-	void PlayAttackMontage();
+	//Character states
+	UPROPERTY(BlueprintReadWrite, Category = "LightAttack")
+	int LightAttackIndex = 0;
 
+	UPROPERTY(BlueprintReadOnly, Category = "LightAttack")
+	TArray<UAnimMontage*> LightAttackCombo;
+
+	UPROPERTY(BlueprintReadWrite, Category = "LightAttack")
+	bool IsSaveLightAttack;
+
+	UFUNCTION(BlueprintCallable, Category = "FSM")
+	void PerformLightAttack(int AttackIndex);
+
+	UFUNCTION(BlueprintCallable, Category = "FSM")
+	ECharacterStates SetCharacterState(ECharacterStates NewState);
+
+	UFUNCTION(BlueprintPure, Category = "FSM")
+	bool IsStateEqualToAny(const TArray<ECharacterStates>& StatesToCheck);
+
+	//Inputs
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputMappingContext* CharacterContext;
 
@@ -53,8 +75,13 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* AttackAction;
 
+	//UFUNCTION(BlueprintImplementableEvent)
+	//void LightAttackEvent;
+
 private:	
 	
+	ECharacterStates CharacterState = ECharacterStates::ECS_Nothing;
+
 	UPROPERTY(EditAnywhere)
 	UCameraComponent* MainCam;
 
@@ -70,7 +97,7 @@ private:
 
 	//void Interact(const FInputActionValue& Value);
 	
-	//void Attack(const FInputActionValue& Value);
+	void Attack(const FInputActionValue& Value);
 
 	
 };
