@@ -12,7 +12,6 @@ void UPlayerMainAnimInstance::NativeInitializeAnimation()
 	{
 		PlayerMainCharacterMovement = PlayerMain->GetCharacterMovement();
 	}
-
 }
 
 void UPlayerMainAnimInstance::NativeUpdateAnimation(float DeltaTime)

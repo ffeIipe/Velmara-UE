@@ -31,10 +31,35 @@ public:
 	FORCEINLINE ECharacterStates GetCharacterState() const { return CharacterState; }
 
 protected:
-	//Base
+	/*
+	* Base
+	*/
 	virtual void BeginPlay() override;
 	
-	//Character states
+	/*
+	* FSM
+	*/
+	UFUNCTION(BlueprintCallable, Category = "FSM")
+	ECharacterStates SetCharacterState(ECharacterStates NewState);
+
+	UFUNCTION(BlueprintPure, Category = "FSM")
+	bool IsStateEqualToAny(const TArray<ECharacterStates>& StatesToCheck);
+
+	/*
+	* Dodge
+	*/
+	UPROPERTY(BlueprintReadWrite, Category = "Dodge")
+	UAnimMontage* DodgeMontage;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Dodge")
+	bool bSaveDodge = false;
+
+	UFUNCTION(BlueprintCallable, Category = "Dodge")
+	void PerformDodge();
+
+	/*
+	* Light Attack
+	*/
 	UPROPERTY(BlueprintReadWrite, Category = "LightAttack")
 	int LightAttackIndex = 0;
 
@@ -44,6 +69,15 @@ protected:
 	UPROPERTY(BlueprintReadWrite, Category = "LightAttack")
 	bool IsSaveLightAttack;
 
+	UFUNCTION(BlueprintCallable, Category = "LightAttack")
+	void PerformLightAttack(int AttackIndex);
+
+	UFUNCTION(BlueprintCallable, Category = "LightAttack")
+	void ResetLightAttackStats();
+	
+	/*
+	* Heavy Attack
+	*/
 	UPROPERTY(BlueprintReadWrite, Category = "HeavyAttack")
 	int HeavyAttackIndex = 0;
 
@@ -53,19 +87,15 @@ protected:
 	UPROPERTY(BlueprintReadWrite, Category = "HeavyAttack")
 	bool IsSaveHeavyAttack;
 
-	UFUNCTION(BlueprintCallable, Category = "FSM")
-	void PerformLightAttack(int AttackIndex);
-
-	UFUNCTION(BlueprintCallable, Category = "FSM")
+	UFUNCTION(BlueprintCallable, Category = "HeavyAttack")
 	void PerformHeavyAttack(int AttackIndex);
 
-	UFUNCTION(BlueprintCallable, Category = "FSM")
-	ECharacterStates SetCharacterState(ECharacterStates NewState);
+	UFUNCTION(BlueprintCallable, Category = "HeavyAttack")
+	void ResetHeavyAttackStats();
 
-	UFUNCTION(BlueprintPure, Category = "FSM")
-	bool IsStateEqualToAny(const TArray<ECharacterStates>& StatesToCheck);
-
-	//Inputs
+	/*
+	* Inputs
+	*/
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputMappingContext* CharacterContext;
 
@@ -118,5 +148,4 @@ private:
 	void Attack(const FInputActionValue& Value);
 	
 	void HeavyAttack(const FInputActionValue& Value);
-
 };

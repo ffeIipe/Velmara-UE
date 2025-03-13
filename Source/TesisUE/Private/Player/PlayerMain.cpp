@@ -79,6 +79,24 @@ void APlayerMain::PerformHeavyAttack(int AttackIndex)
 	}
 }
 
+void APlayerMain::PerformDodge()
+{
+	SetCharacterState(ECharacterStates::ECS_Dodge);
+	PlayAnimMontage(DodgeMontage);
+}
+
+void APlayerMain::ResetLightAttackStats()
+{
+	LightAttackIndex = 0;
+	IsSaveLightAttack = false;
+}
+
+void APlayerMain::ResetHeavyAttackStats()
+{
+	HeavyAttackIndex = 0;
+	IsSaveHeavyAttack = false;
+}
+
 ECharacterStates APlayerMain::SetCharacterState(ECharacterStates NewState)
 {
 	if (NewState != CharacterState)
