@@ -57,6 +57,24 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Dodge")
 	void PerformDodge();
 
+	UPROPERTY()
+	class UTimelineComponent* BufferTimeline;
+
+	UPROPERTY(EditAnywhere, Category = "Buffer")
+	class UCurveFloat* BufferCurve;
+
+	UPROPERTY(EditAnywhere, Category = "Buffer")
+	float BufferDistance;
+
+	UFUNCTION(BlueprintCallable)
+	void BufferEvent(float BufferAmount);
+
+	UFUNCTION(BlueprintCallable)
+	void StopBufferEvent();
+
+	UFUNCTION(BlueprintCallable)
+	void UpdateBuffer(float Alpha);
+
 	/*
 	* Light Attack
 	*/

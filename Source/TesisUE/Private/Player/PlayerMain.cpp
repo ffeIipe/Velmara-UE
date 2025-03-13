@@ -9,6 +9,8 @@
 #include "InputActionValue.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Components/TimelineComponent.h"
+#include "Curves/CurveFloat.h"
 
 
 APlayerMain::APlayerMain()
@@ -27,6 +29,8 @@ APlayerMain::APlayerMain()
 	MainCam = CreateDefaultSubobject<UCameraComponent>(TEXT("Player Camera"));
 	MainCam->SetupAttachment(CameraBoom);
 
+	BufferTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("BufferTimeline"));
+
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 }
 
@@ -37,6 +41,13 @@ void APlayerMain::BeginPlay()
 	if (APlayerController* PlayerController = CastChecked<APlayerController>(GetController()))
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 			Subsystem->AddMappingContext(CharacterContext, 0);
+
+	if (BufferCurve)
+	{
+		FOnTimelineFloat ProgressFunction;
+		ProgressFunction.BindUFunction(this, FName("UpdateBuffer"));
+		BufferTimeline->AddInterpFloat(BufferCurve, ProgressFunction);
+	}
 }
 
 void APlayerMain::PerformLightAttack(int AttackIndex)
@@ -66,6 +77,8 @@ void APlayerMain::PerformHeavyAttack(int AttackIndex)
 	{
 		if (GetCharacterState() != ECharacterStates::ECS_Attack)
 		{
+			StopBufferEvent();
+			BufferEvent(BufferDistance);
 			HeavyAttackMontage = HeavyAttackCombo[AttackIndex];
 			SetCharacterState(ECharacterStates::ECS_Attack);
 			AnimInstance->Montage_Play(HeavyAttackMontage);
@@ -81,8 +94,36 @@ void APlayerMain::PerformHeavyAttack(int AttackIndex)
 
 void APlayerMain::PerformDodge()
 {
+	StopBufferEvent();
+	BufferEvent(BufferDistance);
 	SetCharacterState(ECharacterStates::ECS_Dodge);
 	PlayAnimMontage(DodgeMontage);
+}
+
+void APlayerMain::BufferEvent(float BufferAmount)
+{
+	if (BufferTimeline)
+	{
+		BufferTimeline->PlayFromStart();
+	}
+}
+
+void APlayerMain::StopBufferEvent()
+{
+	if (BufferTimeline)
+	{
+		BufferTimeline->Stop();
+	}
+}
+
+void APlayerMain::UpdateBuffer(float Alpha)
+{
+	FVector CurrentLocation = GetActorLocation();
+	FVector ForwardVector = GetActorForwardVector();
+
+	FVector TargetLocation = FMath::Lerp(CurrentLocation, CurrentLocation + (ForwardVector * BufferDistance), Alpha);
+
+	SetActorLocation(TargetLocation, true);
 }
 
 void APlayerMain::ResetLightAttackStats()
