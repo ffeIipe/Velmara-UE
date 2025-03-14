@@ -3,7 +3,14 @@
 UENUM(BlueprintType)
 enum class ECharacterStates : uint8
 {
-	ECS_Nothing UMETA(DisplayName = "Nothing"),
-	ECS_Attack UMETA(DisplayName = "Attack"),
-	ECS_Dodge UMETA(DisplayName = "Dodge")
+	ECS_Unequipped UMETA(DisplayName = "Unequipped"),
+	ECS_EquippedSword UMETA(DisplayName = "EquippedSword")
+};
+
+UENUM(BlueprintType)
+enum class ECharacterActions : uint8
+{
+	ECA_Nothing UMETA(DisplayName = "Nothing"),
+	ECA_Attack UMETA(DisplayName = "Attack"),
+	ECA_Dodge UMETA(DisplayName = "Dodge")
 };
