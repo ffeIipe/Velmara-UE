@@ -10,11 +10,12 @@ UAttributeComponent::UAttributeComponent()
 
 void UAttributeComponent::ReceiveDamage(float Damage)
 {
+	Health = FMath::Clamp(Health - Damage, 0.f, MaxHealth);
 }
 
 float UAttributeComponent::GetHealthPercent()
 {
-	return 0.0f;
+	return Health / MaxHealth;
 }
 
 bool UAttributeComponent::IsAlive()

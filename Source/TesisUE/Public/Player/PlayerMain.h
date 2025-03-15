@@ -145,6 +145,31 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "HeavyAttack")
 	void ResetHeavyAttackStats();
 
+	UFUNCTION(BlueprintCallable, Category = "SoftLockOn")
+	void SoftLockOn();
+	
+	UFUNCTION(BlueprintCallable, Category = "SoftLockOn")
+	void RotationToTarget();
+
+	UFUNCTION(BlueprintCallable, Category = "SoftLockOn")
+	void UpdateSoftLockOn(float Alpha);
+
+	UPROPERTY(BlueprintReadWrite, Category = "SoftLockOn")
+	AActor* SoftLockTarget;
+
+	UPROPERTY(EditAnywhere, Category = "SoftLockOn")
+	float SoftLockDistance;
+
+	UPROPERTY(EditAnywhere, Category = "SoftLockOn")
+	float SoftLockRadius;
+
+	UPROPERTY()
+	UTimelineComponent* SoftLockTimeline;
+	UPROPERTY(EditAnywhere, Category = "SoftLockOn")
+	class UCurveFloat* SoftLockCurve;
+
+
+
 	/*
 	* Inputs
 	*/

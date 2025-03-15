@@ -73,19 +73,13 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 		ETraceTypeQuery::TraceTypeQuery1,
 		false,
 		ActorsToIgnore,
-		EDrawDebugTrace::ForDuration,
+		EDrawDebugTrace::None,
 		BoxHit,
 		true
 	);
 
 	if (BoxHit.GetActor())
 	{
-		GEngine->AddOnScreenDebugMessage(
-			1,
-			1.f,
-			FColor::Emerald,
-			FString(BoxHit.GetActor()->GetFName().ToString()));
-
 		UGameplayStatics::ApplyDamage(
 			BoxHit.GetActor(),
 			Damage,
@@ -98,15 +92,6 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 	if (IHitInterface* HitInterface = Cast<IHitInterface>(BoxHit.GetActor()))
 	{
 		HitInterface->Execute_GetHit(BoxHit.GetActor(), BoxHit.ImpactPoint);
-
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(
-				1,
-				1.f,
-				FColor::Emerald,
-				FString("HitInterface found while colissioning."));
-		}
 	}
 	ActorsToIgnore.AddUnique(BoxHit.GetActor());
 }

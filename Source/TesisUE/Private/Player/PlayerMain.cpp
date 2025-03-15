@@ -13,6 +13,8 @@
 #include "Curves/CurveFloat.h"
 #include "Items/Weapons/Sword.h"
 #include "Components/BoxComponent.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "Kismet/KismetMathLibrary.h"
 
 
 APlayerMain::APlayerMain()
@@ -33,6 +35,8 @@ APlayerMain::APlayerMain()
 
 	BufferDodgeTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("BufferDodgeTimeline"));
 	BufferAttackTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("BufferAttackTimeline"));
+
+	SoftLockTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("SoftLockTimeline"));
 
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 }
@@ -68,6 +72,13 @@ void APlayerMain::BeginPlay()
 		ProgressAttackFunction.BindUFunction(this, FName("UpdateAttackBuffer"));
 		BufferAttackTimeline->AddInterpFloat(BufferCurve, ProgressAttackFunction);
 	}
+
+	if (SoftLockCurve)
+	{
+		FOnTimelineFloat ProgressSoftLockFunction;
+		ProgressSoftLockFunction.BindUFunction(this, FName("UpdateSoftLockOn"));
+		SoftLockTimeline->AddInterpFloat(SoftLockCurve, ProgressSoftLockFunction);
+	}
 }
 
 void APlayerMain::PerformLightAttack(int AttackIndex)
@@ -81,6 +92,9 @@ void APlayerMain::PerformLightAttack(int AttackIndex)
 			AttackBufferEvent(BufferAttackDistance);
 			AttackMontage = LightAttackCombo[AttackIndex];
 			SetCharacterState(ECharacterActions::ECA_Attack);
+
+			SoftLockOn();
+
 			AnimInstance->Montage_Play(AttackMontage);
 			LightAttackIndex++;
 
@@ -103,6 +117,9 @@ void APlayerMain::PerformHeavyAttack(int AttackIndex)
 			AttackBufferEvent(BufferAttackDistance);
 			HeavyAttackMontage = HeavyAttackCombo[AttackIndex];
 			SetCharacterState(ECharacterActions::ECA_Attack);
+
+			SoftLockOn();
+
 			AnimInstance->Montage_Play(HeavyAttackMontage);
 			HeavyAttackIndex++;
 
@@ -186,6 +203,60 @@ void APlayerMain::ResetHeavyAttackStats()
 {
 	HeavyAttackIndex = 0;
 	IsSaveHeavyAttack = false;
+}
+
+void APlayerMain::SoftLockOn()
+{
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
+
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.Add(this);
+
+	FHitResult ResultHit;
+
+	UKismetSystemLibrary::SphereTraceSingleForObjects(
+		GetWorld(),
+		GetActorLocation(),
+		(GetLastMovementInputVector() * SoftLockDistance) + GetActorLocation(),
+		SoftLockRadius,
+		ObjectTypes,
+		false,
+		ActorsToIgnore,
+		EDrawDebugTrace::None,
+		ResultHit,
+		true
+		);
+
+	if (ResultHit.GetActor())
+	{
+		SoftLockTarget = ResultHit.GetActor();
+	}
+	else SoftLockTarget = nullptr;
+}
+
+void APlayerMain::RotationToTarget()
+{
+	if (SoftLockTarget)
+	{
+		SoftLockTimeline->PlayFromStart();
+	}
+}
+
+void APlayerMain::UpdateSoftLockOn(float Alpha)
+{
+	FVector Start = GetActorLocation();
+	FVector End = SoftLockTarget->GetActorLocation();
+
+	FRotator NewRotation = FRotator(
+		GetActorRotation().Pitch,
+		UKismetMathLibrary::FindLookAtRotation(Start, End).Yaw,
+		UKismetMathLibrary::FindLookAtRotation(Start, End).Roll
+	);
+
+	NewRotation = FMath::Lerp(GetActorRotation(), NewRotation, Alpha);
+
+	SetActorRotation(NewRotation);
 }
 
 
