@@ -11,6 +11,10 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Components/TimelineComponent.h"
 #include "Curves/CurveFloat.h"
+#include "Items/Weapons/Sword.h"
+#include "Components/BoxComponent.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "Kismet/KismetMathLibrary.h"
 
 
 APlayerMain::APlayerMain()
@@ -29,9 +33,25 @@ APlayerMain::APlayerMain()
 	MainCam = CreateDefaultSubobject<UCameraComponent>(TEXT("Player Camera"));
 	MainCam->SetupAttachment(CameraBoom);
 
-	BufferTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("BufferTimeline"));
+	BufferDodgeTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("BufferDodgeTimeline"));
+	BufferAttackTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("BufferAttackTimeline"));
+
+	SoftLockTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("SoftLockTimeline"));
 
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
+}
+
+void APlayerMain::Tick(float DeltaTime)
+{
+}
+
+void APlayerMain::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled)
+{
+	if (EquippedWeapon && EquippedWeapon->GetWeaponBox())
+	{
+		EquippedWeapon->GetWeaponBox()->SetCollisionEnabled(CollisionEnabled);
+		EquippedWeapon->IgnoreActors.Empty();
+	}
 }
 
 void APlayerMain::BeginPlay()
@@ -44,9 +64,20 @@ void APlayerMain::BeginPlay()
 
 	if (BufferCurve)
 	{
-		FOnTimelineFloat ProgressFunction;
-		ProgressFunction.BindUFunction(this, FName("UpdateBuffer"));
-		BufferTimeline->AddInterpFloat(BufferCurve, ProgressFunction);
+		FOnTimelineFloat ProgressDodgeFunction;
+		ProgressDodgeFunction.BindUFunction(this, FName("UpdateDodgeBuffer"));
+		BufferDodgeTimeline->AddInterpFloat(BufferCurve, ProgressDodgeFunction);
+
+		FOnTimelineFloat ProgressAttackFunction;
+		ProgressAttackFunction.BindUFunction(this, FName("UpdateAttackBuffer"));
+		BufferAttackTimeline->AddInterpFloat(BufferCurve, ProgressAttackFunction);
+	}
+
+	if (SoftLockCurve)
+	{
+		FOnTimelineFloat ProgressSoftLockFunction;
+		ProgressSoftLockFunction.BindUFunction(this, FName("UpdateSoftLockOn"));
+		SoftLockTimeline->AddInterpFloat(SoftLockCurve, ProgressSoftLockFunction);
 	}
 }
 
@@ -55,10 +86,15 @@ void APlayerMain::PerformLightAttack(int AttackIndex)
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 	if (AnimInstance)
 	{
-		if (GetCharacterState() != ECharacterStates::ECS_Attack)
+		if (GetCharacterAction() != ECharacterActions::ECA_Attack)
 		{
+			StopAttackBufferEvent();
+			AttackBufferEvent(BufferAttackDistance);
 			AttackMontage = LightAttackCombo[AttackIndex];
-			SetCharacterState(ECharacterStates::ECS_Attack);
+			SetCharacterState(ECharacterActions::ECA_Attack);
+
+			SoftLockOn();
+
 			AnimInstance->Montage_Play(AttackMontage);
 			LightAttackIndex++;
 
@@ -75,12 +111,15 @@ void APlayerMain::PerformHeavyAttack(int AttackIndex)
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 	if (AnimInstance)
 	{
-		if (GetCharacterState() != ECharacterStates::ECS_Attack)
+		if (GetCharacterAction() != ECharacterActions::ECA_Attack)
 		{
-			StopBufferEvent();
-			BufferEvent(BufferDistance);
+			StopAttackBufferEvent();
+			AttackBufferEvent(BufferAttackDistance);
 			HeavyAttackMontage = HeavyAttackCombo[AttackIndex];
-			SetCharacterState(ECharacterStates::ECS_Attack);
+			SetCharacterState(ECharacterActions::ECA_Attack);
+
+			SoftLockOn();
+
 			AnimInstance->Montage_Play(HeavyAttackMontage);
 			HeavyAttackIndex++;
 
@@ -94,29 +133,56 @@ void APlayerMain::PerformHeavyAttack(int AttackIndex)
 
 void APlayerMain::PerformDodge()
 {
-	StopBufferEvent();
-	BufferEvent(BufferDistance);
-	SetCharacterState(ECharacterStates::ECS_Dodge);
+	StopDodgeBufferEvent();
+	DodgeBufferEvent(BufferDodgeDistance);
+	SetCharacterState(ECharacterActions::ECA_Dodge);
 	PlayAnimMontage(DodgeMontage);
 }
 
-void APlayerMain::BufferEvent(float BufferAmount)
+
+void APlayerMain::DodgeBufferEvent(float BufferAmount)
 {
-	if (BufferTimeline)
+	if (BufferDodgeTimeline)
 	{
-		BufferTimeline->PlayFromStart();
+		BufferDodgeTimeline->PlayFromStart();
 	}
 }
 
-void APlayerMain::StopBufferEvent()
+void APlayerMain::AttackBufferEvent(float BufferAmount)
 {
-	if (BufferTimeline)
+	if (BufferAttackTimeline)
 	{
-		BufferTimeline->Stop();
+		BufferAttackTimeline->PlayFromStart();
 	}
 }
 
-void APlayerMain::UpdateBuffer(float Alpha)
+void APlayerMain::StopDodgeBufferEvent()
+{
+	if (BufferDodgeTimeline)
+	{
+		BufferDodgeTimeline->Stop();
+	}
+}
+
+void APlayerMain::StopAttackBufferEvent()
+{
+	if (BufferAttackTimeline)
+	{
+		BufferAttackTimeline->Stop();
+	}
+}
+
+void APlayerMain::UpdateDodgeBuffer(float Alpha)
+{
+	UpdateBuffer(Alpha, BufferDodgeDistance);
+}
+
+void APlayerMain::UpdateAttackBuffer(float Alpha)
+{
+	UpdateBuffer(Alpha, BufferAttackDistance);
+}
+
+void APlayerMain::UpdateBuffer(float Alpha, float BufferDistance)
 {
 	FVector CurrentLocation = GetActorLocation();
 	FVector ForwardVector = GetActorForwardVector();
@@ -125,6 +191,7 @@ void APlayerMain::UpdateBuffer(float Alpha)
 
 	SetActorLocation(TargetLocation, true);
 }
+
 
 void APlayerMain::ResetLightAttackStats()
 {
@@ -138,19 +205,80 @@ void APlayerMain::ResetHeavyAttackStats()
 	IsSaveHeavyAttack = false;
 }
 
-ECharacterStates APlayerMain::SetCharacterState(ECharacterStates NewState)
+void APlayerMain::SoftLockOn()
 {
-	if (NewState != CharacterState)
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
+
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.Add(this);
+
+	FHitResult ResultHit;
+
+	UKismetSystemLibrary::SphereTraceSingleForObjects(
+		GetWorld(),
+		GetActorLocation(),
+		(GetLastMovementInputVector() * SoftLockDistance) + GetActorLocation(),
+		SoftLockRadius,
+		ObjectTypes,
+		false,
+		ActorsToIgnore,
+		EDrawDebugTrace::None,
+		ResultHit,
+		true
+		);
+
+	if (ResultHit.GetActor())
 	{
-		CharacterState = NewState;
+		SoftLockTarget = ResultHit.GetActor();
+	}
+	else SoftLockTarget = nullptr;
+}
+
+void APlayerMain::RotationToTarget()
+{
+	if (SoftLockTarget)
+	{
+		SoftLockTimeline->PlayFromStart();
+	}
+}
+
+void APlayerMain::UpdateSoftLockOn(float Alpha)
+{
+	FVector Start = GetActorLocation();
+	FVector End = SoftLockTarget->GetActorLocation();
+
+	FRotator NewRotation = FRotator(
+		GetActorRotation().Pitch,
+		UKismetMathLibrary::FindLookAtRotation(Start, End).Yaw,
+		UKismetMathLibrary::FindLookAtRotation(Start, End).Roll
+	);
+
+	NewRotation = FMath::Lerp(GetActorRotation(), NewRotation, Alpha);
+
+	SetActorRotation(NewRotation);
+}
+
+
+ECharacterActions APlayerMain::SetCharacterState(ECharacterActions NewState)
+{
+	if (NewState != CharacterAction)
+	{
+		CharacterAction = NewState;
 	}
 	return NewState;
+}
+
+bool APlayerMain::IsActionEqualToAny(const TArray<ECharacterActions>& StatesToCheck)
+{
+	return StatesToCheck.Contains(CharacterAction);
 }
 
 bool APlayerMain::IsStateEqualToAny(const TArray<ECharacterStates>& StatesToCheck)
 {
 	return StatesToCheck.Contains(CharacterState);
 }
+
 
 void APlayerMain::Move(const FInputActionValue& Value)
 {
@@ -174,15 +302,26 @@ void APlayerMain::Look(const FInputActionValue& Value)
 	AddControllerYawInput(LookingVector.X);
 }
 
+void APlayerMain::Interact(const FInputActionValue& Value)
+{
+	if (ASword* OverlappingWeapon = Cast<ASword>(OverlappingItem))
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(1, 1.f, FColor::Green, FString("Overlapping"));
+		}
+
+		OverlappingWeapon->Equip(GetMesh(), FName("RightHandSocket"), this, this);
+
+		CharacterState = ECharacterStates::ECS_EquippedSword;
+		OverlappingItem = nullptr;
+		EquippedWeapon = OverlappingWeapon;
+	}
+}
+
 void APlayerMain::Attack(const FInputActionValue& Value)
 {
 	
-}
-
-void APlayerMain::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
 }
 
 void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -194,8 +333,7 @@ void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APlayerMain::Move);
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlayerMain::Look);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &APlayerMain::Jump);
-		//EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &APlayerMain::Interact);
+		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &APlayerMain::Interact);
 		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &APlayerMain::Attack);
 	}
 }
-

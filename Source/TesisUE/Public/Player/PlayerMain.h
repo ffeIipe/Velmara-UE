@@ -14,6 +14,11 @@ class UInputMappingContext;
 class UInputAction;
 struct FInputActionValue;
 
+class UTimelineComponent;
+
+class AItem;
+class ASword;
+
 UCLASS()
 class TESISUE_API APlayerMain : public ACharacter
 {
@@ -28,7 +33,15 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	UFUNCTION(BlueprintPure, Category = "FSM")
+	FORCEINLINE ECharacterActions GetCharacterAction() const { return CharacterAction; }
+	
+	UFUNCTION(BlueprintPure, Category = "FSM")
 	FORCEINLINE ECharacterStates GetCharacterState() const { return CharacterState; }
+	
+	FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }
+
+	UFUNCTION(BlueprintCallable)
+	void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
 
 protected:
 	/*
@@ -40,8 +53,11 @@ protected:
 	* FSM
 	*/
 	UFUNCTION(BlueprintCallable, Category = "FSM")
-	ECharacterStates SetCharacterState(ECharacterStates NewState);
+	ECharacterActions SetCharacterState(ECharacterActions NewState);
 
+	UFUNCTION(BlueprintPure, Category = "FSM")
+	bool IsActionEqualToAny(const TArray<ECharacterActions>& StatesToCheck);
+	
 	UFUNCTION(BlueprintPure, Category = "FSM")
 	bool IsStateEqualToAny(const TArray<ECharacterStates>& StatesToCheck);
 
@@ -58,22 +74,40 @@ protected:
 	void PerformDodge();
 
 	UPROPERTY()
-	class UTimelineComponent* BufferTimeline;
+	UTimelineComponent* BufferDodgeTimeline;
+	
+	UPROPERTY()
+	UTimelineComponent* BufferAttackTimeline;
 
 	UPROPERTY(EditAnywhere, Category = "Buffer")
 	class UCurveFloat* BufferCurve;
 
 	UPROPERTY(EditAnywhere, Category = "Buffer")
-	float BufferDistance;
+	float BufferDodgeDistance;
+	
+	UPROPERTY(EditAnywhere, Category = "Buffer")
+	float BufferAttackDistance;
 
 	UFUNCTION(BlueprintCallable)
-	void BufferEvent(float BufferAmount);
+	void DodgeBufferEvent(float BufferAmount);
+	
+	UFUNCTION(BlueprintCallable)
+	void AttackBufferEvent(float BufferAmount);
 
 	UFUNCTION(BlueprintCallable)
-	void StopBufferEvent();
+	void StopDodgeBufferEvent();
+	
+	UFUNCTION(BlueprintCallable)
+	void StopAttackBufferEvent();
 
 	UFUNCTION(BlueprintCallable)
-	void UpdateBuffer(float Alpha);
+	void UpdateDodgeBuffer(float Alpha);
+	
+	UFUNCTION(BlueprintCallable)
+	void UpdateAttackBuffer(float Alpha);
+
+	UFUNCTION(BlueprintCallable)
+	void UpdateBuffer(float Alpha, float BufferDistance);
 
 	/*
 	* Light Attack
@@ -111,6 +145,31 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "HeavyAttack")
 	void ResetHeavyAttackStats();
 
+	UFUNCTION(BlueprintCallable, Category = "SoftLockOn")
+	void SoftLockOn();
+	
+	UFUNCTION(BlueprintCallable, Category = "SoftLockOn")
+	void RotationToTarget();
+
+	UFUNCTION(BlueprintCallable, Category = "SoftLockOn")
+	void UpdateSoftLockOn(float Alpha);
+
+	UPROPERTY(BlueprintReadWrite, Category = "SoftLockOn")
+	AActor* SoftLockTarget;
+
+	UPROPERTY(EditAnywhere, Category = "SoftLockOn")
+	float SoftLockDistance;
+
+	UPROPERTY(EditAnywhere, Category = "SoftLockOn")
+	float SoftLockRadius;
+
+	UPROPERTY()
+	UTimelineComponent* SoftLockTimeline;
+	UPROPERTY(EditAnywhere, Category = "SoftLockOn")
+	class UCurveFloat* SoftLockCurve;
+
+
+
 	/*
 	* Inputs
 	*/
@@ -143,7 +202,8 @@ protected:
 
 private:	
 	
-	ECharacterStates CharacterState = ECharacterStates::ECS_Nothing;
+	ECharacterActions CharacterAction = ECharacterActions::ECA_Nothing;
+	ECharacterStates CharacterState = ECharacterStates::ECS_Unequipped;
 
 	UPROPERTY(EditAnywhere)
 	UCameraComponent* MainCam;
@@ -157,11 +217,17 @@ private:
 	UPROPERTY(VisibleDefaultsOnly, Category = "Montages")
 	UAnimMontage* HeavyAttackMontage;
 
+	UPROPERTY(VisibleInstanceOnly)
+	AItem* OverlappingItem;
+
+	UPROPERTY(VisibleAnywhere, Category = "Weapon")
+	ASword* EquippedWeapon;
+
 	void Move(const FInputActionValue& Value);
 
 	void Look(const FInputActionValue& Value);
 
-	//void Interact(const FInputActionValue& Value);
+	void Interact(const FInputActionValue& Value);
 	
 	void Attack(const FInputActionValue& Value);
 	

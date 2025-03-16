@@ -6,21 +6,54 @@
 #include "GameFramework/Actor.h"
 #include "Item.generated.h"
 
+class USphereComponent;
+
+enum class EItemState : uint8
+{
+	EIS_Hovering,
+	EIS_Equipped
+};
+
+
 UCLASS()
 class TESISUE_API AItem : public AActor
 {
 	GENERATED_BODY()
 	
 public:	
-	// Sets default values for this actor's properties
+
 	AItem();
 
+	virtual void Tick(float DeltaTime) override;
+
 protected:
-	// Called when the game starts or when spawned
+
 	virtual void BeginPlay() override;
 
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
+	UStaticMeshComponent* ItemMesh;
+
+	UFUNCTION()
+	virtual void OnSphereBeginOverlap(
+		UPrimitiveComponent* OverlappedComponent,
+		AActor* OtherActor, 
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex, bool bFromSweep,
+		const FHitResult& SweepResult);
+
+	UFUNCTION()
+	virtual void OnSphereEndOverlap(
+		UPrimitiveComponent* OverlappedComponent,
+		AActor* OtherActor, 
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex);
+
+	EItemState ItemState = EItemState::EIS_Hovering;
+
+private:
+
+
+	UPROPERTY(VisibleAnywhere)
+	USphereComponent* SphereCollider;
 
 };
