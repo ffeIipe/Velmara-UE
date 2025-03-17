@@ -6,6 +6,7 @@
 #include "Components/AttributeComponent.h"
 #include "HUD/HealthBarComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "AIController.h"
 
 // Sets default values
 AEnemy::AEnemy()
@@ -66,6 +67,13 @@ void AEnemy::Die()
 	}
 
 	HealthBarWidget->SetHealthBarActive(false);
+
+	AAIController* AIController = Cast<AAIController>(GetController());
+	if (AIController)
+	{
+		AIController->StopMovement();  // Detiene cualquier movimiento activo
+		AIController->UnPossess();     // Libera el control del personaje
+	}
 }
 
 void AEnemy::Tick(float DeltaTime)

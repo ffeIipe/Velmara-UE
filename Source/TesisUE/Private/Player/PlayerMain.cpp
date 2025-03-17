@@ -39,6 +39,7 @@ APlayerMain::APlayerMain()
 	SoftLockTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("SoftLockTimeline"));
 
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
+
 }
 
 void APlayerMain::Tick(float DeltaTime)
@@ -53,6 +54,7 @@ void APlayerMain::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEna
 		EquippedWeapon->IgnoreActors.Empty();
 	}
 }
+
 
 void APlayerMain::BeginPlay()
 {
