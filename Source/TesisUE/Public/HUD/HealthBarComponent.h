@@ -31,6 +31,9 @@ public:
 
 	void SetHealthOpacity(float DeltaTime);
 
+
+	void Debug(int32 Key, FColor Color, FString String, bool bNewerOnTop);
+
 	UPROPERTY(EditAnywhere, Category = "HealthBar")
 	float MaxDistance = 1000.f;
 

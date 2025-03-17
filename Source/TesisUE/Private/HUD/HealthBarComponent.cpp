@@ -4,12 +4,18 @@
 #include "HUD/HealthBarComponent.h"
 #include "HUD/HealthBar.h"
 #include "Components/ProgressBar.h"
+#include "Enemy/Enemy.h"
 
 void UHealthBarComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
 	PlayerMain = GetWorld()->GetFirstPlayerController()->GetPawn();
+		
+	if (HealthBarWidget == nullptr)
+	{
+		HealthBarWidget = Cast<UHealthBar>(GetUserWidgetObject());
+	}
 }
 
 void UHealthBarComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -38,19 +44,34 @@ void UHealthBarComponent::SetHealthBarActive(bool Param)
 	{
 		HealthBarWidget->HealthBar->Visibility = ESlateVisibility::Visible;
 	}
-	else HealthBarWidget->HealthBar->Visibility = ESlateVisibility::Hidden;
+	else
+	{
+		HealthBarWidget->HealthBar->Visibility = ESlateVisibility::Collapsed;
+	}
 }
 
 void UHealthBarComponent::SetHealthOpacity(float DeltaTime)
 {
 	if (PlayerMain && HealthBarWidget && HealthBarWidget->HealthBar)
 	{
-		float Distance = FVector::Dist(PlayerMain->GetActorLocation(), GetOwner()->GetActorLocation());
+		if (HealthBarWidget->HealthBar->Percent >= 0)
+		{
+			float Distance = FVector::Dist(PlayerMain->GetActorLocation(), GetOwner()->GetActorLocation());
+			TargetOpacity = FMath::Clamp(1.f - ((Distance - MinDistance) / (MaxDistance - MinDistance)), 0.f, 1.f);
+			CurrentOpacity = FMath::Lerp(CurrentOpacity, TargetOpacity, DeltaTime * 5.f);
+			HealthBarWidget->HealthBar->SetRenderOpacity(CurrentOpacity);
+		}	
+		else
+		{
+			SetHealthBarActive(false);
+		}
+	}
+}
 
-		TargetOpacity = FMath::Clamp(1.f - ((Distance - MinDistance) / (MaxDistance - MinDistance)), 0.f, 1.f);
-
-		CurrentOpacity = FMath::Lerp(CurrentOpacity, TargetOpacity, DeltaTime * 5.f);
-
-		HealthBarWidget->HealthBar->SetRenderOpacity(CurrentOpacity);
+void UHealthBarComponent::Debug(int32 Key, FColor Color, FString String, bool bNewerOnTop)
+{
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(Key, 1.f, Color, String, bNewerOnTop);
 	}
 }
