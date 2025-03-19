@@ -201,6 +201,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Input | Actions")
 	UInputAction* HeavyAttackAction;
 
+	UPROPERTY(EditAnywhere, Category = "Input | Actions")
+	UInputAction* ChangeModeAction;
+
 private:	
 	
 	ECharacterActions CharacterAction = ECharacterActions::ECA_Nothing;
