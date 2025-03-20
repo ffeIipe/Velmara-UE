@@ -43,6 +43,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
 
+	UPROPERTY(VisibleAnywhere, Category = "Forms")
+	UPlayerFormComponent* PlayerFormComponent;
+
 protected:
 	/*
 	* Base
@@ -224,9 +227,6 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "Weapon")
 	ASword* EquippedWeapon;
-
-	UPROPERTY(VisibleAnywhere, Category = "Forms")
-	UPlayerFormComponent* PlayerFormComponent;
 
 
 

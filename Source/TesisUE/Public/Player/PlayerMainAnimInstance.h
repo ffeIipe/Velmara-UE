@@ -7,6 +7,7 @@
 
 class APlayerMain;
 class UCharacterMovementComponent;
+class UPlayerFormComponent;
 
 UCLASS()
 class TESISUE_API UPlayerMainAnimInstance : public UAnimInstance
@@ -23,6 +24,9 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
 	UCharacterMovementComponent* PlayerMainCharacterMovement;
 
+	UPROPERTY(BlueprintReadOnly, Category = "PlayerForm")
+	UPlayerFormComponent* PlayerFormComponent;
+
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
 	float GroundSpeed;
 
@@ -31,4 +35,7 @@ public:
 
 	UPROPERTY(BlueprintReadOnly, Category = "Movement | Character State")
 	ECharacterStates CharacterState;
+	
+	UPROPERTY(BlueprintReadOnly, Category = "PlayerForm")
+	EPlayerForm PlayerForm;
 };
