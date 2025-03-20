@@ -71,6 +71,9 @@ protected:
 	UAnimMontage* DodgeMontage;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Dodge")
+	UAnimMontage* SpectralDodgeMontage;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Dodge")
 	bool bSaveDodge = false;
 
 	UFUNCTION(BlueprintCallable, Category = "Dodge")

@@ -52,7 +52,7 @@ void APlayerAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus St
 
 		UPlayerFormComponent* PlayerFormComponent = PlayerPawn->FindComponentByClass<UPlayerFormComponent>();
 
-		if (PlayerFormComponent && PlayerFormComponent->GetCurrentForm() == EPlayerForm::Spectral)
+		if (PlayerFormComponent && PlayerFormComponent->GetCurrentForm() == EPlayerForm::EPF_Spectral)
 		{
 			if (UBlackboardComponent* BlackboardComponent = GetBlackboardComponent())
 			{

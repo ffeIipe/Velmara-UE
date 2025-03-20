@@ -82,7 +82,7 @@ void APlayerMain::BeginPlay()
 
 void APlayerMain::PerformLightAttack(int AttackIndex)
 {
-	if (PlayerFormComponent->GetCurrentForm() == EPlayerForm::Spectral) return;
+	if (PlayerFormComponent->GetCurrentForm() == EPlayerForm::EPF_Spectral) return;
 
 	if (GetCharacterAction() != ECharacterActions::ECA_Attack)
 	{
@@ -105,7 +105,7 @@ void APlayerMain::PerformLightAttack(int AttackIndex)
 
 void APlayerMain::PerformHeavyAttack(int AttackIndex)
 {
-	if (PlayerFormComponent->GetCurrentForm() == EPlayerForm::Spectral) return;
+	if (PlayerFormComponent->GetCurrentForm() == EPlayerForm::EPF_Spectral) return;
 
 	if (GetCharacterAction() != ECharacterActions::ECA_Attack)
 	{
@@ -128,10 +128,20 @@ void APlayerMain::PerformHeavyAttack(int AttackIndex)
 
 void APlayerMain::PerformDodge()
 {
-	StopDodgeBufferEvent();
-	DodgeBufferEvent(BufferDodgeDistance);
-	SetCharacterState(ECharacterActions::ECA_Dodge);
-	PlayAnimMontage(DodgeMontage);
+	if (PlayerFormComponent && PlayerFormComponent->GetCurrentForm() == EPlayerForm::EPF_Human)
+	{
+		StopDodgeBufferEvent();
+		DodgeBufferEvent(BufferDodgeDistance);
+		SetCharacterState(ECharacterActions::ECA_Dodge);
+		PlayAnimMontage(DodgeMontage);
+	}
+	else
+	{
+		StopDodgeBufferEvent();
+		DodgeBufferEvent(BufferDodgeDistance);
+		SetCharacterState(ECharacterActions::ECA_Dodge);
+		PlayAnimMontage(SpectralDodgeMontage);
+	}
 }
 
 
@@ -301,16 +311,14 @@ void APlayerMain::Interact(const FInputActionValue& Value)
 {
 	if (ASword* OverlappingWeapon = Cast<ASword>(OverlappingItem))
 	{
-		if (GEngine)
+		if (PlayerFormComponent && PlayerFormComponent->GetCurrentForm() == EPlayerForm::EPF_Human)
 		{
-			GEngine->AddOnScreenDebugMessage(1, 1.f, FColor::Green, FString("Overlapping"));
+			OverlappingWeapon->Equip(GetMesh(), FName("RightHandSocket"), this, this);
+
+			CharacterState = ECharacterStates::ECS_EquippedSword;
+			OverlappingItem = nullptr;
+			EquippedWeapon = OverlappingWeapon;
 		}
-
-		OverlappingWeapon->Equip(GetMesh(), FName("RightHandSocket"), this, this);
-
-		CharacterState = ECharacterStates::ECS_EquippedSword;
-		OverlappingItem = nullptr;
-		EquippedWeapon = OverlappingWeapon;
 	}
 }
 
@@ -331,7 +339,7 @@ void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
+	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APlayerMain::Move);
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlayerMain::Look);
