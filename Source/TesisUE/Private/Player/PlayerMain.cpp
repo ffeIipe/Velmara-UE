@@ -82,51 +82,46 @@ void APlayerMain::BeginPlay()
 
 void APlayerMain::PerformLightAttack(int AttackIndex)
 {
-	//UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	//if (AnimInstance)
-	
-		if (GetCharacterAction() != ECharacterActions::ECA_Attack)
+	if (PlayerFormComponent->GetCurrentForm() == EPlayerForm::Spectral) return;
+
+	if (GetCharacterAction() != ECharacterActions::ECA_Attack)
+	{
+		StopAttackBufferEvent();
+		AttackBufferEvent(BufferAttackDistance);
+		AttackMontage = LightAttackCombo[AttackIndex];
+		SetCharacterState(ECharacterActions::ECA_Attack);
+
+		SoftLockOn();
+
+		PlayAnimMontage(AttackMontage);
+		LightAttackIndex++;
+
+		if (LightAttackIndex >= LightAttackCombo.Num())
 		{
-			StopAttackBufferEvent();
-			AttackBufferEvent(BufferAttackDistance);
-			AttackMontage = LightAttackCombo[AttackIndex];
-			SetCharacterState(ECharacterActions::ECA_Attack);
-
-			SoftLockOn();
-
-			//AnimInstance->Montage_Play(AttackMontage);
-			PlayAnimMontage(AttackMontage);
-			LightAttackIndex++;
-
-			if (LightAttackIndex >= LightAttackCombo.Num())
-			{
-				LightAttackIndex = 0;
-			}
+			LightAttackIndex = 0;
 		}
-	
+	}
 }
 
 void APlayerMain::PerformHeavyAttack(int AttackIndex)
 {
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance)
+	if (PlayerFormComponent->GetCurrentForm() == EPlayerForm::Spectral) return;
+
+	if (GetCharacterAction() != ECharacterActions::ECA_Attack)
 	{
-		if (GetCharacterAction() != ECharacterActions::ECA_Attack)
+		StopAttackBufferEvent();
+		AttackBufferEvent(BufferAttackDistance);
+		HeavyAttackMontage = HeavyAttackCombo[AttackIndex];
+		SetCharacterState(ECharacterActions::ECA_Attack);
+
+		SoftLockOn();
+
+		PlayAnimMontage(HeavyAttackMontage);
+		HeavyAttackIndex++;
+
+		if (HeavyAttackIndex >= HeavyAttackCombo.Num())
 		{
-			StopAttackBufferEvent();
-			AttackBufferEvent(BufferAttackDistance);
-			HeavyAttackMontage = HeavyAttackCombo[AttackIndex];
-			SetCharacterState(ECharacterActions::ECA_Attack);
-
-			SoftLockOn();
-
-			AnimInstance->Montage_Play(HeavyAttackMontage);
-			HeavyAttackIndex++;
-
-			if (HeavyAttackIndex >= HeavyAttackCombo.Num())
-			{
-				HeavyAttackIndex = 0;
-			}
+			HeavyAttackIndex = 0;
 		}
 	}
 }

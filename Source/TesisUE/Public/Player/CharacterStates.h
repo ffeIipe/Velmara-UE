@@ -14,3 +14,10 @@ enum class ECharacterActions : uint8
 	ECA_Attack UMETA(DisplayName = "Attack"),
 	ECA_Dodge UMETA(DisplayName = "Dodge")
 };
+
+UENUM(BlueprintType)
+enum class EPlayerForm : uint8
+{
+	Human UMETA(DisplayName = "Human"),
+	Spectral UMETA(DisplayName = "Spectral")
+};
