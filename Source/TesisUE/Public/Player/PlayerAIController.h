@@ -33,4 +33,5 @@ protected:
 
 	UFUNCTION()
 	virtual void OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
+
 };
