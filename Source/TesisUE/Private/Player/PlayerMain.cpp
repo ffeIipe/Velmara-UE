@@ -44,10 +44,6 @@ APlayerMain::APlayerMain()
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 }
 
-void APlayerMain::Tick(float DeltaTime)
-{
-}
-
 void APlayerMain::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled)
 {
 	if (EquippedWeapon && EquippedWeapon->GetWeaponBox())
@@ -56,7 +52,6 @@ void APlayerMain::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEna
 		EquippedWeapon->IgnoreActors.Empty();
 	}
 }
-
 
 void APlayerMain::BeginPlay()
 {
@@ -87,9 +82,9 @@ void APlayerMain::BeginPlay()
 
 void APlayerMain::PerformLightAttack(int AttackIndex)
 {
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance)
-	{
+	//UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	//if (AnimInstance)
+	
 		if (GetCharacterAction() != ECharacterActions::ECA_Attack)
 		{
 			StopAttackBufferEvent();
@@ -99,7 +94,8 @@ void APlayerMain::PerformLightAttack(int AttackIndex)
 
 			SoftLockOn();
 
-			AnimInstance->Montage_Play(AttackMontage);
+			//AnimInstance->Montage_Play(AttackMontage);
+			PlayAnimMontage(AttackMontage);
 			LightAttackIndex++;
 
 			if (LightAttackIndex >= LightAttackCombo.Num())
@@ -107,7 +103,7 @@ void APlayerMain::PerformLightAttack(int AttackIndex)
 				LightAttackIndex = 0;
 			}
 		}
-	}
+	
 }
 
 void APlayerMain::PerformHeavyAttack(int AttackIndex)
@@ -325,14 +321,14 @@ void APlayerMain::Interact(const FInputActionValue& Value)
 
 void APlayerMain::Attack(const FInputActionValue& Value)
 {
-	
+	//TODO: pasar la logica aca en esta funcion
 }
 
 void APlayerMain::ToggleForm()
 {
 	if (PlayerFormComponent)
 	{
-		PlayerFormComponent->ToggleForm();
+		PlayerFormComponent->ToggleForm(EquippedWeapon);
 	}
 }
 
@@ -347,6 +343,6 @@ void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &APlayerMain::Jump);
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &APlayerMain::Interact);
 		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &APlayerMain::Attack);
-		EnhancedInputComponent->BindAction(ChangeFormAction, ETriggerEvent::Triggered, this, &APlayerMain::ToggleForm);
+		EnhancedInputComponent->BindAction(ChangeFormAction, ETriggerEvent::Started, this, &APlayerMain::ToggleForm);
 	}
 }

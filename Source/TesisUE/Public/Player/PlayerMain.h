@@ -30,8 +30,6 @@ public:
 
 	APlayerMain();
 
-	virtual void Tick(float DeltaTime) override;
-
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	UFUNCTION(BlueprintPure, Category = "FSM")

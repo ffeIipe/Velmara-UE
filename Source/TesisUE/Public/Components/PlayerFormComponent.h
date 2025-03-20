@@ -9,6 +9,7 @@
 class UMaterialParameterCollection;
 class UTimelineComponent;
 class UCurveFloat;
+class ASword;
 
 UENUM(BlueprintType)
 enum class EPlayerForm : uint8
@@ -26,7 +27,7 @@ public:
     UPlayerFormComponent();
 
     UFUNCTION(BlueprintCallable)
-    void ToggleForm();
+    void ToggleForm(ASword* EquippedWeapon);
 
     EPlayerForm GetCurrentForm() const { return CurrentForm; }
 
@@ -34,11 +35,15 @@ protected:
     virtual void BeginPlay() override;
 
 private:
-    void ApplySpectralEffects();
-    void ApplyHumanEffects();
+    void ApplySpectralEffects(ASword* EquippedWeapon);
+    void ApplyHumanEffects(ASword* EquippedWeapon);
 
     EPlayerForm CurrentForm;
+
+    UPROPERTY(EditDefaultsOnly, Category = "BloodSense | Cooldown")
     float TransformationCooldown;
+
+    UPROPERTY(EditAnywhere, Category = "BloodSense | Cooldown")
     float LastTransformationTime;
 
     bool bIsSpectralActive = false;

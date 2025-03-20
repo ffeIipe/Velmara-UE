@@ -44,6 +44,18 @@ void ASword::AttachMeshToSocket(USceneComponent* InParent, const FName& InSocket
 	ItemMesh->AttachToComponent(InParent, TransformRules, InSocketName);
 }
 
+void ASword::Enable(bool Param)
+{
+	if (Param)
+	{
+		ItemMesh->SetVisibility(Param);
+	}
+	else
+	{
+		ItemMesh->SetVisibility(Param);
+	}
+}
+
 void ASword::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	Super::OnSphereBeginOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);

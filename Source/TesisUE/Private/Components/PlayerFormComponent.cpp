@@ -8,13 +8,12 @@
 #include "Components/TimelineComponent.h"
 #include "Materials/MaterialParameterCollectionInstance.h"
 #include "Materials/MaterialParameterCollection.h"
+#include "Items/Weapons/Sword.h"
 
 UPlayerFormComponent::UPlayerFormComponent()
 {
     PrimaryComponentTick.bCanEverTick = false;
     CurrentForm = EPlayerForm::Human;
-    TransformationCooldown = 3.0f;
-    LastTransformationTime = 0.0f;
 
     SpectralEffectTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("SpectralEffectTimeline"));
 
@@ -37,48 +36,42 @@ void UPlayerFormComponent::BeginPlay()
     }
 }
 
-void UPlayerFormComponent::ToggleForm()
+void UPlayerFormComponent::ToggleForm(ASword* EquippedWeapon)
 {
     float CurrentTime = GetWorld()->GetTimeSeconds();
 
-    if (CurrentTime - LastTransformationTime < TransformationCooldown)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("Aún no puedes transformarte."));
-        return;
-    }
+    if (CurrentTime - LastTransformationTime < TransformationCooldown) return;
+    
+    LastTransformationTime = 0;
 
     if (CurrentForm == EPlayerForm::Human)
     {
         CurrentForm = EPlayerForm::Spectral;
-        ApplySpectralEffects();
+        ApplySpectralEffects(EquippedWeapon);
     }
     else
     {
         CurrentForm = EPlayerForm::Human;
-        ApplyHumanEffects();
+        ApplyHumanEffects(EquippedWeapon);
     }
 
     LastTransformationTime = CurrentTime;
 }
 
-void UPlayerFormComponent::ApplySpectralEffects()
+void UPlayerFormComponent::ApplySpectralEffects(ASword* EquippedWeapon)
 {
     Debug(1, FColor::Red, FString("Spectral Mode"), true);
 
-    if (bIsSpectralActive)
-    {
-        SpectralEffectTimeline->Reverse();
-    }
-    else
-    {
-        SpectralEffectTimeline->Play();
-    }
-    bIsSpectralActive = !bIsSpectralActive;
+    SpectralEffectTimeline->Reverse();
+    EquippedWeapon->Enable(false);
 }
 
-void UPlayerFormComponent::ApplyHumanEffects()
+void UPlayerFormComponent::ApplyHumanEffects(ASword* EquippedWeapon)
 {
-    Debug(2, FColor::Blue, FString("Human Mode"), true);
+    Debug(1, FColor::Blue, FString("Human Mode"), true);
+
+    SpectralEffectTimeline->PlayFromStart();
+    EquippedWeapon->Enable(true);
 }
 
 void UPlayerFormComponent::UpdateSpectralEffect(float Value)
@@ -88,7 +81,8 @@ void UPlayerFormComponent::UpdateSpectralEffect(float Value)
         UMaterialParameterCollectionInstance* MaterialInstance = GetWorld()->GetParameterCollectionInstance(BloodSenseMaterialCollection);
         if (MaterialInstance)
         {
-            MaterialInstance->SetScalarParameterValue(FName("Alpha"), Value);
+            float ClampedValue = FMath::Clamp(Value, 0.0f, 1.0f);
+            MaterialInstance->SetScalarParameterValue(FName("Alpha"), ClampedValue);
         }
     }
 }
