@@ -123,6 +123,9 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, Category = "LightAttack")
 	TArray<UAnimMontage*> LightAttackCombo;
+	
+	UPROPERTY(BlueprintReadOnly, Category = "SpectralAttack")
+	TArray<UAnimMontage*> SpectralAttackCombo;
 
 	UPROPERTY(BlueprintReadWrite, Category = "LightAttack")
 	bool IsSaveLightAttack;
@@ -222,6 +225,9 @@ private:
 	UPROPERTY(VisibleDefaultsOnly, Category = "Montages")
 	UAnimMontage* AttackMontage;
 	
+	UPROPERTY(VisibleDefaultsOnly, Category = "Montages")
+	UAnimMontage* SpectralAttackMontage;
+
 	UPROPERTY(VisibleDefaultsOnly, Category = "Montages")
 	UAnimMontage* HeavyAttackMontage;
 
