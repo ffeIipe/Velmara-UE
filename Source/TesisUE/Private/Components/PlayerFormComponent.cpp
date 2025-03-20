@@ -13,7 +13,7 @@
 UPlayerFormComponent::UPlayerFormComponent()
 {
     PrimaryComponentTick.bCanEverTick = false;
-    CurrentForm = EPlayerForm::Human;
+    CurrentForm = EPlayerForm::EPF_Human;
 
     SpectralEffectTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("SpectralEffectTimeline"));
 
@@ -44,14 +44,14 @@ void UPlayerFormComponent::ToggleForm(ASword* EquippedWeapon)
     
     LastTransformationTime = 0;
 
-    if (CurrentForm == EPlayerForm::Human)
+    if (CurrentForm == EPlayerForm::EPF_Human)
     {
-        CurrentForm = EPlayerForm::Spectral;
+        CurrentForm = EPlayerForm::EPF_Spectral;
         ApplySpectralEffects(EquippedWeapon);
     }
     else
     {
-        CurrentForm = EPlayerForm::Human;
+        CurrentForm = EPlayerForm::EPF_Human;
         ApplyHumanEffects(EquippedWeapon);
     }
 
@@ -63,7 +63,11 @@ void UPlayerFormComponent::ApplySpectralEffects(ASword* EquippedWeapon)
     Debug(1, FColor::Red, FString("Spectral Mode"), true);
 
     SpectralEffectTimeline->Reverse();
-    EquippedWeapon->Enable(false);
+
+    if (EquippedWeapon)
+    {
+        EquippedWeapon->Enable(false);
+    }   
 }
 
 void UPlayerFormComponent::ApplyHumanEffects(ASword* EquippedWeapon)
@@ -71,7 +75,11 @@ void UPlayerFormComponent::ApplyHumanEffects(ASword* EquippedWeapon)
     Debug(1, FColor::Blue, FString("Human Mode"), true);
 
     SpectralEffectTimeline->PlayFromStart();
-    EquippedWeapon->Enable(true);
+
+    if (EquippedWeapon)
+    {
+        EquippedWeapon->Enable(true);
+    }
 }
 
 void UPlayerFormComponent::UpdateSpectralEffect(float Value)

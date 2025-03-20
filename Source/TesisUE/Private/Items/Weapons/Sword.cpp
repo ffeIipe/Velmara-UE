@@ -46,6 +46,8 @@ void ASword::AttachMeshToSocket(USceneComponent* InParent, const FName& InSocket
 
 void ASword::Enable(bool Param)
 {
+	if (!ItemMesh) return;
+
 	if (Param)
 	{
 		ItemMesh->SetVisibility(Param);

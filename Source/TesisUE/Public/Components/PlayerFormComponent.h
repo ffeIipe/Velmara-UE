@@ -12,13 +12,6 @@ class UTimelineComponent;
 class UCurveFloat;
 class ASword;
 
-//UENUM(BlueprintType)
-//enum class EPlayerForm : uint8
-//{
-//    Human UMETA(DisplayName = "Human"),
-//    Spectral UMETA(DisplayName = "Spectral")
-//};
-
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class TESISUE_API UPlayerFormComponent : public UActorComponent
 {
