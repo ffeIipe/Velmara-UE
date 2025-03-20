@@ -29,7 +29,7 @@ private:
 
 protected:
 
-	virtual void BeginPlay() override;
+
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UAIPerceptionComponent* EnemyPerceptionComponent;
