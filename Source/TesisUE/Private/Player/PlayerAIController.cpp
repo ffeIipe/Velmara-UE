@@ -6,6 +6,7 @@
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Components/PlayerFormComponent.h"
 
 APlayerAIController::APlayerAIController(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.SetDefaultSubobjectClass<UCrowdFollowingComponent>("PathFollowingComponent"))
@@ -41,13 +42,33 @@ ETeamAttitude::Type APlayerAIController::GetTeamAttitudeTowards(const AActor& Ot
 	return ETeamAttitude::Friendly;
 }
 
+
 void APlayerAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
 	if (Stimulus.WasSuccessfullySensed() && Actor)
 	{
+		APawn* PlayerPawn = Cast<APawn>(Actor);
+		if (!PlayerPawn) return;
+
+		UPlayerFormComponent* PlayerFormComponent = PlayerPawn->FindComponentByClass<UPlayerFormComponent>();
+
+		if (PlayerFormComponent && PlayerFormComponent->GetCurrentForm() == EPlayerForm::Spectral)
+		{
+			if (UBlackboardComponent* BlackboardComponent = GetBlackboardComponent())
+			{
+				BlackboardComponent->ClearValue(FName("TargetActor"));
+				StopMovement();
+			}
+			return;
+		}
+
 		if (UBlackboardComponent* BlackboardComponent = GetBlackboardComponent())
 		{
 			BlackboardComponent->SetValueAsObject(FName("TargetActor"), Actor);
 		}
 	}
+
+
+
+
 }
