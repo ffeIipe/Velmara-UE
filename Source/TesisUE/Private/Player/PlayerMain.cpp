@@ -15,6 +15,7 @@
 #include "Components/BoxComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Components/PlayerFormComponent.h"
 
 
 APlayerMain::APlayerMain()
@@ -38,8 +39,9 @@ APlayerMain::APlayerMain()
 
 	SoftLockTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("SoftLockTimeline"));
 
-	AutoPossessPlayer = EAutoReceiveInput::Player0;
+	PlayerFormComponent = CreateDefaultSubobject<UPlayerFormComponent>(TEXT("PlayerFormComponent"));
 
+	AutoPossessPlayer = EAutoReceiveInput::Player0;
 }
 
 void APlayerMain::Tick(float DeltaTime)
@@ -326,6 +328,14 @@ void APlayerMain::Attack(const FInputActionValue& Value)
 	
 }
 
+void APlayerMain::ToggleForm()
+{
+	if (PlayerFormComponent)
+	{
+		PlayerFormComponent->ToggleForm();
+	}
+}
+
 void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
@@ -337,5 +347,6 @@ void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &APlayerMain::Jump);
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &APlayerMain::Interact);
 		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &APlayerMain::Attack);
+		EnhancedInputComponent->BindAction(ChangeFormAction, ETriggerEvent::Triggered, this, &APlayerMain::ToggleForm);
 	}
 }

@@ -19,11 +19,12 @@ class UTimelineComponent;
 class AItem;
 class ASword;
 
+class UPlayerFormComponent;
+
 UCLASS()
 class TESISUE_API APlayerMain : public ACharacter
 {
 	GENERATED_BODY()
-
 
 public:
 
@@ -166,10 +167,9 @@ protected:
 
 	UPROPERTY()
 	UTimelineComponent* SoftLockTimeline;
+	
 	UPROPERTY(EditAnywhere, Category = "SoftLockOn")
 	class UCurveFloat* SoftLockCurve;
-
-
 
 	/*
 	* Inputs
@@ -202,7 +202,7 @@ protected:
 	UInputAction* HeavyAttackAction;
 
 	UPROPERTY(EditAnywhere, Category = "Input | Actions")
-	UInputAction* ChangeModeAction;
+	UInputAction* ChangeFormAction;
 
 private:	
 	
@@ -227,6 +227,11 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "Weapon")
 	ASword* EquippedWeapon;
 
+	UPROPERTY(VisibleAnywhere, Category = "Forms")
+	UPlayerFormComponent* PlayerFormComponent;
+
+
+
 	void Move(const FInputActionValue& Value);
 
 	void Look(const FInputActionValue& Value);
@@ -236,4 +241,6 @@ private:
 	void Attack(const FInputActionValue& Value);
 	
 	void HeavyAttack(const FInputActionValue& Value);
+
+	void ToggleForm();
 };
