@@ -82,8 +82,8 @@ void AEnemy::Die()
 	AAIController* AIController = Cast<AAIController>(GetController());
 	if (AIController)
 	{
-		AIController->StopMovement();  // Detiene cualquier movimiento activo
-		AIController->UnPossess();     // Libera el control del personaje
+		AIController->StopMovement();  
+		AIController->UnPossess();   
 	}
 }
 
