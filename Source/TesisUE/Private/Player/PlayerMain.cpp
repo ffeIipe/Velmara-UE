@@ -82,8 +82,6 @@ void APlayerMain::BeginPlay()
 
 void APlayerMain::PerformLightAttack(int AttackIndex)
 {
-	if (PlayerFormComponent->GetCurrentForm() == EPlayerForm::EPF_Spectral) return;
-
 	if (GetCharacterAction() != ECharacterActions::ECA_Attack)
 	{
 		StopAttackBufferEvent();
@@ -93,7 +91,16 @@ void APlayerMain::PerformLightAttack(int AttackIndex)
 
 		SoftLockOn();
 
-		PlayAnimMontage(AttackMontage);
+		if (PlayerFormComponent->GetCurrentForm() == EPlayerForm::EPF_Human)
+		{
+			PlayAnimMontage(AttackMontage);
+		}
+		else
+		{
+			SpectralAttackMontage = SpectralAttackCombo[AttackIndex];
+			PlayAnimMontage(SpectralAttackMontage);
+		}
+		
 		LightAttackIndex++;
 
 		if (LightAttackIndex >= LightAttackCombo.Num())
