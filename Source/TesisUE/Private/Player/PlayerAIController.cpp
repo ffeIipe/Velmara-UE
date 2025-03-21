@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Player/PlayerAIController.h"
@@ -34,7 +34,7 @@ ETeamAttitude::Type APlayerAIController::GetTeamAttitudeTowards(const AActor& Ot
 
 	const IGenericTeamAgentInterface* OtherTeamAgent = Cast<IGenericTeamAgentInterface>(PawnToCheck->GetController());
 
-	if (OtherTeamAgent && OtherTeamAgent->GetGenericTeamId() != GetGenericTeamId())
+	if (OtherTeamAgent && OtherTeamAgent->GetGenericTeamId() < GetGenericTeamId())
 	{
 		return ETeamAttitude::Hostile;
 	}
@@ -42,33 +42,30 @@ ETeamAttitude::Type APlayerAIController::GetTeamAttitudeTowards(const AActor& Ot
 	return ETeamAttitude::Friendly;
 }
 
-
 void APlayerAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
-	if (Stimulus.WasSuccessfullySensed() && Actor)
+	if (!Actor) return;
+
+	UBlackboardComponent* BlackboardComponent = GetBlackboardComponent();
+	if (!BlackboardComponent) return;
+
+	APawn* PlayerPawn = Cast<APawn>(Actor);
+	if (!PlayerPawn) return;
+
+	UPlayerFormComponent* PlayerFormComponent = PlayerPawn->FindComponentByClass<UPlayerFormComponent>();
+
+	
+	if (PlayerFormComponent && PlayerFormComponent->GetCurrentForm() == EPlayerForm::EPF_Spectral)
 	{
-		APawn* PlayerPawn = Cast<APawn>(Actor);
-		if (!PlayerPawn) return;
-
-		UPlayerFormComponent* PlayerFormComponent = PlayerPawn->FindComponentByClass<UPlayerFormComponent>();
-
-		if (PlayerFormComponent && PlayerFormComponent->GetCurrentForm() == EPlayerForm::EPF_Spectral)
-		{
-			if (UBlackboardComponent* BlackboardComponent = GetBlackboardComponent())
-			{
-				BlackboardComponent->ClearValue(FName("TargetActor"));
-				StopMovement();
-			}
-			return;
-		}
-
-		if (UBlackboardComponent* BlackboardComponent = GetBlackboardComponent())
-		{
-			BlackboardComponent->SetValueAsObject(FName("TargetActor"), Actor);
-		}
+		BlackboardComponent->ClearValue(FName("TargetActor"));
+		BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), false); 
+		StopMovement();
+		return;
 	}
 
-
-
-
+	if (Stimulus.WasSuccessfullySensed())
+	{
+		BlackboardComponent->SetValueAsObject(FName("TargetActor"), Actor);
+		BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), true); 
+	}
 }
