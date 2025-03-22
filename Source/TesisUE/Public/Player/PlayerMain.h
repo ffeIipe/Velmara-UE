@@ -21,6 +21,8 @@ class ASword;
 
 class UPlayerFormComponent;
 
+class AEnemy;
+
 UCLASS()
 class TESISUE_API APlayerMain : public ACharacter
 {
@@ -37,6 +39,9 @@ public:
 	
 	UFUNCTION(BlueprintPure, Category = "FSM")
 	FORCEINLINE ECharacterStates GetCharacterState() const { return CharacterState; }
+
+	UFUNCTION(BlueprintPure, Category = "SpectralAttack")
+	FORCEINLINE AEnemy* GetEnemyTarget() const { return EnemyTarget; }
 	
 	FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }
 
@@ -63,6 +68,9 @@ protected:
 	
 	UFUNCTION(BlueprintPure, Category = "FSM")
 	bool IsStateEqualToAny(const TArray<ECharacterStates>& StatesToCheck);
+	
+	UFUNCTION(BlueprintPure, Category = "PlayerForm")
+	bool IsFormEqualToAny(const TArray<EPlayerForm>& StatesToCheck);
 
 	/*
 	* Dodge
@@ -98,7 +106,7 @@ protected:
 	void DodgeBufferEvent(float BufferAmount);
 	
 	UFUNCTION(BlueprintCallable)
-	void AttackBufferEvent(float BufferAmount);
+	void StartAttackBufferEvent(float BufferAmount);
 
 	UFUNCTION(BlueprintCallable)
 	void StopDodgeBufferEvent();
@@ -178,6 +186,18 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "SoftLockOn")
 	class UCurveFloat* SoftLockCurve;
 
+	UPROPERTY(EditAnywhere, Category = "SpectralAttack")
+	AEnemy* EnemyTarget;
+
+	UPROPERTY(EditAnywhere, Category = "SpectralAttack")
+	float TrackTargetDistance;
+
+	UPROPERTY(EditAnywhere, Category = "SpectralAttack")
+	float TrackTargetRadius;
+
+	UFUNCTION(BlueprintCallable, Category = "SpectralAttack")
+	void SearchForTarget();
+
 	/*
 	* Inputs
 	*/
@@ -212,7 +232,6 @@ protected:
 	UInputAction* ChangeFormAction;
 
 private:	
-	
 	ECharacterActions CharacterAction = ECharacterActions::ECA_Nothing;
 	ECharacterStates CharacterState = ECharacterStates::ECS_Unequipped;
 
@@ -225,7 +244,7 @@ private:
 	UPROPERTY(VisibleInstanceOnly)
 	AItem* OverlappingItem;
 
-	UPROPERTY(VisibleAnywhere, Category = "Weapon")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon", meta = (AllowPrivateAccess))
 	ASword* EquippedWeapon;
 
 	void Move(const FInputActionValue& Value);

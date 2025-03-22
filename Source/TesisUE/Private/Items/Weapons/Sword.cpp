@@ -36,6 +36,8 @@ void ASword::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwn
 
 	AttachMeshToSocket(InParent, InSocketName);
 	ItemState = EItemState::EIS_Equipped;
+
+	DisableCollision();
 }
 
 void ASword::AttachMeshToSocket(USceneComponent* InParent, const FName& InSocketName)

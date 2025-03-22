@@ -47,3 +47,11 @@ void AItem::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor*
 		Player->SetOverlappingItem(nullptr);
 	}
 }
+
+void AItem::DisableCollision()
+{
+	if (SphereCollider)
+	{
+		SphereCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+}

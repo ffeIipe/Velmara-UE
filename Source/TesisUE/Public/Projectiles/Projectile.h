@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "Projectile.generated.h"
 
+class APlayerMain;
 class UBoxComponent;
 class UProjectileMovementComponent;
 
@@ -18,7 +19,8 @@ public:
 	AProjectile();
 protected:
 	virtual void BeginPlay() override;
-	//virtual void Tick(DeltaTime) override;
+
+	APlayerMain* Player;
 
 	UPROPERTY(EditAnywhere, Category = "Projectile | Collider")
 	UBoxComponent* BoxCollider;
@@ -36,7 +38,7 @@ protected:
 	float Gravity = 0.f;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Projectile | Stats")
-	bool IsHoming = false;
+	bool IsHoming = true;
 
 	UFUNCTION()
 	virtual void OnBoxOverlap(
@@ -47,6 +49,14 @@ protected:
 		bool bFromSweep,
 		const FHitResult& SweepResult);
 
+	/*
+	* Effects
+	*/
+	UPROPERTY(EditAnywhere, Category = "Effects");
+	USoundBase* HitSound;
+
+	UPROPERTY(EditAnywhere, Category = "Effects");
+	UParticleSystem* HitParticles;
 
 private:	
 	void OnProjectileImpact(AActor* OtherActor, const FHitResult& Hit);

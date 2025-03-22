@@ -16,6 +16,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Components/PlayerFormComponent.h"
+#include "Enemy/Enemy.h"
 
 
 APlayerMain::APlayerMain()
@@ -84,20 +85,21 @@ void APlayerMain::PerformLightAttack(int AttackIndex)
 {
 	if (GetCharacterAction() != ECharacterActions::ECA_Attack)
 	{
-		StopAttackBufferEvent();
-		AttackBufferEvent(BufferAttackDistance);
-		SetCharacterState(ECharacterActions::ECA_Attack);
-
 		if (PlayerFormComponent->GetCurrentForm() == EPlayerForm::EPF_Human)
 		{
+			StopAttackBufferEvent();
+			StartAttackBufferEvent(BufferAttackDistance);
+			SetCharacterState(ECharacterActions::ECA_Attack);
+			SoftLockOn();
 			PlayAnimMontage(LightAttackCombo[AttackIndex]);
 		}
 		else
 		{
+			SetCharacterState(ECharacterActions::ECA_Attack);
+			SearchForTarget();
 			PlayAnimMontage(SpectralAttackCombo[AttackIndex]);
 		}
 
-		SoftLockOn();
 		LightAttackIndex++;
 
 		if (LightAttackIndex >= LightAttackCombo.Num())
@@ -114,7 +116,7 @@ void APlayerMain::PerformHeavyAttack(int AttackIndex)
 	if (GetCharacterAction() != ECharacterActions::ECA_Attack)
 	{
 		StopAttackBufferEvent();
-		AttackBufferEvent(BufferAttackDistance);
+		StartAttackBufferEvent(BufferAttackDistance);
 		SetCharacterState(ECharacterActions::ECA_Attack);
 
 		PlayAnimMontage(HeavyAttackCombo[AttackIndex]);
@@ -156,7 +158,7 @@ void APlayerMain::DodgeBufferEvent(float BufferAmount)
 	}
 }
 
-void APlayerMain::AttackBufferEvent(float BufferAmount)
+void APlayerMain::StartAttackBufferEvent(float BufferAmount)
 {
 	if (BufferAttackTimeline)
 	{
@@ -245,7 +247,7 @@ void APlayerMain::SoftLockOn()
 
 void APlayerMain::RotationToTarget()
 {
-	if (SoftLockTarget)
+	if (SoftLockTarget && PlayerFormComponent && PlayerFormComponent->GetCurrentForm() != EPlayerForm::EPF_Spectral)
 	{
 		SoftLockTimeline->PlayFromStart();
 	}
@@ -267,6 +269,40 @@ void APlayerMain::UpdateSoftLockOn(float Alpha)
 	SetActorRotation(NewRotation);
 }
 
+void APlayerMain::SearchForTarget()
+{
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
+
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.Add(this);
+	ActorsToIgnore.Add(GetOwner());
+
+	FHitResult ResultHit;
+
+	FVector Start = GetActorLocation();
+	FVector End = GetActorLocation() + GetViewRotation().Vector() * TrackTargetDistance;
+
+	UKismetSystemLibrary::SphereTraceSingleForObjects(
+		GetWorld(),
+		Start,
+		End,
+		TrackTargetRadius,
+		ObjectTypes,
+		false,
+		ActorsToIgnore,
+		EDrawDebugTrace::None,
+		ResultHit,
+		true
+	);
+
+	if (ResultHit.GetActor())
+	{
+		EnemyTarget = Cast<AEnemy>(ResultHit.GetActor());
+	}
+	else EnemyTarget = nullptr;
+}
+
 
 ECharacterActions APlayerMain::SetCharacterState(ECharacterActions NewState)
 {
@@ -285,6 +321,11 @@ bool APlayerMain::IsActionEqualToAny(const TArray<ECharacterActions>& StatesToCh
 bool APlayerMain::IsStateEqualToAny(const TArray<ECharacterStates>& StatesToCheck)
 {
 	return StatesToCheck.Contains(CharacterState);
+}
+
+bool APlayerMain::IsFormEqualToAny(const TArray<EPlayerForm>& StatesToCheck)
+{
+	return StatesToCheck.Contains(PlayerFormComponent->GetCurrentForm());
 }
 
 
@@ -318,6 +359,7 @@ void APlayerMain::Interact(const FInputActionValue& Value)
 		{
 			OverlappingWeapon->Equip(GetMesh(), FName("RightHandSocket"), this, this);
 
+			
 			CharacterState = ECharacterStates::ECS_EquippedSword;
 			OverlappingItem = nullptr;
 			EquippedWeapon = OverlappingWeapon;

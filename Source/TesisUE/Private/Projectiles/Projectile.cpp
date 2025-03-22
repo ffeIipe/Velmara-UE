@@ -4,6 +4,9 @@
 #include "Projectiles/Projectile.h"
 #include "Components/BoxComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "Player/PlayerMain.h"
+#include "Enemy/Enemy.h"
+#include <Kismet/GameplayStatics.h>
 
 AProjectile::AProjectile()
 {
@@ -11,34 +14,55 @@ AProjectile::AProjectile()
 
 	BoxCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxCollider"));
 	BoxCollider->SetupAttachment(GetRootComponent());
-	//BoxCollider->SetGenerateOverlapEvents(true);
-	//SetActorEnableCollision(true);
-	//BoxCollider->SetCollisionObjectType(ECC_PhysicsBody);
-	//BoxCollider->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
+	
 
 	ProjectileMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ProjectileMesh"));
 	ProjectileMesh->SetupAttachment(BoxCollider);
 
 	ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovementComponent"));
-	ProjectileMovementComponent->InitialSpeed = Speed;
-	ProjectileMovementComponent->MaxSpeed = Speed;
-	ProjectileMovementComponent->ProjectileGravityScale = Gravity;
 }
 
 void AProjectile::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	Player = Cast<APlayerMain>(GetWorld()->GetFirstPlayerController()->GetPawn());
+
 	BoxCollider->OnComponentBeginOverlap.AddDynamic(this, &AProjectile::OnBoxOverlap);
 }
 
 void AProjectile::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	OnProjectileImpact(OtherActor, SweepResult);
+	//FString String = OtherActor->GetDebugName(OtherActor) + " " + OtherComp->GetName();
+	//GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Black, String);
+
+	if (Cast<AEnemy>(OtherActor))
+	{
+		OnProjectileImpact(OtherActor, SweepResult);
+	}
+	else return;
 }
 
 void AProjectile::OnProjectileImpact(AActor* OtherActor, const FHitResult& Hit)
 {
 	//TODO: Logic of destruction, VFX, SFX, etc.
+
+	if (HitSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(
+			this,
+			HitSound,
+			Hit.ImpactPoint
+		);
+	}
+	if (HitParticles)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(
+			GetWorld(),
+			HitParticles,
+			Hit.ImpactPoint
+		);
+	}
+
 	Destroy();
 }
