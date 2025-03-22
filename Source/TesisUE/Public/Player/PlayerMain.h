@@ -222,22 +222,11 @@ private:
 	UPROPERTY(EditAnywhere)
 	USpringArmComponent* CameraBoom;
 
-	UPROPERTY(VisibleDefaultsOnly, Category = "Montages")
-	UAnimMontage* AttackMontage;
-	
-	UPROPERTY(VisibleDefaultsOnly, Category = "Montages")
-	UAnimMontage* SpectralAttackMontage;
-
-	UPROPERTY(VisibleDefaultsOnly, Category = "Montages")
-	UAnimMontage* HeavyAttackMontage;
-
 	UPROPERTY(VisibleInstanceOnly)
 	AItem* OverlappingItem;
 
 	UPROPERTY(VisibleAnywhere, Category = "Weapon")
 	ASword* EquippedWeapon;
-
-
 
 	void Move(const FInputActionValue& Value);
 

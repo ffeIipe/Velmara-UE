@@ -86,21 +86,18 @@ void APlayerMain::PerformLightAttack(int AttackIndex)
 	{
 		StopAttackBufferEvent();
 		AttackBufferEvent(BufferAttackDistance);
-		AttackMontage = LightAttackCombo[AttackIndex];
 		SetCharacterState(ECharacterActions::ECA_Attack);
-
-		SoftLockOn();
 
 		if (PlayerFormComponent->GetCurrentForm() == EPlayerForm::EPF_Human)
 		{
-			PlayAnimMontage(AttackMontage);
+			PlayAnimMontage(LightAttackCombo[AttackIndex]);
 		}
 		else
 		{
-			SpectralAttackMontage = SpectralAttackCombo[AttackIndex];
-			PlayAnimMontage(SpectralAttackMontage);
+			PlayAnimMontage(SpectralAttackCombo[AttackIndex]);
 		}
-		
+
+		SoftLockOn();
 		LightAttackIndex++;
 
 		if (LightAttackIndex >= LightAttackCombo.Num())
@@ -118,12 +115,11 @@ void APlayerMain::PerformHeavyAttack(int AttackIndex)
 	{
 		StopAttackBufferEvent();
 		AttackBufferEvent(BufferAttackDistance);
-		HeavyAttackMontage = HeavyAttackCombo[AttackIndex];
 		SetCharacterState(ECharacterActions::ECA_Attack);
 
-		SoftLockOn();
+		PlayAnimMontage(HeavyAttackCombo[AttackIndex]);
 
-		PlayAnimMontage(HeavyAttackMontage);
+		SoftLockOn();
 		HeavyAttackIndex++;
 
 		if (HeavyAttackIndex >= HeavyAttackCombo.Num())
