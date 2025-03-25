@@ -31,14 +31,19 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile | ProjectileMovement")
 	UProjectileMovementComponent* ProjectileMovementComponent;
 
-	UPROPERTY(BlueprintReadWrite, Category = "Projectile | Stats")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile | Stats")
 	float Speed = 500.f;
 	
-	UPROPERTY(BlueprintReadWrite, Category = "Projectile | Stats")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile | Stats")
 	float Gravity = 0.f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile | Stats")
+	float ProjectileLifetime = 5.f;
 
-	UPROPERTY(BlueprintReadWrite, Category = "Projectile | Stats")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile | Stats")
 	bool IsHoming = true;
+
+	bool bEnableDestroyOnCollision;
 
 	UFUNCTION()
 	virtual void OnBoxOverlap(
@@ -58,6 +63,5 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Effects");
 	UParticleSystem* HitParticles;
 
-private:	
-	void OnProjectileImpact(AActor* OtherActor, const FHitResult& Hit);
+	virtual void OnProjectileImpact(AActor* OtherActor, const FHitResult& Hit);	
 };

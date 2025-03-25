@@ -6,7 +6,6 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Player/PlayerMain.h"
 #include "Enemy/Enemy.h"
-#include <Kismet/GameplayStatics.h>
 
 AProjectile::AProjectile()
 {
@@ -25,7 +24,11 @@ AProjectile::AProjectile()
 void AProjectile::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	bEnableDestroyOnCollision = true;
+
+	SetLifeSpan(ProjectileLifetime);
+
 	Player = Cast<APlayerMain>(GetWorld()->GetFirstPlayerController()->GetPawn());
 
 	BoxCollider->OnComponentBeginOverlap.AddDynamic(this, &AProjectile::OnBoxOverlap);
@@ -33,9 +36,6 @@ void AProjectile::BeginPlay()
 
 void AProjectile::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	//FString String = OtherActor->GetDebugName(OtherActor) + " " + OtherComp->GetName();
-	//GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Black, String);
-
 	if (Cast<AEnemy>(OtherActor))
 	{
 		OnProjectileImpact(OtherActor, SweepResult);
@@ -45,24 +45,4 @@ void AProjectile::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor*
 
 void AProjectile::OnProjectileImpact(AActor* OtherActor, const FHitResult& Hit)
 {
-	//TODO: Logic of destruction, VFX, SFX, etc.
-
-	if (HitSound)
-	{
-		UGameplayStatics::PlaySoundAtLocation(
-			this,
-			HitSound,
-			Hit.ImpactPoint
-		);
-	}
-	if (HitParticles)
-	{
-		UGameplayStatics::SpawnEmitterAtLocation(
-			GetWorld(),
-			HitParticles,
-			Hit.ImpactPoint
-		);
-	}
-
-	Destroy();
 }

@@ -41,7 +41,10 @@ public:
 	FORCEINLINE ECharacterStates GetCharacterState() const { return CharacterState; }
 
 	UFUNCTION(BlueprintPure, Category = "SpectralAttack")
-	FORCEINLINE AEnemy* GetEnemyTarget() const { return EnemyTarget; }
+	FORCEINLINE AEnemy* GetSpectralTarget() const { return SpectralTarget; }
+	
+	UFUNCTION(BlueprintPure, Category = "SpectralAttack")
+	FORCEINLINE TArray<AEnemy*> GetEnemyTargets() const { return EnemyTargets; }
 	
 	FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }
 
@@ -153,6 +156,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "HeavyAttack")
 	TArray<UAnimMontage*> HeavyAttackCombo;
 
+	UPROPERTY(BlueprintReadOnly, Category = "SpectralAttack")
+	UAnimMontage* SpectralHeavyAttack;
+
 	UPROPERTY(BlueprintReadWrite, Category = "HeavyAttack")
 	bool IsSaveHeavyAttack;
 
@@ -187,16 +193,28 @@ protected:
 	class UCurveFloat* SoftLockCurve;
 
 	UPROPERTY(EditAnywhere, Category = "SpectralAttack")
-	AEnemy* EnemyTarget;
+	AEnemy* SpectralTarget;
+	
+	UPROPERTY(EditAnywhere, Category = "SpectralAttack")
+	TArray<AEnemy*> EnemyTargets;
 
 	UPROPERTY(EditAnywhere, Category = "SpectralAttack")
 	float TrackTargetDistance;
 
 	UPROPERTY(EditAnywhere, Category = "SpectralAttack")
+	float TrackForTargetsRadius;
+	
+	UPROPERTY(EditAnywhere, Category = "SpectralAttack")
+	float TrackForTargetsDistance;
+
+	UPROPERTY(EditAnywhere, Category = "SpectralAttack")
 	float TrackTargetRadius;
 
 	UFUNCTION(BlueprintCallable, Category = "SpectralAttack")
-	void SearchForTarget();
+	void SearchTarget();
+	
+	UFUNCTION(BlueprintCallable, Category = "SpectralAttack")
+	void SearchForTargets();
 
 	/*
 	* Inputs

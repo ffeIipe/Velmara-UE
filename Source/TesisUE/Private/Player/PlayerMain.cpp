@@ -96,7 +96,7 @@ void APlayerMain::PerformLightAttack(int AttackIndex)
 		else
 		{
 			SetCharacterState(ECharacterActions::ECA_Attack);
-			SearchForTarget();
+			SearchTarget();
 			PlayAnimMontage(SpectralAttackCombo[AttackIndex]);
 		}
 
@@ -111,17 +111,24 @@ void APlayerMain::PerformLightAttack(int AttackIndex)
 
 void APlayerMain::PerformHeavyAttack(int AttackIndex)
 {
-	if (PlayerFormComponent->GetCurrentForm() == EPlayerForm::EPF_Spectral) return;
-
 	if (GetCharacterAction() != ECharacterActions::ECA_Attack)
 	{
-		StopAttackBufferEvent();
-		StartAttackBufferEvent(BufferAttackDistance);
-		SetCharacterState(ECharacterActions::ECA_Attack);
+		if (PlayerFormComponent->GetCurrentForm() == EPlayerForm::EPF_Human)
+		{
+			StopAttackBufferEvent();
+			StartAttackBufferEvent(BufferAttackDistance);
+			SetCharacterState(ECharacterActions::ECA_Attack);
 
-		PlayAnimMontage(HeavyAttackCombo[AttackIndex]);
+			PlayAnimMontage(HeavyAttackCombo[AttackIndex]);
 
-		SoftLockOn();
+			SoftLockOn();
+		}
+		else
+		{
+			SetCharacterState(ECharacterActions::ECA_Attack);
+			SearchForTargets();
+			PlayAnimMontage(SpectralHeavyAttack);
+		}
 		HeavyAttackIndex++;
 
 		if (HeavyAttackIndex >= HeavyAttackCombo.Num())
@@ -269,7 +276,7 @@ void APlayerMain::UpdateSoftLockOn(float Alpha)
 	SetActorRotation(NewRotation);
 }
 
-void APlayerMain::SearchForTarget()
+void APlayerMain::SearchTarget()
 {
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
 	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
@@ -298,9 +305,46 @@ void APlayerMain::SearchForTarget()
 
 	if (ResultHit.GetActor())
 	{
-		EnemyTarget = Cast<AEnemy>(ResultHit.GetActor());
+		SpectralTarget = Cast<AEnemy>(ResultHit.GetActor());
 	}
-	else EnemyTarget = nullptr;
+	else SpectralTarget = nullptr;
+}
+
+void APlayerMain::SearchForTargets()
+{
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
+
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.Add(this);
+	ActorsToIgnore.Add(GetOwner());
+
+	TArray<FHitResult> ResultHit;
+
+	FVector Start = GetActorLocation();
+	FVector End = GetActorLocation() + GetViewRotation().Vector() * TrackForTargetsDistance;
+
+	UKismetSystemLibrary::SphereTraceMultiForObjects(
+		GetWorld(),
+		Start,
+		End,
+		TrackForTargetsRadius,
+		ObjectTypes,
+		false,
+		ActorsToIgnore,
+		EDrawDebugTrace::ForDuration,
+		ResultHit,
+		true
+	);
+
+	for (const FHitResult& Hit : ResultHit)
+	{
+		AEnemy* Enemy = Cast<AEnemy>(Hit.GetActor());
+		if (Enemy)
+		{
+			EnemyTargets.Add(Enemy);
+		}
+	}
 }
 
 

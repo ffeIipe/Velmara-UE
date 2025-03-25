@@ -4,28 +4,24 @@
 
 #include "CoreMinimal.h"
 #include "Projectiles/Projectile.h"
-#include "SpectralProjectile.generated.h"
+#include "SpectralBarrier.generated.h"
 
 /**
  * 
  */
 
-class UTimelineComponent;
 class AEnemy;
 
 UCLASS()
-class TESISUE_API ASpectralProjectile : public AProjectile
+class TESISUE_API ASpectralBarrier : public AProjectile
 {
 	GENERATED_BODY()
-
 public:
-	ASpectralProjectile();
+	ASpectralBarrier();
 
 protected:
-
 	void BeginPlay() override;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile | Target")
-	AEnemy* Target;
-
 	void OnProjectileImpact(AActor* OtherActor, const FHitResult& Hit) override;
+private:
+	TArray<AEnemy*> EnemyTargets;
 };
