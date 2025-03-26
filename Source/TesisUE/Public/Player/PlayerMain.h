@@ -51,6 +51,8 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "Forms")
 	UPlayerFormComponent* PlayerFormComponent;
 
+	UPROPERTY(BlueprintReadWrite)
+	bool CanDoubleJump = true;
 protected:
 	/*
 	* Base
@@ -86,6 +88,9 @@ protected:
 
 	UPROPERTY(BlueprintReadWrite, Category = "Dodge")
 	UAnimMontage* SpectralDodgeMontage;
+	
+	UPROPERTY(BlueprintReadWrite, Category = "DoubleJump")
+	UAnimMontage* DoubleJumpMontage;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Dodge")
 	bool bSaveDodge = false;
@@ -241,6 +246,7 @@ protected:
 	UInputAction* ChangeFormAction;
 
 private:	
+
 	ECharacterActions CharacterAction = ECharacterActions::ECA_Nothing;
 
 	ECharacterStates CharacterState = ECharacterStates::ECS_Unequipped;
@@ -260,6 +266,10 @@ private:
 	void Move(const FInputActionValue& Value);
 
 	void Look(const FInputActionValue& Value);
+
+	void Jump() override;
+
+	void DoubleJump();
 
 	void Interact(const FInputActionValue& Value);
 	

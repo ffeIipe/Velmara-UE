@@ -358,6 +358,24 @@ void APlayerMain::Look(const FInputActionValue& Value)
 	AddControllerYawInput(LookingVector.X);
 }
 
+void APlayerMain::Jump()
+{
+	Super::Jump();
+
+	if (GetCharacterMovement()->IsFalling() && CanDoubleJump == true)
+	{
+		DoubleJump();
+	}
+}
+
+void APlayerMain::DoubleJump()
+{
+	CanDoubleJump = false;
+
+	PlayAnimMontage(DoubleJumpMontage);
+	LaunchCharacter(FVector(0.f, 0.f, 800.f), false, true);
+}
+
 void APlayerMain::Interact(const FInputActionValue& Value)
 {
 	if (PlayerFormComponent->GetCurrentForm() == EPlayerForm::EPF_Human)
