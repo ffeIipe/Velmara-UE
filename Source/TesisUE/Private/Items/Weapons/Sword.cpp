@@ -89,7 +89,7 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 		ETraceTypeQuery::TraceTypeQuery1,
 		false,
 		ActorsToIgnore,
-		EDrawDebugTrace::None,
+		EDrawDebugTrace::ForDuration,
 		BoxHit,
 		true
 	);
@@ -107,6 +107,7 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 
 	if (IHitInterface* HitInterface = Cast<IHitInterface>(BoxHit.GetActor()))
 	{
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Black, FString(BoxHit.GetActor()->GetFName().ToString()));
 		HitInterface->Execute_GetHit(BoxHit.GetActor(), BoxHit.ImpactPoint);
 	}
 	ActorsToIgnore.AddUnique(BoxHit.GetActor());

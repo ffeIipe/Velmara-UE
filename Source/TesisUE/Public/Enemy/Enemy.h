@@ -35,8 +35,6 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-private:
-
 	void Die();
 
 	void DirectionalHitReact(const FVector& ImpactPoint);
