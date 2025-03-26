@@ -17,6 +17,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Components/PlayerFormComponent.h"
 #include "Enemy/Enemy.h"
+#include <SpectralMode/Interfaces/SpectralInteractable.h>
 
 
 APlayerMain::APlayerMain()
@@ -126,9 +127,9 @@ void APlayerMain::PerformHeavyAttack(int AttackIndex)
 		else
 		{
 			SetCharacterState(ECharacterActions::ECA_Attack);
-			SearchForTargets();
 			PlayAnimMontage(SpectralHeavyAttack);
 		}
+
 		HeavyAttackIndex++;
 
 		if (HeavyAttackIndex >= HeavyAttackCombo.Num())
@@ -310,44 +311,6 @@ void APlayerMain::SearchTarget()
 	else SpectralTarget = nullptr;
 }
 
-void APlayerMain::SearchForTargets()
-{
-	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
-	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
-
-	TArray<AActor*> ActorsToIgnore;
-	ActorsToIgnore.Add(this);
-	ActorsToIgnore.Add(GetOwner());
-
-	TArray<FHitResult> ResultHit;
-
-	FVector Start = GetActorLocation();
-	FVector End = GetActorLocation() + GetViewRotation().Vector() * TrackForTargetsDistance;
-
-	UKismetSystemLibrary::SphereTraceMultiForObjects(
-		GetWorld(),
-		Start,
-		End,
-		TrackForTargetsRadius,
-		ObjectTypes,
-		false,
-		ActorsToIgnore,
-		EDrawDebugTrace::ForDuration,
-		ResultHit,
-		true
-	);
-
-	for (const FHitResult& Hit : ResultHit)
-	{
-		AEnemy* Enemy = Cast<AEnemy>(Hit.GetActor());
-		if (Enemy)
-		{
-			EnemyTargets.Add(Enemy);
-		}
-	}
-}
-
-
 ECharacterActions APlayerMain::SetCharacterState(ECharacterActions NewState)
 {
 	if (NewState != CharacterAction)
@@ -397,16 +360,35 @@ void APlayerMain::Look(const FInputActionValue& Value)
 
 void APlayerMain::Interact(const FInputActionValue& Value)
 {
-	if (ASword* OverlappingWeapon = Cast<ASword>(OverlappingItem))
+	if (PlayerFormComponent->GetCurrentForm() == EPlayerForm::EPF_Human)
 	{
-		if (PlayerFormComponent && PlayerFormComponent->GetCurrentForm() == EPlayerForm::EPF_Human)
+		if (ASword* OverlappingWeapon = Cast<ASword>(OverlappingItem))
 		{
-			OverlappingWeapon->Equip(GetMesh(), FName("RightHandSocket"), this, this);
+			if (PlayerFormComponent && PlayerFormComponent->GetCurrentForm() == EPlayerForm::EPF_Human)
+			{
+				OverlappingWeapon->Equip(GetMesh(), FName("RightHandSocket"), this, this);
+				CharacterState = ECharacterStates::ECS_EquippedSword;
+				OverlappingItem = nullptr;
+				EquippedWeapon = OverlappingWeapon;
+			}
+		}
+	}
+	else
+	{
+		FHitResult Hit;
+		FVector Start = GetActorLocation();
+		FVector ForwardVector = GetActorForwardVector();
+		FVector End = Start + (ForwardVector * SpectralInteractDistance);
 
-			
-			CharacterState = ECharacterStates::ECS_EquippedSword;
-			OverlappingItem = nullptr;
-			EquippedWeapon = OverlappingWeapon;
+		FCollisionQueryParams Params;
+		Params.AddIgnoredActor(this);
+
+		if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_EngineTraceChannel1, Params))
+		{
+			if (ISpectralInteractable* Interactable = Cast<ISpectralInteractable>(Hit.GetActor()))
+			{
+				Interactable->SpectralInteract();
+			}
 		}
 	}
 }

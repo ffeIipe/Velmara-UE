@@ -43,9 +43,6 @@ public:
 	UFUNCTION(BlueprintPure, Category = "SpectralAttack")
 	FORCEINLINE AEnemy* GetSpectralTarget() const { return SpectralTarget; }
 	
-	UFUNCTION(BlueprintPure, Category = "SpectralAttack")
-	FORCEINLINE TArray<AEnemy*> GetEnemyTargets() const { return EnemyTargets; }
-	
 	FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }
 
 	UFUNCTION(BlueprintCallable)
@@ -74,6 +71,12 @@ protected:
 	
 	UFUNCTION(BlueprintPure, Category = "PlayerForm")
 	bool IsFormEqualToAny(const TArray<EPlayerForm>& StatesToCheck);
+
+	/*
+	* Interact
+	*/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SpectralMode")
+	float SpectralInteractDistance;
 
 	/*
 	* Dodge
@@ -135,7 +138,7 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "LightAttack")
 	TArray<UAnimMontage*> LightAttackCombo;
 	
-	UPROPERTY(BlueprintReadOnly, Category = "SpectralAttack")
+	UPROPERTY(BlueprintReadOnly, Category = "SpectralMode | SpectralAttack")
 	TArray<UAnimMontage*> SpectralAttackCombo;
 
 	UPROPERTY(BlueprintReadWrite, Category = "LightAttack")
@@ -156,7 +159,7 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "HeavyAttack")
 	TArray<UAnimMontage*> HeavyAttackCombo;
 
-	UPROPERTY(BlueprintReadOnly, Category = "SpectralAttack")
+	UPROPERTY(BlueprintReadOnly, Category = "SpectralMode | SpectralAttack")
 	UAnimMontage* SpectralHeavyAttack;
 
 	UPROPERTY(BlueprintReadWrite, Category = "HeavyAttack")
@@ -194,27 +197,15 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "SpectralAttack")
 	AEnemy* SpectralTarget;
-	
-	UPROPERTY(EditAnywhere, Category = "SpectralAttack")
-	TArray<AEnemy*> EnemyTargets;
 
 	UPROPERTY(EditAnywhere, Category = "SpectralAttack")
 	float TrackTargetDistance;
-
-	UPROPERTY(EditAnywhere, Category = "SpectralAttack")
-	float TrackForTargetsRadius;
-	
-	UPROPERTY(EditAnywhere, Category = "SpectralAttack")
-	float TrackForTargetsDistance;
 
 	UPROPERTY(EditAnywhere, Category = "SpectralAttack")
 	float TrackTargetRadius;
 
 	UFUNCTION(BlueprintCallable, Category = "SpectralAttack")
 	void SearchTarget();
-	
-	UFUNCTION(BlueprintCallable, Category = "SpectralAttack")
-	void SearchForTargets();
 
 	/*
 	* Inputs
@@ -251,6 +242,7 @@ protected:
 
 private:	
 	ECharacterActions CharacterAction = ECharacterActions::ECA_Nothing;
+
 	ECharacterStates CharacterState = ECharacterStates::ECS_Unequipped;
 
 	UPROPERTY(EditAnywhere)

@@ -30,6 +30,8 @@ public:
 		class AController* EventInstigator,
 		AActor* DamageCauser) override;
 
+	void Disarm();
+
 protected:
 	virtual void BeginPlay() override;
 

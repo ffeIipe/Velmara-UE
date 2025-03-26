@@ -9,6 +9,11 @@
 #include "Materials/MaterialParameterCollectionInstance.h"
 #include "Materials/MaterialParameterCollection.h"
 #include "Items/Weapons/Sword.h"
+#include "SpectralMode/SpectralObject.h"
+#include "EngineUtils.h"
+
+//TODO: optimize the iterator that search for spectral objects, 
+//that in a future may cause an fps drop
 
 UPlayerFormComponent::UPlayerFormComponent()
 {
@@ -67,7 +72,13 @@ void UPlayerFormComponent::ApplySpectralEffects(ASword* EquippedWeapon)
     if (EquippedWeapon)
     {
         EquippedWeapon->Enable(false);
-    }   
+    }
+
+    //find and enable spectrals objects
+    for (TActorIterator<ASpectralObject> It(GetWorld()); It; ++It)
+    {
+        It->SetSpectralVisibility(true);
+    }
 }
 
 void UPlayerFormComponent::ApplyHumanEffects(ASword* EquippedWeapon)
@@ -79,6 +90,12 @@ void UPlayerFormComponent::ApplyHumanEffects(ASword* EquippedWeapon)
     if (EquippedWeapon)
     {
         EquippedWeapon->Enable(true);
+    }
+
+    //find and disable spectrals objects
+    for (TActorIterator<ASpectralObject> It(GetWorld()); It; ++It)
+    {
+        It->SetSpectralVisibility(false);
     }
 }
 

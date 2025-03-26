@@ -24,7 +24,7 @@ public:
 protected:
 
 	void BeginPlay() override;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile | Target")
+	UPROPERTY(BlueprintReadWrite, Category = "Projectile | Target")
 	AEnemy* Target;
 
 	void OnProjectileImpact(AActor* OtherActor, const FHitResult& Hit) override;

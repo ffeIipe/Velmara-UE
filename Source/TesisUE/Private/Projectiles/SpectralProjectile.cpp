@@ -6,6 +6,7 @@
 #include "Components/TimelineComponent.h"
 #include "Player/PlayerMain.h"
 #include <Kismet/GameplayStatics.h>
+#include "Enemy/Enemy.h"
 
 ASpectralProjectile::ASpectralProjectile()
 {

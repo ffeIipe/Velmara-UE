@@ -2,8 +2,9 @@
 
 
 #include "Projectiles/SpectralBarrier.h"
-#include "Player/PlayerMain.h"
 #include <Kismet/GameplayStatics.h>
+#include "Components/BoxComponent.h"
+#include "Enemy/Enemy.h"
 
 ASpectralBarrier::ASpectralBarrier()
 {
@@ -14,10 +15,7 @@ void ASpectralBarrier::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (Player)
-	{
-		EnemyTargets = Player->GetEnemyTargets();
-	}
+	BoxCollider->OnComponentBeginOverlap.AddDynamic(this, &ASpectralBarrier::OnOverlap);
 }
 
 void ASpectralBarrier::OnProjectileImpact(AActor* OtherActor, const FHitResult& Hit)
@@ -37,5 +35,14 @@ void ASpectralBarrier::OnProjectileImpact(AActor* OtherActor, const FHitResult& 
 			HitParticles,
 			Hit.ImpactPoint
 		);
+	}
+}
+
+void ASpectralBarrier::OnOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	AEnemy* EnemyTarget = Cast<AEnemy>(OtherActor);
+	if (EnemyTarget)
+	{
+		EnemyTarget->Disarm();
 	}
 }
