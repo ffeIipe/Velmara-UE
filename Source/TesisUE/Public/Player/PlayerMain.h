@@ -9,18 +9,13 @@
 
 class UCameraComponent;
 class USpringArmComponent;
-
 class UInputMappingContext;
 class UInputAction;
 struct FInputActionValue;
-
 class UTimelineComponent;
-
 class AItem;
 class ASword;
-
 class UPlayerFormComponent;
-
 class AEnemy;
 
 UCLASS()
@@ -51,7 +46,7 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "Forms")
 	UPlayerFormComponent* PlayerFormComponent;
 
-	UPROPERTY(BlueprintReadWrite)
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	bool CanDoubleJump = true;
 protected:
 	/*
@@ -270,6 +265,8 @@ private:
 	void Jump() override;
 
 	void DoubleJump();
+
+	void Landed(const FHitResult& Hit) override;
 
 	void Interact(const FInputActionValue& Value);
 	

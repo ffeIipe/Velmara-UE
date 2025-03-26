@@ -362,7 +362,7 @@ void APlayerMain::Jump()
 {
 	Super::Jump();
 
-	if (GetCharacterMovement()->IsFalling() && CanDoubleJump == true)
+	if (GetCharacterMovement()->IsFalling() && CanDoubleJump)
 	{
 		DoubleJump();
 	}
@@ -370,10 +370,15 @@ void APlayerMain::Jump()
 
 void APlayerMain::DoubleJump()
 {
-	CanDoubleJump = false;
-
 	PlayAnimMontage(DoubleJumpMontage);
 	LaunchCharacter(FVector(0.f, 0.f, 800.f), false, true);
+	CanDoubleJump = false;
+}
+
+void APlayerMain::Landed(const FHitResult& Hit)
+{
+	Super::Landed(Hit);
+	CanDoubleJump = true;
 }
 
 void APlayerMain::Interact(const FInputActionValue& Value)
