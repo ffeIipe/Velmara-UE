@@ -6,19 +6,24 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Player/PlayerMain.h"
 #include "Enemy/Enemy.h"
+#include "NiagaraComponent.h"
 
 AProjectile::AProjectile()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
 	BoxCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxCollider"));
-	BoxCollider->SetupAttachment(GetRootComponent());
-	
+	RootComponent = BoxCollider;
+
+	ProjectileNiagaraComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("ProjectileNiagaraComponent"));
+	ProjectileNiagaraComponent->SetupAttachment(GetRootComponent());
 
 	ProjectileMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ProjectileMesh"));
-	ProjectileMesh->SetupAttachment(BoxCollider);
+	ProjectileMesh->SetupAttachment(GetRootComponent());
+
 
 	ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovementComponent"));
+
 }
 
 void AProjectile::BeginPlay()

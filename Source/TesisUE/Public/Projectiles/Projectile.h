@@ -9,6 +9,7 @@
 class APlayerMain;
 class UBoxComponent;
 class UProjectileMovementComponent;
+class UNiagaraComponent;
 
 UCLASS()
 class TESISUE_API AProjectile : public AActor
@@ -27,6 +28,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Projectile | Mesh")
 	UStaticMeshComponent* ProjectileMesh;
+
+	UPROPERTY(EditAnywhere, Category = "Projectile | Niagara")
+	UNiagaraComponent* ProjectileNiagaraComponent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile | ProjectileMovement")
 	UProjectileMovementComponent* ProjectileMovementComponent;
