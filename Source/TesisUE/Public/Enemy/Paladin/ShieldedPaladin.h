@@ -13,5 +13,12 @@ UCLASS()
 class TESISUE_API AShieldedPaladin : public APaladin
 {
 	GENERATED_BODY()
-	
+//	AShieldedPaladin();
+//
+//protected:
+//	UPROPERTY(VisibleAnywhere)
+//	UStaticMeshComponent* Shield;
+//
+//	UPROPERTY(VisibleAnywhere)
+//	UStaticMeshComponent* Sword;
 };
