@@ -28,16 +28,15 @@ void ASpectralObject::BeginPlay()
     SetSpectralVisibility(false);
 }
 
-void ASpectralObject::SetSpectralVisibility(bool bIsVisible)
+void ASpectralObject::SetSpectralVisibility(bool bIsPlayerInHumanForm)
 {
-    if (SpectralMaterial)
-    {
-        float AlphaValue = bIsVisible ? 1.0f : 0.3f;
-        SpectralMaterial->SetScalarParameterValue(FName("Alpha"), AlphaValue);
-    }
+    bool bShouldBeVisible = (VisibleTo == EPlayerForm::EPF_Spectral) ? bIsPlayerInHumanForm : !bIsPlayerInHumanForm;
 
-    Mesh->SetVisibility(bIsVisible);
-    Mesh->SetCollisionEnabled(bIsVisible ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
+    float AlphaValue = bShouldBeVisible ? 1.0f : 0.3f;
+    SpectralMaterial->SetScalarParameterValue(FName("Alpha"), AlphaValue);
 
-    BoxCollider->SetCollisionEnabled(bIsVisible ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
+    Mesh->SetVisibility(bShouldBeVisible);
+    Mesh->SetCollisionEnabled(bShouldBeVisible ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
+
+    BoxCollider->SetCollisionEnabled(bShouldBeVisible ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
 }
