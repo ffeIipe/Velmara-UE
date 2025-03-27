@@ -85,6 +85,8 @@ void AEnemy::Die()
 		AIController->StopMovement();  
 		AIController->UnPossess();   
 	}
+
+	SetLifeSpan(7.f);
 }
 
 void AEnemy::Tick(float DeltaTime)
@@ -135,11 +137,6 @@ float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AC
 		HealthBarWidget->SetHealthPercent(Attributes->GetHealthPercent());
 	}
 	return DamageAmount;
-}
-
-void AEnemy::Disarm()
-{
-	Die();
 }
 
 void AEnemy::DirectionalHitReact(const FVector& ImpactPoint)

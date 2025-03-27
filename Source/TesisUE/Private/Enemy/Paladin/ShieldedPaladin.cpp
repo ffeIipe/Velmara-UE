@@ -2,3 +2,19 @@
 
 
 #include "Enemy/Paladin/ShieldedPaladin.h"
+
+AShieldedPaladin::AShieldedPaladin()
+{
+	ShieldMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ShieldMesh"));
+	ShieldMesh->SetupAttachment(GetMesh(), TEXT("LeftHandSocket"));
+}
+
+void AShieldedPaladin::Disarm()
+{
+    if (ShieldMesh)
+    {
+        ShieldMesh->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+        ShieldMesh->SetSimulatePhysics(true);
+        ShieldMesh->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
+    }
+}

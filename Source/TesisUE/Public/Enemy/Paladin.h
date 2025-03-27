@@ -13,18 +13,11 @@ UCLASS()
 class TESISUE_API APaladin : public AEnemy
 {
 	GENERATED_BODY()
-public:
 
+public:
+	APaladin();
 
 protected:
-	void GetHit_Implementation(const FVector& ImpactPoint) override;
-	
-	float TakeDamage(
-		float DamageAmount,
-		struct FDamageEvent const& DamageEvent,
-		class AController* EventInstigator,
-		AActor* DamageCauser) override;
-
-private:
-	void Disarm();
+	UPROPERTY(VisibleAnywhere)
+	UStaticMeshComponent* SwordMesh;
 };

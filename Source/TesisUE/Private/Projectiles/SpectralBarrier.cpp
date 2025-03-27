@@ -4,7 +4,7 @@
 #include "Projectiles/SpectralBarrier.h"
 #include <Kismet/GameplayStatics.h>
 #include "Components/BoxComponent.h"
-#include "Enemy/Enemy.h"
+#include "Enemy/Paladin/ShieldedPaladin.h"
 
 ASpectralBarrier::ASpectralBarrier()
 {
@@ -40,7 +40,7 @@ void ASpectralBarrier::OnProjectileImpact(AActor* OtherActor, const FHitResult& 
 
 void ASpectralBarrier::OnOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	AEnemy* EnemyTarget = Cast<AEnemy>(OtherActor);
+	AShieldedPaladin* EnemyTarget = Cast<AShieldedPaladin>(OtherActor);
 	if (EnemyTarget)
 	{
 		EnemyTarget->Disarm();
