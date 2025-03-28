@@ -19,10 +19,16 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void Disarm();
-
+	
+	float TakeDamage(
+		float DamageAmount,
+		struct FDamageEvent const& DamageEvent,
+		class AController* EventInstigator,
+		AActor* DamageCauser) override;
 private:
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* ShieldMesh;
 
-
+	UPROPERTY()
+	bool bIsDisarmed = false;
 };

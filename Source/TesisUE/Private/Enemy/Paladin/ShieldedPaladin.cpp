@@ -16,5 +16,15 @@ void AShieldedPaladin::Disarm()
         ShieldMesh->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
         ShieldMesh->SetSimulatePhysics(true);
         ShieldMesh->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
+        bIsDisarmed = true;
     }
+}
+
+float AShieldedPaladin::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+    if (bIsDisarmed)
+    {
+        Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+    }
+    return DamageAmount;
 }
