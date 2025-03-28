@@ -7,6 +7,7 @@
 #include "Perception/AISenseConfig_Sight.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Components/PlayerFormComponent.h"
+#include "Enemy/Enemy.h"
 
 APlayerAIController::APlayerAIController(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.SetDefaultSubobjectClass<UCrowdFollowingComponent>("PathFollowingComponent"))
@@ -54,11 +55,14 @@ void APlayerAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus St
 
 	UPlayerFormComponent* PlayerFormComponent = PlayerPawn->FindComponentByClass<UPlayerFormComponent>();
 
-	
-	if (PlayerFormComponent && PlayerFormComponent->GetCurrentForm() == EPlayerForm::EPF_Spectral)
+	AEnemy* Enemy = Cast<AEnemy>(GetPawn());
+
+	if (!Enemy) return;
+
+	if (Enemy->GetEnemyType() == EEnemyType::Paladin && PlayerFormComponent && PlayerFormComponent->GetCurrentForm() == EPlayerForm::EPF_Spectral)
 	{
 		BlackboardComponent->ClearValue(FName("TargetActor"));
-		BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), false); 
+		BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), false);
 		StopMovement();
 		return;
 	}
@@ -66,6 +70,6 @@ void APlayerAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus St
 	if (Stimulus.WasSuccessfullySensed())
 	{
 		BlackboardComponent->SetValueAsObject(FName("TargetActor"), Actor);
-		BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), true); 
+		BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), true);
 	}
 }

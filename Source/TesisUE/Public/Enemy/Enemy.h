@@ -10,7 +10,17 @@
 class UAttributeComponent;
 class UHealthBarComponent;
 
+UENUM(BlueprintType)
+enum class EEnemyType : uint8
+{
+	Paladin UMETA(DisplayName = "Paladin"),
+	Spectre UMETA(DisplayName = "Spectre"),
+	ShieldedPaladin UMETA(DisplayName = "ShieldedPaladin"),
+};
+
 UCLASS()
+
+
 class TESISUE_API AEnemy : public ACharacter, public IHitInterface
 {
 	GENERATED_BODY()
@@ -29,6 +39,8 @@ public:
 		struct FDamageEvent const& DamageEvent,
 		class AController* EventInstigator,
 		AActor* DamageCauser) override;
+
+	FORCEINLINE EEnemyType GetEnemyType() const { return EnemyType; }
 
 protected:
 	virtual void BeginPlay() override;
@@ -55,4 +67,12 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Visual Effects");
 	UParticleSystem* HitParticles;
 
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
+	EEnemyType EnemyType;
+
 };
+
+
+
+
