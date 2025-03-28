@@ -17,8 +17,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Components/PlayerFormComponent.h"
 #include "Enemy/Enemy.h"
-#include <SpectralMode/Interfaces/SpectralInteractable.h>
-
+#include "SpectralMode/Interfaces/SpectralInteractable.h"
 
 APlayerMain::APlayerMain()
 {
@@ -387,31 +386,17 @@ void APlayerMain::Interact(const FInputActionValue& Value)
 	{
 		if (ASword* OverlappingWeapon = Cast<ASword>(OverlappingItem))
 		{
-			if (PlayerFormComponent && PlayerFormComponent->GetCurrentForm() == EPlayerForm::EPF_Human)
-			{
-				OverlappingWeapon->Equip(GetMesh(), FName("RightHandSocket"), this, this);
-				CharacterState = ECharacterStates::ECS_EquippedSword;
-				OverlappingItem = nullptr;
-				EquippedWeapon = OverlappingWeapon;
-			}
+			OverlappingWeapon->Equip(GetMesh(), FName("RightHandSocket"), this, this);
+			CharacterState = ECharacterStates::ECS_EquippedSword;
+			OverlappingItem = nullptr;
+			EquippedWeapon = OverlappingWeapon;
 		}
 	}
 	else
 	{
-		FHitResult Hit;
-		FVector Start = GetActorLocation();
-		FVector ForwardVector = GetActorForwardVector();
-		FVector End = Start + (ForwardVector * SpectralInteractDistance);
-
-		FCollisionQueryParams Params;
-		Params.AddIgnoredActor(this);
-
-		if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_EngineTraceChannel1, Params))
+		if (ISpectralInteractable* OverlappingObject = Cast<ISpectralInteractable>(OverlappingItem))
 		{
-			if (ISpectralInteractable* Interactable = Cast<ISpectralInteractable>(Hit.GetActor()))
-			{
-				Interactable->SpectralInteract();
-			}
+			OverlappingObject->SpectralInteract();
 		}
 	}
 }

@@ -17,6 +17,7 @@ class AItem;
 class ASword;
 class UPlayerFormComponent;
 class AEnemy;
+class ASpectralObjectInteractable;
 
 UCLASS()
 class TESISUE_API APlayerMain : public ACharacter

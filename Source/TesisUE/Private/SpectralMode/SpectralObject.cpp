@@ -6,37 +6,40 @@ ASpectralObject::ASpectralObject()
 {
     PrimaryActorTick.bCanEverTick = false;
 
-    Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
-    RootComponent = Mesh;
-
-    Mesh->SetCollisionObjectType(ECC_GameTraceChannel1);
+    ItemMesh->SetCollisionObjectType(ECC_GameTraceChannel1);
 
     BoxCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxCollider"));
-    BoxCollider->SetupAttachment(Mesh);
+    BoxCollider->SetupAttachment(GetRootComponent());
 }
 
 void ASpectralObject::BeginPlay()
 {
     Super::BeginPlay();
 
-    if (Mesh->GetMaterial(0))
-    {
-        SpectralMaterial = UMaterialInstanceDynamic::Create(Mesh->GetMaterial(0), this);
-        Mesh->SetMaterial(0, SpectralMaterial);
-    }
-
-    SetSpectralVisibility(false);
+   if (ItemMesh->GetMaterial(0))
+   {
+       SpectralMaterial = UMaterialInstanceDynamic::Create(ItemMesh->GetMaterial(0), this);
+       ItemMesh->SetMaterial(0, SpectralMaterial);
+   }
+   
+   SetSpectralVisibility(false);
 }
 
 void ASpectralObject::SetSpectralVisibility(bool bIsPlayerInHumanForm)
 {
+    if (!SpectralMaterial)
+    {
+        UE_LOG(LogTemp, Error, TEXT("SpectralMaterial is nullptr in ASpectralObject::SetSpectralVisibility"));
+        return;
+    }
+
     bool bShouldBeVisible = (VisibleTo == EPlayerForm::EPF_Spectral) ? bIsPlayerInHumanForm : !bIsPlayerInHumanForm;
 
     float AlphaValue = bShouldBeVisible ? 1.0f : 0.3f;
     SpectralMaterial->SetScalarParameterValue(FName("Alpha"), AlphaValue);
 
-    Mesh->SetVisibility(bShouldBeVisible);
-    Mesh->SetCollisionEnabled(bShouldBeVisible ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
+    ItemMesh->SetVisibility(bShouldBeVisible);
+    ItemMesh->SetCollisionEnabled(bShouldBeVisible ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
 
     BoxCollider->SetCollisionEnabled(bShouldBeVisible ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
 }

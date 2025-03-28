@@ -2,13 +2,14 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Items/Item.h"
 #include "Player/CharacterStates.h"
 #include "SpectralObject.generated.h"
 
 class UBoxComponent;
 
 UCLASS()
-class TESISUE_API ASpectralObject : public AActor
+class TESISUE_API ASpectralObject : public AItem
 {
     GENERATED_BODY()
 
@@ -16,20 +17,18 @@ public:
     ASpectralObject();
 
     UFUNCTION()
-    void SetSpectralVisibility(bool bIsVisible);
+    virtual void SetSpectralVisibility(bool bIsVisible);
 
 protected:
     virtual void BeginPlay() override;
 
-private:
-    UPROPERTY(EditInstanceOnly, Category = "Visibility")
-    EPlayerForm VisibleTo;
-
-    UPROPERTY(VisibleAnywhere)
-    UStaticMeshComponent* Mesh;
-    
     UPROPERTY(VisibleAnywhere)
     UBoxComponent* BoxCollider;
 
     UMaterialInstanceDynamic* SpectralMaterial;
+
+private:
+    UPROPERTY(EditInstanceOnly, Category = "Visibility")
+    EPlayerForm VisibleTo;
+    
 };
