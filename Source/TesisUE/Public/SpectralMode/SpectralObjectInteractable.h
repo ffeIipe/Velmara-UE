@@ -40,4 +40,14 @@ public:
 
 	UFUNCTION()
 	void SpectralInteract() override;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	USphereComponent* InteractionSphere;
+
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<UUserWidget> InteractionWidgetClass;
+
+	UUserWidget* InteractionWidget;
+
+
 };
