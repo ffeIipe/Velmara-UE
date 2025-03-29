@@ -25,6 +25,9 @@ public:
 		struct FDamageEvent const& DamageEvent,
 		class AController* EventInstigator,
 		AActor* DamageCauser) override;
+protected:
+	void BeginPlay() override;
+
 private:
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* ShieldMesh;

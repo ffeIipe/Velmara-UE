@@ -18,6 +18,7 @@
 #include "Components/PlayerFormComponent.h"
 #include "Enemy/Enemy.h"
 #include "SpectralMode/Interfaces/SpectralInteractable.h"
+#include "Components/AttributeComponent.h"
 
 APlayerMain::APlayerMain()
 {
@@ -41,6 +42,8 @@ APlayerMain::APlayerMain()
 	SoftLockTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("SoftLockTimeline"));
 
 	PlayerFormComponent = CreateDefaultSubobject<UPlayerFormComponent>(TEXT("PlayerFormComponent"));
+
+	Attributes = CreateDefaultSubobject<UAttributeComponent>(TEXT("AttibuteComponent"));
 
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 }
@@ -334,6 +337,17 @@ bool APlayerMain::IsFormEqualToAny(const TArray<EPlayerForm>& StatesToCheck)
 	return StatesToCheck.Contains(PlayerFormComponent->GetCurrentForm());
 }
 
+
+float APlayerMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	//TODO: player healthbar and fx to receive damage
+	if (Attributes && Attributes->IsAlive())
+	{
+		Attributes->ReceiveDamage(DamageAmount);
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Magenta, FString("Health left: ") + FString::SanitizeFloat(Attributes->GetHealthPercent()));
+	}
+	return DamageAmount;
+}
 
 void APlayerMain::Move(const FInputActionValue& Value)
 {

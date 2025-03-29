@@ -18,6 +18,7 @@ class TESISUE_API AProjectile : public AActor
 	
 public:
 	AProjectile();
+
 protected:
 	virtual void BeginPlay() override;
 

@@ -28,3 +28,8 @@ float AShieldedPaladin::TakeDamage(float DamageAmount, FDamageEvent const& Damag
     }
     return DamageAmount;
 }
+
+void AShieldedPaladin::BeginPlay()
+{
+    Super::BeginPlay();
+}

@@ -18,6 +18,7 @@ class ASword;
 class UPlayerFormComponent;
 class AEnemy;
 class ASpectralObjectInteractable;
+class UAttributeComponent;
 
 UCLASS()
 class TESISUE_API APlayerMain : public ACharacter
@@ -49,6 +50,16 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	bool CanDoubleJump = true;
+
+	/*
+	*  TakeDamage
+	*/
+	virtual float TakeDamage(
+		float DamageAmount,
+		struct FDamageEvent const& DamageEvent,
+		class AController* EventInstigator,
+		AActor* DamageCauser) override;
+
 protected:
 	/*
 	* Base
@@ -242,6 +253,8 @@ protected:
 	UInputAction* ChangeFormAction;
 
 private:	
+	UPROPERTY(VisibleAnywhere);
+	UAttributeComponent* Attributes;
 
 	ECharacterActions CharacterAction = ECharacterActions::ECA_Nothing;
 
