@@ -19,6 +19,7 @@ public:
 
 	void ReceiveDamage(float Damage);
 
+	UFUNCTION(BlueprintCallable)
 	float GetHealthPercent();
 
 	bool IsAlive();

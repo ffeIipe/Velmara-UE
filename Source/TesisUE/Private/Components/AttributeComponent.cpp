@@ -6,6 +6,7 @@
 UAttributeComponent::UAttributeComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
+
 }
 
 void UAttributeComponent::ReceiveDamage(float Damage)
