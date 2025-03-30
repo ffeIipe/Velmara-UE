@@ -24,7 +24,4 @@ protected:
 		int32 OtherBodyIndex,
 		bool bFromSweep,
 		const FHitResult& SweepResult) override;
-	
-	UPROPERTY(EditDefaultsOnly);
-	float Damage;
 };

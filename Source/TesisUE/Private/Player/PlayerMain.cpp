@@ -16,9 +16,9 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Components/PlayerFormComponent.h"
-#include "Enemy/Enemy.h"
 #include "SpectralMode/Interfaces/SpectralInteractable.h"
 #include "Components/AttributeComponent.h"
+#include <Enemy/Spectre.h>
 
 APlayerMain::APlayerMain()
 {
@@ -301,14 +301,14 @@ void APlayerMain::SearchTarget()
 		ObjectTypes,
 		false,
 		ActorsToIgnore,
-		EDrawDebugTrace::None,
+		EDrawDebugTrace::ForDuration,
 		ResultHit,
 		true
 	);
 
 	if (ResultHit.GetActor())
 	{
-		SpectralTarget = Cast<AEnemy>(ResultHit.GetActor());
+		SpectralTarget = Cast<ASpectre>(ResultHit.GetActor());
 	}
 	else SpectralTarget = nullptr;
 }

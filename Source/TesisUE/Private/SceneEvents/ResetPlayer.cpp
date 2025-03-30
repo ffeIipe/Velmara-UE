@@ -32,11 +32,6 @@ void AResetPlayer::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor
             APlayerStart* PlayerStart = Cast<APlayerStart>(UGameplayStatics::GetActorOfClass(GetWorld(), APlayerStart::StaticClass()));
             PlayerController->GetPawn()->SetActorLocation(PlayerStart->GetActorLocation());
             PlayerController->GetPawn()->SetActorRotation(PlayerStart->GetActorRotation());
-            //AGameModeBase* GameMode = UGameplayStatics::GetGameMode(this);
-            //if (GameMode)
-            //{
-            //    //GameMode->RestartPlayer(PlayerController);
-            //}
         }
     }
 }

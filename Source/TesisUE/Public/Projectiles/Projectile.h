@@ -22,6 +22,10 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+	UPROPERTY(EditDefaultsOnly);
+	float Damage;
+
+	UPROPERTY()
 	APlayerMain* Player;
 
 	UPROPERTY(EditAnywhere, Category = "Projectile | Collider")

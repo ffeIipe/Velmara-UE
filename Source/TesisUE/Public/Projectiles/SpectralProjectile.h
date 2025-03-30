@@ -22,6 +22,13 @@ public:
 	ASpectralProjectile();
 
 protected:
+	void OnBoxOverlap(
+		UPrimitiveComponent* OverlappedComponent,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex,
+		bool bFromSweep,
+		const FHitResult& SweepResult) override;
 
 	void BeginPlay() override;
 	UPROPERTY(BlueprintReadWrite, Category = "Projectile | Target")
