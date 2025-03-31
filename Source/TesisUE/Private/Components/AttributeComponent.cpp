@@ -21,7 +21,7 @@ float UAttributeComponent::GetHealthPercent()
 
 bool UAttributeComponent::IsAlive()
 {
-	return Health > 0.f;
+	return Health > 0.1f;
 }
 
 void UAttributeComponent::BeginPlay()

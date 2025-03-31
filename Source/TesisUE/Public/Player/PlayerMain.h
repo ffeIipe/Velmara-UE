@@ -98,6 +98,9 @@ protected:
 	
 	UPROPERTY(BlueprintReadWrite, Category = "DoubleJump")
 	UAnimMontage* DoubleJumpMontage;
+	
+	UPROPERTY(BlueprintReadWrite, Category = "Death")
+	UAnimMontage* DeathMontage;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Dodge")
 	bool bSaveDodge = false;
@@ -253,6 +256,8 @@ protected:
 	UInputAction* ChangeFormAction;
 
 private:	
+	bool bIsDead = false;
+
 	UPROPERTY(VisibleAnywhere);
 	UAttributeComponent* Attributes;
 
@@ -289,6 +294,10 @@ private:
 	void HeavyAttack(const FInputActionValue& Value);
 
 	void ToggleForm();
+
+	void Die();
+
+	void ResetPlayer();
 
 	AActor* SphereTraceForEnemies(FVector Start, FVector End);
 };

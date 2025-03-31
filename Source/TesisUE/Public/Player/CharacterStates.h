@@ -12,7 +12,8 @@ enum class ECharacterActions : uint8
 {
 	ECA_Nothing UMETA(DisplayName = "Nothing"),
 	ECA_Attack UMETA(DisplayName = "Attack"),
-	ECA_Dodge UMETA(DisplayName = "Dodge")
+	ECA_Dodge UMETA(DisplayName = "Dodge"),
+	ECA_Dead UMETA(DisplayName = "Death")
 };
 
 UENUM(BlueprintType)

@@ -310,6 +310,10 @@ float APlayerMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEven
 		Attributes->ReceiveDamage(DamageAmount);
 		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Magenta, FString("Health left: ") + FString::SanitizeFloat(Attributes->GetHealthPercent()));
 	}
+	else
+	{
+		Die();
+	}
 	return DamageAmount;
 }
 
@@ -389,6 +393,27 @@ void APlayerMain::ToggleForm()
 	if (PlayerFormComponent)
 	{
 		PlayerFormComponent->ToggleForm(EquippedWeapon);
+	}
+}
+
+void APlayerMain::Die()
+{
+	if (!bIsDead)
+	{
+		bIsDead = true;
+		if (DeathMontage)
+		{
+			PlayAnimMontage(DeathMontage);
+		}
+
+		APlayerController* PlayerController = Cast<APlayerController>(GetController());
+		if (PlayerController)
+		{
+			DisableInput(PlayerController);
+		}
+
+		GetCharacterMovement()->DisableMovement();
+		SetCharacterState(ECharacterActions::ECA_Dead);
 	}
 }
 
