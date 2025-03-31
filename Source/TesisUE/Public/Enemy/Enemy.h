@@ -45,8 +45,10 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	void Die();
+	UFUNCTION()
+	virtual void Die();
 
+	UFUNCTION()
 	void DirectionalHitReact(const FVector& ImpactPoint);
 
 	UPROPERTY(VisibleAnywhere);

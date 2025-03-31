@@ -227,30 +227,14 @@ void APlayerMain::ResetHeavyAttackStats()
 
 void APlayerMain::SoftLockOn()
 {
-	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
-	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
+	FVector Start = GetActorLocation();
+	FVector End = (GetLastMovementInputVector() * SoftLockDistance) + GetActorLocation();
 
-	TArray<AActor*> ActorsToIgnore;
-	ActorsToIgnore.Add(this);
+	AActor* Enemy = SphereTraceForEnemies(Start, End);
 
-	FHitResult ResultHit;
-
-	UKismetSystemLibrary::SphereTraceSingleForObjects(
-		GetWorld(),
-		GetActorLocation(),
-		(GetLastMovementInputVector() * SoftLockDistance) + GetActorLocation(),
-		SoftLockRadius,
-		ObjectTypes,
-		false,
-		ActorsToIgnore,
-		EDrawDebugTrace::None,
-		ResultHit,
-		true
-		);
-
-	if (ResultHit.GetActor())
+	if (Enemy != Cast<ASpectre>(Enemy))
 	{
-		SoftLockTarget = ResultHit.GetActor();
+		SoftLockTarget = Enemy;
 	}
 	else SoftLockTarget = nullptr;
 }
@@ -281,34 +265,14 @@ void APlayerMain::UpdateSoftLockOn(float Alpha)
 
 void APlayerMain::SearchTarget()
 {
-	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
-	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
-
-	TArray<AActor*> ActorsToIgnore;
-	ActorsToIgnore.Add(this);
-	ActorsToIgnore.Add(GetOwner());
-
-	FHitResult ResultHit;
-
 	FVector Start = GetActorLocation();
 	FVector End = GetActorLocation() + GetViewRotation().Vector() * TrackTargetDistance;
 
-	UKismetSystemLibrary::SphereTraceSingleForObjects(
-		GetWorld(),
-		Start,
-		End,
-		TrackTargetRadius,
-		ObjectTypes,
-		false,
-		ActorsToIgnore,
-		EDrawDebugTrace::ForDuration,
-		ResultHit,
-		true
-	);
+	AActor* Enemy = SphereTraceForEnemies(Start, End);
 
-	if (ResultHit.GetActor())
+	if (Enemy)
 	{
-		SpectralTarget = Cast<ASpectre>(ResultHit.GetActor());
+		SpectralTarget = Cast<ASpectre>(Enemy);
 	}
 	else SpectralTarget = nullptr;
 }
@@ -426,6 +390,33 @@ void APlayerMain::ToggleForm()
 	{
 		PlayerFormComponent->ToggleForm(EquippedWeapon);
 	}
+}
+
+AActor* APlayerMain::SphereTraceForEnemies(FVector Start, FVector End)
+{
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
+
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.Add(this);
+	ActorsToIgnore.Add(GetOwner());
+
+	FHitResult ResultHit;
+
+	UKismetSystemLibrary::SphereTraceSingleForObjects(
+		GetWorld(),
+		Start,
+		End,
+		TrackTargetRadius,
+		ObjectTypes,
+		false,
+		ActorsToIgnore,
+		EDrawDebugTrace::None,
+		ResultHit,
+		true
+	);
+
+	return ResultHit.GetActor();
 }
 
 void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

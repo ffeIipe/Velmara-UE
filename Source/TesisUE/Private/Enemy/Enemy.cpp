@@ -175,4 +175,3 @@ void AEnemy::DirectionalHitReact(const FVector& ImpactPoint)
 
 	PlayAnimMontage(HitReactMontage, 1.f, Section);
 }
-

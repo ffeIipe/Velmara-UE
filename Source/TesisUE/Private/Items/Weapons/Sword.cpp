@@ -103,11 +103,11 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 			this,
 			UDamageType::StaticClass()
 		);
+		ActorsToIgnore.AddUnique(BoxHit.GetActor());
 	}
 
 	if (IHitInterface* HitInterface = Cast<IHitInterface>(BoxHit.GetActor()))
 	{
 		HitInterface->Execute_GetHit(BoxHit.GetActor(), BoxHit.ImpactPoint);
 	}
-	ActorsToIgnore.AddUnique(BoxHit.GetActor());
 }

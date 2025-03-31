@@ -14,4 +14,7 @@ class TESISUE_API ASpectre : public AEnemy
 {
 	GENERATED_BODY()
 	
+protected:
+	void GetHit_Implementation(const FVector& ImpactPoint) override;
+	void Die() override;
 };

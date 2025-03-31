@@ -33,6 +33,14 @@ void APaladin::BeginPlay()
 	SwordBoxCollider->OnComponentBeginOverlap.AddDynamic(this, &APaladin::OnBoxOverlap);
 }
 
+void APaladin::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled)
+{
+	if (SwordBoxCollider)
+	{
+		SwordBoxCollider->SetCollisionEnabled(CollisionEnabled);
+	}
+}
+
 void APaladin::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	const FVector Start = BoxTraceStart->GetComponentLocation();

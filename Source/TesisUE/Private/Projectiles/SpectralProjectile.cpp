@@ -27,6 +27,9 @@ void ASpectralProjectile::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent,
 			this,
 			UDamageType::StaticClass()
 		);
+
+		Target->Execute_GetHit(OtherActor, OtherActor->GetActorLocation());
+
 		ActorsToIgnore.AddUnique(OtherActor);
 	}
 }
@@ -39,30 +42,4 @@ void ASpectralProjectile::BeginPlay()
 		Target = Player->GetSpectralTarget();
 	}
 }
-
-void ASpectralProjectile::OnProjectileImpact(AActor* OtherActor, const FHitResult& Hit)
-{
-	if (HitSound)
-	{
-		UGameplayStatics::PlaySoundAtLocation(
-			this,
-			HitSound,
-			Hit.ImpactPoint
-		);
-	}
-	if (HitParticles)
-	{
-		UGameplayStatics::SpawnEmitterAtLocation(
-			GetWorld(),
-			HitParticles,
-			Hit.ImpactPoint
-		);
-	}
-
-	if (bEnableDestroyOnCollision)
-	{
-		Destroy();
-	}
-}
-
 

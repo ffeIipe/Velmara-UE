@@ -19,6 +19,8 @@ public:
 protected:
 	void BeginPlay();
 	
+	TArray<AActor*> IgnoreActors;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float Damage;
 
@@ -33,6 +35,9 @@ protected:
 	
 	UPROPERTY(EditDefaultsOnly)
 	USceneComponent* BoxTraceEnd;
+
+	UFUNCTION(BlueprintCallable)
+	virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
 
 	UFUNCTION()
 	virtual void OnBoxOverlap(

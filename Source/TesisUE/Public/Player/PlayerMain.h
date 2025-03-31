@@ -289,4 +289,6 @@ private:
 	void HeavyAttack(const FInputActionValue& Value);
 
 	void ToggleForm();
+
+	AActor* SphereTraceForEnemies(FVector Start, FVector End);
 };
