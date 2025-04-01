@@ -95,22 +95,23 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 		true
 	);
 
-	if (BoxHit.GetActor())
+	//if (BoxHit.GetActor())
+	//{
+	//	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 10.f, FColor::White, FString(BoxHit.GetActor()->GetDebugName(BoxHit.GetActor()) + BoxHit.GetComponent()->GetName()));
+	//}
+	if (BoxHit.GetActor() && !ActorsToIgnore.Contains(BoxHit.GetActor()))
 	{
-		UGameplayStatics::ApplyDamage(
-			BoxHit.GetActor(),
-			Damage,
-			GetInstigator()->GetController(),
-			this,
-			UDamageType::StaticClass()
-		);
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 10.f, FColor::White, FString(BoxHit.GetActor()->GetDebugName(BoxHit.GetActor()) + BoxHit.GetComponent()->GetName()));
-	}
-
-	if (IHitInterface* HitInterface = Cast<IHitInterface>(BoxHit.GetActor()))
-	{
-		HitInterface->Execute_GetHit(BoxHit.GetActor(), BoxHit.ImpactPoint);
+		if (IHitInterface* HitInterface = Cast<IHitInterface>(BoxHit.GetActor()))
+		{
+			UGameplayStatics::ApplyDamage(
+				BoxHit.GetActor(),
+				Damage,
+				GetInstigator()->GetController(),
+				this,
+				UDamageType::StaticClass()
+			);
+			HitInterface->Execute_GetHit(BoxHit.GetActor(), BoxHit.ImpactPoint);
+		}
 		ActorsToIgnore.AddUnique(BoxHit.GetActor());
 	}
-
 }
