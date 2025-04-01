@@ -279,6 +279,12 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon", meta = (AllowPrivateAccess))
 	ASword* EquippedWeapon;
+	
+	UFUNCTION(BlueprintCallable)
+	void HitStop(float Duration, float TimeScale);
+	
+	UFUNCTION(BlueprintCallable)
+	void ResetTimeDilation();
 
 	void Move(const FInputActionValue& Value);
 
@@ -303,6 +309,8 @@ private:
 	void ResetPlayer();
 
 	void GetDirectionalReact();
+
+
 
 	AActor* SphereTraceForEnemies(FVector Start, FVector End);
 };

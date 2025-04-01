@@ -188,7 +188,7 @@ void AEnemy::HitFlash()
 {
 	if (DynamicMaterial)
 	{
-		DynamicMaterial->SetScalarParameterValue(FName("HitFlashAmount"), .5f);
+		DynamicMaterial->SetScalarParameterValue(FName("HitFlashAmount"), 0.0f);
 		GetWorldTimerManager().SetTimer(HitFlashTimerHandle, this, &AEnemy::ResetColor, 0.2f, false);
 	}
 }

@@ -321,6 +321,25 @@ float APlayerMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEven
 	return DamageAmount;
 }
 
+void APlayerMain::HitStop(float Duration, float TimeScale)
+{
+	if (UWorld* World = GetWorld())
+	{
+		World->GetWorldSettings()->SetTimeDilation(TimeScale);
+
+		FTimerHandle TimerHandle;
+		World->GetTimerManager().SetTimer(TimerHandle, this, &APlayerMain::ResetTimeDilation, Duration, false);
+	}
+}
+
+void APlayerMain::ResetTimeDilation()
+{
+	if (UWorld* World = GetWorld())
+	{
+		World->GetWorldSettings()->SetTimeDilation(1.0f);
+	}
+}
+
 void APlayerMain::Move(const FInputActionValue& Value)
 {
 	const FVector2D MoveVector = Value.Get<FVector2D>();
