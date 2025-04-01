@@ -18,6 +18,7 @@
 #include "Components/PlayerFormComponent.h"
 #include "SpectralMode/Interfaces/SpectralInteractable.h"
 #include "Components/AttributeComponent.h"
+#include "Components/CapsuleComponent.h"
 #include <Enemy/Spectre.h>
 
 APlayerMain::APlayerMain()
@@ -148,6 +149,7 @@ void APlayerMain::PerformDodge()
 		StopDodgeBufferEvent();
 		DodgeBufferEvent(BufferDodgeDistance);
 		SetCharacterState(ECharacterActions::ECA_Dodge);
+		GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 		PlayAnimMontage(DodgeMontage);
 	}
 	else
@@ -155,6 +157,7 @@ void APlayerMain::PerformDodge()
 		StopDodgeBufferEvent();
 		DodgeBufferEvent(BufferDodgeDistance);
 		SetCharacterState(ECharacterActions::ECA_Dodge);
+		GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 		PlayAnimMontage(SpectralDodgeMontage);
 	}
 }
@@ -308,12 +311,13 @@ float APlayerMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEven
 	if (Attributes && Attributes->IsAlive())
 	{
 		Attributes->ReceiveDamage(DamageAmount);
+		GetDirectionalReact();
 		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Magenta, FString("Health left: ") + FString::SanitizeFloat(Attributes->GetHealthPercent()));
 	}
-	else
-	{
-		Die();
-	}
+	//else
+	//{
+	//	Die();
+	//}
 	return DamageAmount;
 }
 
@@ -415,6 +419,11 @@ void APlayerMain::Die()
 		GetCharacterMovement()->DisableMovement();
 		SetCharacterState(ECharacterActions::ECA_Dead);
 	}
+}
+
+void APlayerMain::GetDirectionalReact()
+{
+	PlayAnimMontage(HitReactMontage);
 }
 
 AActor* APlayerMain::SphereTraceForEnemies(FVector Start, FVector End)

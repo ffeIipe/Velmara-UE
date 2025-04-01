@@ -98,6 +98,9 @@ protected:
 	
 	UPROPERTY(BlueprintReadWrite, Category = "DoubleJump")
 	UAnimMontage* DoubleJumpMontage;
+
+	UPROPERTY(BlueprintReadWrite, Category = "HitReact")
+	UAnimMontage* HitReactMontage;
 	
 	UPROPERTY(BlueprintReadWrite, Category = "Death")
 	UAnimMontage* DeathMontage;
@@ -298,6 +301,8 @@ private:
 	void Die();
 
 	void ResetPlayer();
+
+	void GetDirectionalReact();
 
 	AActor* SphereTraceForEnemies(FVector Start, FVector End);
 };
