@@ -42,6 +42,10 @@ void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	if (GetMesh())
+	{
+		DynamicMaterial = GetMesh()->CreateAndSetMaterialInstanceDynamic(0);
+	}
 }
 
 void AEnemy::Die()
@@ -109,6 +113,7 @@ void AEnemy::GetHit_Implementation(const FVector& ImpactPoint)
 	if (Attributes && Attributes->IsAlive())
 	{
 		DirectionalHitReact(ImpactPoint);
+		HitFlash();
 	}
 	else
 	{
@@ -177,4 +182,21 @@ void AEnemy::DirectionalHitReact(const FVector& ImpactPoint)
 	}
 
 	PlayAnimMontage(HitReactMontage, 1.f, Section);
+}
+
+void AEnemy::HitFlash()
+{
+	if (DynamicMaterial)
+	{
+		DynamicMaterial->SetScalarParameterValue(FName("HitFlashAmount"), .5f);
+		GetWorldTimerManager().SetTimer(HitFlashTimerHandle, this, &AEnemy::ResetColor, 0.2f, false);
+	}
+}
+
+void AEnemy::ResetColor()
+{
+	if (DynamicMaterial)
+	{
+		DynamicMaterial->SetScalarParameterValue(FName("HitFlashAmount"), 1.0f);
+	}
 }

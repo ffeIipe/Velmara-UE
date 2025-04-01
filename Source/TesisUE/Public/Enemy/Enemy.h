@@ -69,10 +69,21 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Visual Effects");
 	UParticleSystem* HitParticles;
 
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
 	EEnemyType EnemyType;
 
+private:
+	UPROPERTY()
+	UMaterialInstanceDynamic* DynamicMaterial;
+
+	UPROPERTY()
+	FTimerHandle HitFlashTimerHandle;
+
+	UFUNCTION()
+	void HitFlash();
+
+	UFUNCTION()
+	void ResetColor();
 };
 
 
