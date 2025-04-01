@@ -111,6 +111,7 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 				UDamageType::StaticClass()
 			);
 			HitInterface->Execute_GetHit(BoxHit.GetActor(), BoxHit.ImpactPoint);
+			CameraShake();
 		}
 		ActorsToIgnore.AddUnique(BoxHit.GetActor());
 	}
