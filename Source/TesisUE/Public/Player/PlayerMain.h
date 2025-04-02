@@ -40,6 +40,9 @@ public:
 	UFUNCTION(BlueprintPure, Category = "SpectralAttack")
 	FORCEINLINE AEnemy* GetSpectralTarget() const { return SpectralTarget; }
 	
+	UFUNCTION(BlueprintCallable, Category = "SoftLock")
+	FORCEINLINE AActor* GetSoftLockTarget() const { return SoftLockTarget; }
+	
 	FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }
 
 	UFUNCTION(BlueprintCallable)
@@ -104,6 +107,9 @@ protected:
 	
 	UPROPERTY(BlueprintReadWrite, Category = "Death")
 	UAnimMontage* DeathMontage;
+	
+	UPROPERTY(BlueprintReadWrite, Category = "Block")
+	UAnimMontage* BlockMontage;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Dodge")
 	bool bSaveDodge = false;
@@ -257,6 +263,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Input | Actions")
 	UInputAction* ChangeFormAction;
+	
+	UPROPERTY(EditAnywhere, Category = "Input | Actions")
+	UInputAction* BlockAction;
 
 private:	
 	bool bIsDead = false;
@@ -310,7 +319,14 @@ private:
 
 	void GetDirectionalReact();
 
+	void Block();
+	
+	void ReceiveBlock();
 
+	void ReleaseBlock();
+
+	UFUNCTION(BlueprintCallable)
+	void PossessEnemy(AEnemy* EnemyToPossess);
 
 	AActor* SphereTraceForEnemies(FVector Start, FVector End);
 };

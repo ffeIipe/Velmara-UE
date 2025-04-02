@@ -308,11 +308,18 @@ bool APlayerMain::IsFormEqualToAny(const TArray<EPlayerForm>& StatesToCheck)
 float APlayerMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	//TODO: player healthbar and fx to receive damage
+
 	if (Attributes && Attributes->IsAlive())
 	{
-		Attributes->ReceiveDamage(DamageAmount);
-		GetDirectionalReact();
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Magenta, FString("Health left: ") + FString::SanitizeFloat(Attributes->GetHealthPercent()));
+		if (GetCharacterAction() == ECharacterActions::ECA_Block)
+		{
+			ReceiveBlock();
+		}
+		else
+		{
+			Attributes->ReceiveDamage(DamageAmount);
+			GetDirectionalReact();
+		}
 	}
 	//else
 	//{
@@ -342,6 +349,8 @@ void APlayerMain::ResetTimeDilation()
 
 void APlayerMain::Move(const FInputActionValue& Value)
 {
+	if (GetCharacterAction() == ECharacterActions::ECA_Block) return;
+
 	const FVector2D MoveVector = Value.Get<FVector2D>();
 
 	const FRotator ControlRotation = GetControlRotation();
@@ -364,6 +373,8 @@ void APlayerMain::Look(const FInputActionValue& Value)
 
 void APlayerMain::Jump()
 {
+	if (GetCharacterAction() == ECharacterActions::ECA_Block) return;
+
 	Super::Jump();
 
 	if (GetCharacterMovement()->IsFalling() && CanDoubleJump)
@@ -374,6 +385,8 @@ void APlayerMain::Jump()
 
 void APlayerMain::DoubleJump()
 {
+	if (GetCharacterAction() == ECharacterActions::ECA_Block) return;
+
 	PlayAnimMontage(DoubleJumpMontage);
 	LaunchCharacter(FVector(0.f, 0.f, 800.f), false, true);
 	CanDoubleJump = false;
@@ -408,11 +421,13 @@ void APlayerMain::Interact(const FInputActionValue& Value)
 
 void APlayerMain::Attack(const FInputActionValue& Value)
 {
-	//TODO: pasar la logica aca en esta funcion
+	//TODO: put the attack logic here, we have to translate it from BP_PlayerMain
 }
 
 void APlayerMain::ToggleForm()
 {
+	if (GetCharacterAction() == ECharacterActions::ECA_Block) return;
+
 	if (PlayerFormComponent)
 	{
 		PlayerFormComponent->ToggleForm(EquippedWeapon);
@@ -443,6 +458,31 @@ void APlayerMain::Die()
 void APlayerMain::GetDirectionalReact()
 {
 	PlayAnimMontage(HitReactMontage);
+}
+
+void APlayerMain::Block()
+{
+	PlayAnimMontage(BlockMontage,1.f, FName("BlockIdle"));
+	SetCharacterState(ECharacterActions::ECA_Block);
+}
+
+void APlayerMain::ReceiveBlock()
+{
+	PlayAnimMontage(BlockMontage, 1.f, FName("BlockReact"));
+}
+
+void APlayerMain::ReleaseBlock()
+{
+	StopAnimMontage(BlockMontage);
+	SetCharacterState(ECharacterActions::ECA_Nothing);
+}
+
+void APlayerMain::PossessEnemy(AEnemy* EnemyToPossess)
+{
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		PC->Possess(EnemyToPossess);
+	}
 }
 
 AActor* APlayerMain::SphereTraceForEnemies(FVector Start, FVector End)
@@ -484,5 +524,7 @@ void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &APlayerMain::Interact);
 		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &APlayerMain::Attack);
 		EnhancedInputComponent->BindAction(ChangeFormAction, ETriggerEvent::Started, this, &APlayerMain::ToggleForm);
+		EnhancedInputComponent->BindAction(BlockAction, ETriggerEvent::Started, this, &APlayerMain::Block);
+		EnhancedInputComponent->BindAction(BlockAction, ETriggerEvent::Completed, this, &APlayerMain::ReleaseBlock);
 	}
 }
