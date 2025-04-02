@@ -22,9 +22,10 @@ UPlayerFormComponent::UPlayerFormComponent()
 
     SpectralEffectTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("SpectralEffectTimeline"));
 
-    static ConstructorHelpers::FObjectFinder<UMaterialParameterCollection> MaterialCollection(TEXT("/Game/BloodSense/PC_BloodSense"));
+    static ConstructorHelpers::FObjectFinder<UMaterialParameterCollection> MaterialCollection(TEXT("/Game/BloodsenseV2/PC_BloodSenseV2"));
     if (MaterialCollection.Succeeded())
     {
+        GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::White, FString("MaterialCollection is valid"));
         BloodSenseMaterialCollection = MaterialCollection.Object;
     }
 }
@@ -67,7 +68,7 @@ void UPlayerFormComponent::ApplySpectralEffects(ASword* EquippedWeapon)
 {
     Debug(1, FColor::Red, FString("Spectral Mode"), true);
 
-    SpectralEffectTimeline->Reverse();
+    SpectralEffectTimeline->PlayFromStart();
 
     if (EquippedWeapon)
     {
@@ -85,7 +86,7 @@ void UPlayerFormComponent::ApplyHumanEffects(ASword* EquippedWeapon)
 {
     Debug(1, FColor::Blue, FString("Human Mode"), true);
 
-    SpectralEffectTimeline->PlayFromStart();
+    SpectralEffectTimeline->Reverse();
 
     if (EquippedWeapon)
     {
