@@ -7,7 +7,6 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
-#include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Components/TimelineComponent.h"
 #include "Curves/CurveFloat.h"
@@ -20,6 +19,8 @@
 #include "Components/AttributeComponent.h"
 #include "Components/CapsuleComponent.h"
 #include <Enemy/Spectre.h>
+#include "Camera/CameraActor.h"
+#include "EngineUtils.h"
 
 APlayerMain::APlayerMain()
 {
@@ -33,9 +34,6 @@ APlayerMain::APlayerMain()
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("Camera Boom"));
 	CameraBoom->SetupAttachment(GetRootComponent());
-
-	MainCam = CreateDefaultSubobject<UCameraComponent>(TEXT("Player Camera"));
-	MainCam->SetupAttachment(CameraBoom);
 
 	BufferDodgeTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("BufferDodgeTimeline"));
 	BufferAttackTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("BufferAttackTimeline"));
@@ -61,7 +59,20 @@ void APlayerMain::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEna
 void APlayerMain::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	for (TActorIterator<ACameraActor> It(GetWorld()); It; ++It)
+	{
+		FollowCamera = *It;
+		break;
+	}
+
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (FollowCamera && PC)
+	{
+		FollowCamera->AttachToComponent(CameraBoom, FAttachmentTransformRules::SnapToTargetIncludingScale, FName("SprinEndpoint"));
+		PC->SetViewTargetWithBlend(FollowCamera, 1.f);
+	}
+
 	if (APlayerController* PlayerController = CastChecked<APlayerController>(GetController()))
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 			Subsystem->AddMappingContext(CharacterContext, 0);
@@ -347,6 +358,80 @@ void APlayerMain::ResetTimeDilation()
 	}
 }
 
+AEnemy* APlayerMain::GetTargetEnemy()
+{
+	FVector Start = GetActorLocation() + GetActorForwardVector() * 100.0f;
+	FVector End = Start + GetActorForwardVector() * 1000.0f;
+	FHitResult HitResult;
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+
+	if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility, QueryParams))
+	{
+		DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 2.0f);
+		return Cast<AEnemy>(HitResult.GetActor());
+	}
+	return nullptr;
+}
+
+void APlayerMain::PossessEnemy()
+{
+	if (bIsPossessing) ReleasePossession();
+
+	else
+	{
+		AEnemy* TargetEnemy = GetTargetEnemy();
+		if (!TargetEnemy) return;
+
+		APlayerController* PC = Cast<APlayerController>(GetController());
+		if (PC)
+		{
+			PC->Possess(TargetEnemy);
+			TargetEnemy->DisableAI();
+			PossessedEnemy = TargetEnemy;
+
+			TargetEnemy->EnableInput(PC);
+			TargetEnemy->AutoPossessPlayer = EAutoReceiveInput::Player0;
+			TargetEnemy->OnPossessed(this);
+
+			FollowCamera->AttachToComponent(TargetEnemy->SpringArm, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("SpringEndpoint"));
+			PC->SetViewTargetWithBlend(FollowCamera, 1.f);
+		}
+
+		bIsPossessing = true;
+		StoredLocation = GetActorLocation();
+		StoredRotation = GetActorRotation();
+		SetActorHiddenInGame(true);
+		SetActorEnableCollision(false);
+	}	
+}
+
+void APlayerMain::ReleasePossession()
+{
+	if (!PossessedEnemy) return;
+
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (PC)
+	{
+		PC->Possess(this);
+		PossessedEnemy->DisableInput(PC);
+		PossessedEnemy->EnableAI();
+		PossessedEnemy = nullptr;
+		FollowCamera->AttachToComponent(CameraBoom, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("SpringEndpoint"));
+		PC->SetViewTargetWithBlend(FollowCamera, 1.f);
+	}
+
+	SetActorHiddenInGame(false);
+	SetActorEnableCollision(true);
+	SetActorLocation(StoredLocation);
+	SetActorRotation(StoredRotation);
+
+	//if (MainCam)
+	//{
+	//	MainCam->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	//}
+}
+
 void APlayerMain::Move(const FInputActionValue& Value)
 {
 	if (GetCharacterAction() == ECharacterActions::ECA_Block) return;
@@ -477,14 +562,6 @@ void APlayerMain::ReleaseBlock()
 	SetCharacterState(ECharacterActions::ECA_Nothing);
 }
 
-void APlayerMain::PossessEnemy(AEnemy* EnemyToPossess)
-{
-	if (APlayerController* PC = Cast<APlayerController>(GetController()))
-	{
-		PC->Possess(EnemyToPossess);
-	}
-}
-
 AActor* APlayerMain::SphereTraceForEnemies(FVector Start, FVector End)
 {
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
@@ -526,5 +603,6 @@ void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		EnhancedInputComponent->BindAction(ChangeFormAction, ETriggerEvent::Started, this, &APlayerMain::ToggleForm);
 		EnhancedInputComponent->BindAction(BlockAction, ETriggerEvent::Started, this, &APlayerMain::Block);
 		EnhancedInputComponent->BindAction(BlockAction, ETriggerEvent::Completed, this, &APlayerMain::ReleaseBlock);
+		EnhancedInputComponent->BindAction(PossessAction, ETriggerEvent::Triggered, this, &APlayerMain::PossessEnemy);
 	}
 }

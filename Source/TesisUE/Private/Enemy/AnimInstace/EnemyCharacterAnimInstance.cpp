@@ -20,5 +20,6 @@ void UEnemyCharacterAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSec
 	}
 
 	GroundSpeed = OwningCharacter->GetVelocity().Size2D();
+	bIsFalling = OwningMovementComponent->IsFalling();
 	bHasAcceleration = OwningMovementComponent->GetCurrentAcceleration().SizeSquared2D() > 0.f;
 }

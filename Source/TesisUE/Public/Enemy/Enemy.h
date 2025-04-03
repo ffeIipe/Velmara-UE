@@ -9,6 +9,12 @@
 
 class UAttributeComponent;
 class UHealthBarComponent;
+class USpringArmComponent;
+class UInputAction;
+struct FInputActionValue;
+class UCameraComponent;
+class UInputMappingContext;
+class APlayerMain;
 
 UENUM(BlueprintType)
 enum class EEnemyType : uint8
@@ -19,8 +25,6 @@ enum class EEnemyType : uint8
 };
 
 UCLASS()
-
-
 class TESISUE_API AEnemy : public ACharacter, public IHitInterface
 {
 	GENERATED_BODY()
@@ -30,8 +34,6 @@ public:
 	AEnemy();
 	virtual void Tick(float DeltaTime) override;
 
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-	
 	virtual void GetHit_Implementation(const FVector& ImpactPoint) override;
 
 	virtual float TakeDamage(
@@ -41,6 +43,24 @@ public:
 		AActor* DamageCauser) override;
 
 	FORCEINLINE EEnemyType GetEnemyType() const { return EnemyType; }
+
+	UPROPERTY(VisibleAnywhere);
+	USpringArmComponent* SpringArm;
+
+	UFUNCTION()
+	void DisableAI();
+
+	UFUNCTION()
+	void EnableAI();
+	
+	UFUNCTION()
+	USpringArmComponent* GetSpringArm();
+	
+	UFUNCTION()
+	void OnPossessed(APlayerMain* NewOwner);
+	
+	UFUNCTION()
+	void UnPossess();
 
 protected:
 	virtual void BeginPlay() override;
@@ -72,7 +92,27 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
 	EEnemyType EnemyType;
 
+	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	UInputAction* MoveAction;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	UInputAction* LookAction;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	UInputAction* JumpAction;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	UInputAction* UnPossessAction;
+
+	void Move(const FInputActionValue& Value);
+	
+	void Look(const FInputActionValue& Value);
+
 private:
+	APlayerMain* PossessionOwner;
+
 	UPROPERTY()
 	UMaterialInstanceDynamic* DynamicMaterial;
 

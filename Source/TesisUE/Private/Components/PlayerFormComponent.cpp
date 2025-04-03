@@ -24,8 +24,7 @@ UPlayerFormComponent::UPlayerFormComponent()
 
     static ConstructorHelpers::FObjectFinder<UMaterialParameterCollection> MaterialCollection(TEXT("/Game/BloodsenseV2/PC_BloodSenseV2"));
     if (MaterialCollection.Succeeded())
-    {
-       
+    {  
         BloodSenseMaterialCollection = MaterialCollection.Object;
     }
 }

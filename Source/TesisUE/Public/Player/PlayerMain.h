@@ -63,6 +63,9 @@ public:
 		class AController* EventInstigator,
 		AActor* DamageCauser) override;
 
+	UFUNCTION(BlueprintCallable)
+	void ReleasePossession();
+
 protected:
 	/*
 	* Base
@@ -266,6 +269,12 @@ protected:
 	
 	UPROPERTY(EditAnywhere, Category = "Input | Actions")
 	UInputAction* BlockAction;
+	
+	UPROPERTY(EditAnywhere, Category = "Input | Actions")
+	UInputAction* PossessAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	USpringArmComponent* CameraBoom;
 
 private:	
 	bool bIsDead = false;
@@ -276,12 +285,10 @@ private:
 	ECharacterActions CharacterAction = ECharacterActions::ECA_Nothing;
 
 	ECharacterStates CharacterState = ECharacterStates::ECS_Unequipped;
-
+	
 	UPROPERTY(EditAnywhere)
-	UCameraComponent* MainCam;
+	ACameraActor* FollowCamera;
 
-	UPROPERTY(EditAnywhere)
-	USpringArmComponent* CameraBoom;
 
 	UPROPERTY(VisibleInstanceOnly)
 	AItem* OverlappingItem;
@@ -294,6 +301,17 @@ private:
 	
 	UFUNCTION(BlueprintCallable)
 	void ResetTimeDilation();
+	
+	bool bIsPossessing = false;
+	FVector StoredLocation;
+	FRotator StoredRotation;
+	AEnemy* PossessedEnemy;
+
+	UFUNCTION(BlueprintCallable)
+	AEnemy* GetTargetEnemy();
+	
+	UFUNCTION(BlueprintCallable)
+	void PossessEnemy();
 
 	void Move(const FInputActionValue& Value);
 
@@ -325,8 +343,6 @@ private:
 
 	void ReleaseBlock();
 
-	UFUNCTION(BlueprintCallable)
-	void PossessEnemy(AEnemy* EnemyToPossess);
-
 	AActor* SphereTraceForEnemies(FVector Start, FVector End);
+
 };
