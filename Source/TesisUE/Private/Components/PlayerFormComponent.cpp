@@ -25,7 +25,7 @@ UPlayerFormComponent::UPlayerFormComponent()
     static ConstructorHelpers::FObjectFinder<UMaterialParameterCollection> MaterialCollection(TEXT("/Game/BloodsenseV2/PC_BloodSenseV2"));
     if (MaterialCollection.Succeeded())
     {
-        GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::White, FString("MaterialCollection is valid"));
+       
         BloodSenseMaterialCollection = MaterialCollection.Object;
     }
 }
