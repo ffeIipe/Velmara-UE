@@ -18,8 +18,8 @@ enum class ECharacterActions : uint8
 };
 
 UENUM(BlueprintType)
-enum class EPlayerForm : uint8
+enum class ECharacterForm : uint8
 {
-	EPF_Human UMETA(DisplayName = "Human"),
-	EPF_Spectral UMETA(DisplayName = "Spectral")
+	ECF_Human UMETA(DisplayName = "Human"),
+	ECF_Spectral UMETA(DisplayName = "Spectral")
 };

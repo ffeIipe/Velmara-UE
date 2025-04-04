@@ -29,6 +29,6 @@ protected:
 
 private:
     UPROPERTY(EditInstanceOnly, Category = "Visibility")
-    EPlayerForm VisibleTo;
+    ECharacterForm VisibleTo;
     
 };

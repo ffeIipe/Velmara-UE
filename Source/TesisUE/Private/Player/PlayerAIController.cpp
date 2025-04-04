@@ -59,7 +59,7 @@ void APlayerAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus St
 
 	if (!Enemy) return;
 
-	if (Enemy->GetEnemyType() == EEnemyType::Paladin && PlayerFormComponent && PlayerFormComponent->GetCurrentForm() == EPlayerForm::EPF_Spectral)
+	if (Enemy->GetEnemyType() == EEnemyType::Paladin && PlayerFormComponent && PlayerFormComponent->GetCharacterForm() == ECharacterForm::ECF_Spectral)
 	{
 		BlackboardComponent->ClearValue(FName("TargetActor"));
 		BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), false);

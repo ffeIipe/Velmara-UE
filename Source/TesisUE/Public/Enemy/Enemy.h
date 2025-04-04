@@ -15,6 +15,7 @@ struct FInputActionValue;
 class UCameraComponent;
 class UInputMappingContext;
 class APlayerMain;
+class AAIController;
 
 UENUM(BlueprintType)
 enum class EEnemyType : uint8
@@ -22,6 +23,12 @@ enum class EEnemyType : uint8
 	Paladin UMETA(DisplayName = "Paladin"),
 	Spectre UMETA(DisplayName = "Spectre"),
 	ShieldedPaladin UMETA(DisplayName = "ShieldedPaladin"),
+};
+
+UENUM(BlueprintType)
+enum class EEnemyState : uint8
+{
+	EES_Launched UMETA(DisplayName = "Launched")
 };
 
 UCLASS()
@@ -44,13 +51,15 @@ public:
 
 	FORCEINLINE EEnemyType GetEnemyType() const { return EnemyType; }
 
+	FORCEINLINE EEnemyState GetEnemyState() const { return EnemyState; }
+
 	UPROPERTY(VisibleAnywhere);
 	USpringArmComponent* SpringArm;
 
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 	void DisableAI();
 
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 	void EnableAI();
 	
 	UFUNCTION()
@@ -89,8 +98,11 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Visual Effects");
 	UParticleSystem* HitParticles;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "EnemyType")
 	EEnemyType EnemyType;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "EnemyState")
+	EEnemyState EnemyState;
 
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	
@@ -106,12 +118,14 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	UInputAction* UnPossessAction;
 
-	void Move(const FInputActionValue& Value);
+	virtual void Move(const FInputActionValue& Value);
 	
-	void Look(const FInputActionValue& Value);
+	virtual void Look(const FInputActionValue& Value);
 
-private:
 	APlayerMain* PossessionOwner;
+private:
+
+	AAIController* AIOriginalController;
 
 	UPROPERTY()
 	UMaterialInstanceDynamic* DynamicMaterial;

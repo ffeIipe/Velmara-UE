@@ -18,7 +18,7 @@
 UPlayerFormComponent::UPlayerFormComponent()
 {
     PrimaryComponentTick.bCanEverTick = false;
-    CurrentForm = EPlayerForm::EPF_Human;
+    CurrentForm = ECharacterForm::ECF_Human;
 
     SpectralEffectTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("SpectralEffectTimeline"));
 
@@ -49,14 +49,14 @@ void UPlayerFormComponent::ToggleForm(ASword* EquippedWeapon)
     
     LastTransformationTime = 0;
 
-    if (CurrentForm == EPlayerForm::EPF_Human)
+    if (CurrentForm == ECharacterForm::ECF_Human)
     {
-        CurrentForm = EPlayerForm::EPF_Spectral;
+        CurrentForm = ECharacterForm::ECF_Spectral;
         ApplySpectralEffects(EquippedWeapon);
     }
     else
     {
-        CurrentForm = EPlayerForm::EPF_Human;
+        CurrentForm = ECharacterForm::ECF_Human;
         ApplyHumanEffects(EquippedWeapon);
     }
 

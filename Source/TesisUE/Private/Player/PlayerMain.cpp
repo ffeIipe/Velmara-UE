@@ -100,7 +100,7 @@ void APlayerMain::PerformLightAttack(int AttackIndex)
 {
 	if (GetCharacterAction() != ECharacterActions::ECA_Attack)
 	{
-		if (PlayerFormComponent->GetCurrentForm() == EPlayerForm::EPF_Human)
+		if (PlayerFormComponent->GetCharacterForm() == ECharacterForm::ECF_Human)
 		{
 			StopAttackBufferEvent();
 			StartAttackBufferEvent(BufferAttackDistance);
@@ -124,11 +124,33 @@ void APlayerMain::PerformLightAttack(int AttackIndex)
 	}
 }
 
+void APlayerMain::PerformJumpAttack(int AttackIndex)
+{
+	if (GetCharacterAction() != ECharacterActions::ECA_Attack)
+	{
+		if (PlayerFormComponent->GetCharacterForm() == ECharacterForm::ECF_Human)
+		{
+			StopAttackBufferEvent();
+			StartAttackBufferEvent(BufferAttackDistance);
+			SetCharacterState(ECharacterActions::ECA_Attack);
+			//SoftLockOn();
+			PlayAnimMontage(JumpAttackCombo[AttackIndex]);
+		}
+
+		JumpAttackIndex++;
+
+		if (JumpAttackIndex >= JumpAttackCombo.Num())
+		{
+			JumpAttackIndex = 0;
+		}
+	}
+}
+
 void APlayerMain::PerformHeavyAttack(int AttackIndex)
 {
 	if (GetCharacterAction() != ECharacterActions::ECA_Attack)
 	{
-		if (PlayerFormComponent->GetCurrentForm() == EPlayerForm::EPF_Human)
+		if (PlayerFormComponent->GetCharacterForm() == ECharacterForm::ECF_Human)
 		{
 			StopAttackBufferEvent();
 			StartAttackBufferEvent(BufferAttackDistance);
@@ -155,7 +177,7 @@ void APlayerMain::PerformHeavyAttack(int AttackIndex)
 
 void APlayerMain::PerformDodge()
 {
-	if (PlayerFormComponent && PlayerFormComponent->GetCurrentForm() == EPlayerForm::EPF_Human)
+	if (PlayerFormComponent && PlayerFormComponent->GetCharacterForm() == ECharacterForm::ECF_Human)
 	{
 		StopDodgeBufferEvent();
 		DodgeBufferEvent(BufferDodgeDistance);
@@ -233,6 +255,12 @@ void APlayerMain::ResetLightAttackStats()
 	IsSaveLightAttack = false;
 }
 
+void APlayerMain::ResetJumpAttackStats()
+{
+	JumpAttackIndex = 0;
+	//bLaunched = false;
+}
+
 void APlayerMain::ResetHeavyAttackStats()
 {
 	HeavyAttackIndex = 0;
@@ -255,7 +283,7 @@ void APlayerMain::SoftLockOn()
 
 void APlayerMain::RotationToTarget()
 {
-	if (SoftLockTarget && PlayerFormComponent && PlayerFormComponent->GetCurrentForm() != EPlayerForm::EPF_Spectral)
+	if (SoftLockTarget && PlayerFormComponent && PlayerFormComponent->GetCharacterForm() != ECharacterForm::ECF_Spectral)
 	{
 		SoftLockTimeline->PlayFromStart();
 	}
@@ -310,9 +338,9 @@ bool APlayerMain::IsStateEqualToAny(const TArray<ECharacterStates>& StatesToChec
 	return StatesToCheck.Contains(CharacterState);
 }
 
-bool APlayerMain::IsFormEqualToAny(const TArray<EPlayerForm>& StatesToCheck)
+bool APlayerMain::IsFormEqualToAny(const TArray<ECharacterForm>& StatesToCheck)
 {
-	return StatesToCheck.Contains(PlayerFormComponent->GetCurrentForm());
+	return StatesToCheck.Contains(PlayerFormComponent->GetCharacterForm());
 }
 
 
@@ -360,8 +388,15 @@ void APlayerMain::ResetTimeDilation()
 
 AEnemy* APlayerMain::GetTargetEnemy()
 {
-	FVector Start = GetActorLocation() + GetActorForwardVector() * 100.0f;
-	FVector End = Start + GetActorForwardVector() * 1000.0f;
+	FVector Start;
+	FVector End;
+
+	if (FollowCamera)
+	{
+		Start = FollowCamera->GetActorLocation() + FollowCamera->GetActorForwardVector() * 100.0f;
+		End = Start + FollowCamera->GetActorForwardVector() * 1000.0f;
+	}
+
 	FHitResult HitResult;
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(this);
@@ -376,61 +411,56 @@ AEnemy* APlayerMain::GetTargetEnemy()
 
 void APlayerMain::PossessEnemy()
 {
-	if (bIsPossessing) ReleasePossession();
+	if (PlayerFormComponent->GetCharacterForm() != ECharacterForm::ECF_Spectral) return;
 
-	else
+	AEnemy* TargetEnemy = GetTargetEnemy();
+	if (!TargetEnemy) return;
+
+	PlayerControllerRef = Cast<APlayerController>(GetController());
+
+	if (PlayerControllerRef)
 	{
-		AEnemy* TargetEnemy = GetTargetEnemy();
-		if (!TargetEnemy) return;
+		PlayerControllerRef->Possess(TargetEnemy);
+		TargetEnemy->DisableAI();
+		PossessedEnemy = TargetEnemy;
 
-		APlayerController* PC = Cast<APlayerController>(GetController());
-		if (PC)
-		{
-			PC->Possess(TargetEnemy);
-			TargetEnemy->DisableAI();
-			PossessedEnemy = TargetEnemy;
+		TargetEnemy->EnableInput(PlayerControllerRef);
+		TargetEnemy->AutoPossessPlayer = EAutoReceiveInput::Player0;
+		TargetEnemy->OnPossessed(this);
 
-			TargetEnemy->EnableInput(PC);
-			TargetEnemy->AutoPossessPlayer = EAutoReceiveInput::Player0;
-			TargetEnemy->OnPossessed(this);
+		FollowCamera->AttachToComponent(TargetEnemy->SpringArm, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("SpringEndpoint"));
+		PlayerControllerRef->SetViewTargetWithBlend(FollowCamera, 1.f);
+	}
 
-			FollowCamera->AttachToComponent(TargetEnemy->SpringArm, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("SpringEndpoint"));
-			PC->SetViewTargetWithBlend(FollowCamera, 1.f);
-		}
-
-		bIsPossessing = true;
-		StoredLocation = GetActorLocation();
-		StoredRotation = GetActorRotation();
-		SetActorHiddenInGame(true);
-		SetActorEnableCollision(false);
-	}	
+	//StoredLocation = GetActorLocation();
+	//StoredRotation = GetActorRotation();
+	SetActorHiddenInGame(true);
+	SetActorEnableCollision(false);
 }
 
 void APlayerMain::ReleasePossession()
 {
-	if (!PossessedEnemy) return;
-
-	APlayerController* PC = Cast<APlayerController>(GetController());
-	if (PC)
+	if (PlayerControllerRef)
 	{
-		PC->Possess(this);
-		PossessedEnemy->DisableInput(PC);
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(2, 1.f, FColor::Green, FString("There is a PC valid"));
+		}
+
+		PlayerControllerRef->Possess(this);
+		PossessedEnemy->DisableInput(PlayerControllerRef);
 		PossessedEnemy->EnableAI();
-		PossessedEnemy = nullptr;
 		FollowCamera->AttachToComponent(CameraBoom, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("SpringEndpoint"));
-		PC->SetViewTargetWithBlend(FollowCamera, 1.f);
+		PlayerControllerRef->SetViewTargetWithBlend(FollowCamera, 1.f);
 	}
 
 	SetActorHiddenInGame(false);
 	SetActorEnableCollision(true);
-	SetActorLocation(StoredLocation);
-	SetActorRotation(StoredRotation);
-
-	//if (MainCam)
-	//{
-	//	MainCam->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-	//}
+	SetActorLocation(PossessedEnemy->GetActorLocation());
+	SetActorRotation(PossessedEnemy->GetActorRotation());
+	PossessedEnemy = nullptr;
 }
+
 
 void APlayerMain::Move(const FInputActionValue& Value)
 {
@@ -485,7 +515,7 @@ void APlayerMain::Landed(const FHitResult& Hit)
 
 void APlayerMain::Interact(const FInputActionValue& Value)
 {
-	if (PlayerFormComponent->GetCurrentForm() == EPlayerForm::EPF_Human)
+	if (PlayerFormComponent->GetCharacterForm() == ECharacterForm::ECF_Human)
 	{
 		if (ASword* OverlappingWeapon = Cast<ASword>(OverlappingItem))
 		{
@@ -603,6 +633,6 @@ void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		EnhancedInputComponent->BindAction(ChangeFormAction, ETriggerEvent::Started, this, &APlayerMain::ToggleForm);
 		EnhancedInputComponent->BindAction(BlockAction, ETriggerEvent::Started, this, &APlayerMain::Block);
 		EnhancedInputComponent->BindAction(BlockAction, ETriggerEvent::Completed, this, &APlayerMain::ReleaseBlock);
-		EnhancedInputComponent->BindAction(PossessAction, ETriggerEvent::Triggered, this, &APlayerMain::PossessEnemy);
+		EnhancedInputComponent->BindAction(PossessAction, ETriggerEvent::Completed, this, &APlayerMain::PossessEnemy);
 	}
 }

@@ -33,7 +33,7 @@ void ASpectralObject::SetSpectralVisibility(bool bIsPlayerInHumanForm)
         return;
     }
 
-    bool bShouldBeVisible = (VisibleTo == EPlayerForm::EPF_Spectral) ? bIsPlayerInHumanForm : !bIsPlayerInHumanForm;
+    bool bShouldBeVisible = (VisibleTo == ECharacterForm::ECF_Spectral) ? bIsPlayerInHumanForm : !bIsPlayerInHumanForm;
 
     float AlphaValue = bShouldBeVisible ? 1.0f : 0.3f;
     SpectralMaterial->SetScalarParameterValue(FName("Alpha"), AlphaValue);

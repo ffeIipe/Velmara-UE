@@ -37,5 +37,5 @@ public:
 	ECharacterStates CharacterState;
 	
 	UPROPERTY(BlueprintReadOnly, Category = "PlayerForm")
-	EPlayerForm PlayerForm;
+	ECharacterForm PlayerForm;
 };

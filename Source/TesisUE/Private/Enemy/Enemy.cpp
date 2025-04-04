@@ -31,6 +31,10 @@ AEnemy::AEnemy()
 
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	SpringArm->SetupAttachment(GetRootComponent());
+	SpringArm->SetRelativeLocation(FVector(0.f, 0.f, 50.f));
+	SpringArm->SocketOffset = FVector(0.f,0.f,45.f);
+	SpringArm->bEnableCameraLag = true;
+	SpringArm->CameraLagSpeed = 10.f;
 
 	Attributes = CreateDefaultSubobject<UAttributeComponent>(TEXT("Attributes"));
 
@@ -47,11 +51,18 @@ AEnemy::AEnemy()
 	GetCharacterMovement()->MaxWalkSpeed = 300.f;
 	GetCharacterMovement()->BrakingDecelerationWalking = 1000.f;
 	GetCharacterMovement()->GravityScale = 3.f;
+	GetCharacterMovement()->JumpZVelocity = 1000.f;
 }
 
 void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
+
+	AAIController* AIController = Cast<AAIController>(GetController());
+	if (AIController)
+	{
+		AIOriginalController = AIController;
+	}
 
 	if (GetMesh())
 	{
@@ -122,7 +133,7 @@ void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AEnemy::Move);
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AEnemy::Look);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &AEnemy::Jump);
-		EnhancedInputComponent->BindAction(UnPossessAction, ETriggerEvent::Triggered, this, &AEnemy::UnPossess);
+		EnhancedInputComponent->BindAction(UnPossessAction, ETriggerEvent::Completed, this, &AEnemy::UnPossess);
 	}
 }
 
@@ -243,20 +254,27 @@ void AEnemy::ResetColor()
 
 void AEnemy::DisableAI()
 {
-	AAIController* AIController = Cast<AAIController>(GetController());
-	if (AIController)
+	if (AIOriginalController)
 	{
-		AIController->StopMovement();
-		AIController->UnPossess();
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(4, 5.f, FColor::Blue, FString("AI Disabled"));
+		}
+
+		AIOriginalController->StopMovement();
+		AIOriginalController->UnPossess();
 	}
 }
 
 void AEnemy::EnableAI()
 {
-	AAIController* AIController = Cast<AAIController>(GetController());
-	if (AIController)
+	if (AIOriginalController)
 	{
-		AIController->Possess(this);
+		AIOriginalController->Possess(this);
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(5, 5.f, FColor::White, FString("AI Enabled"));
+		}
 	}
 }
 
@@ -281,8 +299,8 @@ void AEnemy::UnPossess()
 {
 	if (GEngine)
 	{
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Cyan, FString("UnPossess"));
+		GEngine->AddOnScreenDebugMessage(1, 1.f, FColor::Cyan, FString("UnPossess"));
 	}
+	bUseControllerRotationYaw = true;
 	PossessionOwner->ReleasePossession();
-	//PossessionOwner = nullptr;
 }

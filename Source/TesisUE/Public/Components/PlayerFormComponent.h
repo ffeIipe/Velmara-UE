@@ -23,7 +23,7 @@ public:
     UFUNCTION(BlueprintCallable)
     void ToggleForm(ASword* EquippedWeapon);
 
-    EPlayerForm GetCurrentForm() const { return CurrentForm; }
+    ECharacterForm GetCharacterForm() const { return CurrentForm; }
 
 protected:
     virtual void BeginPlay() override;
@@ -32,7 +32,7 @@ private:
     void ApplySpectralEffects(ASword* EquippedWeapon);
     void ApplyHumanEffects(ASword* EquippedWeapon);
 
-    EPlayerForm CurrentForm;
+    ECharacterForm CurrentForm;
 
     UPROPERTY(EditDefaultsOnly, Category = "BloodSense | Cooldown")
     float TransformationCooldown;

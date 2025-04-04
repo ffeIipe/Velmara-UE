@@ -85,7 +85,7 @@ protected:
 	bool IsStateEqualToAny(const TArray<ECharacterStates>& StatesToCheck);
 	
 	UFUNCTION(BlueprintPure, Category = "PlayerForm")
-	bool IsFormEqualToAny(const TArray<EPlayerForm>& StatesToCheck);
+	bool IsFormEqualToAny(const TArray<ECharacterForm>& StatesToCheck);
 
 	/*
 	* Interact
@@ -162,11 +162,17 @@ protected:
 	UPROPERTY(BlueprintReadWrite, Category = "LightAttack")
 	int LightAttackIndex = 0;
 
+	UPROPERTY(BlueprintReadWrite, Category = "LightAttack")
+	int JumpAttackIndex = 0;
+
 	UPROPERTY(BlueprintReadOnly, Category = "LightAttack")
 	TArray<UAnimMontage*> LightAttackCombo;
 	
 	UPROPERTY(BlueprintReadOnly, Category = "SpectralMode | SpectralAttack")
 	TArray<UAnimMontage*> SpectralAttackCombo;
+
+	UPROPERTY(BlueprintReadOnly, Category = "JumpAttack")
+	TArray<UAnimMontage*> JumpAttackCombo;
 
 	UPROPERTY(BlueprintReadWrite, Category = "LightAttack")
 	bool IsSaveLightAttack;
@@ -176,6 +182,9 @@ protected:
 
 	UFUNCTION(BlueprintCallable, Category = "LightAttack")
 	void ResetLightAttackStats();
+	
+	UFUNCTION(BlueprintCallable, Category = "JumpAttack")
+	void ResetJumpAttackStats();
 	
 	/*
 	* Heavy Attack
@@ -197,6 +206,9 @@ protected:
 
 	UFUNCTION(BlueprintCallable, Category = "HeavyAttack")
 	void ResetHeavyAttackStats();
+
+	UFUNCTION(BlueprintCallable, Category = "JumpAttack")
+	void PerformJumpAttack(int AttackIndex);
 
 	UFUNCTION(BlueprintCallable, Category = "SoftLockOn")
 	void SoftLockOn();
@@ -277,6 +289,9 @@ protected:
 	USpringArmComponent* CameraBoom;
 
 private:	
+
+	APlayerController* PlayerControllerRef = nullptr;
+
 	bool bIsDead = false;
 
 	UPROPERTY(VisibleAnywhere);

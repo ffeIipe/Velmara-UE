@@ -29,6 +29,6 @@ void UPlayerMainAnimInstance::NativeUpdateAnimation(float DeltaTime)
 
 	if (PlayerFormComponent)
 	{
-		PlayerForm = PlayerFormComponent->GetCurrentForm();
+		PlayerForm = PlayerFormComponent->GetCharacterForm();
 	}
 }
