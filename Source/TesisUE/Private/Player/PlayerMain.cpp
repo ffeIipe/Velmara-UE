@@ -98,22 +98,13 @@ void APlayerMain::BeginPlay()
 
 void APlayerMain::PerformLightAttack(int AttackIndex)
 {
-	if (GetCharacterAction() != ECharacterActions::ECA_Attack)
+	if (GetCharacterAction() != ECharacterActions::ECA_Attack && GetCharacterState() != ECharacterStates::ECS_Unequipped)
 	{
-		if (PlayerFormComponent->GetCharacterForm() == ECharacterForm::ECF_Human)
-		{
-			StopAttackBufferEvent();
-			StartAttackBufferEvent(BufferAttackDistance);
-			SetCharacterState(ECharacterActions::ECA_Attack);
-			SoftLockOn();
-			PlayAnimMontage(LightAttackCombo[AttackIndex]);
-		}
-		else
-		{
-			SetCharacterState(ECharacterActions::ECA_Attack);
-			SearchTarget();
-			PlayAnimMontage(SpectralAttackCombo[AttackIndex]);
-		}
+		StopAttackBufferEvent();
+		StartAttackBufferEvent(BufferAttackDistance);
+		SetCharacterState(ECharacterActions::ECA_Attack);
+		SoftLockOn();
+		PlayAnimMontage(LightAttackCombo[AttackIndex]);
 
 		LightAttackIndex++;
 
@@ -124,18 +115,41 @@ void APlayerMain::PerformLightAttack(int AttackIndex)
 	}
 }
 
-void APlayerMain::PerformJumpAttack(int AttackIndex)
+void APlayerMain::PerformSpectralAttack(int AttackIndex)
 {
 	if (GetCharacterAction() != ECharacterActions::ECA_Attack)
 	{
-		if (PlayerFormComponent->GetCharacterForm() == ECharacterForm::ECF_Human)
+		SetCharacterState(ECharacterActions::ECA_Attack);
+		SearchTarget();
+		PlayAnimMontage(SpectralAttackCombo[AttackIndex]);
+
+		SpectralAttackIndex++;
+
+		if (SpectralAttackIndex >= SpectralAttackCombo.Num())
 		{
-			StopAttackBufferEvent();
-			StartAttackBufferEvent(BufferAttackDistance);
-			SetCharacterState(ECharacterActions::ECA_Attack);
-			//SoftLockOn();
-			PlayAnimMontage(JumpAttackCombo[AttackIndex]);
+			SpectralAttackIndex = 0;
 		}
+	}
+}
+
+void APlayerMain::PerformSpectralBarrier()
+{
+	if (GetCharacterAction() != ECharacterActions::ECA_Attack)
+	{
+		SetCharacterState(ECharacterActions::ECA_Attack);
+		PlayAnimMontage(SpectralHeavyAttack);
+	}
+}
+
+void APlayerMain::PerformJumpAttack(int AttackIndex)
+{
+	if (GetCharacterAction() != ECharacterActions::ECA_Attack && GetCharacterState() != ECharacterStates::ECS_Unequipped)
+	{
+		StopAttackBufferEvent();
+		StartAttackBufferEvent(BufferAttackDistance);
+		SetCharacterState(ECharacterActions::ECA_Attack);
+		//SoftLockOn();
+		PlayAnimMontage(JumpAttackCombo[AttackIndex]);
 
 		JumpAttackIndex++;
 
@@ -148,23 +162,13 @@ void APlayerMain::PerformJumpAttack(int AttackIndex)
 
 void APlayerMain::PerformHeavyAttack(int AttackIndex)
 {
-	if (GetCharacterAction() != ECharacterActions::ECA_Attack)
+	if (GetCharacterAction() != ECharacterActions::ECA_Attack && GetCharacterState() != ECharacterStates::ECS_Unequipped)
 	{
-		if (PlayerFormComponent->GetCharacterForm() == ECharacterForm::ECF_Human)
-		{
-			StopAttackBufferEvent();
-			StartAttackBufferEvent(BufferAttackDistance);
-			SetCharacterState(ECharacterActions::ECA_Attack);
-
-			PlayAnimMontage(HeavyAttackCombo[AttackIndex]);
-
-			SoftLockOn();
-		}
-		else
-		{
-			SetCharacterState(ECharacterActions::ECA_Attack);
-			PlayAnimMontage(SpectralHeavyAttack);
-		}
+		StopAttackBufferEvent();
+		StartAttackBufferEvent(BufferAttackDistance);
+		SetCharacterState(ECharacterActions::ECA_Attack);
+		PlayAnimMontage(HeavyAttackCombo[AttackIndex]);
+		SoftLockOn();
 
 		HeavyAttackIndex++;
 
@@ -252,6 +256,12 @@ void APlayerMain::UpdateBuffer(float Alpha, float BufferDistance)
 void APlayerMain::ResetLightAttackStats()
 {
 	LightAttackIndex = 0;
+	IsSaveLightAttack = false;
+}
+
+void APlayerMain::ResetSpectralAttackStats()
+{
+	SpectralAttackIndex = 0;
 	IsSaveLightAttack = false;
 }
 
@@ -350,15 +360,8 @@ float APlayerMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEven
 
 	if (Attributes && Attributes->IsAlive())
 	{
-		if (GetCharacterAction() == ECharacterActions::ECA_Block)
-		{
-			ReceiveBlock();
-		}
-		else
-		{
-			Attributes->ReceiveDamage(DamageAmount);
-			GetDirectionalReact();
-		}
+		Attributes->ReceiveDamage(DamageAmount);
+		GetDirectionalReact();
 	}
 	//else
 	//{
@@ -577,8 +580,11 @@ void APlayerMain::GetDirectionalReact()
 
 void APlayerMain::Block()
 {
-	PlayAnimMontage(BlockMontage,1.f, FName("BlockIdle"));
-	SetCharacterState(ECharacterActions::ECA_Block);
+	if (GetCharacterState() != ECharacterStates::ECS_Unequipped)
+	{
+		PlayAnimMontage(BlockMontage, 1.f, FName("BlockIdle"));
+		SetCharacterState(ECharacterActions::ECA_Block);
+	}	
 }
 
 void APlayerMain::ReceiveBlock()

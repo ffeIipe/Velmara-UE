@@ -66,6 +66,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ReleasePossession();
 
+	void ReceiveBlock();
+
 protected:
 	/*
 	* Base
@@ -161,6 +163,9 @@ protected:
 	*/
 	UPROPERTY(BlueprintReadWrite, Category = "LightAttack")
 	int LightAttackIndex = 0;
+	
+	UPROPERTY(BlueprintReadWrite, Category = "SpectralMode | SpectralAttack")
+	int SpectralAttackIndex = 0;
 
 	UPROPERTY(BlueprintReadWrite, Category = "LightAttack")
 	int JumpAttackIndex = 0;
@@ -180,8 +185,17 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "LightAttack")
 	void PerformLightAttack(int AttackIndex);
 
+	UFUNCTION(BlueprintCallable, Category = "SpectralMode | SpectralAttack")
+	void PerformSpectralAttack(int AttackIndex);
+	
+	UFUNCTION(BlueprintCallable, Category = "SpectralMode | SpectralAttack")
+	void PerformSpectralBarrier();
+
 	UFUNCTION(BlueprintCallable, Category = "LightAttack")
 	void ResetLightAttackStats();
+	
+	UFUNCTION(BlueprintCallable, Category = "SpectralMode | SpectralAttack")
+	void ResetSpectralAttackStats();
 	
 	UFUNCTION(BlueprintCallable, Category = "JumpAttack")
 	void ResetJumpAttackStats();
@@ -354,7 +368,7 @@ private:
 
 	void Block();
 	
-	void ReceiveBlock();
+	
 
 	void ReleaseBlock();
 

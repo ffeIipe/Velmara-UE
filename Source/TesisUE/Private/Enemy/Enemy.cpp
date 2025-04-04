@@ -192,6 +192,11 @@ float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AC
 {
 	if (Attributes && Attributes->IsAlive() && HealthBarWidget)
 	{
+		if (GetCharacterMovement() && GetCharacterMovement()->IsFalling() || GetCharacterMovement()->IsFlying())
+		{
+			SetActorLocation(DamageCauser->GetActorLocation());
+		}
+
 		Attributes->ReceiveDamage(DamageAmount);
 		HealthBarWidget->SetHealthPercent(Attributes->GetHealthPercent());
 	}
@@ -209,30 +214,41 @@ void AEnemy::DirectionalHitReact(const FVector& ImpactPoint)
 
 	Angle = FMath::RadiansToDegrees(Angle);
 
-	const FVector CrossProduct = FVector::CrossProduct(Forward, ToHit);
-	if (CrossProduct.Z < 0)
+	if (GetCharacterMovement() && GetCharacterMovement()->IsFalling() || GetCharacterMovement()->IsFlying())
 	{
-		Angle *= -1.f;
+		PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Green, FString("FromAirAnim"));
+		}
 	}
-
-	FName Section("FromBack");
-
-	if (Angle >= -45.f && Angle < 45.f)
+	else
 	{
-		Section = FName("FromFront");
-	}
+		const FVector CrossProduct = FVector::CrossProduct(Forward, ToHit);
+		if (CrossProduct.Z < 0)
+		{
+			Angle *= -1.f;
+		}
 
-	else if (Angle >= -135.f && Angle < -45.f)
-	{
-		Section = FName("FromLeft");
-	}
+		FName Section("FromBack");
 
-	else if (Angle >= 45.f && Angle < 135.f)
-	{
-		Section = FName("FromRight");
-	}
+		if (Angle >= -45.f && Angle < 45.f)
+		{
+			Section = FName("FromFront");
+		}
 
-	PlayAnimMontage(HitReactMontage, 1.f, Section);
+		else if (Angle >= -135.f && Angle < -45.f)
+		{
+			Section = FName("FromLeft");
+		}
+
+		else if (Angle >= 45.f && Angle < 135.f)
+		{
+			Section = FName("FromRight");
+		}
+
+		PlayAnimMontage(HitReactMontage, 1.f, Section);
+	}
 }
 
 void AEnemy::HitFlash()

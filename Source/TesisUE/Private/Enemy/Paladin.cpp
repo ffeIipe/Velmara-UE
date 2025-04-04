@@ -66,7 +66,7 @@ void APaladin::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Ot
 	);
 
 	APlayerMain* Player = Cast<APlayerMain>(BoxHit.GetActor());
-	if (Player)
+	if (Player && Player->GetCharacterAction() != ECharacterActions::ECA_Block)
 	{
 		UGameplayStatics::ApplyDamage(
 			BoxHit.GetActor(),
@@ -76,6 +76,11 @@ void APaladin::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Ot
 			UDamageType::StaticClass()
 		);
 		ActorsToIgnore.AddUnique(BoxHit.GetActor());
+	}
+	else if (Player)
+	{
+		PlayAnimMontage(HitReactMontage, 1.f, FName("FromFront"));
+		Player->ReceiveBlock();
 	}
 
 	//TODO: fx to play if player has been damaged
