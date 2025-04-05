@@ -9,6 +9,7 @@
 UENUM(BlueprintType)
 enum class EMainDamageTypes : uint8
 {
+	EMDT_None UMETA(DisplayName = "None"),
 	EMDT_CrashDown UMETA(DisplayName = "CrashDown"),
 	EMDT_InAir UMETA(DisplayName = "InAir")
 };
@@ -18,7 +19,7 @@ class TESISUE_API UDamageTypeMain : public UDamageType
 {
 	GENERATED_BODY()
 
-protected:
+public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	EMainDamageTypes DamageType;
 };

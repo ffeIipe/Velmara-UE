@@ -49,8 +49,6 @@ public:
 		class AController* EventInstigator,
 		AActor* DamageCauser) override;
 
-	void ReceiveAnyDamage(float Damage, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
-
 	FORCEINLINE EEnemyType GetEnemyType() const { return EnemyType; }
 
 	FORCEINLINE EEnemyState GetEnemyState() const { return EnemyState; }
@@ -140,7 +138,15 @@ protected:
 
 	UFUNCTION(BlueprintCallable)
 	void ResetEnemy();
+		
+	UFUNCTION()		
+	void ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoint);
+
 private:
+
+	UPROPERTY()
+	EMainDamageTypes LastDamageType = EMainDamageTypes::EMDT_None;
+
 
 	AAIController* AIOriginalController;
 

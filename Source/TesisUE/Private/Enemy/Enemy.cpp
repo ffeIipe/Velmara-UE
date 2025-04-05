@@ -16,11 +16,11 @@
 #include "Camera/CameraComponent.h"
 #include "Player/PlayerMain.h"
 #include "DamageTypes/DamageTypeMain.h"
+#include "GameFramework/DamageType.h"
+#include "Engine/DamageEvents.h"
 
-// Sets default values
 AEnemy::AEnemy()
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 	GetMesh()->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
@@ -98,6 +98,7 @@ void AEnemy::Die()
 	}
 
 	PlayAnimMontage(DeathMontage, 1.f, SectionName);
+	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
 
 	if (GetMesh())
 	{
@@ -170,7 +171,7 @@ void AEnemy::LaunchEnemyUp()
 	isLaunched = true;
 	DisableAI();
 	PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
-	AddActorWorldOffset(FVector(0.f,0.f,400.f), true);
+	AddActorWorldOffset(FVector(0.f,0.f,200.f), true);
 	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
 }
 
@@ -198,11 +199,31 @@ void AEnemy::ResetEnemy()
 	EnableAI();
 }
 
+void AEnemy::ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoint)
+{
+	switch (DamageType)
+	{
+	case EMainDamageTypes::EMDT_CrashDown:
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::White, FString("CrashDown Case valid"));
+		CrashDown();
+		break;
+
+	case EMainDamageTypes::EMDT_InAir:
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Black, FString("HitInAir Case valid"));
+		HitInAir();
+		break;
+
+	default:
+		DirectionalHitReact(ImpactPoint);
+		break;
+	}
+}
+
 void AEnemy::GetHit_Implementation(const FVector& ImpactPoint)
 {
 	if (Attributes && Attributes->IsAlive())
 	{
-		//DirectionalHitReact(ImpactPoint);
+		ReactToDamage(LastDamageType, ImpactPoint);
 		HitFlash();
 	}
 	else
@@ -231,42 +252,20 @@ float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AC
 {
 	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
+	const UDamageTypeMain* MainDamageType = DamageEvent.DamageTypeClass
+		? Cast<UDamageTypeMain>(DamageEvent.DamageTypeClass->GetDefaultObject())
+		: nullptr;
+
+	LastDamageType = MainDamageType
+		? MainDamageType->DamageType
+		: EMainDamageTypes::EMDT_None;
+
 	if (Attributes && Attributes->IsAlive() && HealthBarWidget)
 	{
 		Attributes->ReceiveDamage(DamageAmount);
 		HealthBarWidget->SetHealthPercent(Attributes->GetHealthPercent());
 	}
 	return DamageAmount;
-}
-
-void AEnemy::ReceiveAnyDamage(float Damage, const UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser)
-{
-	Super::ReceiveAnyDamage(Damage, DamageType, InstigatedBy, DamageCauser);
-
-	//const UDamageTypeMain* MainDamageType = Cast<UDamageTypeMain>(DamageType);
-	//if (MainDamageType)
-	//{
-	//	switch (MainDamageType->DamageType)
-	//	{
-	//	case EMainDamageTypes::CrashDown:
-	//		UE_LOG(LogTemp, Warning, TEXT("Received CrashDown damage"));
-	//		// Tu lógica para este tipo
-	//		break;
-	//
-	//	case EMainDamageTypes::InAir:
-	//		UE_LOG(LogTemp, Warning, TEXT("Received InAir damage"));
-	//		// Otra lógica
-	//		break;
-	//
-	//	default:
-	//		UE_LOG(LogTemp, Warning, TEXT("Unknown damage type"));
-	//		break;
-	//	}
-	//}
-	//else
-	//{
-	//	UE_LOG(LogTemp, Warning, TEXT("DamageType is not of type UDamageTypeMain"));
-	//}
 }
 
 void AEnemy::DirectionalHitReact(const FVector& ImpactPoint)

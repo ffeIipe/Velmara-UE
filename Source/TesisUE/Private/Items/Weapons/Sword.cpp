@@ -101,11 +101,6 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 		{
 			TSubclassOf<UDamageType> FinalDamageType = DamageTypeClass ? DamageTypeClass : TSubclassOf<UDamageType>(UDamageType::StaticClass());
 
-			if (GEngine && !FinalDamageType)
-			{
-				GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Black, FString("FinalDamageType"));
-			}
-
 			UGameplayStatics::ApplyDamage(
 				BoxHit.GetActor(),
 				Damage,

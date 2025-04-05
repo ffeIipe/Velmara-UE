@@ -23,6 +23,7 @@
 #include "Camera/CameraActor.h"
 #include "EngineUtils.h"
 #include <Enemy/Paladin.h>
+#include <Kismet/GameplayStatics.h>
 
 APlayerMain::APlayerMain()
 {
@@ -158,6 +159,7 @@ void APlayerMain::PerformJumpAttack(int AttackIndex)
 		if (JumpAttackIndex >= JumpAttackCombo.Num())
 		{
 			JumpAttackIndex = 0;
+			PlayAnimMontage(CrasherMontage, 1.f);
 			isLaunched = false;
 		}
 	}
@@ -438,9 +440,6 @@ void APlayerMain::PossessEnemy()
 		FollowCamera->AttachToComponent(TargetEnemy->SpringArm, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("SpringEndpoint"));
 		PlayerControllerRef->SetViewTargetWithBlend(FollowCamera, 1.f);
 	}
-
-	//StoredLocation = GetActorLocation();
-	//StoredRotation = GetActorRotation();
 	SetActorHiddenInGame(true);
 	SetActorEnableCollision(false);
 }
@@ -606,8 +605,7 @@ void APlayerMain::ReleaseBlock()
 void APlayerMain::LaunchCharacterUp()
 {
 	isLaunched = true;
-	/*SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, 400.f), true);*/
-	AddActorWorldOffset(FVector(0.f, 0.f, 400.f), true);
+	AddActorWorldOffset(FVector(0.f, 0.f, 200.f), true);
 
 	APaladin* Enemy = Cast<APaladin>(SoftLockTarget);
 	if (Enemy)
@@ -681,6 +679,17 @@ AActor* APlayerMain::SphereTraceForEnemies(FVector Start, FVector End)
 	return ResultHit.GetActor();
 }
 
+void APlayerMain::RestartLevel()
+{	
+	FName CurrentLevel = *UGameplayStatics::GetCurrentLevelName(this);
+	UGameplayStatics::OpenLevel(this, CurrentLevel);	
+}
+
+void APlayerMain::GoToMainMenu()
+{
+	UGameplayStatics::OpenLevel(this, FName("MainMenu"));
+}
+
 void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
@@ -696,5 +705,7 @@ void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		EnhancedInputComponent->BindAction(BlockAction, ETriggerEvent::Started, this, &APlayerMain::Block);
 		EnhancedInputComponent->BindAction(BlockAction, ETriggerEvent::Completed, this, &APlayerMain::ReleaseBlock);
 		EnhancedInputComponent->BindAction(PossessAction, ETriggerEvent::Completed, this, &APlayerMain::PossessEnemy);
+		EnhancedInputComponent->BindAction(RestartAction, ETriggerEvent::Completed, this, &APlayerMain::RestartLevel);
+		EnhancedInputComponent->BindAction(GoToMenuAction, ETriggerEvent::Completed, this, &APlayerMain::GoToMainMenu);
 	}
 }

@@ -301,6 +301,12 @@ protected:
 	
 	UPROPERTY(EditAnywhere, Category = "Input | Actions")
 	UInputAction* PossessAction;
+	
+	UPROPERTY(EditAnywhere, Category = "Input | Actions")
+	UInputAction* RestartAction;
+	
+	UPROPERTY(EditAnywhere, Category = "Input | Actions")
+	UInputAction* GoToMenuAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	USpringArmComponent* CameraBoom;
@@ -383,4 +389,10 @@ private:
 	void Crasher();
 
 	AActor* SphereTraceForEnemies(FVector Start, FVector End);
+
+	UFUNCTION()
+	void RestartLevel();
+	
+	UFUNCTION()
+	void GoToMainMenu();
 };
