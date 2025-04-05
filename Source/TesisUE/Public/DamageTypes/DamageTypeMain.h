@@ -9,7 +9,8 @@
 UENUM(BlueprintType)
 enum class EMainDamageTypes : uint8
 {
-	EMDT_CrashDown UMETA(DisplayName = "CrashDown")
+	EMDT_CrashDown UMETA(DisplayName = "CrashDown"),
+	EMDT_InAir UMETA(DisplayName = "InAir")
 };
 
 UCLASS()

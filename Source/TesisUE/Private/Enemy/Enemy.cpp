@@ -15,6 +15,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Player/PlayerMain.h"
+#include "DamageTypes/DamageTypeMain.h"
 
 // Sets default values
 AEnemy::AEnemy()
@@ -180,6 +181,16 @@ void AEnemy::CrashDown()
 	LaunchCharacter(FVector(0.f, 0.f, -100000.f), true, true);
 }
 
+void AEnemy::HitInAir()
+{
+	float PlayerLocationZ = UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->GetActorLocation().Z;
+	SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, PlayerLocationZ + 50.f));
+	PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
+	GetCharacterMovement()->IsFlying();
+	DisableAI();
+
+}
+
 void AEnemy::ResetEnemy()
 {
 	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
@@ -191,7 +202,7 @@ void AEnemy::GetHit_Implementation(const FVector& ImpactPoint)
 {
 	if (Attributes && Attributes->IsAlive())
 	{
-		DirectionalHitReact(ImpactPoint);
+		//DirectionalHitReact(ImpactPoint);
 		HitFlash();
 	}
 	else
@@ -228,6 +239,36 @@ float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AC
 	return DamageAmount;
 }
 
+void AEnemy::ReceiveAnyDamage(float Damage, const UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser)
+{
+	Super::ReceiveAnyDamage(Damage, DamageType, InstigatedBy, DamageCauser);
+
+	//const UDamageTypeMain* MainDamageType = Cast<UDamageTypeMain>(DamageType);
+	//if (MainDamageType)
+	//{
+	//	switch (MainDamageType->DamageType)
+	//	{
+	//	case EMainDamageTypes::CrashDown:
+	//		UE_LOG(LogTemp, Warning, TEXT("Received CrashDown damage"));
+	//		// Tu lógica para este tipo
+	//		break;
+	//
+	//	case EMainDamageTypes::InAir:
+	//		UE_LOG(LogTemp, Warning, TEXT("Received InAir damage"));
+	//		// Otra lógica
+	//		break;
+	//
+	//	default:
+	//		UE_LOG(LogTemp, Warning, TEXT("Unknown damage type"));
+	//		break;
+	//	}
+	//}
+	//else
+	//{
+	//	UE_LOG(LogTemp, Warning, TEXT("DamageType is not of type UDamageTypeMain"));
+	//}
+}
+
 void AEnemy::DirectionalHitReact(const FVector& ImpactPoint)
 {
 	const FVector Forward = GetActorForwardVector();
@@ -236,45 +277,33 @@ void AEnemy::DirectionalHitReact(const FVector& ImpactPoint)
 	const double CosAngle = FVector::DotProduct(Forward, ToHit);
 
 	double Angle = FMath::Acos(CosAngle);
-	
+
 	Angle = FMath::RadiansToDegrees(Angle);
 
-	if (GetCharacterMovement() && GetCharacterMovement()->IsFalling() || GetCharacterMovement()->IsFlying())
+	const FVector CrossProduct = FVector::CrossProduct(Forward, ToHit);
+	if (CrossProduct.Z < 0)
 	{
-		float PlayerLocationZ = UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->GetActorLocation().Z;
-
-		SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, PlayerLocationZ + 50.f));
-		PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
-		GetCharacterMovement()->IsFlying();
-		DisableAI();
+		Angle *= -1.f;
 	}
-	else
+
+	FName Section("FromBack");
+
+	if (Angle >= -45.f && Angle < 45.f)
 	{
-		const FVector CrossProduct = FVector::CrossProduct(Forward, ToHit);
-		if (CrossProduct.Z < 0)
-		{
-			Angle *= -1.f;
-		}
-
-		FName Section("FromBack");
-
-		if (Angle >= -45.f && Angle < 45.f)
-		{
-			Section = FName("FromFront");
-		}
-
-		else if (Angle >= -135.f && Angle < -45.f)
-		{
-			Section = FName("FromLeft");
-		}
-
-		else if (Angle >= 45.f && Angle < 135.f)
-		{
-			Section = FName("FromRight");
-		}
-
-		PlayAnimMontage(HitReactMontage, 1.f, Section);
+		Section = FName("FromFront");
 	}
+
+	else if (Angle >= -135.f && Angle < -45.f)
+	{
+		Section = FName("FromLeft");
+	}
+
+	else if (Angle >= 45.f && Angle < 135.f)
+	{
+		Section = FName("FromRight");
+	}
+
+	PlayAnimMontage(HitReactMontage, 1.f, Section);
 }
 
 void AEnemy::HitFlash()

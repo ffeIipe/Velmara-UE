@@ -49,6 +49,8 @@ public:
 		class AController* EventInstigator,
 		AActor* DamageCauser) override;
 
+	void ReceiveAnyDamage(float Damage, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
+
 	FORCEINLINE EEnemyType GetEnemyType() const { return EnemyType; }
 
 	FORCEINLINE EEnemyState GetEnemyState() const { return EnemyState; }
@@ -76,6 +78,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void CrashDown();
+	
+	UFUNCTION(BlueprintCallable)
+	void HitInAir();
 
 protected:
 	virtual void BeginPlay() override;
