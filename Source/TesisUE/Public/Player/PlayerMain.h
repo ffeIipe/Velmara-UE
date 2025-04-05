@@ -367,11 +367,14 @@ private:
 	void GetDirectionalReact();
 
 	void Block();
-	
-	
 
 	void ReleaseBlock();
 
-	AActor* SphereTraceForEnemies(FVector Start, FVector End);
+	UFUNCTION(BlueprintCallable)
+	void LaunchCharacterUp1();
+	
+	UPROPERTY(BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	bool isLaunched = false;
 
+	AActor* SphereTraceForEnemies(FVector Start, FVector End);
 };

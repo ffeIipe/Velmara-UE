@@ -159,6 +159,33 @@ void AEnemy::Look(const FInputActionValue& Value)
 	AddControllerYawInput(LookingVector.X);
 }
 
+void AEnemy::LaunchEnemyUp1()
+{
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Blue, FString("LaunchEnemyUp1"));
+	}
+
+	//if (isLaunched) return;
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Red, FString("LaunchEnemyUp2"));
+	}
+	isLaunched = true;
+	DisableAI();
+	PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
+	SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, 400.f), true);
+	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
+}
+
+void AEnemy::ResetEnemy1()
+{
+	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
+	isLaunched = false;
+	EnableAI();
+}
+
 void AEnemy::GetHit_Implementation(const FVector& ImpactPoint)
 {
 	if (Attributes && Attributes->IsAlive())
@@ -211,12 +238,18 @@ void AEnemy::DirectionalHitReact(const FVector& ImpactPoint)
 	const double CosAngle = FVector::DotProduct(Forward, ToHit);
 
 	double Angle = FMath::Acos(CosAngle);
-
+	
 	Angle = FMath::RadiansToDegrees(Angle);
 
 	if (GetCharacterMovement() && GetCharacterMovement()->IsFalling() || GetCharacterMovement()->IsFlying())
 	{
+		float PlayerLocationZ = UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->GetActorLocation().Z;
+
+		SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, GetActorLocation().Z));
+
 		PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
+		GetCharacterMovement()->IsFlying();
+
 		if (GEngine)
 		{
 			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Green, FString("FromAirAnim"));

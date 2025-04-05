@@ -71,6 +71,9 @@ public:
 	UFUNCTION()
 	void UnPossess();
 
+	UFUNCTION(BlueprintCallable)
+	void LaunchEnemyUp1();
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -123,6 +126,12 @@ protected:
 	virtual void Look(const FInputActionValue& Value);
 
 	APlayerMain* PossessionOwner;
+	
+	UPROPERTY(VisibleAnywhere)
+	bool isLaunched = false;
+
+	UFUNCTION(BlueprintCallable)
+	void ResetEnemy1();
 private:
 
 	AAIController* AIOriginalController;

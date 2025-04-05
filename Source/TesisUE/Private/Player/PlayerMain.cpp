@@ -19,6 +19,7 @@
 #include "Components/AttributeComponent.h"
 #include "Components/CapsuleComponent.h"
 #include <Enemy/Spectre.h>
+#include <Enemy/Enemy.h>
 #include "Camera/CameraActor.h"
 #include "EngineUtils.h"
 
@@ -148,7 +149,7 @@ void APlayerMain::PerformJumpAttack(int AttackIndex)
 		StopAttackBufferEvent();
 		StartAttackBufferEvent(BufferAttackDistance);
 		SetCharacterState(ECharacterActions::ECA_Attack);
-		//SoftLockOn();
+		SoftLockOn();
 		PlayAnimMontage(JumpAttackCombo[AttackIndex]);
 
 		JumpAttackIndex++;
@@ -268,7 +269,7 @@ void APlayerMain::ResetSpectralAttackStats()
 void APlayerMain::ResetJumpAttackStats()
 {
 	JumpAttackIndex = 0;
-	//bLaunched = false;
+	isLaunched = false;
 }
 
 void APlayerMain::ResetHeavyAttackStats()
@@ -598,6 +599,36 @@ void APlayerMain::ReleaseBlock()
 	SetCharacterState(ECharacterActions::ECA_Nothing);
 }
 
+void APlayerMain::LaunchCharacterUp1()
+{
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::White, FString("LaunchCharacterUp1"));
+	}
+
+	isLaunched = true;
+	SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, 400.f), true);
+	SoftLockOn();
+
+	AEnemy* Enemy = Cast<AEnemy>(SoftLockTarget);
+	if (Enemy)
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Blue, FString("Enemy found"));
+		}
+		Enemy->LaunchEnemyUp1();
+	}
+	else
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Orange, FString("Enemy not found"));
+		}
+	}
+	
+}
+
 AActor* APlayerMain::SphereTraceForEnemies(FVector Start, FVector End)
 {
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
@@ -617,7 +648,7 @@ AActor* APlayerMain::SphereTraceForEnemies(FVector Start, FVector End)
 		ObjectTypes,
 		false,
 		ActorsToIgnore,
-		EDrawDebugTrace::None,
+		EDrawDebugTrace::ForDuration,
 		ResultHit,
 		true
 	);
