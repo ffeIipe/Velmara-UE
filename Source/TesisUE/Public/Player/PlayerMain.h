@@ -374,7 +374,7 @@ private:
 	void ReleaseBlock();
 
 	UFUNCTION(BlueprintCallable)
-	void LaunchCharacterUp1();
+	void LaunchCharacterUp();
 	
 	UPROPERTY(BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	bool isLaunched = false;

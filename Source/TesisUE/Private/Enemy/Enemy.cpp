@@ -25,9 +25,11 @@ AEnemy::AEnemy()
 	GetMesh()->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+	GetMesh()->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
 
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	GetCapsuleComponent()->SetGenerateOverlapEvents(true);
+	GetCapsuleComponent()->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
 
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	SpringArm->SetupAttachment(GetRootComponent());
@@ -40,6 +42,7 @@ AEnemy::AEnemy()
 
 	HealthBarWidget = CreateDefaultSubobject<UHealthBarComponent>(TEXT("HealthBar"));
 	HealthBarWidget->SetupAttachment(GetRootComponent());
+	HealthBarWidget->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
 
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationRoll = false;
@@ -159,19 +162,25 @@ void AEnemy::Look(const FInputActionValue& Value)
 	AddControllerYawInput(LookingVector.X);
 }
 
-void AEnemy::LaunchEnemyUp1()
+void AEnemy::LaunchEnemyUp()
 {
 	if (isLaunched) return;
 
 	isLaunched = true;
 	DisableAI();
 	PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
-	//SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, 400.f), true);
 	AddActorWorldOffset(FVector(0.f,0.f,400.f), true);
 	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
 }
 
-void AEnemy::ResetEnemy1()
+void AEnemy::CrashDown()
+{
+	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
+	PlayAnimMontage(HitReactMontage, 1.f, FName("KnockDown"));
+	LaunchCharacter(FVector(0.f, 0.f, -100000.f), true, true);
+}
+
+void AEnemy::ResetEnemy()
 {
 	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
 	isLaunched = false;
@@ -209,6 +218,8 @@ void AEnemy::GetHit_Implementation(const FVector& ImpactPoint)
 
 float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
+	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
 	if (Attributes && Attributes->IsAlive() && HealthBarWidget)
 	{
 		Attributes->ReceiveDamage(DamageAmount);
@@ -236,11 +247,6 @@ void AEnemy::DirectionalHitReact(const FVector& ImpactPoint)
 		PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
 		GetCharacterMovement()->IsFlying();
 		DisableAI();
-
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Green, FString("FromAirAnim"));
-		}
 	}
 	else
 	{
@@ -292,11 +298,6 @@ void AEnemy::DisableAI()
 {
 	if (AIOriginalController)
 	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(4, 5.f, FColor::Blue, FString("AI Disabled"));
-		}
-
 		AIOriginalController->StopMovement();
 		AIOriginalController->UnPossess();
 	}
@@ -307,10 +308,6 @@ void AEnemy::EnableAI()
 	if (AIOriginalController)
 	{
 		AIOriginalController->Possess(this);
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(5, 5.f, FColor::White, FString("AI Enabled"));
-		}
 	}
 }
 
@@ -333,10 +330,7 @@ void AEnemy::OnPossessed(APlayerMain* NewOwner)
 
 void AEnemy::UnPossess()
 {
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(1, 1.f, FColor::Cyan, FString("UnPossess"));
-	}
 	bUseControllerRotationYaw = true;
 	PossessionOwner->ReleasePossession();
 }
+

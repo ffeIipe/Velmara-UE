@@ -32,6 +32,9 @@ public:
 
 	TArray<AActor*> IgnoreActors;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage")
+	TSubclassOf<UDamageType> DamageTypeClass;
+
 protected:
 	//Pickeo de item
 	virtual void OnSphereBeginOverlap(

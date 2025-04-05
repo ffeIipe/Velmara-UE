@@ -25,6 +25,5 @@ void AEnemySpectralProjectile::OnBoxOverlap(UPrimitiveComponent* OverlappedCompo
 			UDamageType::StaticClass()
 		);
 		ActorsToIgnore.AddUnique(OtherActor);
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Cyan, FString("Actor Overlapped " + OtherActor->GetDebugName(OtherActor)));
 	}
 }

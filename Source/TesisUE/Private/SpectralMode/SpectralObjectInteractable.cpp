@@ -73,10 +73,8 @@ void ASpectralObjectInteractable::OnSphereEndOverlap(UPrimitiveComponent* Overla
 
 void ASpectralObjectInteractable::SpectralInteract()
 {
-	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::White, FString("No object to interact"));
 	if (ObjectToInteract)
 	{
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Black, FString("There is an object to interact"));
 		ObjectToInteract->Open();
 	}
 }

@@ -11,11 +11,13 @@ APaladin::APaladin()
 {
 	SwordMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SwordMesh"));
 	SwordMesh->SetupAttachment(GetMesh(), TEXT("RightHandSocket"));
+	SwordMesh->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
 
 	SwordBoxCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("SwordBoxCollider"));
 	SwordBoxCollider->SetupAttachment(SwordMesh);
 	SwordBoxCollider->SetRelativeLocation(FVector(0.f, 0.f, 48.f));
 	SwordBoxCollider->SetBoxExtent(FVector(3.f, 2.f, 36.f));
+	SwordBoxCollider->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
 
 	BoxTraceStart = CreateDefaultSubobject<USceneComponent>(TEXT("Box Trace Start"));
 	BoxTraceStart->SetupAttachment(SwordMesh);

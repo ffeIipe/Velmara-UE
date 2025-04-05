@@ -30,7 +30,6 @@ void AItem::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 
 	if (APlayerMain* Player = Cast<APlayerMain>(OtherActor))
 	{
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Green, FString("Begin overlapping " + OtherActorName));
 		Player->SetOverlappingItem(this);
 	}
 }
@@ -41,7 +40,6 @@ void AItem::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor*
 
 	if (APlayerMain* Player = Cast<APlayerMain>(OtherActor))
 	{
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Red, FString("End overlapping " + OtherActorName));
 		Player->SetOverlappingItem(nullptr);
 	}
 }

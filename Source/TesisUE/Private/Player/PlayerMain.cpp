@@ -290,10 +290,7 @@ void APlayerMain::SoftLockOn()
 	if (Enemy != Cast<ASpectre>(Enemy))
 	{
 		SoftLockTarget = Enemy;
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Cyan, FString("Enemy found"));
-		}
+		RotationToTarget();
 	}
 	else SoftLockTarget = nullptr;
 }
@@ -520,6 +517,7 @@ void APlayerMain::DoubleJump()
 void APlayerMain::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);
+	isLaunched = false;
 	CanDoubleJump = true;
 }
 
@@ -605,7 +603,7 @@ void APlayerMain::ReleaseBlock()
 	SetCharacterState(ECharacterActions::ECA_Nothing);
 }
 
-void APlayerMain::LaunchCharacterUp1()
+void APlayerMain::LaunchCharacterUp()
 {
 	isLaunched = true;
 	/*SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, 400.f), true);*/
@@ -614,18 +612,19 @@ void APlayerMain::LaunchCharacterUp1()
 	APaladin* Enemy = Cast<APaladin>(SoftLockTarget);
 	if (Enemy)
 	{
-		Enemy->LaunchEnemyUp1();
+		Enemy->LaunchEnemyUp();
 
 	}
 }
 
 void APlayerMain::Crasher()
 {
-	PlayAnimMontage(CrasherMontage, 1.f);
+	SoftLockOn();
 	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
+	CharacterAction = ECharacterActions::ECA_Attack;
 
 	FVector Start = GetActorLocation();
-	FVector End = Start + FVector(0.f, 0.f, -100000.f); // 1000 metros hacia abajo
+	FVector End = Start + FVector(0.f, 0.f, -100000.f);
 
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
 	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_WorldStatic));
@@ -643,7 +642,7 @@ void APlayerMain::Crasher()
 		ObjectTypes,
 		false,
 		ObjectsToIgnore,
-		EDrawDebugTrace::ForDuration,
+		EDrawDebugTrace::None,
 		Hit,
 		true
 	);
@@ -674,7 +673,7 @@ AActor* APlayerMain::SphereTraceForEnemies(FVector Start, FVector End)
 		ObjectTypes,
 		false,
 		ActorsToIgnore,
-		EDrawDebugTrace::ForDuration,
+		EDrawDebugTrace::None,
 		ResultHit,
 		true
 	);

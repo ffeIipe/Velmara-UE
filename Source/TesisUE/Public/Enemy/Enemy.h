@@ -72,7 +72,10 @@ public:
 	void UnPossess();
 
 	UFUNCTION(BlueprintCallable)
-	void LaunchEnemyUp1();
+	void LaunchEnemyUp();
+
+	UFUNCTION(BlueprintCallable)
+	void CrashDown();
 
 protected:
 	virtual void BeginPlay() override;
@@ -131,7 +134,7 @@ protected:
 	bool isLaunched = false;
 
 	UFUNCTION(BlueprintCallable)
-	void ResetEnemy1();
+	void ResetEnemy();
 private:
 
 	AAIController* AIOriginalController;

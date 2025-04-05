@@ -95,20 +95,23 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 		true
 	);
 
-	//if (BoxHit.GetActor())
-	//{
-	//	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 10.f, FColor::White, FString(BoxHit.GetActor()->GetDebugName(BoxHit.GetActor()) + BoxHit.GetComponent()->GetName()));
-	//}
 	if (BoxHit.GetActor() && !ActorsToIgnore.Contains(BoxHit.GetActor()))
 	{
 		if (IHitInterface* HitInterface = Cast<IHitInterface>(BoxHit.GetActor()))
 		{
+			TSubclassOf<UDamageType> FinalDamageType = DamageTypeClass ? DamageTypeClass : TSubclassOf<UDamageType>(UDamageType::StaticClass());
+
+			if (GEngine && !FinalDamageType)
+			{
+				GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Black, FString("FinalDamageType"));
+			}
+
 			UGameplayStatics::ApplyDamage(
 				BoxHit.GetActor(),
 				Damage,
 				GetInstigator()->GetController(),
 				this,
-				UDamageType::StaticClass()
+				FinalDamageType
 			);
 			HitInterface->Execute_GetHit(BoxHit.GetActor(), BoxHit.ImpactPoint);
 			CameraShake();
