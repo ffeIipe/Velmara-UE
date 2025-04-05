@@ -161,21 +161,13 @@ void AEnemy::Look(const FInputActionValue& Value)
 
 void AEnemy::LaunchEnemyUp1()
 {
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Blue, FString("LaunchEnemyUp1"));
-	}
+	if (isLaunched) return;
 
-	//if (isLaunched) return;
-
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Red, FString("LaunchEnemyUp2"));
-	}
 	isLaunched = true;
 	DisableAI();
 	PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
-	SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, 400.f), true);
+	//SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, 400.f), true);
+	AddActorWorldOffset(FVector(0.f,0.f,400.f), true);
 	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
 }
 
@@ -219,11 +211,6 @@ float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AC
 {
 	if (Attributes && Attributes->IsAlive() && HealthBarWidget)
 	{
-		if (GetCharacterMovement() && GetCharacterMovement()->IsFalling() || GetCharacterMovement()->IsFlying())
-		{
-			SetActorLocation(DamageCauser->GetActorLocation());
-		}
-
 		Attributes->ReceiveDamage(DamageAmount);
 		HealthBarWidget->SetHealthPercent(Attributes->GetHealthPercent());
 	}
@@ -245,10 +232,10 @@ void AEnemy::DirectionalHitReact(const FVector& ImpactPoint)
 	{
 		float PlayerLocationZ = UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->GetActorLocation().Z;
 
-		SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, GetActorLocation().Z));
-
+		SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, PlayerLocationZ + 50.f));
 		PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
 		GetCharacterMovement()->IsFlying();
+		DisableAI();
 
 		if (GEngine)
 		{

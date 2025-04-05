@@ -115,6 +115,9 @@ protected:
 	
 	UPROPERTY(BlueprintReadWrite, Category = "Block")
 	UAnimMontage* BlockMontage;
+	
+	UPROPERTY(BlueprintReadWrite, Category = "Crasher")
+	UAnimMontage* CrasherMontage;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Dodge")
 	bool bSaveDodge = false;
@@ -375,6 +378,9 @@ private:
 	
 	UPROPERTY(BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	bool isLaunched = false;
+
+	UFUNCTION(BlueprintCallable)
+	void Crasher();
 
 	AActor* SphereTraceForEnemies(FVector Start, FVector End);
 };

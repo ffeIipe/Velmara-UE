@@ -22,6 +22,7 @@
 #include <Enemy/Enemy.h>
 #include "Camera/CameraActor.h"
 #include "EngineUtils.h"
+#include <Enemy/Paladin.h>
 
 APlayerMain::APlayerMain()
 {
@@ -157,6 +158,7 @@ void APlayerMain::PerformJumpAttack(int AttackIndex)
 		if (JumpAttackIndex >= JumpAttackCombo.Num())
 		{
 			JumpAttackIndex = 0;
+			isLaunched = false;
 		}
 	}
 }
@@ -288,6 +290,10 @@ void APlayerMain::SoftLockOn()
 	if (Enemy != Cast<ASpectre>(Enemy))
 	{
 		SoftLockTarget = Enemy;
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Cyan, FString("Enemy found"));
+		}
 	}
 	else SoftLockTarget = nullptr;
 }
@@ -601,32 +607,52 @@ void APlayerMain::ReleaseBlock()
 
 void APlayerMain::LaunchCharacterUp1()
 {
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::White, FString("LaunchCharacterUp1"));
-	}
-
 	isLaunched = true;
-	SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, 400.f), true);
-	SoftLockOn();
+	/*SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, 400.f), true);*/
+	AddActorWorldOffset(FVector(0.f, 0.f, 400.f), true);
 
-	AEnemy* Enemy = Cast<AEnemy>(SoftLockTarget);
+	APaladin* Enemy = Cast<APaladin>(SoftLockTarget);
 	if (Enemy)
 	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Blue, FString("Enemy found"));
-		}
 		Enemy->LaunchEnemyUp1();
+
 	}
-	else
+}
+
+void APlayerMain::Crasher()
+{
+	PlayAnimMontage(CrasherMontage, 1.f);
+	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
+
+	FVector Start = GetActorLocation();
+	FVector End = Start + FVector(0.f, 0.f, -100000.f); // 1000 metros hacia abajo
+
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_WorldStatic));
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_WorldDynamic));
+
+	TArray<AActor*> ObjectsToIgnore;
+	ObjectsToIgnore.Add(this);
+
+	FHitResult Hit;
+
+	bool bHit = UKismetSystemLibrary::LineTraceSingleForObjects(
+		GetWorld(),
+		Start,
+		End,
+		ObjectTypes,
+		false,
+		ObjectsToIgnore,
+		EDrawDebugTrace::ForDuration,
+		Hit,
+		true
+	);
+
+	if (bHit)
 	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Orange, FString("Enemy not found"));
-		}
+		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
+		SetActorLocation(Hit.ImpactPoint);
 	}
-	
 }
 
 AActor* APlayerMain::SphereTraceForEnemies(FVector Start, FVector End)
