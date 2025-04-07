@@ -87,7 +87,7 @@ protected:
 	virtual void Die();
 
 	UFUNCTION()
-	void DirectionalHitReact(const FVector& ImpactPoint);
+	virtual void DirectionalHitReact(const FVector& ImpactPoint);
 
 	UPROPERTY(VisibleAnywhere);
 	UAttributeComponent* Attributes;

@@ -21,17 +21,25 @@ void AResetPlayer::BeginPlay()
     BoxCollider->OnComponentBeginOverlap.AddDynamic(this, &AResetPlayer::OnBoxOverlap);
 }
 
-void AResetPlayer::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{    
-    APlayerMain* Player = Cast<APlayerMain>(OtherActor);
-    if (OtherActor && Player)
+void AResetPlayer::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+    UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+    if (!OtherActor) return;
+
+    // Obtener el PlayerController
+    APlayerController* PlayerController = UGameplayStatics::GetPlayerController(this, 0);
+    if (!PlayerController) return;
+
+    // Verificar si el OtherActor es el Pawn controlado actualmente
+    APawn* ControlledPawn = PlayerController->GetPawn();
+    if (OtherActor == ControlledPawn)
     {
-        APlayerController* PlayerController = UGameplayStatics::GetPlayerController(this, 0);
-        if (PlayerController)
+        // Obtener el PlayerStart
+        APlayerStart* PlayerStart = Cast<APlayerStart>(UGameplayStatics::GetActorOfClass(GetWorld(), APlayerStart::StaticClass()));
+        if (PlayerStart)
         {
-            APlayerStart* PlayerStart = Cast<APlayerStart>(UGameplayStatics::GetActorOfClass(GetWorld(), APlayerStart::StaticClass()));
-            PlayerController->GetPawn()->SetActorLocation(PlayerStart->GetActorLocation());
-            PlayerController->GetPawn()->SetActorRotation(PlayerStart->GetActorRotation());
+            ControlledPawn->SetActorLocation(PlayerStart->GetActorLocation());
+            ControlledPawn->SetActorRotation(PlayerStart->GetActorRotation());
         }
     }
 }

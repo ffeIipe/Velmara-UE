@@ -25,13 +25,14 @@ public:
 		struct FDamageEvent const& DamageEvent,
 		class AController* EventInstigator,
 		AActor* DamageCauser) override;
+
+	UPROPERTY(BlueprintReadWrite)
+	bool bIsDisarmed = false;
+
 protected:
 	void BeginPlay() override;
 
 private:
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* ShieldMesh;
-
-	UPROPERTY()
-	bool bIsDisarmed = false;
 };

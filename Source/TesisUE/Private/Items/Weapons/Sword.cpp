@@ -105,7 +105,7 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 				BoxHit.GetActor(),
 				Damage,
 				GetInstigator()->GetController(),
-				this,
+				GetOwner(),
 				FinalDamageType
 			);
 			HitInterface->Execute_GetHit(BoxHit.GetActor(), BoxHit.ImpactPoint);
