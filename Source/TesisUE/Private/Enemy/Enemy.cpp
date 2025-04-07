@@ -326,6 +326,11 @@ void AEnemy::DisableAI()
 {
 	if (AIOriginalController)
 	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Cyan, FString("Disable AI"));
+		}
+
 		AIOriginalController->StopMovement();
 		AIOriginalController->UnPossess();
 	}
@@ -335,7 +340,13 @@ void AEnemy::EnableAI()
 {
 	if (AIOriginalController)
 	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, FString("Enable AI"));
+		}
+
 		AIOriginalController->Possess(this);
+		AIOriginalController->AAIController::RunBehaviorTree(BTAsset);
 	}
 }
 
