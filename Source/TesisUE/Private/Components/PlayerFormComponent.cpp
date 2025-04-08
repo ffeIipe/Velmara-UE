@@ -41,7 +41,7 @@ void UPlayerFormComponent::BeginPlay()
     }
 }
 
-void UPlayerFormComponent::ToggleForm(ASword* EquippedWeapon)
+void UPlayerFormComponent::ToggleForm(bool CanToggle)
 {
     float CurrentTime = GetWorld()->GetTimeSeconds();
 
@@ -49,30 +49,24 @@ void UPlayerFormComponent::ToggleForm(ASword* EquippedWeapon)
     
     LastTransformationTime = 0;
 
-    if (CurrentForm == ECharacterForm::ECF_Human)
+    if (CanToggle)
     {
-        CurrentForm = ECharacterForm::ECF_Spectral;
-        ApplySpectralEffects(EquippedWeapon);
+        CurrentForm == ECharacterForm::ECF_Human ? ApplySpectralEffects() : ApplyHumanEffects();
     }
     else
     {
-        CurrentForm = ECharacterForm::ECF_Human;
-        ApplyHumanEffects(EquippedWeapon);
+        ApplyHumanEffects();
     }
 
     LastTransformationTime = CurrentTime;
 }
 
-void UPlayerFormComponent::ApplySpectralEffects(ASword* EquippedWeapon)
+void UPlayerFormComponent::ApplySpectralEffects()
 {
     Debug(1, FColor::Red, FString("Spectral Mode"), true);
 
+    CurrentForm = ECharacterForm::ECF_Spectral;
     SpectralEffectTimeline->PlayFromStart();
-
-    if (EquippedWeapon)
-    {
-        EquippedWeapon->Enable(false);
-    }
 
     //find and enable spectrals objects
     for (TActorIterator<ASpectralObject> It(GetWorld()); It; ++It)
@@ -81,16 +75,12 @@ void UPlayerFormComponent::ApplySpectralEffects(ASword* EquippedWeapon)
     }
 }
 
-void UPlayerFormComponent::ApplyHumanEffects(ASword* EquippedWeapon)
+void UPlayerFormComponent::ApplyHumanEffects()
 {
     Debug(1, FColor::Blue, FString("Human Mode"), true);
 
+    CurrentForm = ECharacterForm::ECF_Human;
     SpectralEffectTimeline->Reverse();
-
-    if (EquippedWeapon)
-    {
-        EquippedWeapon->Enable(true);
-    }
 
     //find and disable spectrals objects
     for (TActorIterator<ASpectralObject> It(GetWorld()); It; ++It)

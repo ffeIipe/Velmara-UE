@@ -19,6 +19,7 @@ class UPlayerFormComponent;
 class AEnemy;
 class ASpectralObjectInteractable;
 class UAttributeComponent;
+class UEnergy;
 
 UCLASS()
 class TESISUE_API APlayerMain : public ACharacter

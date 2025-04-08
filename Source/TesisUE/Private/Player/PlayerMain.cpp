@@ -18,12 +18,12 @@
 #include "SpectralMode/Interfaces/SpectralInteractable.h"
 #include "Components/AttributeComponent.h"
 #include "Components/CapsuleComponent.h"
-#include <Enemy/Spectre.h>
-#include <Enemy/Enemy.h>
+#include "Enemy/Spectre.h"
+#include "Enemy/Enemy.h"
 #include "Camera/CameraActor.h"
 #include "EngineUtils.h"
-#include <Enemy/Paladin.h>
-#include <Kismet/GameplayStatics.h>
+#include "Enemy/Paladin.h"
+#include "Kismet/GameplayStatics.h"
 
 APlayerMain::APlayerMain()
 {
@@ -46,6 +46,7 @@ APlayerMain::APlayerMain()
 	PlayerFormComponent = CreateDefaultSubobject<UPlayerFormComponent>(TEXT("PlayerFormComponent"));
 
 	Attributes = CreateDefaultSubobject<UAttributeComponent>(TEXT("AttibuteComponent"));
+	Attributes->IncreaseEnergy(15.f);
 
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 }
@@ -548,11 +549,36 @@ void APlayerMain::Attack(const FInputActionValue& Value)
 
 void APlayerMain::ToggleForm()
 {
-	if (GetCharacterAction() == ECharacterActions::ECA_Block) return;
+	if (GetCharacterAction() != ECharacterActions::ECA_Nothing) return;
 
-	if (PlayerFormComponent)
+	if (PlayerFormComponent && Attributes->ItHasEnergy())
 	{
-		PlayerFormComponent->ToggleForm(EquippedWeapon);
+		PlayerFormComponent->ToggleForm(true);
+		Attributes->StartDecreaseEnergy();
+		Attributes->OnDepletedCallback = [this]() { PlayerFormComponent->ToggleForm(false); };
+
+		if (CharacterState != ECharacterStates::ECS_Unequipped)
+		{
+			PlayerFormComponent->GetCharacterForm() == ECharacterForm::ECF_Human
+				? EquippedWeapon->Enable(true)
+				: EquippedWeapon->Enable(false);
+		}
+	}
+
+	else
+	{
+		PlayerFormComponent->ToggleForm(false);
+		Attributes->StopDecreaseEnergy();
+		
+		if (CharacterState != ECharacterStates::ECS_Unequipped)
+		{
+			EquippedWeapon->Enable(true);
+		}
+	}
+	
+	if (PlayerFormComponent->GetCharacterForm() == ECharacterForm::ECF_Human)
+	{
+		Attributes->StopDecreaseEnergy();
 	}
 }
 

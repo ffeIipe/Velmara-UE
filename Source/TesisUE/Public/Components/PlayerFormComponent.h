@@ -21,7 +21,7 @@ public:
     UPlayerFormComponent();
 
     UFUNCTION(BlueprintCallable)
-    void ToggleForm(ASword* EquippedWeapon);
+    void ToggleForm(bool CanToggle);
 
     ECharacterForm GetCharacterForm() const { return CurrentForm; }
 
@@ -29,8 +29,9 @@ protected:
     virtual void BeginPlay() override;
 
 private:
-    void ApplySpectralEffects(ASword* EquippedWeapon);
-    void ApplyHumanEffects(ASword* EquippedWeapon);
+    void ApplySpectralEffects();
+
+    void ApplyHumanEffects();
 
     ECharacterForm CurrentForm;
 

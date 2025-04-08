@@ -22,7 +22,25 @@ public:
 	UFUNCTION(BlueprintCallable)
 	float GetHealthPercent();
 
+	UFUNCTION(BlueprintCallable)
 	bool IsAlive();
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE float GetEnergy() { return Energy; };
+
+	UFUNCTION(BlueprintCallable)
+	void IncreaseEnergy(float Amount);
+
+	UFUNCTION(BlueprintCallable)
+	void StartDecreaseEnergy();
+
+	UFUNCTION(BlueprintCallable)
+	void StopDecreaseEnergy();
+
+	UFUNCTION(BlueprintCallable)
+	bool ItHasEnergy();
+
+	TFunction<void()> OnDepletedCallback;
 
 protected:
 
@@ -30,9 +48,15 @@ protected:
 
 private:
 
-	UPROPERTY(EditAnywhere, Category = "Actor Properties");
+	UPROPERTY(EditAnywhere, Category = "Actor Properties|Health");
 	float Health;
 
-	UPROPERTY(EditAnywhere, Category = "Actor Properties");
+	UPROPERTY(EditAnywhere, Category = "Actor Properties|Health");
 	float MaxHealth;
+	
+	UPROPERTY(EditAnywhere, Category = "Actor Properties|Energy")
+	float Energy;
+
+	FTimerHandle EnergyTimerHandle;
+
 };
