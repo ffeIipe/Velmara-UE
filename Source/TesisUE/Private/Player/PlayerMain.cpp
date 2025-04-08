@@ -46,7 +46,7 @@ APlayerMain::APlayerMain()
 	PlayerFormComponent = CreateDefaultSubobject<UPlayerFormComponent>(TEXT("PlayerFormComponent"));
 
 	Attributes = CreateDefaultSubobject<UAttributeComponent>(TEXT("AttibuteComponent"));
-	Attributes->IncreaseEnergy(15.f);
+	Attributes->IncreaseEnergy(3.f);
 
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 }
@@ -106,7 +106,7 @@ void APlayerMain::PerformLightAttack(int AttackIndex)
 	{
 		StopAttackBufferEvent();
 		StartAttackBufferEvent(BufferAttackDistance);
-		SetCharacterState(ECharacterActions::ECA_Attack);
+		SetCharacterAction(ECharacterActions::ECA_Attack);
 		SoftLockOn();
 		PlayAnimMontage(LightAttackCombo[AttackIndex]);
 
@@ -123,7 +123,7 @@ void APlayerMain::PerformSpectralAttack(int AttackIndex)
 {
 	if (GetCharacterAction() != ECharacterActions::ECA_Attack)
 	{
-		SetCharacterState(ECharacterActions::ECA_Attack);
+		SetCharacterAction(ECharacterActions::ECA_Attack);
 		SearchTarget();
 		PlayAnimMontage(SpectralAttackCombo[AttackIndex]);
 
@@ -140,7 +140,7 @@ void APlayerMain::PerformSpectralBarrier()
 {
 	if (GetCharacterAction() != ECharacterActions::ECA_Attack)
 	{
-		SetCharacterState(ECharacterActions::ECA_Attack);
+		SetCharacterAction(ECharacterActions::ECA_Attack);
 		PlayAnimMontage(SpectralHeavyAttack);
 	}
 }
@@ -151,7 +151,7 @@ void APlayerMain::PerformJumpAttack(int AttackIndex)
 	{
 		StopAttackBufferEvent();
 		StartAttackBufferEvent(BufferAttackDistance);
-		SetCharacterState(ECharacterActions::ECA_Attack);
+		SetCharacterAction(ECharacterActions::ECA_Attack);
 		SoftLockOn();
 		PlayAnimMontage(JumpAttackCombo[AttackIndex]);
 
@@ -172,7 +172,7 @@ void APlayerMain::PerformHeavyAttack(int AttackIndex)
 	{
 		StopAttackBufferEvent();
 		StartAttackBufferEvent(BufferAttackDistance);
-		SetCharacterState(ECharacterActions::ECA_Attack);
+		SetCharacterAction(ECharacterActions::ECA_Attack);
 		PlayAnimMontage(HeavyAttackCombo[AttackIndex]);
 		SoftLockOn();
 
@@ -191,7 +191,7 @@ void APlayerMain::PerformDodge()
 	{
 		StopDodgeBufferEvent();
 		DodgeBufferEvent(BufferDodgeDistance);
-		SetCharacterState(ECharacterActions::ECA_Dodge);
+		SetCharacterAction(ECharacterActions::ECA_Dodge);
 		GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 		PlayAnimMontage(DodgeMontage);
 	}
@@ -199,7 +199,7 @@ void APlayerMain::PerformDodge()
 	{
 		StopDodgeBufferEvent();
 		DodgeBufferEvent(BufferDodgeDistance);
-		SetCharacterState(ECharacterActions::ECA_Dodge);
+		SetCharacterAction(ECharacterActions::ECA_Dodge);
 		GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 		PlayAnimMontage(SpectralDodgeMontage);
 	}
@@ -336,7 +336,7 @@ void APlayerMain::SearchTarget()
 	else SpectralTarget = nullptr;
 }
 
-ECharacterActions APlayerMain::SetCharacterState(ECharacterActions NewState)
+ECharacterActions APlayerMain::SetCharacterAction(ECharacterActions NewState)
 {
 	if (NewState != CharacterAction)
 	{
@@ -547,21 +547,20 @@ void APlayerMain::Attack(const FInputActionValue& Value)
 	//TODO: put the attack logic here, we have to translate it from BP_PlayerMain
 }
 
-void APlayerMain::ToggleForm()
+void APlayerMain::ToggleForm() //TODO: extract to PlayerMain the "apply effects" functions for more flexibility here
 {
 	if (GetCharacterAction() != ECharacterActions::ECA_Nothing) return;
 
-	if (PlayerFormComponent && Attributes->ItHasEnergy())
+	if (PlayerFormComponent->GetCharacterForm() != ECharacterForm::ECF_Spectral)
 	{
-		PlayerFormComponent->ToggleForm(true);
-		Attributes->StartDecreaseEnergy();
-		Attributes->OnDepletedCallback = [this]() { PlayerFormComponent->ToggleForm(false); };
-
-		if (CharacterState != ECharacterStates::ECS_Unequipped)
+		if (Attributes->ItHasEnergy())
 		{
-			PlayerFormComponent->GetCharacterForm() == ECharacterForm::ECF_Human
-				? EquippedWeapon->Enable(true)
-				: EquippedWeapon->Enable(false);
+			PlayerFormComponent->ToggleForm(true);
+			Attributes->StartDecreaseEnergy();
+			Attributes->OnDepletedCallback = [this]() { PlayerFormComponent->ToggleForm(false); GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = false; };
+			GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = true;
+			if (EquippedWeapon) 
+				EquippedWeapon->Enable(false);
 		}
 	}
 
@@ -569,16 +568,12 @@ void APlayerMain::ToggleForm()
 	{
 		PlayerFormComponent->ToggleForm(false);
 		Attributes->StopDecreaseEnergy();
-		
-		if (CharacterState != ECharacterStates::ECS_Unequipped)
+		GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = false;
+
+		if (EquippedWeapon)
 		{
 			EquippedWeapon->Enable(true);
 		}
-	}
-	
-	if (PlayerFormComponent->GetCharacterForm() == ECharacterForm::ECF_Human)
-	{
-		Attributes->StopDecreaseEnergy();
 	}
 }
 
@@ -599,7 +594,7 @@ void APlayerMain::Die()
 		}
 
 		GetCharacterMovement()->DisableMovement();
-		SetCharacterState(ECharacterActions::ECA_Dead);
+		SetCharacterAction(ECharacterActions::ECA_Dead);
 	}
 }
 
@@ -613,7 +608,7 @@ void APlayerMain::Block()
 	if (GetCharacterState() != ECharacterStates::ECS_Unequipped)
 	{
 		PlayAnimMontage(BlockMontage, 1.f, FName("BlockIdle"));
-		SetCharacterState(ECharacterActions::ECA_Block);
+		SetCharacterAction(ECharacterActions::ECA_Block);
 	}	
 }
 
@@ -625,19 +620,18 @@ void APlayerMain::ReceiveBlock()
 void APlayerMain::ReleaseBlock()
 {
 	StopAnimMontage(BlockMontage);
-	SetCharacterState(ECharacterActions::ECA_Nothing);
+	SetCharacterAction(ECharacterActions::ECA_Nothing);
 }
 
 void APlayerMain::LaunchCharacterUp()
 {
 	isLaunched = true;
-	AddActorWorldOffset(FVector(0.f, 0.f, 200.f), true);
+	AddActorWorldOffset(FVector(0.f, 0.f, 300.f), true);
 
 	APaladin* Enemy = Cast<APaladin>(SoftLockTarget);
 	if (Enemy)
 	{
 		Enemy->LaunchEnemyUp();
-
 	}
 }
 

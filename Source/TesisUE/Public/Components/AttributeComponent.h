@@ -29,6 +29,9 @@ public:
 	FORCEINLINE float GetEnergy() { return Energy; };
 
 	UFUNCTION(BlueprintCallable)
+	float GetEnergyPercent();
+
+	UFUNCTION(BlueprintCallable)
 	void IncreaseEnergy(float Amount);
 
 	UFUNCTION(BlueprintCallable)
@@ -58,5 +61,10 @@ private:
 	float Energy;
 
 	FTimerHandle EnergyTimerHandle;
+
+	UPROPERTY()
+	bool bIsDraining;
+
+	void DrainTick();
 
 };

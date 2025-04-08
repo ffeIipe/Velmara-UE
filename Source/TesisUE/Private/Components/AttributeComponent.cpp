@@ -6,7 +6,7 @@
 UAttributeComponent::UAttributeComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
-
+	bIsDraining = false;
 }
 
 void UAttributeComponent::ReceiveDamage(float Damage)
@@ -24,6 +24,11 @@ bool UAttributeComponent::IsAlive()
 	return Health > 0.1f;
 }
 
+float UAttributeComponent::GetEnergyPercent()
+{
+	return Energy / 100.f;
+}
+
 void UAttributeComponent::IncreaseEnergy(float Amount)
 {
 	Energy = FMathf::Clamp(Energy + Amount, 0.f, 100.f);
@@ -31,25 +36,23 @@ void UAttributeComponent::IncreaseEnergy(float Amount)
 
 void UAttributeComponent::StartDecreaseEnergy()
 {
-	if (ItHasEnergy() && GEngine)
+	if (!bIsDraining)
 	{
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Blue, FString::SanitizeFloat(Energy));
-		Energy = FMath::Clamp(Energy - 1.f, 0.f, 100.f);
-	}
-	else
-	{
-		if (OnDepletedCallback)
-		{
-			OnDepletedCallback(); //this exec the callback!!!
-		}
-		StopDecreaseEnergy();
+		bIsDraining = true;
+
+		GetWorld()->GetTimerManager().SetTimer(EnergyTimerHandle, this, &UAttributeComponent::DrainTick, 1.0f, true);
 	}
 }
 
 void UAttributeComponent::StopDecreaseEnergy()
 {
-	OnDepletedCallback;
+	if (OnDepletedCallback)
+	{
+		OnDepletedCallback();
+	}
+
 	GetWorld()->GetTimerManager().ClearTimer(EnergyTimerHandle);
+	bIsDraining = false;
 }
 
 bool UAttributeComponent::ItHasEnergy()
@@ -60,11 +63,25 @@ bool UAttributeComponent::ItHasEnergy()
 void UAttributeComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	GetWorld()->GetTimerManager().SetTimer(EnergyTimerHandle, this, &UAttributeComponent::StartDecreaseEnergy, 1.0f, true);
 }
 
 void UAttributeComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+}
+
+void UAttributeComponent::DrainTick()
+{
+	if (ItHasEnergy())
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Red, FString::SanitizeFloat(Energy));
+		}
+		Energy = FMath::Clamp(Energy - 1.f, 0.f, 100.f);
+	}
+	else
+	{
+		StopDecreaseEnergy();
+	}
 }

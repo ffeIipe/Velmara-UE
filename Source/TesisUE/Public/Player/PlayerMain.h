@@ -46,6 +46,9 @@ public:
 	
 	FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }
 
+	UFUNCTION()
+	FORCEINLINE UAttributeComponent* GetAttributes() { return Attributes; };
+
 	UFUNCTION(BlueprintCallable)
 	void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
 
@@ -79,7 +82,7 @@ protected:
 	* FSM
 	*/
 	UFUNCTION(BlueprintCallable, Category = "FSM")
-	ECharacterActions SetCharacterState(ECharacterActions NewState);
+	ECharacterActions SetCharacterAction(ECharacterActions NewState);
 
 	UFUNCTION(BlueprintPure, Category = "FSM")
 	bool IsActionEqualToAny(const TArray<ECharacterActions>& StatesToCheck);

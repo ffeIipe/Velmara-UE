@@ -94,6 +94,12 @@ protected:
 
 	UPROPERTY(VisibleAnywhere);
 	UHealthBarComponent* HealthBarWidget;
+	
+	UPROPERTY(EditAnywhere);
+	float MinEnergy = 8.f;
+	
+	UPROPERTY(EditAnywhere);
+	float MaxEnergy = 10.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Montages");
 	UAnimMontage* HitReactMontage;
@@ -163,6 +169,9 @@ private:
 
 	UFUNCTION()
 	void ResetColor();
+
+	UPROPERTY()
+	AActor* DamageCauserOf;
 };
 
 

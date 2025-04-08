@@ -32,10 +32,15 @@ public:
 
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
 	bool IsFalling;
+	
+	UPROPERTY(BlueprintReadWrite, Category = "Movement")
+	float Direction;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Movement | Character State")
 	ECharacterStates CharacterState;
 	
 	UPROPERTY(BlueprintReadOnly, Category = "PlayerForm")
 	ECharacterForm PlayerForm;
+
+
 };

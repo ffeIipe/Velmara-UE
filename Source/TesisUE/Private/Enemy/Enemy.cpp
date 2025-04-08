@@ -62,6 +62,13 @@ void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
 
+	Attributes->IncreaseEnergy(FMath::RandRange(MinEnergy, MaxEnergy));
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::White, FString::SanitizeFloat(Attributes->GetEnergy()));
+	}
+
 	AAIController* AIController = Cast<AAIController>(GetController());
 	if (AIController)
 	{
@@ -120,6 +127,16 @@ void AEnemy::Die()
 		AIController->UnPossess();   
 	}
 
+	if (APlayerMain* Player = Cast<APlayerMain>(DamageCauserOf))
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Orange, FString("Player valid"));
+		}
+
+		Player->GetAttributes()->IncreaseEnergy(Attributes->GetEnergy());
+	}
+
 	SetLifeSpan(7.f);
 }
 
@@ -171,7 +188,7 @@ void AEnemy::LaunchEnemyUp()
 	isLaunched = true;
 	DisableAI();
 	PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
-	AddActorWorldOffset(FVector(0.f,0.f,200.f), true);
+	AddActorWorldOffset(FVector(0.f,0.f,300.f), true);
 	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
 }
 
@@ -185,7 +202,7 @@ void AEnemy::CrashDown()
 void AEnemy::HitInAir()
 {
 	float PlayerLocationZ = UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->GetActorLocation().Z;
-	SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, PlayerLocationZ + 50.f));
+	SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, PlayerLocationZ + 40.f));
 	PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
 	GetCharacterMovement()->IsFlying();
 	DisableAI();
@@ -251,6 +268,8 @@ void AEnemy::GetHit_Implementation(const FVector& ImpactPoint)
 float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	DamageCauserOf = DamageCauser;
 
 	const UDamageTypeMain* MainDamageType = DamageEvent.DamageTypeClass
 		? Cast<UDamageTypeMain>(DamageEvent.DamageTypeClass->GetDefaultObject())
