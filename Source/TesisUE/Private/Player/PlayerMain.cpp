@@ -557,7 +557,13 @@ void APlayerMain::ToggleForm() //TODO: extract to PlayerMain the "apply effects"
 		{
 			PlayerFormComponent->ToggleForm(true);
 			Attributes->StartDecreaseEnergy();
-			Attributes->OnDepletedCallback = [this]() { PlayerFormComponent->ToggleForm(false); GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = false; };
+			Attributes->OnDepletedCallback = [this]() 
+				{ 
+					PlayerFormComponent->ToggleForm(false); 
+					GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = false;
+					if (EquippedWeapon) EquippedWeapon->Enable(true);
+				};
+
 			GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = true;
 			if (EquippedWeapon) 
 				EquippedWeapon->Enable(false);

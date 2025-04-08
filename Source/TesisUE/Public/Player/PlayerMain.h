@@ -394,6 +394,12 @@ private:
 
 	AActor* SphereTraceForEnemies(FVector Start, FVector End);
 
+	//UFUNCTION()
+	//void WithEnergy();
+	
+	//UFUNCTION()
+	//void OutOfEnergy();
+
 	UFUNCTION()
 	void RestartLevel();
 	
