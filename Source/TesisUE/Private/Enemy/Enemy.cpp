@@ -112,7 +112,7 @@ void AEnemy::Die()
 	else
 	{
 		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
-		PlayAnimMontage(DeathMontage, 1.f, SectionName);
+		//PlayAnimMontage(DeathMontage, 1.f, SectionName);
 	}
 
 	if (GetMesh())
