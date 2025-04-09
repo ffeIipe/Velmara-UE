@@ -112,7 +112,7 @@ void AEnemy::Die()
 	else
 	{
 		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
-		PlayAnimMontage(DeathMontage, 1.f, SectionName);
+		//PlayAnimMontage(DeathMontage, 1.f, SectionName);
 	}
 
 	if (GetMesh())
@@ -197,7 +197,7 @@ void AEnemy::LaunchEnemyUp()
 	DisableAI();
 	PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
 	SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, 200.f), false);
-	//AddActorWorldOffset(FVector(0.f, 0.f, 300.f), true);
+	AddActorWorldOffset(FVector(0.f, 0.f, 300.f), false);
 	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
 }
 
@@ -211,7 +211,7 @@ void AEnemy::CrashDown()
 void AEnemy::HitInAir()
 {
 	float PlayerLocationZ = UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->GetActorLocation().Z;
-	SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, PlayerLocationZ + 40.f));
+	SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, PlayerLocationZ + 50.f));
 	PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
 	GetCharacterMovement()->IsFlying();
 	DisableAI();
