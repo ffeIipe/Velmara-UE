@@ -497,6 +497,8 @@ void APlayerMain::Jump()
 {
 	if (GetCharacterAction() == ECharacterActions::ECA_Block) return;
 
+	PlayAnimMontage(JumpMontage, 1.f);
+
 	Super::Jump();
 
 	if (GetCharacterMovement()->IsFalling() && CanDoubleJump)
@@ -553,35 +555,38 @@ void APlayerMain::ToggleForm() //TODO: extract to PlayerMain the "apply effects"
 
 	if (PlayerFormComponent->GetCharacterForm() != ECharacterForm::ECF_Spectral)
 	{
-		if (Attributes->ItHasEnergy())
-		{
-			PlayerFormComponent->ToggleForm(true);
-			Attributes->StartDecreaseEnergy();
-			Attributes->OnDepletedCallback = [this]() 
-				{ 
-					PlayerFormComponent->ToggleForm(false); 
-					GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = false;
-					if (EquippedWeapon) EquippedWeapon->Enable(true);
-				};
-
-			GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = true;
-			if (EquippedWeapon) 
-				EquippedWeapon->Enable(false);
-		}
+		WithEnergy();
 	}
 
 	else
 	{
-		PlayerFormComponent->ToggleForm(false);
 		Attributes->StopDecreaseEnergy();
-		GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = false;
-
-		if (EquippedWeapon)
-		{
-			EquippedWeapon->Enable(true);
-		}
+		OutOfEnergy();
 	}
 }
+
+void APlayerMain::WithEnergy()
+{
+	if (Attributes->ItHasEnergy())
+	{
+		PlayerFormComponent->ToggleForm(true);
+		Attributes->StartDecreaseEnergy();
+		Attributes->OnDepletedCallback = [this]() { OutOfEnergy(); };
+		GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = true;
+
+		if (EquippedWeapon)
+			EquippedWeapon->Enable(false);		
+	}
+}
+
+void APlayerMain::OutOfEnergy()
+{
+	PlayerFormComponent->ToggleForm(false);
+	GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = false;
+	if (EquippedWeapon) EquippedWeapon->Enable(true);
+	if (PossessedEnemy) PossessedEnemy->UnPossess();
+}
+
 
 void APlayerMain::Die()
 {

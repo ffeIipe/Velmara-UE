@@ -104,8 +104,16 @@ void AEnemy::Die()
 		break;
 	}
 
-	PlayAnimMontage(DeathMontage, 1.f, SectionName);
-	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
+	if (GetCharacterMovement()->MovementMode != EMovementMode::MOVE_Flying)
+	{
+		PlayAnimMontage(DeathMontage, 1.f, SectionName);
+	}
+
+	else
+	{
+		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
+		PlayAnimMontage(DeathMontage, 1.f, SectionName);
+	}
 
 	if (GetMesh())
 	{

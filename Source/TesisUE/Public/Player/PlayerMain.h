@@ -122,6 +122,9 @@ protected:
 	
 	UPROPERTY(BlueprintReadWrite, Category = "Crasher")
 	UAnimMontage* CrasherMontage;
+	
+	UPROPERTY(BlueprintReadWrite, Category = "Jump")
+	UAnimMontage* JumpMontage;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Dodge")
 	bool bSaveDodge = false;
@@ -345,8 +348,7 @@ private:
 	void ResetTimeDilation();
 	
 	bool bIsPossessing = false;
-	FVector StoredLocation;
-	FRotator StoredRotation;
+
 	AEnemy* PossessedEnemy;
 
 	UFUNCTION(BlueprintCallable)
@@ -394,11 +396,11 @@ private:
 
 	AActor* SphereTraceForEnemies(FVector Start, FVector End);
 
-	//UFUNCTION()
-	//void WithEnergy();
+	UFUNCTION()
+	void WithEnergy();
 	
-	//UFUNCTION()
-	//void OutOfEnergy();
+	UFUNCTION()
+	void OutOfEnergy();
 
 	UFUNCTION()
 	void RestartLevel();
