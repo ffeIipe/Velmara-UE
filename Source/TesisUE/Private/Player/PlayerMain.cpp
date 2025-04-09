@@ -637,8 +637,8 @@ void APlayerMain::ReleaseBlock()
 void APlayerMain::LaunchCharacterUp()
 {
 	isLaunched = true;
-	SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, 200.f), false);
-	//AddActorWorldOffset(FVector(0.f, 0.f, 300.f), true);
+	//SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, 200.f), false);
+	AddActorWorldOffset(FVector(0.f, 0.f, 300.f), false);
 
 	APaladin* Enemy = Cast<APaladin>(SoftLockTarget);
 	if (Enemy)
