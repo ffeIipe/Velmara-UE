@@ -79,38 +79,43 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 	ActorsToIgnore.Add(this);
 	ActorsToIgnore.Add(GetOwner());
 
-	FHitResult BoxHit;
+	TArray<FHitResult> HitResults;;
 
-	UKismetSystemLibrary::BoxTraceSingle(
+	UKismetSystemLibrary::BoxTraceMulti(
 		this,
 		Start,
 		End,
-		FVector(5.f, 5.f, 5.f),
+		FVector(10.f, 10.f, 10.f),
 		BoxTraceStart->GetComponentRotation(),
-		ETraceTypeQuery::TraceTypeQuery1,
+		UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_GameTraceChannel13),
 		false,
 		ActorsToIgnore,
-		EDrawDebugTrace::None,
-		BoxHit,
+		EDrawDebugTrace::ForDuration,
+		HitResults,
 		true
 	);
 
-	if (BoxHit.GetActor() && !ActorsToIgnore.Contains(BoxHit.GetActor()))
+	for (const FHitResult& Hit : HitResults)
 	{
-		if (IHitInterface* HitInterface = Cast<IHitInterface>(BoxHit.GetActor()))
+		AActor* HitActor = Hit.GetActor();
+		if (HitActor && !ActorsToIgnore.Contains(HitActor))
 		{
-			TSubclassOf<UDamageType> FinalDamageType = DamageTypeClass ? DamageTypeClass : TSubclassOf<UDamageType>(UDamageType::StaticClass());
+			if (IHitInterface* HitInterface = Cast<IHitInterface>(HitActor))
+			{
+				TSubclassOf<UDamageType> FinalDamageType = DamageTypeClass ? DamageTypeClass : TSubclassOf<UDamageType>(UDamageType::StaticClass());
 
-			UGameplayStatics::ApplyDamage(
-				BoxHit.GetActor(),
-				Damage,
-				GetInstigator()->GetController(),
-				GetOwner(),
-				FinalDamageType
-			);
-			HitInterface->Execute_GetHit(BoxHit.GetActor(), BoxHit.ImpactPoint);
-			CameraShake();
+				UGameplayStatics::ApplyDamage(
+					HitActor,
+					Damage,
+					GetInstigator()->GetController(),
+					GetOwner(),
+					FinalDamageType
+				);
+				HitInterface->Execute_GetHit(HitActor, Hit.ImpactPoint);
+				CameraShake();
+
+				ActorsToIgnore.Add(HitActor);
+			}
 		}
-		ActorsToIgnore.AddUnique(BoxHit.GetActor());
 	}
 }
