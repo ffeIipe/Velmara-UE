@@ -188,6 +188,12 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, Category = "JumpAttack")
 	TArray<UAnimMontage*> JumpAttackCombo;
+	
+	UPROPERTY(BlueprintReadOnly, Category = "ComboAttack")
+	TArray<UAnimMontage*> ComboStarterAttack;
+	
+	UPROPERTY(BlueprintReadOnly, Category = "ComboAttack")
+	TArray<UAnimMontage*> ComboExtenderAttack;
 
 	UPROPERTY(BlueprintReadWrite, Category = "LightAttack")
 	bool IsSaveLightAttack;
@@ -215,6 +221,9 @@ protected:
 	*/
 	UPROPERTY(BlueprintReadWrite, Category = "HeavyAttack")
 	int HeavyAttackIndex = 0;
+	
+	UPROPERTY(BlueprintReadWrite, Category = "ComboAttack")
+	int ComboExtenderIndex = 0;
 
 	UPROPERTY(BlueprintReadOnly, Category = "HeavyAttack")
 	TArray<UAnimMontage*> HeavyAttackCombo;
@@ -233,6 +242,12 @@ protected:
 
 	UFUNCTION(BlueprintCallable, Category = "JumpAttack")
 	void PerformJumpAttack(int AttackIndex);
+	
+	UFUNCTION(BlueprintCallable, Category = "ComboAttack")
+	void PerformComboStarter(int AttackIndex);
+	
+	UFUNCTION(BlueprintCallable, Category = "ComboAttack")
+	void PerformComboExtender(int AttackIndex);
 
 	UFUNCTION(BlueprintCallable, Category = "SoftLockOn")
 	void SoftLockOn();

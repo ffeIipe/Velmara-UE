@@ -166,6 +166,37 @@ void APlayerMain::PerformJumpAttack(int AttackIndex)
 	}
 }
 
+void APlayerMain::PerformComboStarter(int AttackIndex)
+{
+	if (GetCharacterAction() != ECharacterActions::ECA_Attack && GetCharacterAction() != ECharacterActions::ECA_Dodge && GetCharacterState() != ECharacterStates::ECS_Unequipped)
+	{
+		ComboExtenderIndex = AttackIndex;
+		StopAttackBufferEvent();
+		StartAttackBufferEvent(BufferAttackDistance);
+		SetCharacterAction(ECharacterActions::ECA_Attack);
+		PlayAnimMontage(ComboStarterAttack[AttackIndex - 1]);
+
+		IsSaveHeavyAttack = false;
+		IsSaveLightAttack = false;
+
+		SoftLockOn();
+	}
+}
+
+void APlayerMain::PerformComboExtender(int AttackIndex)
+{
+	if (GetCharacterAction() != ECharacterActions::ECA_Attack && GetCharacterAction() != ECharacterActions::ECA_Dodge && GetCharacterState() != ECharacterStates::ECS_Unequipped)
+	{
+		StopAttackBufferEvent();
+		StartAttackBufferEvent(BufferAttackDistance);
+		SetCharacterAction(ECharacterActions::ECA_Attack);
+		PlayAnimMontage(ComboExtenderAttack[AttackIndex - 1]);
+		ResetLightAttackStats();
+		ResetHeavyAttackStats();
+		SoftLockOn();
+	}
+}
+
 void APlayerMain::PerformHeavyAttack(int AttackIndex)
 {
 	if (GetCharacterAction() != ECharacterActions::ECA_Attack && GetCharacterState() != ECharacterStates::ECS_Unequipped)
