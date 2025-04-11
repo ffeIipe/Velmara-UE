@@ -1,7 +1,6 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
-
-#include "Player/PlayerAIController.h"
+#include "AI/EnemyAIController.h"
 #include "Navigation/CrowdFollowingComponent.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
@@ -9,7 +8,7 @@
 #include "Components/PlayerFormComponent.h"
 #include "Enemy/Enemy.h"
 
-APlayerAIController::APlayerAIController(const FObjectInitializer& ObjectInitializer)
+AEnemyAIController::AEnemyAIController(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.SetDefaultSubobjectClass<UCrowdFollowingComponent>("PathFollowingComponent"))
 {
 
@@ -29,7 +28,7 @@ APlayerAIController::APlayerAIController(const FObjectInitializer& ObjectInitial
 	SetGenericTeamId(FGenericTeamId(1));
 }
 
-ETeamAttitude::Type APlayerAIController::GetTeamAttitudeTowards(const AActor& Other) const
+ETeamAttitude::Type AEnemyAIController::GetTeamAttitudeTowards(const AActor& Other) const
 {
 	const APawn* PawnToCheck = Cast<const APawn>(&Other);
 
@@ -43,7 +42,7 @@ ETeamAttitude::Type APlayerAIController::GetTeamAttitudeTowards(const AActor& Ot
 	return ETeamAttitude::Friendly;
 }
 
-void APlayerAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
+void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
 	if (!Actor) return;
 

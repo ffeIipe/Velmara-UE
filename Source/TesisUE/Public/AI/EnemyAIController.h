@@ -4,21 +4,21 @@
 
 #include "CoreMinimal.h"
 #include "AIController.h"
-#include "PlayerAIController.generated.h"
+#include "EnemyAIController.generated.h"
 
 class UAIPerceptionComponent;
 class UAISenseConfig_Sight;
 
 /**
- * 
+ *
  */
 UCLASS()
-class TESISUE_API APlayerAIController : public AAIController
+class TESISUE_API AEnemyAIController : public AAIController
 {
 	GENERATED_BODY()
-	
+
 public:
-	APlayerAIController(const FObjectInitializer& ObjectInitializer);
+	AEnemyAIController(const FObjectInitializer& ObjectInitializer);
 
 	//~ Begin IGenericTeamAgentInterface Interface.
 	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
