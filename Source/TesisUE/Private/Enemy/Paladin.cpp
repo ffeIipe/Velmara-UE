@@ -3,9 +3,12 @@
 
 #include "Enemy/Paladin.h"
 #include "Components/BoxComponent.h"
-#include <Kismet/KismetSystemLibrary.h>
-#include <Kismet/GameplayStatics.h>
-#include <Player/PlayerMain.h>
+#include "Kismet/KismetSystemLibrary.h"
+#include "Kismet/GameplayStatics.h"
+#include "Player/PlayerMain.h"
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
+#include "InputActionValue.h"
 
 APaladin::APaladin()
 {
@@ -90,4 +93,20 @@ void APaladin::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Ot
 	{
 		Player->GetHit()
 	}*/
+}
+
+void APaladin::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+	UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent);
+
+	if (!EnhancedInputComponent) return;
+
+	EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &APaladin::Attack);
+}
+
+void APaladin::Attack()
+{
+	PerformAttackEvent();
 }
