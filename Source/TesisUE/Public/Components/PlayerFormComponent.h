@@ -35,12 +35,6 @@ private:
 
     ECharacterForm CurrentForm;
 
-    UPROPERTY(EditDefaultsOnly, Category = "BloodSense | Cooldown")
-    float TransformationCooldown;
-
-    UPROPERTY(EditAnywhere, Category = "BloodSense | Cooldown")
-    float LastTransformationTime;
-
     bool bIsSpectralActive = false;
 
     UPROPERTY(EditDefaultsOnly, Category = "BloodSense")

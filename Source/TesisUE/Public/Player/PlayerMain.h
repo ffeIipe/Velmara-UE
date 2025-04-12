@@ -335,6 +335,12 @@ protected:
 
 private:	
 
+	UPROPERTY(EditDefaultsOnly, Category = "BloodSense | Cooldown")
+	float TransformationCooldown;
+
+	UPROPERTY(EditAnywhere, Category = "BloodSense | Cooldown")
+	float LastTransformationTime;
+
 	APlayerController* PlayerControllerRef = nullptr;
 
 	bool bIsDead = false;

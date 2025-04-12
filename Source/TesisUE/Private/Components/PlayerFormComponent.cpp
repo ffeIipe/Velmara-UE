@@ -43,12 +43,6 @@ void UPlayerFormComponent::BeginPlay()
 
 void UPlayerFormComponent::ToggleForm(bool CanToggle)
 {
-    float CurrentTime = GetWorld()->GetTimeSeconds();
-
-    if (CurrentTime - LastTransformationTime < TransformationCooldown) return;
-    
-    LastTransformationTime = 0;
-
     if (CanToggle)
     {
         CurrentForm == ECharacterForm::ECF_Human ? ApplySpectralEffects() : ApplyHumanEffects();
@@ -57,8 +51,6 @@ void UPlayerFormComponent::ToggleForm(bool CanToggle)
     {
         ApplyHumanEffects();
     }
-
-    LastTransformationTime = CurrentTime;
 }
 
 void UPlayerFormComponent::ApplySpectralEffects()

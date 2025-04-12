@@ -586,6 +586,10 @@ void APlayerMain::ToggleForm() //TODO: extract to PlayerMain the "apply effects"
 {
 	if (GetCharacterAction() != ECharacterActions::ECA_Nothing) return;
 
+	float CurrentTime = GetWorld()->GetTimeSeconds();
+	if (CurrentTime - LastTransformationTime < TransformationCooldown) return;
+	LastTransformationTime = 0;
+
 	if (PlayerFormComponent->GetCharacterForm() != ECharacterForm::ECF_Spectral)
 	{
 		WithEnergy();
@@ -596,6 +600,8 @@ void APlayerMain::ToggleForm() //TODO: extract to PlayerMain the "apply effects"
 		Attributes->StopDecreaseEnergy();
 		OutOfEnergy();
 	}
+
+	LastTransformationTime = CurrentTime;
 }
 
 void APlayerMain::WithEnergy()
@@ -619,7 +625,6 @@ void APlayerMain::OutOfEnergy()
 	if (EquippedWeapon) EquippedWeapon->Enable(true);
 	if (PossessedEnemy) PossessedEnemy->UnPossess();
 }
-
 
 void APlayerMain::Die()
 {
