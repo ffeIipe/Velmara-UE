@@ -173,7 +173,7 @@ void APlayerMain::PerformComboStarter(int AttackIndex)
 		ComboExtenderIndex = AttackIndex;
 		StopAttackBufferEvent();
 		StartAttackBufferEvent(BufferAttackDistance);
-		SetCharacterAction(ECharacterActions::ECA_Attack);
+		SetCharacterAction(ECharacterActions::ECA_Attack);	
 		PlayAnimMontage(ComboStarterAttack[AttackIndex - 1]);
 
 		IsSaveHeavyAttack = false;
@@ -190,10 +190,11 @@ void APlayerMain::PerformComboExtender(int AttackIndex)
 		StopAttackBufferEvent();
 		StartAttackBufferEvent(BufferAttackDistance);
 		SetCharacterAction(ECharacterActions::ECA_Attack);
-		PlayAnimMontage(ComboExtenderAttack[AttackIndex - 1]);
+		PlayAnimMontage(ComboExtenderAttack[AttackIndex]);
 		ResetLightAttackStats();
 		ResetHeavyAttackStats();
 		SoftLockOn();
+		//
 	}
 }
 
@@ -223,7 +224,7 @@ void APlayerMain::PerformDodge()
 		StopDodgeBufferEvent();
 		DodgeBufferEvent(BufferDodgeDistance);
 		SetCharacterAction(ECharacterActions::ECA_Dodge);
-		GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+		//GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 		PlayAnimMontage(DodgeMontage);
 	}
 	else
@@ -231,8 +232,9 @@ void APlayerMain::PerformDodge()
 		StopDodgeBufferEvent();
 		DodgeBufferEvent(BufferDodgeDistance);
 		SetCharacterAction(ECharacterActions::ECA_Dodge);
-		GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+		//GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 		PlayAnimMontage(SpectralDodgeMontage);
+		//
 	}
 }
 
