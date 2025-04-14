@@ -7,13 +7,12 @@
 
 void ASpectralTrap::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	APlayerMain* Player = Cast<APlayerMain>(OtherActor);
+	if (Player)
 	{
-		APlayerMain* Player = Cast<APlayerMain>(OtherActor);
-		if (Player)
-		{
-			OverlappingPlayer = Player;
-			GetWorldTimerManager().SetTimer(DamageTimerHandle, this, &ASpectralTrap::ApplyTrapDamage, DamageInterval, true);
-		}
+		OverlappingPlayer = Player;
+		OverlappingPlayer->PlayAnimMontage(OverlappingPlayer->HitReactMontage, 1.f, FName("KnockDown"));
+		ApplyTrapDamage();
 	}
 }
 
@@ -23,23 +22,19 @@ void ASpectralTrap::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent,
 	APlayerMain* Player = Cast<APlayerMain>(OtherActor);
 	if (Player && Player == OverlappingPlayer)
 	{
-		GetWorldTimerManager().ClearTimer(DamageTimerHandle);
+		//GetWorldTimerManager().ClearTimer(DamageTimerHandle);
 		OverlappingPlayer = nullptr;
 	}
 }
 void ASpectralTrap::ApplyTrapDamage()
 {
-	if (OverlappingPlayer && !OverlappingPlayer->IsPendingKill())
-	{
-		AController* InstigatorController = GetInstigator() ? GetInstigator()->GetController() : nullptr;
+	AController* InstigatorController = GetInstigator() ? GetInstigator()->GetController() : nullptr;
 
-		UGameplayStatics::ApplyDamage(
-			OverlappingPlayer,
-			DamagePerTick,
-			InstigatorController,
-			this,
-			UDamageType::StaticClass()
-		);
-	}
-	else GetWorldTimerManager().ClearTimer(DamageTimerHandle);
+	UGameplayStatics::ApplyDamage(
+		OverlappingPlayer,
+		Damage,
+		InstigatorController,
+		this,
+		UDamageType::StaticClass()
+	);
 }

@@ -28,12 +28,8 @@ class TESISUE_API ASpectralTrap : public ASpectralObject
 
 	void ApplyTrapDamage();
 
-	FTimerHandle DamageTimerHandle;
 	APlayerMain* OverlappingPlayer = nullptr;
 
 	UPROPERTY(EditAnywhere, Category = "Trap")
-	float DamageInterval = 1.0f;
-
-	UPROPERTY(EditAnywhere, Category = "Trap")
-	float DamagePerTick = 5.0f;
+	float Damage = 10.0f;
 };

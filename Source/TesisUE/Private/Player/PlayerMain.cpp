@@ -190,11 +190,10 @@ void APlayerMain::PerformComboExtender(int AttackIndex)
 		StopAttackBufferEvent();
 		StartAttackBufferEvent(BufferAttackDistance);
 		SetCharacterAction(ECharacterActions::ECA_Attack);
-		PlayAnimMontage(ComboExtenderAttack[AttackIndex]);
+		PlayAnimMontage(ComboExtenderAttack[AttackIndex - 1]);
 		ResetLightAttackStats();
 		ResetHeavyAttackStats();
 		SoftLockOn();
-		//
 	}
 }
 
@@ -439,14 +438,14 @@ AEnemy* APlayerMain::GetTargetEnemy()
 	if (FollowCamera)
 	{
 		Start = FollowCamera->GetActorLocation() + FollowCamera->GetActorForwardVector() * 100.0f;
-		End = Start + FollowCamera->GetActorForwardVector() * 1000.0f;
+		End = Start + FollowCamera->GetActorForwardVector() * PossessDistance;
 	}
 
 	FHitResult HitResult;
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(this);
 
-	if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility, QueryParams))
+	if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_GameTraceChannel3, QueryParams))
 	{
 		DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 2.0f);
 		return Cast<AEnemy>(HitResult.GetActor());

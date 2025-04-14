@@ -72,6 +72,9 @@ public:
 
 	void ReceiveBlock();
 
+	UPROPERTY(BlueprintReadWrite, Category = "HitReact")
+	UAnimMontage* HitReactMontage;
+
 protected:
 	/*
 	* Base
@@ -110,9 +113,6 @@ protected:
 	
 	UPROPERTY(BlueprintReadWrite, Category = "DoubleJump")
 	UAnimMontage* DoubleJumpMontage;
-
-	UPROPERTY(BlueprintReadWrite, Category = "HitReact")
-	UAnimMontage* HitReactMontage;
 	
 	UPROPERTY(BlueprintReadWrite, Category = "Death")
 	UAnimMontage* DeathMontage;
@@ -340,6 +340,9 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "BloodSense | Cooldown")
 	float LastTransformationTime;
+	
+	UPROPERTY(EditAnywhere, Category = "Possess")
+	float PossessDistance;
 
 	APlayerController* PlayerControllerRef = nullptr;
 
