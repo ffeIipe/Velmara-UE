@@ -12,7 +12,7 @@ void ASpectralTrap::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponen
 	{
 		OverlappingPlayer = Player;
 		OverlappingPlayer->PlayAnimMontage(OverlappingPlayer->HitReactMontage, 1.f, FName("KnockDown"));
-		ApplyTrapDamage();
+		//ApplyTrapDamage();
 	}
 }
 
