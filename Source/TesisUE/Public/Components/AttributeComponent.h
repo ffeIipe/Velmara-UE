@@ -66,5 +66,9 @@ private:
 	bool bIsDraining;
 
 	void DrainTick();
+	
+	void RegenerateTick();
+
+	void RegenerateEnergy();
 
 };

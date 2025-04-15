@@ -74,14 +74,20 @@ void UAttributeComponent::DrainTick()
 {
 	if (ItHasEnergy())
 	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Red, FString::SanitizeFloat(Energy));
-		}
 		Energy = FMath::Clamp(Energy - 1.f, 0.f, 100.f);
 	}
 	else
 	{
 		StopDecreaseEnergy();
 	}
+}
+//
+void UAttributeComponent::RegenerateTick()
+{
+	GetWorld()->GetTimerManager().SetTimer(EnergyTimerHandle, this, &UAttributeComponent::RegenerateTick, 1.0f, true);
+}
+
+void UAttributeComponent::RegenerateEnergy()
+{
+	Energy = FMath::Clamp(Energy + 1.f, 0.f, 100.f);
 }

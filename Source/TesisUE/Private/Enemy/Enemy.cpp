@@ -252,7 +252,7 @@ void AEnemy::GetHit_Implementation(const FVector& ImpactPoint)
 	if (Attributes && Attributes->IsAlive())
 	{
 		ReactToDamage(LastDamageType, ImpactPoint);
-		HitFlash();
+		//HitFlash(); <- this is the red effect when an enemy get hits
 	}
 	else
 	{
