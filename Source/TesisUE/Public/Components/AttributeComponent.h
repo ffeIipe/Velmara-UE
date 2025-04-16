@@ -42,6 +42,12 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	bool ItHasEnergy();
+	
+	UFUNCTION(BlueprintCallable)
+	bool ItHasFullEnergy();
+
+	UFUNCTION(BlueprintCallable)
+	void RegenerateTick();
 
 	TFunction<void()> OnDepletedCallback;
 
@@ -59,16 +65,22 @@ private:
 	
 	UPROPERTY(EditAnywhere, Category = "Actor Properties|Energy")
 	float Energy;
+	
+	UPROPERTY(EditAnywhere, Category = "Actor Properties|Energy")
+	float DrainTickValue = 2.f;
 
-	FTimerHandle EnergyTimerHandle;
+	UPROPERTY(EditAnywhere, Category = "Actor Properties|Energy")
+	float RegenerateTickValue = .5f;
+	
+
+	FTimerHandle EnergyDecreaseTimerHandle;
+	
+	FTimerHandle EnergyRegenerateTimerHandle;
 
 	UPROPERTY()
 	bool bIsDraining;
 
 	void DrainTick();
-	
-	void RegenerateTick();
 
 	void RegenerateEnergy();
-
 };

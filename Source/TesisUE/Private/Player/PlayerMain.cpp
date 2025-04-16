@@ -46,7 +46,6 @@ APlayerMain::APlayerMain()
 	PlayerFormComponent = CreateDefaultSubobject<UPlayerFormComponent>(TEXT("PlayerFormComponent"));
 
 	Attributes = CreateDefaultSubobject<UAttributeComponent>(TEXT("AttibuteComponent"));
-	Attributes->IncreaseEnergy(3.f);
 
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 }
@@ -63,7 +62,7 @@ void APlayerMain::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEna
 void APlayerMain::BeginPlay()
 {
 	Super::BeginPlay();
-
+	Attributes->RegenerateTick();
 	for (TActorIterator<ACameraActor> It(GetWorld()); It; ++It)
 	{
 		FollowCamera = *It;
@@ -610,9 +609,11 @@ void APlayerMain::WithEnergy()
 	if (Attributes->ItHasEnergy())
 	{
 		PlayerFormComponent->ToggleForm(true);
+		Attributes->RegenerateTick();
 		Attributes->StartDecreaseEnergy();
 		Attributes->OnDepletedCallback = [this]() { OutOfEnergy(); };
 		GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = true;
+
 
 		if (EquippedWeapon)
 			EquippedWeapon->Enable(false);		
@@ -622,6 +623,7 @@ void APlayerMain::WithEnergy()
 void APlayerMain::OutOfEnergy()
 {
 	PlayerFormComponent->ToggleForm(false);
+	Attributes->RegenerateTick();
 	GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = false;
 	if (EquippedWeapon) EquippedWeapon->Enable(true);
 	if (PossessedEnemy) PossessedEnemy->UnPossess();

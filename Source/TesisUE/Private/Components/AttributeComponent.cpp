@@ -40,7 +40,7 @@ void UAttributeComponent::StartDecreaseEnergy()
 	{
 		bIsDraining = true;
 
-		GetWorld()->GetTimerManager().SetTimer(EnergyTimerHandle, this, &UAttributeComponent::DrainTick, 1.0f, true);
+		GetWorld()->GetTimerManager().SetTimer(EnergyDecreaseTimerHandle, this, &UAttributeComponent::DrainTick, 1.0f, true);
 	}
 }
 
@@ -51,13 +51,18 @@ void UAttributeComponent::StopDecreaseEnergy()
 		OnDepletedCallback();
 	}
 
-	GetWorld()->GetTimerManager().ClearTimer(EnergyTimerHandle);
+	GetWorld()->GetTimerManager().ClearTimer(EnergyDecreaseTimerHandle);
 	bIsDraining = false;
 }
 
 bool UAttributeComponent::ItHasEnergy()
 {
 	return Energy > 0.f;
+}
+
+bool UAttributeComponent::ItHasFullEnergy()
+{
+	return Energy != 99.0f;
 }
 
 void UAttributeComponent::BeginPlay()
@@ -74,20 +79,27 @@ void UAttributeComponent::DrainTick()
 {
 	if (ItHasEnergy())
 	{
-		Energy = FMath::Clamp(Energy - 1.f, 0.f, 100.f);
+		Energy = FMath::Clamp(Energy - DrainTickValue, 0.f, 100.f);
 	}
 	else
 	{
 		StopDecreaseEnergy();
 	}
 }
-//
+
 void UAttributeComponent::RegenerateTick()
 {
-	GetWorld()->GetTimerManager().SetTimer(EnergyTimerHandle, this, &UAttributeComponent::RegenerateTick, 1.0f, true);
+	if (ItHasFullEnergy() || !bIsDraining)
+	{
+		GetWorld()->GetTimerManager().SetTimer(EnergyRegenerateTimerHandle, this, &UAttributeComponent::RegenerateEnergy, 1.0f, true);
+	}
+	else
+	{
+		GetWorld()->GetTimerManager().ClearTimer(EnergyRegenerateTimerHandle);
+	}
 }
 
 void UAttributeComponent::RegenerateEnergy()
 {
-	Energy = FMath::Clamp(Energy + 1.f, 0.f, 100.f);
+	Energy = FMath::Clamp(Energy + RegenerateTickValue, 0.f, 100.f);
 }
