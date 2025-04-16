@@ -151,10 +151,10 @@ protected:
 private:
 
 	UPROPERTY(EditDefaultsOnly)
-	UBehaviorTree* BTAsset;
+	class UBehaviorTree* BTAsset;
 
 	UPROPERTY();
-	EMainDamageTypes LastDamageType = EMainDamageTypes::EMDT_None;
+	EMainDamageTypes LastDamageType; // = EMainDamageTypes::EMDT_None;
 
 	AAIController* AIOriginalController;
 
