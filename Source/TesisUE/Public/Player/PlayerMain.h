@@ -20,6 +20,7 @@ class AEnemy;
 class ASpectralObjectInteractable;
 class UAttributeComponent;
 class UEnergy;
+class UBoxComponent;
 
 UCLASS()
 class TESISUE_API APlayerMain : public ACharacter
@@ -71,6 +72,9 @@ public:
 	void ReleasePossession();
 
 	void ReceiveBlock();
+
+	UFUNCTION(BlueprintCallable)
+	void ResetFollowCamera();
 
 	UPROPERTY(BlueprintReadWrite, Category = "HitReact")
 	UAnimMontage* HitReactMontage;
@@ -125,6 +129,9 @@ protected:
 	
 	UPROPERTY(BlueprintReadWrite, Category = "Jump")
 	UAnimMontage* JumpMontage;
+	
+	UPROPERTY(BlueprintReadWrite, Category = "Finisher")
+	UAnimMontage* FinisherMontage;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Dodge")
 	bool bSaveDodge = false;
@@ -364,6 +371,15 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon", meta = (AllowPrivateAccess))
 	ASword* EquippedWeapon;
+
+	UPROPERTY(VisibleAnywhere)
+	USceneComponent* FinisherLocation;
+	
+	UPROPERTY(VisibleAnywhere)
+	USceneComponent* CameraFinisherLocation;
+	
+	UPROPERTY(VisibleAnywhere)
+	UBoxComponent* FinisherCollision;
 	
 	UFUNCTION(BlueprintCallable)
 	void HitStop(float Duration, float TimeScale);
@@ -408,6 +424,8 @@ private:
 	void Block();
 
 	void ReleaseBlock();
+
+	void FinishEnemy();
 
 	UFUNCTION(BlueprintCallable)
 	void LaunchCharacterUp();

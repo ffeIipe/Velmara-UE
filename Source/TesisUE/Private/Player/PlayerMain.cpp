@@ -24,6 +24,7 @@
 #include "EngineUtils.h"
 #include "Enemy/Paladin.h"
 #include "Kismet/GameplayStatics.h"
+#include "SceneEvents/NewGameModeBase.h"
 
 APlayerMain::APlayerMain()
 {
@@ -47,6 +48,15 @@ APlayerMain::APlayerMain()
 
 	Attributes = CreateDefaultSubobject<UAttributeComponent>(TEXT("AttibuteComponent"));
 
+	FinisherLocation = CreateDefaultSubobject<USceneComponent>(TEXT("FinisherPosition"));
+	FinisherLocation->SetupAttachment(GetMesh());
+
+	CameraFinisherLocation = CreateDefaultSubobject<USceneComponent>(TEXT("CameraFinisherLocation"));
+	CameraFinisherLocation->SetupAttachment(GetMesh());
+
+	FinisherCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("FinisherCollision"));
+	FinisherCollision->SetupAttachment(GetMesh());
+
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 }
 
@@ -62,6 +72,8 @@ void APlayerMain::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEna
 void APlayerMain::BeginPlay()
 {
 	Super::BeginPlay();
+
+	PlayerControllerRef = Cast<APlayerController>(GetController());
 	Attributes->RegenerateTick();
 	for (TActorIterator<ACameraActor> It(GetWorld()); It; ++It)
 	{
@@ -232,7 +244,6 @@ void APlayerMain::PerformDodge()
 		SetCharacterAction(ECharacterActions::ECA_Dodge);
 		//GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 		PlayAnimMontage(SpectralDodgeMontage);
-		//
 	}
 }
 
@@ -454,28 +465,30 @@ AEnemy* APlayerMain::GetTargetEnemy()
 
 void APlayerMain::PossessEnemy()
 {
-	if (PlayerFormComponent->GetCharacterForm() != ECharacterForm::ECF_Spectral) return;
-
-	AEnemy* TargetEnemy = GetTargetEnemy();
-	if (!TargetEnemy) return;
-
-	PlayerControllerRef = Cast<APlayerController>(GetController());
-
-	if (PlayerControllerRef)
+	if (PlayerFormComponent->GetCharacterForm() == ECharacterForm::ECF_Spectral)
 	{
-		PlayerControllerRef->Possess(TargetEnemy);
-		TargetEnemy->DisableAI();
-		PossessedEnemy = TargetEnemy;
+		AEnemy* TargetEnemy = GetTargetEnemy();
+		if (!TargetEnemy) return;
 
-		TargetEnemy->EnableInput(PlayerControllerRef);
-		TargetEnemy->AutoPossessPlayer = EAutoReceiveInput::Player0;
-		TargetEnemy->OnPossessed(this);
+		PlayerControllerRef = Cast<APlayerController>(GetController());
 
-		FollowCamera->AttachToComponent(TargetEnemy->SpringArm, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("SpringEndpoint"));
-		PlayerControllerRef->SetViewTargetWithBlend(FollowCamera, 1.f);
+		if (PlayerControllerRef)
+		{
+			PlayerControllerRef->Possess(TargetEnemy);
+			TargetEnemy->DisableAI();
+			PossessedEnemy = TargetEnemy;
+
+			TargetEnemy->EnableInput(PlayerControllerRef);
+			TargetEnemy->AutoPossessPlayer = EAutoReceiveInput::Player0;
+			TargetEnemy->OnPossessed(this);
+
+			FollowCamera->AttachToComponent(TargetEnemy->SpringArm, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("SpringEndpoint"));
+			PlayerControllerRef->SetViewTargetWithBlend(FollowCamera, 1.f);
+		}
+		SetActorHiddenInGame(true);
+		SetActorEnableCollision(false);
 	}
-	SetActorHiddenInGame(true);
-	SetActorEnableCollision(false);
+	else FinishEnemy();
 }
 
 void APlayerMain::ReleasePossession()
@@ -504,7 +517,7 @@ void APlayerMain::ReleasePossession()
 
 void APlayerMain::Move(const FInputActionValue& Value)
 {
-	if (GetCharacterAction() == ECharacterActions::ECA_Block) return;
+	if (GetCharacterAction() == ECharacterActions::ECA_Block || GetCharacterAction() == ECharacterActions::ECA_Finish) return;
 
 	const FVector2D MoveVector = Value.Get<FVector2D>();
 
@@ -520,6 +533,8 @@ void APlayerMain::Move(const FInputActionValue& Value)
 
 void APlayerMain::Look(const FInputActionValue& Value)
 {
+	if (GetCharacterAction() == ECharacterActions::ECA_Finish) return;
+
 	const FVector2D LookingVector = Value.Get<FVector2D>();
 
 	AddControllerPitchInput(LookingVector.Y);
@@ -528,7 +543,7 @@ void APlayerMain::Look(const FInputActionValue& Value)
 
 void APlayerMain::Jump()
 {
-	if (GetCharacterAction() == ECharacterActions::ECA_Block) return;
+	if (GetCharacterAction() == ECharacterActions::ECA_Block || GetCharacterAction() == ECharacterActions::ECA_Finish) return;
 
 	PlayAnimMontage(JumpMontage, 1.f);
 
@@ -614,7 +629,6 @@ void APlayerMain::WithEnergy()
 		Attributes->OnDepletedCallback = [this]() { OutOfEnergy(); };
 		GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = true;
 
-
 		if (EquippedWeapon)
 			EquippedWeapon->Enable(false);		
 	}
@@ -662,17 +676,67 @@ void APlayerMain::Block()
 		PlayAnimMontage(BlockMontage, 1.f, FName("BlockIdle"));
 		SetCharacterAction(ECharacterActions::ECA_Block);
 	}	
-}
+} 
 
 void APlayerMain::ReceiveBlock()
 {
 	PlayAnimMontage(BlockMontage, 1.f, FName("BlockReact"));
 }
 
+void APlayerMain::ResetFollowCamera()
+{
+	if (FollowCamera && PlayerControllerRef)
+	{
+		SetCharacterAction(ECharacterActions::ECA_Nothing);
+		FollowCamera->AttachToComponent(CameraBoom, FAttachmentTransformRules::SnapToTargetIncludingScale, FName("SprinEndpoint"));
+		PlayerControllerRef->SetViewTargetWithBlend(FollowCamera, 1.f);
+		PlayerControllerRef->EnableInput(PlayerControllerRef);
+		Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->SetEnemiesAIEnabled(true);
+	}
+}
+
 void APlayerMain::ReleaseBlock()
 {
 	StopAnimMontage(BlockMontage);
 	SetCharacterAction(ECharacterActions::ECA_Nothing);
+}
+
+void APlayerMain::FinishEnemy()
+{
+	TArray<AActor*> Array;
+	FinisherCollision->GetOverlappingActors(Array);
+
+	for (AActor* Actor : Array)
+	{
+		if (Actor && Actor->GetClass()->ImplementsInterface(UHitInterface::StaticClass()))
+		{
+			if (IHitInterface::Execute_CanBeFinished(Actor))
+			{
+				SetCharacterAction(ECharacterActions::ECA_Finish);
+				FollowCamera->AttachToComponent(
+					CameraFinisherLocation,
+					FAttachmentTransformRules::SnapToTargetIncludingScale
+				);
+				PlayerControllerRef->SetViewTargetWithBlend(FollowCamera, 1.f);
+				PlayerControllerRef->DisableInput(PlayerControllerRef);
+
+				IHitInterface::Execute_GetFinished(Actor, FinisherLocation->GetComponentLocation());
+				PlayAnimMontage(FinisherMontage, 1.0f);
+				FVector Start = GetActorLocation();
+				FVector End = Actor->GetActorLocation();
+
+				FRotator NewRotation = FRotator(
+					GetActorRotation().Pitch,
+					UKismetMathLibrary::FindLookAtRotation(Start, End).Yaw,
+					UKismetMathLibrary::FindLookAtRotation(Start, End).Roll
+				);
+
+				SetActorRotation(NewRotation);
+				Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->SetEnemiesAIEnabled(false);
+			}
+			else return;
+		}
+	}
 }
 
 void APlayerMain::LaunchCharacterUp()

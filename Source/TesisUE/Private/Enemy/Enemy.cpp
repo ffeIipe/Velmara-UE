@@ -1,6 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "Enemy/Enemy.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/AttributeComponent.h"
@@ -18,10 +15,11 @@
 #include "DamageTypes/DamageTypeMain.h"
 #include "GameFramework/DamageType.h"
 #include "Engine/DamageEvents.h"
+#include "SceneEvents/NewGameModeBase.h"
 
 AEnemy::AEnemy()
 {
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
 	GetMesh()->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
@@ -62,6 +60,8 @@ AEnemy::AEnemy()
 void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
+
+	Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->RegisterEnemy(this);
 
 	Attributes->IncreaseEnergy(FMath::RandRange(MinEnergy, MaxEnergy));
 
@@ -152,7 +152,6 @@ void AEnemy::Die()
 void AEnemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }
 
 void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -167,7 +166,6 @@ void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AEnemy::Look);
 	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &AEnemy::Jump);
 	EnhancedInputComponent->BindAction(UnPossessAction, ETriggerEvent::Completed, this, &AEnemy::UnPossess);
-	
 }
 
 void AEnemy::Move(const FInputActionValue& Value)
@@ -213,11 +211,10 @@ void AEnemy::CrashDown()
 void AEnemy::HitInAir()
 {
 	float PlayerLocationZ = UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->GetActorLocation().Z;
-	SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, PlayerLocationZ + 50.f));
+	SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, PlayerLocationZ));
 	PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
 	GetCharacterMovement()->IsFlying();
 	DisableAI();
-
 }
 
 void AEnemy::ResetEnemy()
@@ -274,6 +271,21 @@ void AEnemy::GetHit_Implementation(const FVector& ImpactPoint)
 			ImpactPoint
 		);
 	}
+}
+
+void AEnemy::GetFinished_Implementation(const FVector& NewLocation)
+{
+	HealthBarWidget->SetHealthBarActive(false);
+	DisableAI();
+	Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->UnregisterEnemy(this);
+	SetActorLocation(NewLocation, true);
+	PlayAnimMontage(FinisherDeathMontage, 1.f);
+	SetLifeSpan(7.f);
+}
+
+bool AEnemy::CanBeFinished_Implementation()
+{
+	return Attributes->GetHealthPercent() <= .2f;
 }
 
 float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
@@ -402,4 +414,3 @@ void AEnemy::UnPossess()
 	bUseControllerRotationYaw = true;
 	PossessionOwner->ReleasePossession();
 }
-

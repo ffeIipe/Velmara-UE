@@ -62,7 +62,7 @@ bool UAttributeComponent::ItHasEnergy()
 
 bool UAttributeComponent::ItHasFullEnergy()
 {
-	return Energy != 99.0f;
+	return Energy >= 99.f;
 }
 
 void UAttributeComponent::BeginPlay()

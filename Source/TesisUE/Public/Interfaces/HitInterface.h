@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -12,9 +10,6 @@ class UHitInterface : public UInterface
 	GENERATED_BODY()
 };
 
-/**
- * 
- */
 class TESISUE_API IHitInterface
 {
 	GENERATED_BODY()
@@ -22,4 +17,10 @@ class TESISUE_API IHitInterface
 public:
 	UFUNCTION(BlueprintNativeEvent)
 	void GetHit(const FVector& ImpactPoint);
+	
+	UFUNCTION(BlueprintNativeEvent)
+	void GetFinished(const FVector& NewLocation);
+	
+	UFUNCTION(BlueprintNativeEvent)
+	bool CanBeFinished();
 };

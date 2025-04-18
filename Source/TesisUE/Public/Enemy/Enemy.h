@@ -43,6 +43,10 @@ public:
 
 	virtual void GetHit_Implementation(const FVector& ImpactPoint) override;
 
+	virtual void GetFinished_Implementation(const FVector& NewLocation) override;
+
+	virtual bool CanBeFinished_Implementation()override;
+
 	virtual float TakeDamage(
 		float DamageAmount,
 		struct FDamageEvent const& DamageEvent,
@@ -106,6 +110,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Montages");
 	UAnimMontage* DeathMontage;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Montages");
+	UAnimMontage* FinisherDeathMontage;
 
 	UPROPERTY(EditAnywhere, Category = "Sounds");
 	USoundBase* HitSound;

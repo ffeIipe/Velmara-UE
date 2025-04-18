@@ -42,11 +42,11 @@ void UHealthBarComponent::SetHealthBarActive(bool Param)
 {
 	if (Param)
 	{
-		HealthBarWidget->HealthBar->Visibility = ESlateVisibility::Visible;
+		HealthBarWidget->HealthBar->SetVisibility(ESlateVisibility::Visible);
 	}
 	else
 	{
-		HealthBarWidget->HealthBar->Visibility = ESlateVisibility::Collapsed;
+		HealthBarWidget->HealthBar->SetVisibility(ESlateVisibility::Hidden);
 	}
 }
 

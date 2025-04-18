@@ -75,9 +75,8 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 	const FVector Start = BoxTraceStart->GetComponentLocation();
 	const FVector End = BoxTraceEnd->GetComponentLocation();
 
-	TArray<AActor*> ActorsToIgnore;
-	ActorsToIgnore.Add(this);
-	ActorsToIgnore.Add(GetOwner());
+	IgnoreActors.Add(this);
+	IgnoreActors.Add(GetOwner());
 
 	TArray<FHitResult> HitResults;;
 
@@ -87,10 +86,10 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 		End,
 		FVector(10.f, 10.f, 10.f),
 		BoxTraceStart->GetComponentRotation(),
-		UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_GameTraceChannel13),
+		UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_GameTraceChannel3),
 		false,
-		ActorsToIgnore,
-		EDrawDebugTrace::None,
+		IgnoreActors,
+		EDrawDebugTrace::ForDuration,
 		HitResults,
 		true
 	);
@@ -98,7 +97,7 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 	for (const FHitResult& Hit : HitResults)
 	{
 		AActor* HitActor = Hit.GetActor();
-		if (HitActor && !ActorsToIgnore.Contains(HitActor))
+		if (HitActor && !IgnoreActors.Contains(HitActor))
 		{
 			if (IHitInterface* HitInterface = Cast<IHitInterface>(HitActor))
 			{
@@ -114,7 +113,7 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 				HitInterface->Execute_GetHit(HitActor, Hit.ImpactPoint);
 				CameraShake();
 
-				ActorsToIgnore.Add(HitActor);
+				IgnoreActors.Add(HitActor);
 			}
 		}
 	}
