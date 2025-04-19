@@ -75,11 +75,6 @@ void AEnemy::BeginPlay()
 		PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
 	}
 
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::White, FString::SanitizeFloat(Attributes->GetEnergy()));
-	}
-
 	AAIController* AIController = Cast<AAIController>(GetController());
 	if (AIController)
 	{

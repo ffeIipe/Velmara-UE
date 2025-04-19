@@ -46,16 +46,13 @@ APlayerMain::APlayerMain()
 
 	PlayerFormComponent = CreateDefaultSubobject<UPlayerFormComponent>(TEXT("PlayerFormComponent"));
 
-	Attributes = CreateDefaultSubobject<UAttributeComponent>(TEXT("AttibuteComponent"));
+	Attributes = CreateDefaultSubobject<UAttributeComponent>(TEXT("AttributeComponent"));
 
 	FinisherLocation = CreateDefaultSubobject<USceneComponent>(TEXT("FinisherPosition"));
 	FinisherLocation->SetupAttachment(GetMesh());
 
 	CameraFinisherLocation = CreateDefaultSubobject<USceneComponent>(TEXT("CameraFinisherLocation"));
 	CameraFinisherLocation->SetupAttachment(GetMesh());
-
-	//FinisherCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("FinisherCollision"));
-	//FinisherCollision->SetupAttachment(GetMesh());
 
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 }

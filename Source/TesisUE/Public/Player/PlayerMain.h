@@ -342,6 +342,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	USpringArmComponent* CameraBoom;
 
+	UPROPERTY(VisibleAnywhere);
+	UAttributeComponent* Attributes;
+
 private:	
 
 	UPROPERTY(EditDefaultsOnly, Category = "BloodSense | Cooldown")
@@ -357,8 +360,6 @@ private:
 
 	bool bIsDead = false;
 
-	UPROPERTY(VisibleAnywhere);
-	UAttributeComponent* Attributes;
 
 	ECharacterActions CharacterAction = ECharacterActions::ECA_Nothing;
 

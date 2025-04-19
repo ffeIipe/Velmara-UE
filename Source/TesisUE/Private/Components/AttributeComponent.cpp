@@ -89,9 +89,9 @@ void UAttributeComponent::DrainTick()
 
 void UAttributeComponent::RegenerateTick()
 {
-	if (ItHasFullEnergy() || !bIsDraining)
+	if (ItHasFullEnergy() || !bIsDraining && GetWorld())
 	{
-		GetWorld()->GetTimerManager().SetTimer(EnergyRegenerateTimerHandle, this, &UAttributeComponent::RegenerateEnergy, 1.0f, true);
+		GetWorld()->GetTimerManager().SetTimer(EnergyRegenerateTimerHandle, this, &UAttributeComponent::RegenerateEnergy, 1.0f, true); //linea 94
 	}
 	else
 	{
