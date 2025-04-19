@@ -231,20 +231,26 @@ void APlayerMain::PerformHeavyAttack(int AttackIndex)
 
 void APlayerMain::PerformDodge()
 {
+	if (GetCharacterAction() == ECharacterActions::ECA_Finish) return;
+
+	// Obtener dirección del input
+	FVector MovementInput = GetLastMovementInputVector();
+	if (!MovementInput.IsNearlyZero())
+	{
+		FRotator LookRotation = MovementInput.Rotation();
+		SetActorRotation(FRotator(0.f, LookRotation.Yaw, 0.f)); // solo rotamos en yaw
+	}
+
+	StopDodgeBufferEvent();
+	DodgeBufferEvent(BufferDodgeDistance);
+	SetCharacterAction(ECharacterActions::ECA_Dodge);
+
 	if (PlayerFormComponent && PlayerFormComponent->GetCharacterForm() == ECharacterForm::ECF_Human)
 	{
-		if (GetCharacterAction() == ECharacterActions::ECA_Finish) return;
-		StopDodgeBufferEvent();
-		DodgeBufferEvent(BufferDodgeDistance);
-		SetCharacterAction(ECharacterActions::ECA_Dodge);
 		PlayAnimMontage(DodgeMontage);
 	}
 	else
 	{
-		if (GetCharacterAction() == ECharacterActions::ECA_Finish) return;
-		StopDodgeBufferEvent();
-		DodgeBufferEvent(BufferDodgeDistance);
-		SetCharacterAction(ECharacterActions::ECA_Dodge);
 		PlayAnimMontage(SpectralDodgeMontage);
 	}
 }
