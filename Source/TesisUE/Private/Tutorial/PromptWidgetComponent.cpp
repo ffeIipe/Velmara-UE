@@ -15,15 +15,6 @@ void UPromptWidgetComponent::BeginPlay()
     LoadAndApplyPrompt();
 }
 
-void UPromptWidgetComponent::InitializeFromDataTable(UDataTable* InDataTable, const FName& InRowName, bool bIsGamepad)
-{
-    PromptDataTable = InDataTable;
-    PromptRowName = InRowName;
-    bUseGamepadIcon = bIsGamepad;
-
-    LoadAndApplyPrompt();
-}
-
 void UPromptWidgetComponent::LoadAndApplyPrompt()
 {
     if (!PromptDataTable || PromptRowName.IsNone()) return;

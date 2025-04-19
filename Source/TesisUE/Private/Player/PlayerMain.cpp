@@ -74,7 +74,9 @@ void APlayerMain::BeginPlay()
 	Super::BeginPlay();
 
 	PlayerControllerRef = Cast<APlayerController>(GetController());
+
 	Attributes->RegenerateTick();
+	
 	for (TActorIterator<ACameraActor> It(GetWorld()); It; ++It)
 	{
 		FollowCamera = *It;
@@ -231,18 +233,18 @@ void APlayerMain::PerformDodge()
 {
 	if (PlayerFormComponent && PlayerFormComponent->GetCharacterForm() == ECharacterForm::ECF_Human)
 	{
+		if (GetCharacterAction() == ECharacterActions::ECA_Finish) return;
 		StopDodgeBufferEvent();
 		DodgeBufferEvent(BufferDodgeDistance);
 		SetCharacterAction(ECharacterActions::ECA_Dodge);
-		//GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 		PlayAnimMontage(DodgeMontage);
 	}
 	else
 	{
+		if (GetCharacterAction() == ECharacterActions::ECA_Finish) return;
 		StopDodgeBufferEvent();
 		DodgeBufferEvent(BufferDodgeDistance);
 		SetCharacterAction(ECharacterActions::ECA_Dodge);
-		//GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 		PlayAnimMontage(SpectralDodgeMontage);
 	}
 }
@@ -408,7 +410,8 @@ bool APlayerMain::IsFormEqualToAny(const TArray<ECharacterForm>& StatesToCheck)
 float APlayerMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	//TODO: player healthbar and fx to receive damage
-
+	if (!bCanReceiveDamage) return 0.f;
+	
 	if (Attributes && Attributes->IsAlive())
 	{
 		Attributes->ReceiveDamage(DamageAmount);
@@ -599,7 +602,10 @@ void APlayerMain::Attack(const FInputActionValue& Value)
 
 void APlayerMain::ToggleForm() //TODO: extract to PlayerMain the "apply effects" functions for more flexibility here
 {
-	if (GetCharacterAction() != ECharacterActions::ECA_Nothing) return;
+	if (GetCharacterAction() == ECharacterActions::ECA_Dead 
+		|| GetCharacterAction() == ECharacterActions::ECA_Block 
+		|| GetCharacterAction() == ECharacterActions::ECA_Finish 
+		|| GetCharacterAction() == ECharacterActions::ECA_Attack) return;
 
 	float CurrentTime = GetWorld()->GetTimeSeconds();
 	if (CurrentTime - LastTransformationTime < TransformationCooldown) return;
@@ -689,8 +695,8 @@ void APlayerMain::ResetFollowCamera()
 	{
 		SetCharacterAction(ECharacterActions::ECA_Nothing);
 		FollowCamera->AttachToComponent(CameraBoom, FAttachmentTransformRules::SnapToTargetIncludingScale, FName("SprinEndpoint"));
-		PlayerControllerRef->SetViewTargetWithBlend(FollowCamera, 1.f);
 		PlayerControllerRef->EnableInput(PlayerControllerRef);
+		bCanReceiveDamage = true;
 		Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->SetEnemiesAIEnabled(true);
 	}
 }
@@ -703,6 +709,8 @@ void APlayerMain::ReleaseBlock()
 
 void APlayerMain::FinishEnemy()
 {
+	if (GetCharacterAction() == ECharacterActions::ECA_Finish) return;
+
 	TArray<AActor*> Array;
 	FinisherCollision->GetOverlappingActors(Array);
 
@@ -712,6 +720,7 @@ void APlayerMain::FinishEnemy()
 		{
 			if (IHitInterface::Execute_CanBeFinished(Actor))
 			{
+				bCanReceiveDamage = false;
 				SetCharacterAction(ECharacterActions::ECA_Finish);
 				FollowCamera->AttachToComponent(
 					CameraFinisherLocation,
@@ -722,6 +731,7 @@ void APlayerMain::FinishEnemy()
 
 				IHitInterface::Execute_GetFinished(Actor, FinisherLocation->GetComponentLocation());
 				PlayAnimMontage(FinisherMontage, 1.0f);
+
 				FVector Start = GetActorLocation();
 				FVector End = Actor->GetActorLocation();
 

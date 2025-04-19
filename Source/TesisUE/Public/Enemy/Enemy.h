@@ -16,6 +16,7 @@ class UCameraComponent;
 class UInputMappingContext;
 class APlayerMain;
 class AAIController;
+class UPromptWidgetComponent;
 
 UENUM(BlueprintType)
 enum class EEnemyType : uint8
@@ -98,6 +99,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere);
 	UHealthBarComponent* HealthBarWidget;
+
+	UPROPERTY(EditInstanceOnly)
+	UPromptWidgetComponent* PromptWidgetComponent;
 	
 	UPROPERTY(EditAnywhere);
 	float MinEnergy = 8.f;
@@ -179,6 +183,13 @@ private:
 
 	UPROPERTY()
 	AActor* DamageCauserOf;
+
+	UFUNCTION(BlueprintCallable)
+	void DeactivateEnemyCollision();
+
+	FName SelectRandomDieAnim();
+
+	bool bCanBeFinished = false;
 };
 
 

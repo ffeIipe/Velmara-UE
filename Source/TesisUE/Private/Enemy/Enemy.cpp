@@ -16,6 +16,8 @@
 #include "GameFramework/DamageType.h"
 #include "Engine/DamageEvents.h"
 #include "SceneEvents/NewGameModeBase.h"
+#include "Tutorial/PromptWidgetComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 
 AEnemy::AEnemy()
 {
@@ -44,10 +46,13 @@ AEnemy::AEnemy()
 	HealthBarWidget->SetupAttachment(GetRootComponent());
 	HealthBarWidget->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
 
+	PromptWidgetComponent = CreateDefaultSubobject<UPromptWidgetComponent>(TEXT("PromptWidget"));
+	PromptWidgetComponent->SetupAttachment(GetRootComponent());
+
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationRoll = false;
 	bUseControllerRotationYaw = true;
-
+	
 	GetCharacterMovement()->bUseControllerDesiredRotation = false;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 300.f, 0.f);
@@ -64,6 +69,8 @@ void AEnemy::BeginPlay()
 	Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->RegisterEnemy(this);
 
 	Attributes->IncreaseEnergy(FMath::RandRange(MinEnergy, MaxEnergy));
+
+	PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
 
 	if (GEngine)
 	{
@@ -84,65 +91,17 @@ void AEnemy::BeginPlay()
 
 void AEnemy::Die()
 {
-	const int32 RandomValue = FMath::RandRange(0, 3);
-	FName SectionName = FName();
+	Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->UnregisterEnemy(this);
+	ResetEnemy();
+	PlayAnimMontage(DeathMontage, 1.f, SelectRandomDieAnim());
 
-	switch (RandomValue)
-	{
-	case 0:
-		SectionName = FName("Death1");
-		break;
-	case 1:
-		SectionName = FName("Death2");
-		break;
-	case 2:
-		SectionName = FName("Death3");
-		break;
-	case 3:
-		SectionName = FName("Death4");
-		break;
-	default:
-		break;
-	}
-
-	if (GetCharacterMovement()->MovementMode != EMovementMode::MOVE_Flying)
-	{
-		PlayAnimMontage(DeathMontage, 1.f, SectionName);
-	}
-
-	else
-	{
-		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
-		//PlayAnimMontage(DeathMontage, 1.f, SectionName);
-	}
-
-	if (GetMesh())
-	{
-		GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	}
-
-	UCapsuleComponent* Capsule = GetCapsuleComponent();
-	if (Capsule)
-	{
-		Capsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	}
-
+	PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
 	HealthBarWidget->SetHealthBarActive(false);
 
-	AAIController* AIController = Cast<AAIController>(GetController());
-	if (AIController)
-	{
-		AIController->StopMovement();  
-		AIController->UnPossess();   
-	}
+	DisableAI();
 
 	if (APlayerMain* Player = Cast<APlayerMain>(DamageCauserOf))
 	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Orange, FString("Player valid"));
-		}
-
 		Player->GetAttributes()->IncreaseEnergy(Attributes->GetEnergy());
 	}
 
@@ -229,15 +188,16 @@ void AEnemy::ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoi
 	switch (DamageType)
 	{
 	case EMainDamageTypes::EMDT_CrashDown:
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::White, FString("CrashDown Case valid"));
 		CrashDown();
 		break;
 
 	case EMainDamageTypes::EMDT_InAir:
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Black, FString("HitInAir Case valid"));
 		HitInAir();
 		break;
 
+	case EMainDamageTypes::EMDT_Finisher:
+		return;
+		break;
 	default:
 		DirectionalHitReact(ImpactPoint);
 		break;
@@ -275,10 +235,24 @@ void AEnemy::GetHit_Implementation(const FVector& ImpactPoint)
 
 void AEnemy::GetFinished_Implementation(const FVector& NewLocation)
 {
+	FVector Start = GetActorLocation();
+	FVector End = DamageCauserOf->GetActorLocation();
+
+	FRotator NewRotation = FRotator(
+		GetActorRotation().Pitch,
+		UKismetMathLibrary::FindLookAtRotation(Start, End).Yaw,
+		UKismetMathLibrary::FindLookAtRotation(Start, End).Roll
+	);
+
+	SetActorRotation(NewRotation);
+	SetActorLocation(FVector(NewLocation.X, NewLocation.Y, GetActorLocation().Z));
+
 	HealthBarWidget->SetHealthBarActive(false);
+	PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
+
 	DisableAI();
 	Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->UnregisterEnemy(this);
-	SetActorLocation(NewLocation, true);
+
 	PlayAnimMontage(FinisherDeathMontage, 1.f);
 	SetLifeSpan(7.f);
 }
@@ -306,6 +280,12 @@ float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AC
 	{
 		Attributes->ReceiveDamage(DamageAmount);
 		HealthBarWidget->SetHealthPercent(Attributes->GetHealthPercent());
+
+		if (Execute_CanBeFinished(this))
+		{
+			PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Visible);
+			PromptWidgetComponent->LoadAndApplyPrompt();
+		}
 	}
 	return DamageAmount;
 }
@@ -364,15 +344,43 @@ void AEnemy::ResetColor()
 	}
 }
 
+void AEnemy::DeactivateEnemyCollision()
+{
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}
+
+FName AEnemy::SelectRandomDieAnim()
+{
+	const int32 RandomValue = FMath::RandRange(0, 3);
+	FName SectionName = FName();
+
+	switch (RandomValue)
+	{
+	case 0:
+		return SectionName = FName("Death1");
+		break;
+	case 1:
+		return SectionName = FName("Death2");
+		break;
+	case 2:
+		return SectionName = FName("Death3");
+		break;
+	case 3:
+		return SectionName = FName("Death4");
+		break;
+	default:
+		return FName("");
+		break;
+	}
+
+	return FName("");
+}
+
 void AEnemy::DisableAI()
 {
 	if (AIOriginalController)
 	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Cyan, FString("Disable AI"));
-		}
-
 		AIOriginalController->StopMovement();
 		AIOriginalController->UnPossess();
 	}
@@ -382,11 +390,6 @@ void AEnemy::EnableAI()
 {
 	if (AIOriginalController)
 	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, FString("Enable AI"));
-		}
-
 		AIOriginalController->Possess(this);
 		AIOriginalController->AAIController::RunBehaviorTree(BTAsset);
 	}

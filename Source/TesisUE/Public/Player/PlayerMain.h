@@ -68,6 +68,8 @@ public:
 		class AController* EventInstigator,
 		AActor* DamageCauser) override;
 
+	bool bCanReceiveDamage = true;
+
 	UFUNCTION(BlueprintCallable)
 	void ReleasePossession();
 

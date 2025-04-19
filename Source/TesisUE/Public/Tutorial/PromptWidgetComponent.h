@@ -16,9 +16,9 @@ public:
     UPromptWidgetComponent();
 
     virtual void BeginPlay() override;
-
+   
     UFUNCTION(BlueprintCallable, Category = "Prompt")
-    void InitializeFromDataTable(UDataTable* InDataTable, const FName& InRowName, bool bIsGamepad);
+    void LoadAndApplyPrompt();
 
 protected:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Prompt")
@@ -29,6 +29,4 @@ protected:
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Prompt")
     bool bUseGamepadIcon;
-
-    void LoadAndApplyPrompt();
 };
