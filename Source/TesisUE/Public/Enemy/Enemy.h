@@ -44,7 +44,7 @@ public:
 
 	virtual void GetHit_Implementation(const FVector& ImpactPoint) override;
 
-	virtual void GetFinished_Implementation(const FVector& NewLocation) override;
+	virtual void GetFinished_Implementation() override;
 
 	virtual bool CanBeFinished_Implementation()override;
 

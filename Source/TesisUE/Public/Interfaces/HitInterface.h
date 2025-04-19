@@ -19,7 +19,7 @@ public:
 	void GetHit(const FVector& ImpactPoint);
 	
 	UFUNCTION(BlueprintNativeEvent)
-	void GetFinished(const FVector& NewLocation);
+	void GetFinished();
 	
 	UFUNCTION(BlueprintNativeEvent)
 	bool CanBeFinished();

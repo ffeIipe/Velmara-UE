@@ -69,8 +69,11 @@ void AEnemy::BeginPlay()
 	Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->RegisterEnemy(this);
 
 	Attributes->IncreaseEnergy(FMath::RandRange(MinEnergy, MaxEnergy));
-
-	PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
+	
+	if (PromptWidgetComponent)
+	{
+		PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
+	}
 
 	if (GEngine)
 	{
@@ -91,12 +94,13 @@ void AEnemy::BeginPlay()
 
 void AEnemy::Die()
 {
-	Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->UnregisterEnemy(this);
-	ResetEnemy();
-	PlayAnimMontage(DeathMontage, 1.f, SelectRandomDieAnim());
-
+	bCanBeFinished = false;
+	
 	PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
 	HealthBarWidget->SetHealthBarActive(false);
+
+	Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->UnregisterEnemy(this);
+	ResetEnemy();
 
 	DisableAI();
 
@@ -213,6 +217,7 @@ void AEnemy::GetHit_Implementation(const FVector& ImpactPoint)
 	}
 	else
 	{
+		PlayAnimMontage(DeathMontage, 1.f, SelectRandomDieAnim());
 		Die();
 	}
 
@@ -233,28 +238,26 @@ void AEnemy::GetHit_Implementation(const FVector& ImpactPoint)
 	}
 }
 
-void AEnemy::GetFinished_Implementation(const FVector& NewLocation)
+void AEnemy::GetFinished_Implementation()
 {
-	FVector Start = GetActorLocation();
-	FVector End = DamageCauserOf->GetActorLocation();
+	if (bCanBeFinished)
+	{
+		bCanBeFinished = false;
 
-	FRotator NewRotation = FRotator(
-		GetActorRotation().Pitch,
-		UKismetMathLibrary::FindLookAtRotation(Start, End).Yaw,
-		UKismetMathLibrary::FindLookAtRotation(Start, End).Roll
-	);
+		PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
+		HealthBarWidget->SetHealthBarActive(false);
 
-	SetActorRotation(NewRotation);
-	SetActorLocation(FVector(NewLocation.X, NewLocation.Y, GetActorLocation().Z));
+		FVector Start = GetActorLocation();
+		FVector End = DamageCauserOf->GetActorLocation();
+		FRotator NewRotation = UKismetMathLibrary::FindLookAtRotation(Start, End);
+		SetActorRotation(NewRotation);
 
-	HealthBarWidget->SetHealthBarActive(false);
-	PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
-
-	DisableAI();
-	Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->UnregisterEnemy(this);
-
-	PlayAnimMontage(FinisherDeathMontage, 1.f);
-	SetLifeSpan(7.f);
+		DisableAI();
+		Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->UnregisterEnemy(this);
+		StopAnimMontage();
+		PlayAnimMontage(FinisherDeathMontage, 1.f);
+		Die();
+	}
 }
 
 bool AEnemy::CanBeFinished_Implementation()
@@ -285,6 +288,7 @@ float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AC
 		{
 			PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Visible);
 			PromptWidgetComponent->LoadAndApplyPrompt();
+			bCanBeFinished = true;
 		}
 	}
 	return DamageAmount;

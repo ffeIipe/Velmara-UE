@@ -380,8 +380,8 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	USceneComponent* CameraFinisherLocation;
 	
-	UPROPERTY(VisibleAnywhere)
-	UBoxComponent* FinisherCollision;
+	//UPROPERTY(VisibleAnywhere)
+	//UBoxComponent* FinisherCollision;
 	
 	UFUNCTION(BlueprintCallable)
 	void HitStop(float Duration, float TimeScale);

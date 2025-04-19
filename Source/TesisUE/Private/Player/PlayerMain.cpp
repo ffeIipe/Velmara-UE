@@ -54,8 +54,8 @@ APlayerMain::APlayerMain()
 	CameraFinisherLocation = CreateDefaultSubobject<USceneComponent>(TEXT("CameraFinisherLocation"));
 	CameraFinisherLocation->SetupAttachment(GetMesh());
 
-	FinisherCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("FinisherCollision"));
-	FinisherCollision->SetupAttachment(GetMesh());
+	//FinisherCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("FinisherCollision"));
+	//FinisherCollision->SetupAttachment(GetMesh());
 
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 }
@@ -717,37 +717,33 @@ void APlayerMain::FinishEnemy()
 {
 	if (GetCharacterAction() == ECharacterActions::ECA_Finish) return;
 
-	TArray<AActor*> Array;
-	FinisherCollision->GetOverlappingActors(Array);
-
-	for (AActor* Actor : Array)
+	if (AActor* Enemy = SphereTraceForEnemies(GetActorLocation(), GetActorLocation() + GetActorForwardVector() * 40.f))
 	{
-		if (Actor && Actor->GetClass()->ImplementsInterface(UHitInterface::StaticClass()))
+		if (Enemy && Enemy->GetClass()->ImplementsInterface(UHitInterface::StaticClass()))
 		{
-			if (IHitInterface::Execute_CanBeFinished(Actor))
+			if (IHitInterface::Execute_CanBeFinished(Enemy))
 			{
 				bCanReceiveDamage = false;
 				SetCharacterAction(ECharacterActions::ECA_Finish);
+
+				Enemy->SetActorLocation(FVector(
+					FinisherLocation->GetComponentLocation().X,
+					FinisherLocation->GetComponentLocation().Y,
+					Enemy->GetActorLocation().Z), true);
+
+				FVector Start = GetActorLocation();
+				FVector End = Enemy->GetActorLocation();
+				FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(Start, End);
+				SetActorRotation(LookAtRotation);
+
+				PlayAnimMontage(FinisherMontage, 1.0f);
+				IHitInterface::Execute_GetFinished(Enemy);
+
 				FollowCamera->AttachToComponent(
 					CameraFinisherLocation,
 					FAttachmentTransformRules::SnapToTargetIncludingScale
 				);
-				PlayerControllerRef->SetViewTargetWithBlend(FollowCamera, 1.f);
-				PlayerControllerRef->DisableInput(PlayerControllerRef);
 
-				IHitInterface::Execute_GetFinished(Actor, FinisherLocation->GetComponentLocation());
-				PlayAnimMontage(FinisherMontage, 1.0f);
-
-				FVector Start = GetActorLocation();
-				FVector End = Actor->GetActorLocation();
-
-				FRotator NewRotation = FRotator(
-					GetActorRotation().Pitch,
-					UKismetMathLibrary::FindLookAtRotation(Start, End).Yaw,
-					UKismetMathLibrary::FindLookAtRotation(Start, End).Roll
-				);
-
-				SetActorRotation(NewRotation);
 				Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->SetEnemiesAIEnabled(false);
 			}
 			else return;
