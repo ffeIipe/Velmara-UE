@@ -623,6 +623,7 @@ void APlayerMain::ToggleForm() //TODO: extract to PlayerMain the "apply effects"
 	{
 		Attributes->StopDecreaseEnergy();
 		OutOfEnergy();
+		Attributes->RegenerateTick();
 	}
 
 	LastTransformationTime = CurrentTime;
@@ -633,9 +634,9 @@ void APlayerMain::WithEnergy()
 	if (Attributes->ItHasEnergy())
 	{
 		PlayerFormComponent->ToggleForm(true);
-		Attributes->RegenerateTick();
 		Attributes->StartDecreaseEnergy();
 		Attributes->OnDepletedCallback = [this]() { OutOfEnergy(); };
+		Attributes->RegenerateTick();
 		GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = true;
 
 		if (EquippedWeapon)

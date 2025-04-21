@@ -53,6 +53,7 @@ void UAttributeComponent::StopDecreaseEnergy()
 
 	GetWorld()->GetTimerManager().ClearTimer(EnergyDecreaseTimerHandle);
 	bIsDraining = false;
+	RegenerateTick();
 }
 
 bool UAttributeComponent::ItHasEnergy()
@@ -89,7 +90,7 @@ void UAttributeComponent::DrainTick()
 
 void UAttributeComponent::RegenerateTick()
 {
-	if (ItHasFullEnergy() || !bIsDraining && GetWorld())
+	if (ItHasFullEnergy() || !bIsDraining)
 	{
 		GetWorld()->GetTimerManager().SetTimer(EnergyRegenerateTimerHandle, this, &UAttributeComponent::RegenerateEnergy, 1.0f, true); //linea 94
 	}
