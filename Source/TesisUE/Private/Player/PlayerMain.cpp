@@ -46,7 +46,7 @@ APlayerMain::APlayerMain()
 
 	PlayerFormComponent = CreateDefaultSubobject<UPlayerFormComponent>(TEXT("PlayerFormComponent"));
 
-	Attributes = CreateDefaultSubobject<UAttributeComponent>(TEXT("AttributeComponent"));
+	Attributes = CreateDefaultSubobject<UAttributeComponent>(TEXT("AttibuteComponent"));
 
 	FinisherLocation = CreateDefaultSubobject<USceneComponent>(TEXT("FinisherPosition"));
 	FinisherLocation->SetupAttachment(GetMesh());
