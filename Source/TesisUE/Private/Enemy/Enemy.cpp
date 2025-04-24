@@ -105,8 +105,6 @@ void AEnemy::BeginPlay()
 void AEnemy::Die()
 {
 	SetEnemyState(EEnemyState::EES_Died);
-
-	bCanBeFinished = false;
 	
 	PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
 	HealthBarWidget->SetHealthBarActive(false);
