@@ -31,17 +31,14 @@ void ASpectralObjectInteractable::OnSphereBeginOverlap(UPrimitiveComponent* Over
 {	
 	Super::OnSphereBeginOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
 
-	APlayerMain* Player = Cast<APlayerMain>(OtherActor);
 	if (Player && InteractionWidgetClass)
 	{
-
 		if (!InteractionWidget)
 		{
 			InteractionWidget = CreateWidget<UUserWidget>(GetWorld(), InteractionWidgetClass);
 			if (InteractionWidget)
 			{
 				InteractionWidget->AddToViewport();
-
 
 				UTextBlock* InteractText = Cast<UTextBlock>(InteractionWidget->GetWidgetFromName(TEXT("InteractText")));
 				if (InteractText)
@@ -57,7 +54,6 @@ void ASpectralObjectInteractable::OnSphereEndOverlap(UPrimitiveComponent* Overla
 {
 	Super::OnSphereEndOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex);
 
-	APlayerMain* Player = Cast<APlayerMain>(OtherActor);
 	if (Player && InteractionWidget)
 	{
 		UTextBlock* InteractText = Cast<UTextBlock>(InteractionWidget->GetWidgetFromName(TEXT("InteractText")));

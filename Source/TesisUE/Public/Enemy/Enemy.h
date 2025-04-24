@@ -17,19 +17,22 @@ class UInputMappingContext;
 class APlayerMain;
 class AAIController;
 class UPromptWidgetComponent;
+class UMementoComponent;
 
 UENUM(BlueprintType)
 enum class EEnemyType : uint8
 {
 	Paladin UMETA(DisplayName = "Paladin"),
 	Spectre UMETA(DisplayName = "Spectre"),
-	ShieldedPaladin UMETA(DisplayName = "ShieldedPaladin"),
+	ShieldedPaladin UMETA(DisplayName = "ShieldedPaladin")
 };
 
 UENUM(BlueprintType)
 enum class EEnemyState : uint8
 {
-	EES_Launched UMETA(DisplayName = "Launched")
+	EES_Launched UMETA(DisplayName = "Launched"),
+	EES_Died UMETA(DisplayName = "Died"),
+	EES_None UMETA(DisplayName = "None")
 };
 
 UCLASS()
@@ -57,6 +60,8 @@ public:
 	FORCEINLINE EEnemyType GetEnemyType() const { return EnemyType; }
 
 	FORCEINLINE EEnemyState GetEnemyState() const { return EnemyState; }
+
+	void SetEnemyState(EEnemyState NewState);
 
 	UPROPERTY(VisibleAnywhere);
 	USpringArmComponent* SpringArm;
@@ -96,6 +101,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere);
 	UAttributeComponent* Attributes;
+	
+	UPROPERTY(VisibleAnywhere);
+	UMementoComponent* Memento;
 
 	UPROPERTY(VisibleAnywhere);
 	UHealthBarComponent* HealthBarWidget;
@@ -188,8 +196,6 @@ private:
 	void DeactivateEnemyCollision();
 
 	FName SelectRandomDieAnim();
-
-	bool bCanBeFinished = false;
 };
 
 

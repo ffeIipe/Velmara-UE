@@ -22,13 +22,9 @@ public:
 protected:
     virtual void BeginPlay() override;
 
-    UPROPERTY(VisibleAnywhere)
-    UBoxComponent* BoxCollider;
-
     UMaterialInstanceDynamic* SpectralMaterial;
 
 private:
     UPROPERTY(EditInstanceOnly, Category = "Visibility")
     ECharacterForm VisibleTo;
-    
 };

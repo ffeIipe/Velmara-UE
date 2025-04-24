@@ -18,6 +18,8 @@ class TESISUE_API ANewGameModeBase : public AGameModeBase
 
 public:
 	void RegisterEnemy(AEnemy* Enemy);
+
 	void UnregisterEnemy(AEnemy* Enemy);
+	
 	void SetEnemiesAIEnabled(bool bEnabled);
 };

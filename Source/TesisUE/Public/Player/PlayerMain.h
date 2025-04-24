@@ -21,6 +21,7 @@ class ASpectralObjectInteractable;
 class UAttributeComponent;
 class UEnergy;
 class UBoxComponent;
+class UMementoComponent;
 
 UCLASS()
 class TESISUE_API APlayerMain : public ACharacter
@@ -345,6 +346,9 @@ protected:
 	UPROPERTY(VisibleAnywhere);
 	UAttributeComponent* Attributes;
 
+	UPROPERTY(VisibleAnywhere);
+	UMementoComponent* Memento;
+
 private:	
 
 	UPROPERTY(EditDefaultsOnly, Category = "BloodSense | Cooldown")
@@ -380,9 +384,6 @@ private:
 	
 	UPROPERTY(VisibleAnywhere)
 	USceneComponent* CameraFinisherLocation;
-	
-	//UPROPERTY(VisibleAnywhere)
-	//UBoxComponent* FinisherCollision;
 	
 	UFUNCTION(BlueprintCallable)
 	void HitStop(float Duration, float TimeScale);

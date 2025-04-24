@@ -3,10 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
+#include "SceneEvents/Trigger.h"
 #include "Item.generated.h"
 
-class USphereComponent;
+class UBoxComponent;
 
 enum class EItemState : uint8
 {
@@ -14,9 +14,8 @@ enum class EItemState : uint8
 	EIS_Equipped
 };
 
-
 UCLASS()
-class TESISUE_API AItem : public AActor
+class TESISUE_API AItem : public ATrigger
 {
 	GENERATED_BODY()
 	
@@ -25,32 +24,21 @@ public:
 	AItem();
 
 protected:
-
-	virtual void BeginPlay() override;
-
 	UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
 	UStaticMeshComponent* ItemMesh;
 
-	UFUNCTION()
-	virtual void OnSphereBeginOverlap(
+	void OnSphereBeginOverlap(
 		UPrimitiveComponent* OverlappedComponent,
-		AActor* OtherActor, 
+		AActor* OtherActor,
 		UPrimitiveComponent* OtherComp,
 		int32 OtherBodyIndex, bool bFromSweep,
-		const FHitResult& SweepResult);
+		const FHitResult& SweepResult) override;
 
-	UFUNCTION()
-	virtual void OnSphereEndOverlap(
+	void OnSphereEndOverlap(
 		UPrimitiveComponent* OverlappedComponent,
-		AActor* OtherActor, 
+		AActor* OtherActor,
 		UPrimitiveComponent* OtherComp,
-		int32 OtherBodyIndex);
+		int32 OtherBodyIndex) override;
 
 	EItemState ItemState = EItemState::EIS_Hovering;
-
-	UPROPERTY(VisibleAnywhere)
-	USphereComponent* SphereCollider;
-
-	UFUNCTION()
-	void DisableCollision();
 };

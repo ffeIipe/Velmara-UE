@@ -3,14 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
+#include "SceneEvents/Trigger.h"
 #include "InputPromptTrigger.generated.h"
 
 class UPromptWidgetComponent;
 class USphereComponent;
 
 UCLASS()
-class TESISUE_API AInputPromptTrigger : public AActor
+class TESISUE_API AInputPromptTrigger : public ATrigger
 {
 	GENERATED_BODY()
 	
@@ -18,20 +18,20 @@ public:
     AInputPromptTrigger();
 
 protected:
-    virtual void BeginPlay() override;
+	void OnSphereBeginOverlap(
+		UPrimitiveComponent* OverlappedComponent,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex, bool bFromSweep,
+		const FHitResult& SweepResult) override;
 
-    UFUNCTION()
-    void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
-        UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
-        bool bFromSweep, const FHitResult& SweepResult);
+	void OnSphereEndOverlap(
+		UPrimitiveComponent* OverlappedComponent,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex) override;
 
-    UFUNCTION()
-    void OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
-        UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-
-    UPROPERTY(VisibleAnywhere)
-    USphereComponent* TriggerArea;
-
+private:
     UPROPERTY(VisibleAnywhere)
     UPromptWidgetComponent* PromptWidgetComponent;
 };

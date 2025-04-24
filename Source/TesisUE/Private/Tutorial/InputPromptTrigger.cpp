@@ -2,9 +2,7 @@
 
 
 #include "Tutorial/InputPromptTrigger.h"
-#include "Components/SphereComponent.h"
-#include "Kismet/GameplayStatics.h"
-#include "Tutorial/InputPromptWidget.h"
+#include "Components/BoxComponent.h"
 #include "Blueprint/UserWidget.h"
 #include "HUD/PlayerMainHUD.h"
 #include "Tutorial/PromptWidgetComponent.h"
@@ -13,12 +11,10 @@ AInputPromptTrigger::AInputPromptTrigger()
 {
     PrimaryActorTick.bCanEverTick = false;
 
-    TriggerArea = CreateDefaultSubobject<USphereComponent>(TEXT("TriggerArea"));
-    TriggerArea->SetupAttachment(GetRootComponent());
-    TriggerArea->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-    TriggerArea->SetCollisionObjectType(ECC_WorldDynamic);
-    TriggerArea->SetCollisionResponseToAllChannels(ECR_Ignore);
-    TriggerArea->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+    BoxCollider->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    BoxCollider->SetCollisionObjectType(ECC_WorldDynamic);
+    BoxCollider->SetCollisionResponseToAllChannels(ECR_Ignore);
+    BoxCollider->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 
     PromptWidgetComponent = CreateDefaultSubobject<UPromptWidgetComponent>(TEXT("PromptWidgetComponent"));
     PromptWidgetComponent->SetupAttachment(GetRootComponent());
@@ -27,32 +23,23 @@ AInputPromptTrigger::AInputPromptTrigger()
     PromptWidgetComponent->SetVisibility(false);
 }
 
-void AInputPromptTrigger::BeginPlay()
+void AInputPromptTrigger::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-    Super::BeginPlay();
+    Super::OnSphereBeginOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
 
-    TriggerArea->OnComponentBeginOverlap.AddDynamic(this, &AInputPromptTrigger::OnOverlapBegin);
-    TriggerArea->OnComponentEndOverlap.AddDynamic(this, &AInputPromptTrigger::OnOverlapEnd);
-}
-
-void AInputPromptTrigger::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
-    UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
-    bool bFromSweep, const FHitResult& SweepResult)
-{
-    APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
-    if (PC)
+    if (Player)
     {
         PromptWidgetComponent->SetVisibility(true);
     }
 }
 
-void AInputPromptTrigger::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
-    UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+void AInputPromptTrigger::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-    APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
-    if (PC)
-    {
+    Super::OnSphereEndOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex);
 
+    if (Player)
+    {
         PromptWidgetComponent->SetVisibility(false);
     }
 }
+

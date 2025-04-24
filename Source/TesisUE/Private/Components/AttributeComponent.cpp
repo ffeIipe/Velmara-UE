@@ -21,7 +21,7 @@ float UAttributeComponent::GetHealthPercent()
 
 bool UAttributeComponent::IsAlive()
 {
-	return Health > 0.1f;
+	return Health > 0.01f;
 }
 
 float UAttributeComponent::GetEnergyPercent()
@@ -63,7 +63,7 @@ bool UAttributeComponent::ItHasEnergy()
 
 bool UAttributeComponent::ItHasFullEnergy()
 {
-	return Energy >= 99.f;
+	return Energy >= 99.9f;
 }
 
 void UAttributeComponent::BeginPlay()

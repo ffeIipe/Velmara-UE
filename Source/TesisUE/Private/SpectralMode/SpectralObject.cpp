@@ -7,9 +7,6 @@ ASpectralObject::ASpectralObject()
     PrimaryActorTick.bCanEverTick = false;
 
     ItemMesh->SetCollisionObjectType(ECC_GameTraceChannel1);
-
-    BoxCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxCollider"));
-    BoxCollider->SetupAttachment(GetRootComponent());
 }
 
 void ASpectralObject::BeginPlay()

@@ -1,6 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "Player/PlayerMain.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/InputComponent.h"
@@ -25,6 +22,8 @@
 #include "Enemy/Paladin.h"
 #include "Kismet/GameplayStatics.h"
 #include "SceneEvents/NewGameModeBase.h"
+#include "Components/MementoComponent.h"
+#include "SceneEvents/NewGameStateBase.h"
 
 APlayerMain::APlayerMain()
 {
@@ -47,6 +46,8 @@ APlayerMain::APlayerMain()
 	PlayerFormComponent = CreateDefaultSubobject<UPlayerFormComponent>(TEXT("PlayerFormComponent"));
 
 	Attributes = CreateDefaultSubobject<UAttributeComponent>(TEXT("AttibuteComponent"));
+
+	Memento = CreateDefaultSubobject<UMementoComponent>(TEXT("Memento"));
 
 	FinisherLocation = CreateDefaultSubobject<USceneComponent>(TEXT("FinisherPosition"));
 	FinisherLocation->SetupAttachment(GetMesh());
@@ -108,6 +109,20 @@ void APlayerMain::BeginPlay()
 		ProgressSoftLockFunction.BindUFunction(this, FName("UpdateSoftLockOn"));
 		SoftLockTimeline->AddInterpFloat(SoftLockCurve, ProgressSoftLockFunction);
 	}
+
+	if (ANewGameModeBase* NewGameMode = Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
+	{
+		if (ANewGameStateBase* NewGameStateBase = Cast<ANewGameStateBase>(NewGameMode->GameState))
+		{
+			if (Memento)
+			{
+				NewGameStateBase->RegisterMementoEntity(this);
+			}
+			else { if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Yellow, FString("Invalid Memento")); }
+		}
+		else { if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Orange, FString("Invalid GameState")); }
+	}
+	else { if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Red, FString("Invalid GameMode")); }
 }
 
 void APlayerMain::PerformLightAttack(int AttackIndex)
@@ -230,12 +245,11 @@ void APlayerMain::PerformDodge()
 {
 	if (GetCharacterAction() == ECharacterActions::ECA_Finish) return;
 
-	// Obtener dirección del input
 	FVector MovementInput = GetLastMovementInputVector();
 	if (!MovementInput.IsNearlyZero())
 	{
 		FRotator LookRotation = MovementInput.Rotation();
-		SetActorRotation(FRotator(0.f, LookRotation.Yaw, 0.f)); // solo rotamos en yaw
+		SetActorRotation(FRotator(0.f, LookRotation.Yaw, 0.f));
 	}
 
 	StopDodgeBufferEvent();
@@ -420,10 +434,10 @@ float APlayerMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEven
 		Attributes->ReceiveDamage(DamageAmount);
 		GetDirectionalReact();
 	}
-	//else
-	//{
-	//	Die();
-	//}
+	else
+	{
+		Die();
+	}
 	return DamageAmount;
 }
 
@@ -658,19 +672,31 @@ void APlayerMain::Die()
 	if (!bIsDead)
 	{
 		bIsDead = true;
-		if (DeathMontage)
-		{
-			PlayAnimMontage(DeathMontage);
-		}
 
-		APlayerController* PlayerController = Cast<APlayerController>(GetController());
-		if (PlayerController)
-		{
-			DisableInput(PlayerController);
-		}
+		//if (DeathMontage)
+		//{
+		//	PlayAnimMontage(DeathMontage);
+		//}
+		//
+		//APlayerController* PlayerController = Cast<APlayerController>(GetController());
+		//if (PlayerController)
+		//{
+		//	DisableInput(PlayerController);
+		//}
+		//
+		//GetCharacterMovement()->DisableMovement();
+		//SetCharacterAction(ECharacterActions::ECA_Dead);
 
-		GetCharacterMovement()->DisableMovement();
-		SetCharacterAction(ECharacterActions::ECA_Dead);
+		if (ANewGameModeBase* NewGameMode = Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
+		{
+			if (ANewGameStateBase* NewGameStateBase = Cast<ANewGameStateBase>(NewGameMode->GameState))
+			{
+				if (Memento)
+				{
+					NewGameStateBase->LoadAllMementoStates();
+				}
+			}
+		}
 	}
 }
 
