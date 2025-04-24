@@ -19,34 +19,43 @@ public:
 
 	void ReceiveDamage(float Damage);
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "Health | Getters")
 	float GetHealthPercent();
+	
+	UFUNCTION(BlueprintCallable, Category = "Health | Getters")
+	FORCEINLINE float GetHealth() { return Health; };
+	
+	UFUNCTION(BlueprintCallable, Category = "Health | Setters")
+	FORCEINLINE void SetHealth(float Amount) { Health = Amount; };
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "Health")
 	bool IsAlive();
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "Energy | Getters")
 	FORCEINLINE float GetEnergy() { return Energy; };
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "Energy | Getters")
 	float GetEnergyPercent();
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "Energy | Setters")
 	void IncreaseEnergy(float Amount);
+	
+	UFUNCTION(BlueprintCallable, Category = "Energy | Setters")
+	FORCEINLINE void SetEnergy(float Amount) { Energy = Amount; };
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "Energy")
 	void StartDecreaseEnergy();
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "Energy")
 	void StopDecreaseEnergy();
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "Energy")
 	bool ItHasEnergy();
 	
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "Energy")
 	bool ItHasFullEnergy();
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "Energy")
 	void RegenerateTick();
 
 	TFunction<void()> OnDepletedCallback;

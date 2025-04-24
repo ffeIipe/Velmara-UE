@@ -18,6 +18,8 @@
 #include "SceneEvents/NewGameModeBase.h"
 #include "Tutorial/PromptWidgetComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Components/MementoComponent.h"
+#include "SceneEvents/NewGameStateBase.h"
 
 AEnemy::AEnemy()
 {
@@ -41,6 +43,8 @@ AEnemy::AEnemy()
 	SpringArm->CameraLagSpeed = 10.f;
 
 	Attributes = CreateDefaultSubobject<UAttributeComponent>(TEXT("Attributes"));
+
+	Memento = CreateDefaultSubobject<UMementoComponent>(TEXT("Memento"));
 
 	HealthBarWidget = CreateDefaultSubobject<UHealthBarComponent>(TEXT("HealthBar"));
 	HealthBarWidget->SetupAttachment(GetRootComponent());
@@ -66,7 +70,18 @@ void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
 
-	Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->RegisterEnemy(this);
+	if (ANewGameModeBase* NewGameMode = Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
+	{
+		NewGameMode->RegisterEnemy(this);
+
+		if (ANewGameStateBase* NewGameStateBase = Cast<ANewGameStateBase>(NewGameMode->GameState))
+		{
+			if (Memento)
+			{
+				NewGameStateBase->RegisterMementoEntity(this);
+			}
+		}
+	}
 
 	Attributes->IncreaseEnergy(FMath::RandRange(MinEnergy, MaxEnergy));
 	
@@ -89,6 +104,8 @@ void AEnemy::BeginPlay()
 
 void AEnemy::Die()
 {
+	SetEnemyState(EEnemyState::EES_Died);
+
 	bCanBeFinished = false;
 	
 	PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
@@ -205,7 +222,7 @@ void AEnemy::ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoi
 
 void AEnemy::GetHit_Implementation(const FVector& ImpactPoint)
 {
-	if (Attributes && Attributes->IsAlive())
+	if (Attributes && Attributes->IsAlive() && GetEnemyState() != EEnemyState::EES_Died)
 	{
 		ReactToDamage(LastDamageType, ImpactPoint);
 		//HitFlash(); <- this is the red effect when an enemy get hits
@@ -235,9 +252,9 @@ void AEnemy::GetHit_Implementation(const FVector& ImpactPoint)
 
 void AEnemy::GetFinished_Implementation()
 {
-	if (bCanBeFinished)
+	if (GetEnemyState() != EEnemyState::EES_Died)
 	{
-		bCanBeFinished = false;
+		SetEnemyState(EEnemyState::EES_Died);
 
 		PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
 		HealthBarWidget->SetHealthBarActive(false);
@@ -283,7 +300,6 @@ float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AC
 		{
 			PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Visible);
 			PromptWidgetComponent->LoadAndApplyPrompt();
-			bCanBeFinished = true;
 		}
 	}
 	return DamageAmount;
@@ -374,6 +390,11 @@ FName AEnemy::SelectRandomDieAnim()
 	}
 
 	return FName("");
+}
+
+void AEnemy::SetEnemyState(EEnemyState NewState)
+{
+	EnemyState = NewState;
 }
 
 void AEnemy::DisableAI()

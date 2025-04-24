@@ -7,22 +7,22 @@
 
 void ASpectralTrap::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	APlayerMain* Player = Cast<APlayerMain>(OtherActor);
+	Super::OnSphereBeginOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
+
 	if (Player)
 	{
 		OverlappingPlayer = Player;
+		ApplyTrapDamage();
 		OverlappingPlayer->PlayAnimMontage(OverlappingPlayer->HitReactMontage, 1.f, FName("KnockDown"));
-		//ApplyTrapDamage();
 	}
 }
 
-void ASpectralTrap::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+void ASpectralTrap::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	APlayerMain* Player = Cast<APlayerMain>(OtherActor);
+	Super::OnSphereEndOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex);
+
 	if (Player && Player == OverlappingPlayer)
 	{
-		//GetWorldTimerManager().ClearTimer(DamageTimerHandle);
 		OverlappingPlayer = nullptr;
 	}
 }
@@ -35,6 +35,6 @@ void ASpectralTrap::ApplyTrapDamage()
 		Damage,
 		InstigatorController,
 		this,
-		UDamageType::StaticClass()
+		UDamageType::StaticClass() //TODO: change the type of damage, bc it overrides the AnimMontage applied
 	);
 }

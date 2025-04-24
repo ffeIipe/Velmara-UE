@@ -3,7 +3,7 @@
 
 #include "Items/Item.h"
 #include "Player/PlayerMain.h"
-#include "Components/SphereComponent.h"
+#include "Components/BoxComponent.h"
 
 AItem::AItem()
 {
@@ -12,23 +12,14 @@ AItem::AItem()
 	ItemMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Item Mesh"));
 	RootComponent = ItemMesh;
 
-	SphereCollider = CreateDefaultSubobject<USphereComponent>(TEXT("SphereCollider"));
-	SphereCollider->SetupAttachment(GetRootComponent());
-}
-
-void AItem::BeginPlay()
-{
-	Super::BeginPlay();
-	
-	SphereCollider->OnComponentBeginOverlap.AddDynamic(this, &AItem::OnSphereBeginOverlap);
-	SphereCollider->OnComponentEndOverlap.AddDynamic(this, &AItem::OnSphereEndOverlap);
+	BoxCollider->SetupAttachment(GetRootComponent());
 }
 
 void AItem::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	const FString OtherActorName = OtherActor->GetName();
+	Super::OnSphereBeginOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
 
-	if (APlayerMain* Player = Cast<APlayerMain>(OtherActor))
+	if (Player)
 	{
 		Player->SetOverlappingItem(this);
 	}
@@ -36,18 +27,10 @@ void AItem::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 
 void AItem::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	const FString OtherActorName = OtherActor->GetName();
+	Super::OnSphereEndOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex);
 
-	if (APlayerMain* Player = Cast<APlayerMain>(OtherActor))
+	if (Player)
 	{
 		Player->SetOverlappingItem(nullptr);
-	}
-}
-
-void AItem::DisableCollision()
-{
-	if (SphereCollider)
-	{
-		SphereCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 }
