@@ -119,7 +119,7 @@ void AEnemy::Die()
 		Player->GetAttributes()->IncreaseEnergy(Attributes->GetEnergy());
 	}
 
-	SetLifeSpan(7.f);
+	SetLifeSpan(5.f);
 }
 
 void AEnemy::Tick(float DeltaTime)
@@ -391,4 +391,7 @@ void AEnemy::UnPossess()
 {
 	bUseControllerRotationYaw = true;
 	PossessionOwner->ReleasePossession();
+	PossessionOwner->GetAttributes()->DecreaseEnergyBy(10.f);
+	PlayAnimMontage(DeathMontage, 1.f, FName("UnpossessDeath"));
+	Die();
 }

@@ -100,6 +100,16 @@ void UAttributeComponent::RegenerateTick()
 	}
 }
 
+bool UAttributeComponent::RequiresEnergy(float EnergyRequired)
+{
+	return Energy >= EnergyRequired;
+}
+
+void UAttributeComponent::DecreaseEnergyBy(float EnergyToDecrease)
+{
+	Energy -= EnergyToDecrease;
+}
+
 void UAttributeComponent::RegenerateEnergy()
 {
 	Energy = FMath::Clamp(Energy + RegenerateTickValue, 0.f, 100.f);

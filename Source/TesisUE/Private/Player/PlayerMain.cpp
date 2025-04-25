@@ -281,7 +281,7 @@ void APlayerMain::PossessEnemy()
 	if (PlayerFormComponent->GetCharacterForm() == ECharacterForm::ECF_Spectral)
 	{
 		AEnemy* TargetEnemy = GetTargetEnemy();
-		if (!TargetEnemy) return;
+		if (!TargetEnemy && !Attributes->RequiresEnergy(10.f)) return;
 
 		PlayerControllerRef = Cast<APlayerController>(GetController());
 

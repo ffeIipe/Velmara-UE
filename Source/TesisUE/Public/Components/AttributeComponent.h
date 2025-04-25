@@ -58,6 +58,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Energy")
 	void RegenerateTick();
 
+	bool RequiresEnergy(float EnergyRequired);
+	
+	void DecreaseEnergyBy(float EnergyToDecrease);
+
 	TFunction<void()> OnDepletedCallback;
 
 protected:

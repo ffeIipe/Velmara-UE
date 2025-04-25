@@ -64,13 +64,14 @@ protected:
 
 	void LaunchEnemyUp();
 
+	UFUNCTION(BlueprintCallable)
 	void CrashDown();
 	
+	UFUNCTION(BlueprintCallable)
 	void HitInAir();
 
 	void ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoint) override;
 
 private:
 	void Attack();
-
 };
