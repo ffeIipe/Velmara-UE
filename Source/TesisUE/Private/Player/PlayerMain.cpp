@@ -1,33 +1,41 @@
 #include "Player/PlayerMain.h"
+
+#include "EngineUtils.h"
+#include "SceneEvents/NewGameModeBase.h"
+#include "SceneEvents/NewGameStateBase.h"
+
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/SpringArmComponent.h"
 #include "Components/InputComponent.h"
+#include "Components/TimelineComponent.h"
+#include "Components/AttributeComponent.h"
+#include "Components/PlayerFormComponent.h"
+#include "Components/BoxComponent.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/MementoComponent.h"
+#include "Components/CombatComponent.h"
+#include "Curves/CurveFloat.h"
+
+#include "Camera/CameraActor.h"
+#include "Enemy/Spectre.h"
+#include "Enemy/Enemy.h"
+#include "Enemy/Paladin.h"
+#include "Items/Weapons/Sword.h"
+
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
-#include "GameFramework/SpringArmComponent.h"
-#include "Components/TimelineComponent.h"
-#include "Curves/CurveFloat.h"
-#include "Items/Weapons/Sword.h"
-#include "Components/BoxComponent.h"
+
+#include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/KismetMathLibrary.h"
-#include "Components/PlayerFormComponent.h"
 #include "SpectralMode/Interfaces/SpectralInteractable.h"
-#include "Components/AttributeComponent.h"
-#include "Components/CapsuleComponent.h"
-#include "Enemy/Spectre.h"
-#include "Enemy/Enemy.h"
-#include "Camera/CameraActor.h"
-#include "EngineUtils.h"
-#include "Enemy/Paladin.h"
-#include "Kismet/GameplayStatics.h"
-#include "SceneEvents/NewGameModeBase.h"
-#include "Components/MementoComponent.h"
-#include "SceneEvents/NewGameStateBase.h"
 
 APlayerMain::APlayerMain()
 {
 	PrimaryActorTick.bCanEverTick = false;
+
+	AutoPossessPlayer = EAutoReceiveInput::Player0;
 
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
@@ -39,23 +47,51 @@ APlayerMain::APlayerMain()
 	CameraBoom->SetupAttachment(GetRootComponent());
 
 	BufferDodgeTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("BufferDodgeTimeline"));
-	BufferAttackTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("BufferAttackTimeline"));
-
-	SoftLockTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("SoftLockTimeline"));
-
+	
 	PlayerFormComponent = CreateDefaultSubobject<UPlayerFormComponent>(TEXT("PlayerFormComponent"));
 
 	Attributes = CreateDefaultSubobject<UAttributeComponent>(TEXT("AttibuteComponent"));
 
 	Memento = CreateDefaultSubobject<UMementoComponent>(TEXT("Memento"));
 
-	FinisherLocation = CreateDefaultSubobject<USceneComponent>(TEXT("FinisherPosition"));
-	FinisherLocation->SetupAttachment(GetMesh());
+	Combat = CreateDefaultSubobject<UCombatComponent>(TEXT("Combat"));
+}
 
-	CameraFinisherLocation = CreateDefaultSubobject<USceneComponent>(TEXT("CameraFinisherLocation"));
-	CameraFinisherLocation->SetupAttachment(GetMesh());
+ECharacterForm APlayerMain::GetCharacterForm_Implementation()
+{
+	return PlayerFormComponent->GetCharacterForm();
+}
 
-	AutoPossessPlayer = EAutoReceiveInput::Player0;
+void APlayerMain::PerformSpectralAttack_Implementation()
+{
+	if (Combat->GetCharacterAction() != ECharacterActions::ECA_Attack)
+	{
+		Combat->SetCharacterAction(ECharacterActions::ECA_Attack);
+		SearchTarget();
+		PlayAnimMontage(SpectralAttackCombo[SpectralAttackIndex]);
+
+		SpectralAttackIndex++;
+
+		if (SpectralAttackIndex >= SpectralAttackCombo.Num())
+		{
+			SpectralAttackIndex = 0;
+		}
+	}
+}
+
+void APlayerMain::PerformSpectralBarrier_Implementation()
+{
+	if (Combat->GetCharacterAction() != ECharacterActions::ECA_Attack)
+	{
+		Combat->SetCharacterAction(ECharacterActions::ECA_Attack);
+		PlayAnimMontage(SpectralHeavyAttack);
+	}
+}
+
+void APlayerMain::ResetSpectralAttack_Implementation()
+{
+	SpectralAttackIndex = 0;
+	Combat->bIsSaveLightAttack = false;
 }
 
 void APlayerMain::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled)
@@ -97,17 +133,6 @@ void APlayerMain::BeginPlay()
 		FOnTimelineFloat ProgressDodgeFunction;
 		ProgressDodgeFunction.BindUFunction(this, FName("UpdateDodgeBuffer"));
 		BufferDodgeTimeline->AddInterpFloat(BufferCurve, ProgressDodgeFunction);
-
-		FOnTimelineFloat ProgressAttackFunction;
-		ProgressAttackFunction.BindUFunction(this, FName("UpdateAttackBuffer"));
-		BufferAttackTimeline->AddInterpFloat(BufferCurve, ProgressAttackFunction);
-	}
-
-	if (SoftLockCurve)
-	{
-		FOnTimelineFloat ProgressSoftLockFunction;
-		ProgressSoftLockFunction.BindUFunction(this, FName("UpdateSoftLockOn"));
-		SoftLockTimeline->AddInterpFloat(SoftLockCurve, ProgressSoftLockFunction);
 	}
 
 	if (ANewGameModeBase* NewGameMode = Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
@@ -118,132 +143,13 @@ void APlayerMain::BeginPlay()
 			{
 				NewGameStateBase->RegisterMementoEntity(this);
 			}
-			else { if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Yellow, FString("Invalid Memento")); }
-		}
-		else { if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Orange, FString("Invalid GameState")); }
-	}
-	else { if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Red, FString("Invalid GameMode")); }
-}
-
-void APlayerMain::PerformLightAttack(int AttackIndex)
-{
-	if (GetCharacterAction() != ECharacterActions::ECA_Attack && GetCharacterState() != ECharacterStates::ECS_Unequipped)
-	{
-		StopAttackBufferEvent();
-		StartAttackBufferEvent(BufferAttackDistance);
-		SetCharacterAction(ECharacterActions::ECA_Attack);
-		SoftLockOn();
-		PlayAnimMontage(LightAttackCombo[AttackIndex]);
-
-		LightAttackIndex++;
-
-		if (LightAttackIndex >= LightAttackCombo.Num())
-		{
-			LightAttackIndex = 0;
-		}
-	}
-}
-
-void APlayerMain::PerformSpectralAttack(int AttackIndex)
-{
-	if (GetCharacterAction() != ECharacterActions::ECA_Attack)
-	{
-		SetCharacterAction(ECharacterActions::ECA_Attack);
-		SearchTarget();
-		PlayAnimMontage(SpectralAttackCombo[AttackIndex]);
-
-		SpectralAttackIndex++;
-
-		if (SpectralAttackIndex >= SpectralAttackCombo.Num())
-		{
-			SpectralAttackIndex = 0;
-		}
-	}
-}
-
-void APlayerMain::PerformSpectralBarrier()
-{
-	if (GetCharacterAction() != ECharacterActions::ECA_Attack)
-	{
-		SetCharacterAction(ECharacterActions::ECA_Attack);
-		PlayAnimMontage(SpectralHeavyAttack);
-	}
-}
-
-void APlayerMain::PerformJumpAttack(int AttackIndex)
-{
-	if (GetCharacterAction() != ECharacterActions::ECA_Attack && GetCharacterState() != ECharacterStates::ECS_Unequipped)
-	{
-		StopAttackBufferEvent();
-		StartAttackBufferEvent(BufferAttackDistance);
-		SetCharacterAction(ECharacterActions::ECA_Attack);
-		SoftLockOn();
-		PlayAnimMontage(JumpAttackCombo[AttackIndex]);
-
-		JumpAttackIndex++;
-
-		if (JumpAttackIndex >= JumpAttackCombo.Num())
-		{
-			JumpAttackIndex = 0;
-			PlayAnimMontage(CrasherMontage, 1.f);
-			isLaunched = false;
-		}
-	}
-}
-
-void APlayerMain::PerformComboStarter(int AttackIndex)
-{
-	if (GetCharacterAction() != ECharacterActions::ECA_Attack && GetCharacterAction() != ECharacterActions::ECA_Dodge && GetCharacterState() != ECharacterStates::ECS_Unequipped)
-	{
-		ComboExtenderIndex = AttackIndex;
-		StopAttackBufferEvent();
-		StartAttackBufferEvent(BufferAttackDistance);
-		SetCharacterAction(ECharacterActions::ECA_Attack);	
-		PlayAnimMontage(ComboStarterAttack[AttackIndex - 1]);
-
-		IsSaveHeavyAttack = false;
-		IsSaveLightAttack = false;
-
-		SoftLockOn();
-	}
-}
-
-void APlayerMain::PerformComboExtender(int AttackIndex)
-{
-	if (GetCharacterAction() != ECharacterActions::ECA_Attack && GetCharacterAction() != ECharacterActions::ECA_Dodge && GetCharacterState() != ECharacterStates::ECS_Unequipped)
-	{
-		StopAttackBufferEvent();
-		StartAttackBufferEvent(BufferAttackDistance);
-		SetCharacterAction(ECharacterActions::ECA_Attack);
-		PlayAnimMontage(ComboExtenderAttack[AttackIndex - 1]);
-		ResetLightAttackStats();
-		ResetHeavyAttackStats();
-		SoftLockOn();
-	}
-}
-
-void APlayerMain::PerformHeavyAttack(int AttackIndex)
-{
-	if (GetCharacterAction() != ECharacterActions::ECA_Attack && GetCharacterState() != ECharacterStates::ECS_Unequipped)
-	{
-		StopAttackBufferEvent();
-		StartAttackBufferEvent(BufferAttackDistance);
-		SetCharacterAction(ECharacterActions::ECA_Attack);
-		PlayAnimMontage(HeavyAttackCombo[AttackIndex]);
-		SoftLockOn();
-
-		HeavyAttackIndex++;
-
-		if (HeavyAttackIndex >= HeavyAttackCombo.Num())
-		{
-			HeavyAttackIndex = 0;
 		}
 	}
 }
 
 void APlayerMain::PerformDodge()
 {
-	if (GetCharacterAction() == ECharacterActions::ECA_Finish) return;
+	if (Combat->GetCharacterAction() == ECharacterActions::ECA_Finish) return;
 
 	FVector MovementInput = GetLastMovementInputVector();
 	if (!MovementInput.IsNearlyZero())
@@ -254,7 +160,7 @@ void APlayerMain::PerformDodge()
 
 	StopDodgeBufferEvent();
 	DodgeBufferEvent(BufferDodgeDistance);
-	SetCharacterAction(ECharacterActions::ECA_Dodge);
+	Combat->SetCharacterAction(ECharacterActions::ECA_Dodge);
 
 	if (PlayerFormComponent && PlayerFormComponent->GetCharacterForm() == ECharacterForm::ECF_Human)
 	{
@@ -266,20 +172,11 @@ void APlayerMain::PerformDodge()
 	}
 }
 
-
 void APlayerMain::DodgeBufferEvent(float BufferAmount)
 {
 	if (BufferDodgeTimeline)
 	{
 		BufferDodgeTimeline->PlayFromStart();
-	}
-}
-
-void APlayerMain::StartAttackBufferEvent(float BufferAmount)
-{
-	if (BufferAttackTimeline)
-	{
-		BufferAttackTimeline->PlayFromStart();
 	}
 }
 
@@ -291,22 +188,9 @@ void APlayerMain::StopDodgeBufferEvent()
 	}
 }
 
-void APlayerMain::StopAttackBufferEvent()
-{
-	if (BufferAttackTimeline)
-	{
-		BufferAttackTimeline->Stop();
-	}
-}
-
 void APlayerMain::UpdateDodgeBuffer(float Alpha)
 {
 	UpdateBuffer(Alpha, BufferDodgeDistance);
-}
-
-void APlayerMain::UpdateAttackBuffer(float Alpha)
-{
-	UpdateBuffer(Alpha, BufferAttackDistance);
 }
 
 void APlayerMain::UpdateBuffer(float Alpha, float BufferDistance)
@@ -319,78 +203,12 @@ void APlayerMain::UpdateBuffer(float Alpha, float BufferDistance)
 	SetActorLocation(TargetLocation, true);
 }
 
-
-void APlayerMain::ResetLightAttackStats()
-{
-	LightAttackIndex = 0;
-	IsSaveLightAttack = false;
-}
-
-void APlayerMain::ResetSpectralAttackStats()
-{
-	SpectralAttackIndex = 0;
-	IsSaveLightAttack = false;
-}
-
-void APlayerMain::ResetJumpAttackStats()
-{
-	JumpAttackIndex = 0;
-	isLaunched = false;
-}
-
-void APlayerMain::ResetHeavyAttackStats()
-{
-	HeavyAttackIndex = 0;
-	IsSaveHeavyAttack = false;
-}
-
-void APlayerMain::SoftLockOn()
-{
-	FVector Start = GetActorLocation();
-	FVector End = (GetLastMovementInputVector() * SoftLockDistance) + GetActorLocation();
-
-	AActor* Enemy = SphereTraceForEnemies(Start, End);
-
-	if (Enemy != Cast<ASpectre>(Enemy))
-	{
-		SoftLockTarget = Enemy;
-		RotationToTarget();
-	}
-	else SoftLockTarget = nullptr;
-}
-
-void APlayerMain::RotationToTarget()
-{
-	if (SoftLockTarget && PlayerFormComponent && PlayerFormComponent->GetCharacterForm() != ECharacterForm::ECF_Spectral)
-	{
-		SoftLockTimeline->PlayFromStart();
-	}
-}
-
-void APlayerMain::UpdateSoftLockOn(float Alpha)
-{
-	FVector Start = GetActorLocation();
-
-	if (!SoftLockTarget) return;
-	FVector End = SoftLockTarget->GetActorLocation();
-
-	FRotator NewRotation = FRotator(
-		GetActorRotation().Pitch,
-		UKismetMathLibrary::FindLookAtRotation(Start, End).Yaw,
-		UKismetMathLibrary::FindLookAtRotation(Start, End).Roll
-	);
-
-	NewRotation = FMath::Lerp(GetActorRotation(), NewRotation, Alpha);
-
-	SetActorRotation(NewRotation);
-}
-
 void APlayerMain::SearchTarget()
 {
 	FVector Start = GetActorLocation();
 	FVector End = GetActorLocation() + GetViewRotation().Vector() * TrackTargetDistance;
 
-	AActor* Enemy = SphereTraceForEnemies(Start, End);
+	AActor* Enemy = Combat->SphereTraceForEnemies(Start, End);
 
 	if (Enemy)
 	{
@@ -398,31 +216,6 @@ void APlayerMain::SearchTarget()
 	}
 	else SpectralTarget = nullptr;
 }
-
-ECharacterActions APlayerMain::SetCharacterAction(ECharacterActions NewState)
-{
-	if (NewState != CharacterAction)
-	{
-		CharacterAction = NewState;
-	}
-	return NewState;
-}
-
-bool APlayerMain::IsActionEqualToAny(const TArray<ECharacterActions>& StatesToCheck)
-{
-	return StatesToCheck.Contains(CharacterAction);
-}
-
-bool APlayerMain::IsStateEqualToAny(const TArray<ECharacterStates>& StatesToCheck)
-{
-	return StatesToCheck.Contains(CharacterState);
-}
-
-bool APlayerMain::IsFormEqualToAny(const TArray<ECharacterForm>& StatesToCheck)
-{
-	return StatesToCheck.Contains(PlayerFormComponent->GetCharacterForm());
-}
-
 
 float APlayerMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
@@ -432,7 +225,7 @@ float APlayerMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEven
 	if (Attributes && Attributes->IsAlive())
 	{
 		Attributes->ReceiveDamage(DamageAmount);
-		GetDirectionalReact();
+		Combat->GetDirectionalReact();
 	}
 	else
 	{
@@ -508,18 +301,13 @@ void APlayerMain::PossessEnemy()
 		SetActorHiddenInGame(true);
 		SetActorEnableCollision(false);
 	}
-	else FinishEnemy();
+	else Combat->FinishEnemy();
 }
 
 void APlayerMain::ReleasePossession()
 {
 	if (PlayerControllerRef)
 	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(2, 1.f, FColor::Green, FString("There is a PC valid"));
-		}
-
 		PlayerControllerRef->Possess(this);
 		PossessedEnemy->DisableInput(PlayerControllerRef);
 		PossessedEnemy->EnableAI();
@@ -537,7 +325,7 @@ void APlayerMain::ReleasePossession()
 
 void APlayerMain::Move(const FInputActionValue& Value)
 {
-	if (GetCharacterAction() == ECharacterActions::ECA_Block || GetCharacterAction() == ECharacterActions::ECA_Finish) return;
+	if (Combat->GetCharacterAction() == ECharacterActions::ECA_Block || Combat->GetCharacterAction() == ECharacterActions::ECA_Finish) return;
 
 	const FVector2D MoveVector = Value.Get<FVector2D>();
 
@@ -553,7 +341,7 @@ void APlayerMain::Move(const FInputActionValue& Value)
 
 void APlayerMain::Look(const FInputActionValue& Value)
 {
-	if (GetCharacterAction() == ECharacterActions::ECA_Finish) return;
+	if (Combat->GetCharacterAction() == ECharacterActions::ECA_Finish) return;
 
 	const FVector2D LookingVector = Value.Get<FVector2D>();
 
@@ -563,7 +351,7 @@ void APlayerMain::Look(const FInputActionValue& Value)
 
 void APlayerMain::Jump()
 {
-	if (GetCharacterAction() == ECharacterActions::ECA_Block || GetCharacterAction() == ECharacterActions::ECA_Finish) return;
+	if (Combat->GetCharacterAction() == ECharacterActions::ECA_Block || Combat->GetCharacterAction() == ECharacterActions::ECA_Finish) return;
 
 	PlayAnimMontage(JumpMontage, 1.f);
 
@@ -577,7 +365,7 @@ void APlayerMain::Jump()
 
 void APlayerMain::DoubleJump()
 {
-	if (GetCharacterAction() == ECharacterActions::ECA_Block) return;
+	if (Combat->GetCharacterAction() == ECharacterActions::ECA_Block) return;
 
 	PlayAnimMontage(DoubleJumpMontage);
 	LaunchCharacter(FVector(0.f, 0.f, 800.f), false, true);
@@ -587,7 +375,7 @@ void APlayerMain::DoubleJump()
 void APlayerMain::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);
-	isLaunched = false;
+	Combat->bIsLaunched = false;
 	CanDoubleJump = true;
 }
 
@@ -598,7 +386,7 @@ void APlayerMain::Interact(const FInputActionValue& Value)
 		if (ASword* OverlappingWeapon = Cast<ASword>(OverlappingItem))
 		{
 			OverlappingWeapon->Equip(GetMesh(), FName("RightHandSocket"), this, this);
-			CharacterState = ECharacterStates::ECS_EquippedSword;
+			Combat->SetCharacterState(ECharacterStates::ECS_EquippedSword);
 			OverlappingItem = nullptr;
 			EquippedWeapon = OverlappingWeapon;
 		}
@@ -614,15 +402,25 @@ void APlayerMain::Interact(const FInputActionValue& Value)
 
 void APlayerMain::Attack(const FInputActionValue& Value)
 {
-	//TODO: put the attack logic here, we have to translate it from BP_PlayerMain
+	Combat->Input_Attack(Value);
+}
+
+void APlayerMain::HeavyAttack(const FInputActionValue& Value)
+{
+	Combat->Input_HeavyAttack(Value);
+}
+
+void APlayerMain::LaunchAttack(const FInputActionValue& Value)
+{
+	Combat->Input_Launch(Value);
 }
 
 void APlayerMain::ToggleForm() //TODO: extract to PlayerMain the "apply effects" functions for more flexibility here
 {
-	if (GetCharacterAction() == ECharacterActions::ECA_Dead 
-		|| GetCharacterAction() == ECharacterActions::ECA_Block 
-		|| GetCharacterAction() == ECharacterActions::ECA_Finish 
-		|| GetCharacterAction() == ECharacterActions::ECA_Attack) return;
+	if (Combat->GetCharacterAction() == ECharacterActions::ECA_Dead
+		|| Combat->GetCharacterAction() == ECharacterActions::ECA_Block
+		|| Combat->GetCharacterAction() == ECharacterActions::ECA_Finish
+		|| Combat->GetCharacterAction() == ECharacterActions::ECA_Attack) return;
 
 	float CurrentTime = GetWorld()->GetTimeSeconds();
 	if (CurrentTime - LastTransformationTime < TransformationCooldown) return;
@@ -641,6 +439,16 @@ void APlayerMain::ToggleForm() //TODO: extract to PlayerMain the "apply effects"
 	}
 
 	LastTransformationTime = CurrentTime;
+}
+
+void APlayerMain::Block()
+{
+	
+}
+
+void APlayerMain::ReleaseBlock()
+{
+
 }
 
 void APlayerMain::WithEnergy()
@@ -700,155 +508,16 @@ void APlayerMain::Die()
 	}
 }
 
-void APlayerMain::GetDirectionalReact()
-{
-	PlayAnimMontage(HitReactMontage);
-}
-
-void APlayerMain::Block()
-{
-	if (GetCharacterState() != ECharacterStates::ECS_Unequipped)
-	{
-		PlayAnimMontage(BlockMontage, 1.f, FName("BlockIdle"));
-		SetCharacterAction(ECharacterActions::ECA_Block);
-	}	
-} 
-
-void APlayerMain::ReceiveBlock()
-{
-	PlayAnimMontage(BlockMontage, 1.f, FName("BlockReact"));
-}
-
 void APlayerMain::ResetFollowCamera()
 {
 	if (FollowCamera && PlayerControllerRef)
 	{
-		SetCharacterAction(ECharacterActions::ECA_Nothing);
+		Combat->SetCharacterAction(ECharacterActions::ECA_Nothing);
 		FollowCamera->AttachToComponent(CameraBoom, FAttachmentTransformRules::SnapToTargetIncludingScale, FName("SprinEndpoint"));
 		PlayerControllerRef->EnableInput(PlayerControllerRef);
 		bCanReceiveDamage = true;
 		Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->SetEnemiesAIEnabled(true);
 	}
-}
-
-void APlayerMain::ReleaseBlock()
-{
-	StopAnimMontage(BlockMontage);
-	SetCharacterAction(ECharacterActions::ECA_Nothing);
-}
-
-void APlayerMain::FinishEnemy()
-{
-	if (GetCharacterAction() == ECharacterActions::ECA_Finish) return;
-
-	if (AActor* Enemy = SphereTraceForEnemies(GetActorLocation(), GetActorLocation() + GetActorForwardVector() * 40.f))
-	{
-		if (Enemy && Enemy->GetClass()->ImplementsInterface(UHitInterface::StaticClass()))
-		{
-			if (IHitInterface::Execute_CanBeFinished(Enemy))
-			{
-				bCanReceiveDamage = false;
-				SetCharacterAction(ECharacterActions::ECA_Finish);
-
-				Enemy->SetActorLocation(FVector(
-					FinisherLocation->GetComponentLocation().X,
-					FinisherLocation->GetComponentLocation().Y,
-					Enemy->GetActorLocation().Z), true);
-
-				FVector Start = GetActorLocation();
-				FVector End = Enemy->GetActorLocation();
-				FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(Start, End);
-				SetActorRotation(LookAtRotation);
-
-				PlayAnimMontage(FinisherMontage, 1.0f);
-				IHitInterface::Execute_GetFinished(Enemy);
-
-				FollowCamera->AttachToComponent(
-					CameraFinisherLocation,
-					FAttachmentTransformRules::SnapToTargetIncludingScale
-				);
-
-				Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->SetEnemiesAIEnabled(false);
-			}
-			else return;
-		}
-	}
-}
-
-void APlayerMain::LaunchCharacterUp()
-{
-	isLaunched = true;
-	AddActorWorldOffset(FVector(0.f, 0.f, 300.f), false);
-
-	APaladin* Enemy = Cast<APaladin>(SoftLockTarget);
-	if (Enemy)
-	{
-		Enemy->LaunchEnemyUp();
-	}
-}
-
-void APlayerMain::Crasher()
-{
-	SoftLockOn();
-	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
-	CharacterAction = ECharacterActions::ECA_Attack;
-
-	FVector Start = GetActorLocation();
-	FVector End = Start + FVector(0.f, 0.f, -100000.f);
-
-	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
-	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_WorldStatic));
-	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_WorldDynamic));
-
-	TArray<AActor*> ObjectsToIgnore;
-	ObjectsToIgnore.Add(this);
-
-	FHitResult Hit;
-
-	bool bHit = UKismetSystemLibrary::LineTraceSingleForObjects(
-		GetWorld(),
-		Start,
-		End,
-		ObjectTypes,
-		false,
-		ObjectsToIgnore,
-		EDrawDebugTrace::None,
-		Hit,
-		true
-	);
-
-	if (bHit)
-	{
-		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
-		SetActorLocation(Hit.ImpactPoint);
-	}
-}
-
-AActor* APlayerMain::SphereTraceForEnemies(FVector Start, FVector End)
-{
-	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
-	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
-
-	TArray<AActor*> ActorsToIgnore;
-	ActorsToIgnore.Add(this);
-	ActorsToIgnore.Add(GetOwner());
-
-	FHitResult ResultHit;
-
-	UKismetSystemLibrary::SphereTraceSingleForObjects(
-		GetWorld(),
-		Start,
-		End,
-		TrackTargetRadius,
-		ObjectTypes,
-		false,
-		ActorsToIgnore,
-		EDrawDebugTrace::None,
-		ResultHit,
-		true
-	);
-
-	return ResultHit.GetActor();
 }
 
 void APlayerMain::RestartLevel()
@@ -872,10 +541,12 @@ void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlayerMain::Look);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &APlayerMain::Jump);
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &APlayerMain::Interact);
-		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &APlayerMain::Attack);
+		EnhancedInputComponent->BindAction(Combat->AttackAction, ETriggerEvent::Triggered, this, &APlayerMain::Attack);
+		EnhancedInputComponent->BindAction(Combat->HeavyAttackAction, ETriggerEvent::Triggered, this, &APlayerMain::HeavyAttack);
+		EnhancedInputComponent->BindAction(Combat->LaunchAction, ETriggerEvent::Triggered, this, &APlayerMain::LaunchAttack);
 		EnhancedInputComponent->BindAction(ChangeFormAction, ETriggerEvent::Started, this, &APlayerMain::ToggleForm);
-		EnhancedInputComponent->BindAction(BlockAction, ETriggerEvent::Started, this, &APlayerMain::Block);
-		EnhancedInputComponent->BindAction(BlockAction, ETriggerEvent::Completed, this, &APlayerMain::ReleaseBlock);
+		EnhancedInputComponent->BindAction(Combat->BlockAction, ETriggerEvent::Started, this, &APlayerMain::Block);
+		EnhancedInputComponent->BindAction(Combat->BlockAction, ETriggerEvent::Completed, this, &APlayerMain::ReleaseBlock);
 		EnhancedInputComponent->BindAction(PossessAction, ETriggerEvent::Completed, this, &APlayerMain::PossessEnemy);
 		EnhancedInputComponent->BindAction(RestartAction, ETriggerEvent::Completed, this, &APlayerMain::RestartLevel);
 		EnhancedInputComponent->BindAction(GoToMenuAction, ETriggerEvent::Completed, this, &APlayerMain::GoToMainMenu);

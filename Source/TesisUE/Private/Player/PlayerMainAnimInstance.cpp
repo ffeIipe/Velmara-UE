@@ -4,6 +4,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 
+#include "Components/CombatComponent.h"
+
 void UPlayerMainAnimInstance::NativeInitializeAnimation()
 {
 	Super::NativeInitializeAnimation();
@@ -24,7 +26,7 @@ void UPlayerMainAnimInstance::NativeUpdateAnimation(float DeltaTime)
 	{
 		GroundSpeed = UKismetMathLibrary::VSizeXY(PlayerMainCharacterMovement->Velocity);
 		IsFalling = PlayerMainCharacterMovement->IsFalling();
-		CharacterState = PlayerMain->GetCharacterState();
+		CharacterState = PlayerMain->Combat->GetCharacterState();
 	}
 
 	if (PlayerFormComponent)

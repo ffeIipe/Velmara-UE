@@ -33,3 +33,8 @@ void AShieldedPaladin::BeginPlay()
 {
     Super::BeginPlay();
 }
+
+bool AShieldedPaladin::IsLaunchable_Implementation()
+{
+    return bIsDisarmed;
+}

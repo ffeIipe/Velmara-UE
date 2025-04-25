@@ -55,12 +55,10 @@ void UPlayerFormComponent::ToggleForm(bool CanToggle)
 
 void UPlayerFormComponent::ApplySpectralEffects()
 {
-    Debug(1, FColor::Red, FString("Spectral Mode"), true);
-
     CurrentForm = ECharacterForm::ECF_Spectral;
     SpectralEffectTimeline->PlayFromStart();
 
-    //find and enable spectrals objects
+    //TODO: find and enable spectrals objects WITH AN STATIC CLASS or smt like that
     for (TActorIterator<ASpectralObject> It(GetWorld()); It; ++It)
     {
         It->SetSpectralVisibility(true);
@@ -69,8 +67,6 @@ void UPlayerFormComponent::ApplySpectralEffects()
 
 void UPlayerFormComponent::ApplyHumanEffects()
 {
-    Debug(1, FColor::Blue, FString("Human Mode"), true);
-
     CurrentForm = ECharacterForm::ECF_Human;
     SpectralEffectTimeline->Reverse();
 
@@ -91,13 +87,5 @@ void UPlayerFormComponent::UpdateSpectralEffect(float Value)
             float ClampedValue = FMath::Clamp(Value, 0.0f, 1.0f);
             MaterialInstance->SetScalarParameterValue(FName("Alpha"), ClampedValue);
         }
-    }
-}
-
-void UPlayerFormComponent::Debug(int32 Key, FColor Color, FString String, bool bNewerOnTop)
-{
-    if (GEngine)
-    {
-        GEngine->AddOnScreenDebugMessage(Key, 1.f, Color, String, bNewerOnTop);
     }
 }

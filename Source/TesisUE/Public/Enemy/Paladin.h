@@ -4,18 +4,24 @@
 
 #include "CoreMinimal.h"
 #include "Enemy/Enemy.h"
+#include "Interfaces/LaunchableInterface.h"
 #include "Paladin.generated.h"
 
 class UBoxComponent;
 
 UCLASS()
-class TESISUE_API APaladin : public AEnemy
+class TESISUE_API APaladin : public AEnemy, public ILaunchableInterface
 {
 	GENERATED_BODY()
 
 public:
 	APaladin();
 
+	virtual bool IsLaunchable_Implementation() override;
+
+	virtual void LaunchUp_Implementation() override;
+
+	virtual AActor* GetInterfaceOwner_Implementation() override;
 protected:
 	void BeginPlay();
 	
@@ -56,6 +62,15 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* AttackAction;
 
+	void LaunchEnemyUp();
+
+	void CrashDown();
+	
+	void HitInAir();
+
+	void ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoint) override;
+
 private:
 	void Attack();
+
 };

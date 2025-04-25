@@ -1,14 +1,21 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "Enemy/Paladin.h"
+
+#include "Engine/DamageEvents.h"
+#include "GameFramework/DamageType.h"
+#include "DamageTypes/DamageTypeMain.h"
+
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Components/BoxComponent.h"
-#include "Kismet/KismetSystemLibrary.h"
+
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetSystemLibrary.h"
+
 #include "Player/PlayerMain.h"
 #include "EnhancedInputComponent.h"
+
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+
 
 APaladin::APaladin()
 {
@@ -70,23 +77,23 @@ void APaladin::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Ot
 		true
 	);
 
-	APlayerMain* Player = Cast<APlayerMain>(BoxHit.GetActor());
-	if (Player && Player->GetCharacterAction() != ECharacterActions::ECA_Block)
-	{
-		UGameplayStatics::ApplyDamage(
-			BoxHit.GetActor(),
-			Damage,
-			GetInstigator()->GetController(),
-			this,
-			UDamageType::StaticClass()
-		);
-		ActorsToIgnore.AddUnique(BoxHit.GetActor());
-	}
-	else if (Player)
-	{
-		PlayAnimMontage(HitReactMontage, 1.f, FName("FromFront"));
-		Player->ReceiveBlock();
-	}
+	//APlayerMain* Player = Cast<APlayerMain>(BoxHit.GetActor());
+	//if (Player && Player->GetCharacterAction() != ECharacterActions::ECA_Block)
+	//{
+	//	UGameplayStatics::ApplyDamage(
+	//		BoxHit.GetActor(),
+	//		Damage,
+	//		GetInstigator()->GetController(),
+	//		this,
+	//		UDamageType::StaticClass()
+	//	);
+	//	ActorsToIgnore.AddUnique(BoxHit.GetActor());
+	//}
+	//else if (Player)
+	//{
+	//	PlayAnimMontage(HitReactMontage, 1.f, FName("FromFront"));
+	//	Player->ReceiveBlock();
+	//}
 
 	//TODO: fx to play if player has been damaged
 	/*if (APlayerMain* Player = Cast<APlayerMain>(BoxHit.GetActor()))
@@ -109,4 +116,69 @@ void APaladin::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 void APaladin::Attack()
 {
 	PerformAttackEvent();
+}
+
+bool APaladin::IsLaunchable_Implementation()
+{
+	return true;
+}
+
+void APaladin::LaunchUp_Implementation()
+{
+	LaunchEnemyUp();
+}
+
+AActor* APaladin::GetInterfaceOwner_Implementation()
+{
+	return GetOwner();
+}
+
+void APaladin::LaunchEnemyUp()
+{
+	if (isLaunched) return;
+
+	isLaunched = true;
+	DisableAI();
+	PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
+	AddActorWorldOffset(FVector(0.f, 0.f, 300.f), false);
+	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
+}
+
+void APaladin::CrashDown()
+{
+	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
+	PlayAnimMontage(HitReactMontage, 1.f, FName("KnockDown"));
+	LaunchCharacter(FVector(0.f, 0.f, -100000.f), true, true);
+}
+
+void APaladin::HitInAir()
+{
+	float PlayerLocationZ = UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->GetActorLocation().Z;
+	SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, PlayerLocationZ));
+	PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
+	GetCharacterMovement()->IsFlying();
+	DisableAI();
+}
+
+void APaladin::ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoint)
+{
+	Super::ReactToDamage(DamageType, ImpactPoint);
+
+	switch (DamageType)
+	{
+	case EMainDamageTypes::EMDT_CrashDown:
+		CrashDown();
+		break;
+
+	case EMainDamageTypes::EMDT_InAir:
+		HitInAir();
+		break;
+
+	case EMainDamageTypes::EMDT_Finisher:
+		return;
+		break;
+	default:
+		DirectionalHitReact(ImpactPoint);
+		break;
+	}
 }

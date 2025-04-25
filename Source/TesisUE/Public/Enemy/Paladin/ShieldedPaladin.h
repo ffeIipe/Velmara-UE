@@ -32,6 +32,8 @@ public:
 protected:
 	void BeginPlay() override;
 
+	bool IsLaunchable_Implementation() override;
+
 private:
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* ShieldMesh;

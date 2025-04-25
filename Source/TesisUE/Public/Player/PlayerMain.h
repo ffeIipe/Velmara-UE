@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "CharacterStates.h"
+#include "Interfaces/FormInterface.h"
 #include "PlayerMain.generated.h"
 
 class UCameraComponent;
@@ -22,29 +23,31 @@ class UAttributeComponent;
 class UEnergy;
 class UBoxComponent;
 class UMementoComponent;
+class UCombatComponent;
 
 UCLASS()
-class TESISUE_API APlayerMain : public ACharacter
+class TESISUE_API APlayerMain : public ACharacter, public IFormInterface
 {
 	GENERATED_BODY()
 
 public:
-
 	APlayerMain();
+
+	virtual ECharacterForm GetCharacterForm_Implementation() override;
+
+	virtual void PerformSpectralAttack_Implementation() override;
+
+	virtual void PerformSpectralBarrier_Implementation() override;
+
+	virtual void ResetSpectralAttack_Implementation() override;
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	UFUNCTION(BlueprintPure, Category = "FSM")
-	FORCEINLINE ECharacterActions GetCharacterAction() const { return CharacterAction; }
-	
-	UFUNCTION(BlueprintPure, Category = "FSM")
-	FORCEINLINE ECharacterStates GetCharacterState() const { return CharacterState; }
+	UPROPERTY(EditAnywhere)
+	ACameraActor* FollowCamera;
 
 	UFUNCTION(BlueprintPure, Category = "SpectralAttack")
 	FORCEINLINE AEnemy* GetSpectralTarget() const { return SpectralTarget; }
-	
-	UFUNCTION(BlueprintCallable, Category = "SoftLock")
-	FORCEINLINE AActor* GetSoftLockTarget() const { return SoftLockTarget; }
 	
 	FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }
 
@@ -74,34 +77,14 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ReleasePossession();
 
-	void ReceiveBlock();
-
 	UFUNCTION(BlueprintCallable)
 	void ResetFollowCamera();
-
-	UPROPERTY(BlueprintReadWrite, Category = "HitReact")
-	UAnimMontage* HitReactMontage;
 
 protected:
 	/*
 	* Base
 	*/
 	virtual void BeginPlay() override;
-	
-	/*
-	* FSM
-	*/
-	UFUNCTION(BlueprintCallable, Category = "FSM")
-	ECharacterActions SetCharacterAction(ECharacterActions NewState);
-
-	UFUNCTION(BlueprintPure, Category = "FSM")
-	bool IsActionEqualToAny(const TArray<ECharacterActions>& StatesToCheck);
-	
-	UFUNCTION(BlueprintPure, Category = "FSM")
-	bool IsStateEqualToAny(const TArray<ECharacterStates>& StatesToCheck);
-	
-	UFUNCTION(BlueprintPure, Category = "PlayerForm")
-	bool IsFormEqualToAny(const TArray<ECharacterForm>& StatesToCheck);
 
 	/*
 	* Interact
@@ -124,17 +107,8 @@ protected:
 	UPROPERTY(BlueprintReadWrite, Category = "Death")
 	UAnimMontage* DeathMontage;
 	
-	UPROPERTY(BlueprintReadWrite, Category = "Block")
-	UAnimMontage* BlockMontage;
-	
-	UPROPERTY(BlueprintReadWrite, Category = "Crasher")
-	UAnimMontage* CrasherMontage;
-	
 	UPROPERTY(BlueprintReadWrite, Category = "Jump")
 	UAnimMontage* JumpMontage;
-	
-	UPROPERTY(BlueprintReadWrite, Category = "Finisher")
-	UAnimMontage* FinisherMontage;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Dodge")
 	bool bSaveDodge = false;
@@ -142,38 +116,27 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Dodge")
 	void PerformDodge();
 
+	public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	UCombatComponent* Combat;
+
 	UPROPERTY()
 	UTimelineComponent* BufferDodgeTimeline;
-	
-	UPROPERTY()
-	UTimelineComponent* BufferAttackTimeline;
 
 	UPROPERTY(EditAnywhere, Category = "Buffer")
 	class UCurveFloat* BufferCurve;
 
 	UPROPERTY(EditAnywhere, Category = "Buffer")
 	float BufferDodgeDistance;
-	
-	UPROPERTY(EditAnywhere, Category = "Buffer")
-	float BufferAttackDistance;
 
 	UFUNCTION(BlueprintCallable)
 	void DodgeBufferEvent(float BufferAmount);
-	
-	UFUNCTION(BlueprintCallable)
-	void StartAttackBufferEvent(float BufferAmount);
 
 	UFUNCTION(BlueprintCallable)
 	void StopDodgeBufferEvent();
-	
-	UFUNCTION(BlueprintCallable)
-	void StopAttackBufferEvent();
 
 	UFUNCTION(BlueprintCallable)
 	void UpdateDodgeBuffer(float Alpha);
-	
-	UFUNCTION(BlueprintCallable)
-	void UpdateAttackBuffer(float Alpha);
 
 	UFUNCTION(BlueprintCallable)
 	void UpdateBuffer(float Alpha, float BufferDistance);
@@ -181,107 +144,17 @@ protected:
 	/*
 	* Light Attack
 	*/
-	UPROPERTY(BlueprintReadWrite, Category = "LightAttack")
-	int LightAttackIndex = 0;
-	
 	UPROPERTY(BlueprintReadWrite, Category = "SpectralMode | SpectralAttack")
 	int SpectralAttackIndex = 0;
-
-	UPROPERTY(BlueprintReadWrite, Category = "LightAttack")
-	int JumpAttackIndex = 0;
-
-	UPROPERTY(BlueprintReadOnly, Category = "LightAttack")
-	TArray<UAnimMontage*> LightAttackCombo;
 	
 	UPROPERTY(BlueprintReadOnly, Category = "SpectralMode | SpectralAttack")
 	TArray<UAnimMontage*> SpectralAttackCombo;
-
-	UPROPERTY(BlueprintReadOnly, Category = "JumpAttack")
-	TArray<UAnimMontage*> JumpAttackCombo;
-	
-	UPROPERTY(BlueprintReadOnly, Category = "ComboAttack")
-	TArray<UAnimMontage*> ComboStarterAttack;
-	
-	UPROPERTY(BlueprintReadOnly, Category = "ComboAttack")
-	TArray<UAnimMontage*> ComboExtenderAttack;
-
-	UPROPERTY(BlueprintReadWrite, Category = "LightAttack")
-	bool IsSaveLightAttack;
-
-	UFUNCTION(BlueprintCallable, Category = "LightAttack")
-	void PerformLightAttack(int AttackIndex);
-
-	UFUNCTION(BlueprintCallable, Category = "SpectralMode | SpectralAttack")
-	void PerformSpectralAttack(int AttackIndex);
-	
-	UFUNCTION(BlueprintCallable, Category = "SpectralMode | SpectralAttack")
-	void PerformSpectralBarrier();
-
-	UFUNCTION(BlueprintCallable, Category = "LightAttack")
-	void ResetLightAttackStats();
-	
-	UFUNCTION(BlueprintCallable, Category = "SpectralMode | SpectralAttack")
-	void ResetSpectralAttackStats();
-	
-	UFUNCTION(BlueprintCallable, Category = "JumpAttack")
-	void ResetJumpAttackStats();
 	
 	/*
 	* Heavy Attack
 	*/
-	UPROPERTY(BlueprintReadWrite, Category = "HeavyAttack")
-	int HeavyAttackIndex = 0;
-	
-	UPROPERTY(BlueprintReadWrite, Category = "ComboAttack")
-	int ComboExtenderIndex = 0;
-
-	UPROPERTY(BlueprintReadOnly, Category = "HeavyAttack")
-	TArray<UAnimMontage*> HeavyAttackCombo;
-
 	UPROPERTY(BlueprintReadOnly, Category = "SpectralMode | SpectralAttack")
 	UAnimMontage* SpectralHeavyAttack;
-
-	UPROPERTY(BlueprintReadWrite, Category = "HeavyAttack")
-	bool IsSaveHeavyAttack;
-
-	UFUNCTION(BlueprintCallable, Category = "HeavyAttack")
-	void PerformHeavyAttack(int AttackIndex);
-
-	UFUNCTION(BlueprintCallable, Category = "HeavyAttack")
-	void ResetHeavyAttackStats();
-
-	UFUNCTION(BlueprintCallable, Category = "JumpAttack")
-	void PerformJumpAttack(int AttackIndex);
-	
-	UFUNCTION(BlueprintCallable, Category = "ComboAttack")
-	void PerformComboStarter(int AttackIndex);
-	
-	UFUNCTION(BlueprintCallable, Category = "ComboAttack")
-	void PerformComboExtender(int AttackIndex);
-
-	UFUNCTION(BlueprintCallable, Category = "SoftLockOn")
-	void SoftLockOn();
-	
-	UFUNCTION(BlueprintCallable, Category = "SoftLockOn")
-	void RotationToTarget();
-
-	UFUNCTION(BlueprintCallable, Category = "SoftLockOn")
-	void UpdateSoftLockOn(float Alpha);
-
-	UPROPERTY(BlueprintReadWrite, Category = "SoftLockOn")
-	AActor* SoftLockTarget;
-
-	UPROPERTY(EditAnywhere, Category = "SoftLockOn")
-	float SoftLockDistance;
-
-	UPROPERTY(EditAnywhere, Category = "SoftLockOn")
-	float SoftLockRadius;
-
-	UPROPERTY()
-	UTimelineComponent* SoftLockTimeline;
-	
-	UPROPERTY(EditAnywhere, Category = "SoftLockOn")
-	class UCurveFloat* SoftLockCurve;
 
 	UPROPERTY(EditAnywhere, Category = "SpectralAttack")
 	AEnemy* SpectralTarget;
@@ -320,16 +193,7 @@ protected:
 	UInputAction* InteractAction;
 
 	UPROPERTY(EditAnywhere, Category = "Input | Actions")
-	UInputAction* AttackAction;
-	
-	UPROPERTY(EditAnywhere, Category = "Input | Actions")
-	UInputAction* HeavyAttackAction;
-
-	UPROPERTY(EditAnywhere, Category = "Input | Actions")
 	UInputAction* ChangeFormAction;
-	
-	UPROPERTY(EditAnywhere, Category = "Input | Actions")
-	UInputAction* BlockAction;
 	
 	UPROPERTY(EditAnywhere, Category = "Input | Actions")
 	UInputAction* PossessAction;
@@ -350,7 +214,6 @@ protected:
 	UMementoComponent* Memento;
 
 private:	
-
 	UPROPERTY(EditDefaultsOnly, Category = "BloodSense | Cooldown")
 	float TransformationCooldown;
 
@@ -364,26 +227,11 @@ private:
 
 	bool bIsDead = false;
 
-
-	ECharacterActions CharacterAction = ECharacterActions::ECA_Nothing;
-
-	ECharacterStates CharacterState = ECharacterStates::ECS_Unequipped;
-	
-	UPROPERTY(EditAnywhere)
-	ACameraActor* FollowCamera;
-
-
 	UPROPERTY(VisibleInstanceOnly)
 	AItem* OverlappingItem;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon", meta = (AllowPrivateAccess))
 	ASword* EquippedWeapon;
-
-	UPROPERTY(VisibleAnywhere)
-	USceneComponent* FinisherLocation;
-	
-	UPROPERTY(VisibleAnywhere)
-	USceneComponent* CameraFinisherLocation;
 	
 	UFUNCTION(BlueprintCallable)
 	void HitStop(float Duration, float TimeScale);
@@ -416,31 +264,18 @@ private:
 	void Attack(const FInputActionValue& Value);
 	
 	void HeavyAttack(const FInputActionValue& Value);
+	
+	void LaunchAttack(const FInputActionValue& Value);
 
 	void ToggleForm();
-
-	void Die();
-
-	void ResetPlayer();
-
-	void GetDirectionalReact();
 
 	void Block();
 
 	void ReleaseBlock();
 
-	void FinishEnemy();
+	void Die();
 
-	UFUNCTION(BlueprintCallable)
-	void LaunchCharacterUp();
-	
-	UPROPERTY(BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-	bool isLaunched = false;
-
-	UFUNCTION(BlueprintCallable)
-	void Crasher();
-
-	AActor* SphereTraceForEnemies(FVector Start, FVector End);
+	void ResetPlayer();
 
 	UFUNCTION()
 	void WithEnergy();

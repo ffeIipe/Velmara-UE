@@ -47,6 +47,4 @@ private:
 
     UFUNCTION()
     void UpdateSpectralEffect(float Value);
-
-    void Debug(int32 Key, FColor Color, FString String, bool bNewerOnTop);
 };

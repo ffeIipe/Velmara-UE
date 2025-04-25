@@ -9,7 +9,6 @@ void ANewGameStateBase::RegisterMementoEntity(AActor* Entity)
 	if (Entity && Entity->GetComponentByClass<UMementoComponent>() && !MementoEntities.Contains(Entity))
 	{
 		MementoEntities.Add(Entity);
-		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Cyan, FString("Memento Entity Registered: " + Entity->GetName()));
 	}
 }
 

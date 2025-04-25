@@ -49,7 +49,7 @@ public:
 
 	virtual void GetFinished_Implementation() override;
 
-	virtual bool CanBeFinished_Implementation()override;
+	virtual bool CanBeFinished_Implementation() override;
 
 	virtual float TakeDamage(
 		float DamageAmount,
@@ -80,15 +80,6 @@ public:
 	
 	UFUNCTION()
 	void UnPossess();
-
-	UFUNCTION(BlueprintCallable)
-	void LaunchEnemyUp();
-
-	UFUNCTION(BlueprintCallable)
-	void CrashDown();
-	
-	UFUNCTION(BlueprintCallable)
-	void HitInAir();
 
 protected:
 	virtual void BeginPlay() override;
@@ -165,7 +156,7 @@ protected:
 	void ResetEnemy();
 		
 	UFUNCTION()		
-	void ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoint);
+	virtual void ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoint);
 
 private:
 

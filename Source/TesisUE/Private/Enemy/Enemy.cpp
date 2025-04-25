@@ -163,33 +163,6 @@ void AEnemy::Look(const FInputActionValue& Value)
 	AddControllerYawInput(LookingVector.X);
 }
 
-void AEnemy::LaunchEnemyUp()
-{
-	if (isLaunched) return;
-
-	isLaunched = true;
-	DisableAI();
-	PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
-	AddActorWorldOffset(FVector(0.f, 0.f, 300.f), false);
-	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
-}
-
-void AEnemy::CrashDown()
-{
-	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
-	PlayAnimMontage(HitReactMontage, 1.f, FName("KnockDown"));
-	LaunchCharacter(FVector(0.f, 0.f, -100000.f), true, true);
-}
-
-void AEnemy::HitInAir()
-{
-	float PlayerLocationZ = UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->GetActorLocation().Z;
-	SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, PlayerLocationZ));
-	PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
-	GetCharacterMovement()->IsFlying();
-	DisableAI();
-}
-
 void AEnemy::ResetEnemy()
 {
 	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
@@ -199,23 +172,7 @@ void AEnemy::ResetEnemy()
 
 void AEnemy::ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoint)
 {
-	switch (DamageType)
-	{
-	case EMainDamageTypes::EMDT_CrashDown:
-		CrashDown();
-		break;
-
-	case EMainDamageTypes::EMDT_InAir:
-		HitInAir();
-		break;
-
-	case EMainDamageTypes::EMDT_Finisher:
-		return;
-		break;
-	default:
-		DirectionalHitReact(ImpactPoint);
-		break;
-	}
+	//future reactions for diff enemies
 }
 
 void AEnemy::GetHit_Implementation(const FVector& ImpactPoint)

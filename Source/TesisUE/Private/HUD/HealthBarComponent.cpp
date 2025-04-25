@@ -67,11 +67,3 @@ void UHealthBarComponent::SetHealthOpacity(float DeltaTime)
 		}
 	}
 }
-
-void UHealthBarComponent::Debug(int32 Key, FColor Color, FString String, bool bNewerOnTop)
-{
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(Key, 1.f, Color, String, bNewerOnTop);
-	}
-}
