@@ -31,6 +31,9 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "SpectralMode/Interfaces/SpectralInteractable.h"
 
+#include "Engine/DamageEvents.h"
+#include "DamageTypes/SpectralTrapDamageType.h"
+
 APlayerMain::APlayerMain()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -168,6 +171,7 @@ void APlayerMain::PerformDodge()
 	}
 	else
 	{
+		//directional animation based on last movement input vector
 		PlayAnimMontage(SpectralDodgeMontage);
 	}
 }
@@ -220,12 +224,21 @@ void APlayerMain::SearchTarget()
 float APlayerMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	//TODO: player healthbar and fx to receive damage
+
+	if (DamageEvent.DamageTypeClass)
+	{
+		if (DamageEvent.DamageTypeClass == USpectralTrapDamageType::StaticClass())
+		{
+			Combat->GetDirectionalReact(FName("KnockDown"));
+		}
+	}
+
 	if (!bCanReceiveDamage) return 0.f;
 	
 	if (Attributes && Attributes->IsAlive())
 	{
 		Attributes->ReceiveDamage(DamageAmount);
-		Combat->GetDirectionalReact();
+		Combat->GetDirectionalReact(FName("Default"));
 	}
 	else
 	{
@@ -270,10 +283,13 @@ AEnemy* APlayerMain::GetTargetEnemy()
 
 	if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_GameTraceChannel3, QueryParams))
 	{
-		DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 2.0f);
-		return Cast<AEnemy>(HitResult.GetActor());
+		if (AEnemy* Enemy = Cast<AEnemy>(HitResult.GetActor()))
+		{
+			return Enemy;
+		}
+		else return nullptr;
 	}
-	return nullptr;
+	else return nullptr;
 }
 
 void APlayerMain::PossessEnemy()
@@ -281,14 +297,16 @@ void APlayerMain::PossessEnemy()
 	if (PlayerFormComponent->GetCharacterForm() == ECharacterForm::ECF_Spectral)
 	{
 		AEnemy* TargetEnemy = GetTargetEnemy();
-		if (!TargetEnemy && !Attributes->RequiresEnergy(10.f)) return;
-
 		PlayerControllerRef = Cast<APlayerController>(GetController());
 
-		if (PlayerControllerRef)
+		if (PlayerControllerRef 
+			&& TargetEnemy 
+			&& TargetEnemy->GetEnemyState() != EEnemyState::EES_Died
+			&& Attributes->RequiresEnergy(10.f)
+			)
 		{
-			PlayerControllerRef->Possess(TargetEnemy);
 			TargetEnemy->DisableAI();
+			PlayerControllerRef->Possess(TargetEnemy);
 			PossessedEnemy = TargetEnemy;
 
 			TargetEnemy->EnableInput(PlayerControllerRef);
@@ -297,9 +315,11 @@ void APlayerMain::PossessEnemy()
 
 			FollowCamera->AttachToComponent(TargetEnemy->SpringArm, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("SpringEndpoint"));
 			PlayerControllerRef->SetViewTargetWithBlend(FollowCamera, 1.f);
+
+			SetActorHiddenInGame(true);
+			SetActorEnableCollision(false);
+			GetMesh()->bPauseAnims = true;
 		}
-		SetActorHiddenInGame(true);
-		SetActorEnableCollision(false);
 	}
 	else Combat->FinishEnemy();
 }
@@ -319,6 +339,7 @@ void APlayerMain::ReleasePossession()
 	SetActorEnableCollision(true);
 	SetActorLocation(PossessedEnemy->GetActorLocation());
 	SetActorRotation(PossessedEnemy->GetActorRotation());
+	GetMesh()->bPauseAnims = false;
 	PossessedEnemy = nullptr;
 }
 

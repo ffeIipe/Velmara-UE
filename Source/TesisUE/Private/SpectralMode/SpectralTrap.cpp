@@ -4,6 +4,7 @@
 #include "SpectralMode/SpectralTrap.h"
 #include "Player/PlayerMain.h"
 #include "Kismet/GameplayStatics.h"
+#include "DamageTypes/SpectralTrapDamageType.h"
 
 void ASpectralTrap::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
@@ -13,7 +14,6 @@ void ASpectralTrap::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponen
 	{
 		OverlappingPlayer = Player;
 		ApplyTrapDamage();
-		//OverlappingPlayer->PlayAnimMontage(OverlappingPlayer->HitReactMontage, 1.f, FName("KnockDown"));
 	}
 }
 
@@ -26,15 +26,18 @@ void ASpectralTrap::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent,
 		OverlappingPlayer = nullptr;
 	}
 }
+
 void ASpectralTrap::ApplyTrapDamage()
 {
 	AController* InstigatorController = GetInstigator() ? GetInstigator()->GetController() : nullptr;
+
+	TSubclassOf<UDamageType> FinalDamageType = DamageTypeClass ? DamageTypeClass : TSubclassOf<UDamageType>(UDamageType::StaticClass());
 
 	UGameplayStatics::ApplyDamage(
 		OverlappingPlayer,
 		Damage,
 		InstigatorController,
 		this,
-		UDamageType::StaticClass() //TODO: change the type of damage, bc it overrides the AnimMontage applied
+		USpectralTrapDamageType::StaticClass()
 	);
 }

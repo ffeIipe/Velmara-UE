@@ -12,7 +12,12 @@ UCLASS()
 class TESISUE_API ASpectralTrap : public ASpectralObject
 {
 	GENERATED_BODY()
-	
+
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage")
+	TSubclassOf<UDamageType> DamageTypeClass;
+
+private:
 	void OnSphereBeginOverlap(
 		UPrimitiveComponent* OverlappedComponent,
 		AActor* OtherActor,

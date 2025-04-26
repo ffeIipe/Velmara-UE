@@ -214,6 +214,10 @@ protected:
 	UMementoComponent* Memento;
 
 private:	
+
+	UPROPERTY();
+	EMainDamageTypes LastDamageType;
+
 	UPROPERTY(EditDefaultsOnly, Category = "BloodSense | Cooldown")
 	float TransformationCooldown;
 

@@ -127,7 +127,7 @@ public:
 	void FinishEnemy();
 
 	UFUNCTION()
-	void GetDirectionalReact();
+	void GetDirectionalReact(FName Section);
 
 	UFUNCTION()
 	AActor* SphereTraceForEnemies(FVector Start, FVector End);

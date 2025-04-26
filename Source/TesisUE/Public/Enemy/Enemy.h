@@ -18,6 +18,7 @@ class APlayerMain;
 class AAIController;
 class UPromptWidgetComponent;
 class UMementoComponent;
+class UCombatComponent;
 
 UENUM(BlueprintType)
 enum class EEnemyType : uint8
@@ -164,7 +165,7 @@ private:
 	class UBehaviorTree* BTAsset;
 
 	UPROPERTY();
-	EMainDamageTypes LastDamageType; // = EMainDamageTypes::EMDT_None;
+	EMainDamageTypes LastDamageType;
 
 	AAIController* AIOriginalController;
 

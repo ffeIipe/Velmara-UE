@@ -42,6 +42,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	USceneComponent* BoxTraceEnd;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components | Combat")
+	UCombatComponent* Combat;
+
 	UFUNCTION(BlueprintCallable)
 	virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
 
@@ -73,5 +76,5 @@ protected:
 	void ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoint) override;
 
 private:
-	void Attack();
+	void Attack(const FInputActionValue& Value);
 };

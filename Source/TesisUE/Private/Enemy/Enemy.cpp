@@ -1,15 +1,16 @@
 #include "Enemy/Enemy.h"
-#include "Kismet/GameplayStatics.h"
-#include "Components/AttributeComponent.h"
-#include "HUD/HealthBarComponent.h"
-#include "Components/CapsuleComponent.h"
-#include "AIController.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/SpringArmComponent.h"
+#include "Components/AttributeComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
+#include "Components/MementoComponent.h"
+#include "HUD/HealthBarComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "AIController.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
-#include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Player/PlayerMain.h"
 #include "DamageTypes/DamageTypeMain.h"
@@ -18,7 +19,6 @@
 #include "SceneEvents/NewGameModeBase.h"
 #include "Tutorial/PromptWidgetComponent.h"
 #include "Kismet/KismetMathLibrary.h"
-#include "Components/MementoComponent.h"
 #include "SceneEvents/NewGameStateBase.h"
 
 AEnemy::AEnemy()
@@ -180,7 +180,6 @@ void AEnemy::GetHit_Implementation(const FVector& ImpactPoint)
 	if (Attributes && Attributes->IsAlive() && GetEnemyState() != EEnemyState::EES_Died)
 	{
 		ReactToDamage(LastDamageType, ImpactPoint);
-		//HitFlash(); <- this is the red effect when an enemy get hits
 	}
 	else
 	{

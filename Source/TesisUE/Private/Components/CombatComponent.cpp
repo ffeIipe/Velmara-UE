@@ -299,9 +299,11 @@ void UCombatComponent::UpdateSoftLockOn(float Alpha)
 	GetOwner()->SetActorRotation(NewRotation);
 }
 
-void UCombatComponent::GetDirectionalReact()
+void UCombatComponent::GetDirectionalReact(FName Section)
 {
-	OwningCharacter->PlayAnimMontage(HitReactMontage);
+	if (Section != FName("KnockDown")) Section = FName("Default");
+
+	OwningCharacter->PlayAnimMontage(HitReactMontage, 1.f, Section);
 }
 
 void UCombatComponent::Block()

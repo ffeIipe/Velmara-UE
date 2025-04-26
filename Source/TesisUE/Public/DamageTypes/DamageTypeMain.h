@@ -12,7 +12,8 @@ enum class EMainDamageTypes : uint8
 	EMDT_None UMETA(DisplayName = "None"),
 	EMDT_CrashDown UMETA(DisplayName = "CrashDown"),
 	EMDT_InAir UMETA(DisplayName = "InAir"),
-	EMDT_Finisher UMETA(DisplayName = "Finisher")
+	EMDT_Finisher UMETA(DisplayName = "Finisher"),
+	EMDT_SpectralTrap UMETA(DisplayName = "SpectralTrap")
 };
 
 UCLASS()

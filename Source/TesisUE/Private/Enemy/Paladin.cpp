@@ -6,6 +6,7 @@
 
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/BoxComponent.h"
+#include "Components/CombatComponent.h"
 
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -36,6 +37,8 @@ APaladin::APaladin()
 	BoxTraceEnd = CreateDefaultSubobject<USceneComponent>(TEXT("Box Trace End"));
 	BoxTraceEnd->SetupAttachment(SwordMesh);
 	BoxTraceStart->SetRelativeLocation(FVector(0.f, 0.f, 82.f));
+
+	Combat = CreateDefaultSubobject<UCombatComponent>(TEXT("Combat Component"));
 }
 
 void APaladin::BeginPlay()
@@ -43,6 +46,8 @@ void APaladin::BeginPlay()
 	Super::BeginPlay();
 	
 	SwordBoxCollider->OnComponentBeginOverlap.AddDynamic(this, &APaladin::OnBoxOverlap);
+
+	Combat->SetCharacterState(ECharacterStates::ECS_EquippedSword);
 }
 
 void APaladin::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled)
@@ -110,12 +115,12 @@ void APaladin::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 	if (!EnhancedInputComponent) return;
 
-	EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &APaladin::Attack);
+	EnhancedInputComponent->BindAction(Combat->AttackAction, ETriggerEvent::Triggered, this, &APaladin::Attack);
 }
 
-void APaladin::Attack()
+void APaladin::Attack(const FInputActionValue& Value)
 {
-	PerformAttackEvent();
+	Combat->Input_Attack(Value);
 }
 
 bool APaladin::IsLaunchable_Implementation()
