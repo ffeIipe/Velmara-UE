@@ -15,6 +15,11 @@ class TESISUE_API ASword : public AItem
 
 public:
 
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWallHitSignature, const FHitResult&, HitResult);
+
+	UPROPERTY(BlueprintAssignable, Category = "Collision")
+	FOnWallHitSignature OnWallHit;
+
 	struct FSwordStats
 	{
 		FName Name;
@@ -77,4 +82,6 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	float Damage;
+
+	void OnWallCollision(const FHitResult& Hit);
 };

@@ -86,7 +86,7 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 		End,
 		FVector(10.f, 10.f, 10.f),
 		BoxTraceStart->GetComponentRotation(),
-		UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_GameTraceChannel3),
+		UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_WorldStatic),
 		false,
 		IgnoreActors,
 		EDrawDebugTrace::None,
@@ -115,6 +115,12 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 
 				IgnoreActors.Add(HitActor);
 			}
+			else
+			{
+				OnWallHit.Broadcast(Hit);
+				if (GEngine)GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("OnWallHit"));
+			}
 		}
+		if (GEngine)GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString(Hit.GetActor()->GetName()));
 	}
 }

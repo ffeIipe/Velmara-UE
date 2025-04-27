@@ -418,6 +418,8 @@ void APlayerMain::Interact(const FInputActionValue& Value)
 
 			OverlappingItem = nullptr;
 			InventoryComponent->EquippedWeapon = OverlappingWeapon;
+			InventoryComponent->EquippedWeapon->OnWallHit.AddDynamic(this, &APlayerMain::OnWallCollision);
+			if (GEngine)GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Yellow, FString("Bound: OnWallHit -> OnWallCollision"));
 			InventoryComponent->InventoryWeapons.Add(InventoryComponent->EquippedWeapon);
 		}
 	}
@@ -460,12 +462,10 @@ void APlayerMain::Execute(const FInputActionValue& Value)
 	CombatComponent->Input_Execute(Value);
 }
 
-void APlayerMain::ToggleForm() //TODO: extract to PlayerMain the "apply effects" functions for more flexibility here
+void APlayerMain::ToggleForm()
 {
-	if (CombatComponent->GetCharacterAction() == ECharacterActions::ECA_Dead
-		|| CombatComponent->GetCharacterAction() == ECharacterActions::ECA_Block
-		|| CombatComponent->GetCharacterAction() == ECharacterActions::ECA_Finish
-		|| CombatComponent->GetCharacterAction() == ECharacterActions::ECA_Attack) return;
+	TArray<ECharacterActions> ActionsToCheck = { ECharacterActions::ECA_Dead, ECharacterActions::ECA_Block, ECharacterActions::ECA_Finish, ECharacterActions::ECA_Attack };
+	if (CombatComponent->IsActionEqualToAny(ActionsToCheck)) return;
 
 	float CurrentTime = GetWorld()->GetTimeSeconds();
 	if (CurrentTime - LastTransformationTime < TransformationCooldown) return;
@@ -521,29 +521,43 @@ void APlayerMain::Die()
 	{
 		bIsDead = true;
 
-		//if (DeathMontage)
-		//{
-		//	PlayAnimMontage(DeathMontage);
-		//}
-		//
-		//APlayerController* PlayerController = Cast<APlayerController>(GetController());
-		//if (PlayerController)
-		//{
-		//	DisableInput(PlayerController);
-		//}
-		//
-		//GetCharacterMovement()->DisableMovement();
-		//SetCharacterAction(ECharacterActions::ECA_Dead);
-
-		if (ANewGameModeBase* NewGameMode = Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
+		if (DeathMontage)
 		{
-			if (ANewGameStateBase* NewGameStateBase = Cast<ANewGameStateBase>(NewGameMode->GameState))
-			{
-				if (MementoComponent)
-				{
-					NewGameStateBase->LoadAllMementoStates();
-				}
-			}
+			PlayAnimMontage(DeathMontage);
+		}
+		
+		APlayerController* PlayerController = Cast<APlayerController>(GetController());
+		if (PlayerController)
+		{
+			DisableInput(PlayerController);
+		}
+		
+		GetCharacterMovement()->DisableMovement();
+		CombatComponent->SetCharacterAction(ECharacterActions::ECA_Dead);
+
+		FTimerHandle TimerHandle_LoadCheckpoint;
+		GetWorldTimerManager().SetTimer(TimerHandle_LoadCheckpoint, this, &APlayerMain::LoadLastCheckpoint, 2.0f, false);
+	}
+}
+
+void APlayerMain::Revive()
+{
+	if (bIsDead)
+	{
+		bIsDead = false;
+
+		StopAnimMontage();
+
+		APlayerController* PlayerController = Cast<APlayerController>(GetController());
+		if (PlayerController)
+		{
+			EnableInput(PlayerController);
+		}
+
+		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+		if (CombatComponent)
+		{
+			CombatComponent->SetCharacterAction(ECharacterActions::ECA_Nothing);
 		}
 	}
 }
@@ -569,6 +583,27 @@ void APlayerMain::RestartLevel()
 void APlayerMain::GoToMainMenu()
 {
 	UGameplayStatics::OpenLevel(this, FName("MainMenu"));
+}
+
+void APlayerMain::OnWallCollision(const FHitResult& HitResult)
+{
+	if (GEngine)GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, FString("APlayerMain::OnWallCollision"));
+	CombatComponent->GetDirectionalReact(FName("Default"));
+}
+
+void APlayerMain::LoadLastCheckpoint()
+{
+	if (ANewGameModeBase* NewGameMode = Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
+	{
+		if (ANewGameStateBase* NewGameStateBase = Cast<ANewGameStateBase>(NewGameMode->GameState))
+		{
+			if (MementoComponent)
+			{
+				NewGameStateBase->LoadAllMementoStates();
+				Revive();
+			}
+		}
+	}
 }
 
 void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

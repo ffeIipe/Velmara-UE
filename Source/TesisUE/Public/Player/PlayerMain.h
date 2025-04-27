@@ -220,8 +220,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly);
 	UInventoryComponent* InventoryComponent;
 
-private:	
-
+private:
 	UPROPERTY();
 	EMainDamageTypes LastDamageType;
 
@@ -285,8 +284,6 @@ private:
 
 	void Die();
 
-	void ResetPlayer();
-
 	void SwitchWeapon();
 
 	UFUNCTION()
@@ -300,4 +297,11 @@ private:
 	
 	UFUNCTION()
 	void GoToMainMenu();
+
+	UFUNCTION()
+	void OnWallCollision(const FHitResult& HitResult);
+
+	void Revive();
+
+	void LoadLastCheckpoint();
 };

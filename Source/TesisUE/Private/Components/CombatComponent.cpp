@@ -124,10 +124,8 @@ void UCombatComponent::LightAttack(int AttackIndex)
 
 void UCombatComponent::JumpAttack(int AttackIndex)
 {
-	if (GEngine)GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Yellow, FString("Enter JumpAttack"));
 	if (GetCharacterAction() != ECharacterActions::ECA_Attack && GetCharacterState() != ECharacterStates::ECS_Unequipped)
 	{
-		if (GEngine)GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, FString("Performing JumpAttack"));
 		OwningCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
 		SetCharacterAction(ECharacterActions::ECA_Attack);
 		SoftLockOn();
@@ -142,10 +140,6 @@ void UCombatComponent::JumpAttack(int AttackIndex)
 			OwningCharacter->PlayAnimMontage(CrasherMontage, 1.f);
 			bIsLaunched = false;
 		}
-	}
-	else
-	{
-		if (GEngine)GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Cannot perform JumpAttack"));
 	}
 }
 
@@ -514,19 +508,16 @@ void UCombatComponent::Input_Execute(const FInputActionValue& Value)
 
 void UCombatComponent::LightAttackEvent()
 {
-	if (GEngine)GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Yellow, FString("LIGHT ATTACK EVENT"));
 	if (PlayerForm && PlayerForm->Execute_GetCharacterForm(GetOwner()) == ECharacterForm::ECF_Spectral)
 	{
 		PlayerForm->Execute_PerformSpectralAttack(GetOwner());
 	}
 	else if (bIsLaunched)
 	{
-		if (GEngine)GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, FString("bIsLaunched = true"));
 		JumpAttack(JumpAttackIndex);
 	}
 	else
 	{
-		if (GEngine)GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("bIsLaunched = false"));
 		LightAttack(LightAttackIndex);
 	}
 }
