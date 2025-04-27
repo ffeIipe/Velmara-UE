@@ -124,7 +124,7 @@ protected:
 	
 public:
 	UFUNCTION()
-	void FinishEnemy();
+	void Execute();
 
 	UFUNCTION()
 	void GetDirectionalReact(FName Section);
@@ -244,6 +244,9 @@ public:
 	
 	UPROPERTY(EditAnywhere, Category = "Input | Actions")
 	UInputAction* LaunchAction;
+	
+	UPROPERTY(EditAnywhere, Category = "Input | Actions")
+	UInputAction* FinishAction;
 
 	/*
 	] Section
@@ -253,6 +256,12 @@ public:
 	void Input_HeavyAttack(const FInputActionValue& Value);
 	
 	void Input_Launch(const FInputActionValue& Value);
+
+	void Input_Block(const FInputActionValue& Value);
+	
+	void Input_ReleaseBlock(const FInputActionValue& Value);
+
+	void Input_Execute(const FInputActionValue& Value);
 
 	UFUNCTION()
 	void LightAttackEvent();

@@ -22,6 +22,7 @@ public:
 	virtual void LaunchUp_Implementation() override;
 
 	virtual AActor* GetInterfaceOwner_Implementation() override;
+
 protected:
 	void BeginPlay();
 	
@@ -34,7 +35,7 @@ protected:
 	UStaticMeshComponent* SwordMesh;
 	
 	UPROPERTY(VisibleAnywhere)
-	UBoxComponent* SwordBoxCollider;
+	UBoxComponent* SwordCollider;
 
 	UPROPERTY(EditDefaultsOnly)
 	USceneComponent* BoxTraceStart;
@@ -43,13 +44,13 @@ protected:
 	USceneComponent* BoxTraceEnd;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components | Combat")
-	UCombatComponent* Combat;
+	UCombatComponent* CombatComponent;
 
 	UFUNCTION(BlueprintCallable)
 	virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
 
 	UFUNCTION()
-	virtual void OnBoxOverlap(
+	virtual void OnSwordOverlap(
 		UPrimitiveComponent* OverlappedComponent,
 		AActor* OtherActor,
 		UPrimitiveComponent* OtherComp,
@@ -77,4 +78,6 @@ protected:
 
 private:
 	void Attack(const FInputActionValue& Value);
+
+	void Finisher(const FInputActionValue& Value);
 };

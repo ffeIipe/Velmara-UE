@@ -15,6 +15,8 @@ class TESISUE_API UHealthBarComponent : public UWidgetComponent
 	GENERATED_BODY()
 
 public:
+	UHealthBarComponent();
+
 	UPROPERTY()
 	class UHealthBar* HealthBarWidget;
 

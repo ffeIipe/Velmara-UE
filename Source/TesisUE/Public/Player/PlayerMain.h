@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "CharacterStates.h"
 #include "Interfaces/FormInterface.h"
+#include "Interfaces/HitInterface.h"
 #include "PlayerMain.generated.h"
 
 class UCameraComponent;
@@ -24,9 +25,10 @@ class UEnergy;
 class UBoxComponent;
 class UMementoComponent;
 class UCombatComponent;
+class UInventoryComponent;
 
 UCLASS()
-class TESISUE_API APlayerMain : public ACharacter, public IFormInterface
+class TESISUE_API APlayerMain : public ACharacter, public IFormInterface, public IHitInterface
 {
 	GENERATED_BODY()
 
@@ -40,6 +42,8 @@ public:
 	virtual void PerformSpectralBarrier_Implementation() override;
 
 	virtual void ResetSpectralAttack_Implementation() override;
+
+	virtual void GetHit_Implementation(const FVector& ImpactPoint) override;
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
@@ -118,7 +122,7 @@ protected:
 
 	public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
-	UCombatComponent* Combat;
+	UCombatComponent* CombatComponent;
 
 	UPROPERTY()
 	UTimelineComponent* BufferDodgeTimeline;
@@ -211,7 +215,10 @@ protected:
 	UAttributeComponent* Attributes;
 
 	UPROPERTY(VisibleAnywhere);
-	UMementoComponent* Memento;
+	UMementoComponent* MementoComponent;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly);
+	UInventoryComponent* InventoryComponent;
 
 private:	
 
@@ -227,15 +234,12 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Possess")
 	float PossessDistance;
 
-	APlayerController* PlayerControllerRef = nullptr;
+	class APlayerController* PlayerControllerRef = nullptr;
 
 	bool bIsDead = false;
 
 	UPROPERTY(VisibleInstanceOnly)
-	AItem* OverlappingItem;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon", meta = (AllowPrivateAccess))
-	ASword* EquippedWeapon;
+	AItem* OverlappingItem;	
 	
 	UFUNCTION(BlueprintCallable)
 	void HitStop(float Duration, float TimeScale);
@@ -266,20 +270,24 @@ private:
 	void Interact(const FInputActionValue& Value);
 	
 	void Attack(const FInputActionValue& Value);
-	
+
 	void HeavyAttack(const FInputActionValue& Value);
 	
 	void LaunchAttack(const FInputActionValue& Value);
 
+	void Block(const FInputActionValue& Value);
+
+	void ReleaseBlock(const FInputActionValue& Value);
+	
+	void Execute(const FInputActionValue& Value);
+
 	void ToggleForm();
-
-	void Block();
-
-	void ReleaseBlock();
 
 	void Die();
 
 	void ResetPlayer();
+
+	void SwitchWeapon();
 
 	UFUNCTION()
 	void WithEnergy();

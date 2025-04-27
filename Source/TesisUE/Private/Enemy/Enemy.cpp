@@ -46,10 +46,6 @@ AEnemy::AEnemy()
 
 	Memento = CreateDefaultSubobject<UMementoComponent>(TEXT("Memento"));
 
-	HealthBarWidget = CreateDefaultSubobject<UHealthBarComponent>(TEXT("HealthBar"));
-	HealthBarWidget->SetupAttachment(GetRootComponent());
-	HealthBarWidget->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
-
 	PromptWidgetComponent = CreateDefaultSubobject<UPromptWidgetComponent>(TEXT("PromptWidget"));
 	PromptWidgetComponent->SetupAttachment(GetRootComponent());
 
@@ -107,7 +103,6 @@ void AEnemy::Die()
 	SetEnemyState(EEnemyState::EES_Died);
 	
 	PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
-	HealthBarWidget->SetHealthBarActive(false);
 
 	Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->UnregisterEnemy(this);
 	ResetEnemy();
@@ -211,7 +206,6 @@ void AEnemy::GetFinished_Implementation()
 		SetEnemyState(EEnemyState::EES_Died);
 
 		PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
-		HealthBarWidget->SetHealthBarActive(false);
 
 		FVector Start = GetActorLocation();
 		FVector End = DamageCauserOf->GetActorLocation();
@@ -245,16 +239,19 @@ float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AC
 		? MainDamageType->DamageType
 		: EMainDamageTypes::EMDT_None;
 
-	if (Attributes && Attributes->IsAlive() && HealthBarWidget)
+	if (Attributes)
 	{
-		Attributes->ReceiveDamage(DamageAmount);
-		HealthBarWidget->SetHealthPercent(Attributes->GetHealthPercent());
-
-		if (Execute_CanBeFinished(this))
+		if (Attributes->IsAlive())
 		{
-			PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Visible);
-			PromptWidgetComponent->LoadAndApplyPrompt();
+			Attributes->ReceiveDamage(DamageAmount);
+
+			if (Execute_CanBeFinished(this))
+			{
+				PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Visible);
+				PromptWidgetComponent->LoadAndApplyPrompt();
+			}
 		}
+		else Die();
 	}
 	return DamageAmount;
 }

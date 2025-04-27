@@ -6,10 +6,6 @@
 #include "Items/Item.h"
 #include "Sword.generated.h"
 
-/**
- * 
- */
-
 class UBoxComponent;
 
 UCLASS()
@@ -18,6 +14,13 @@ class TESISUE_API ASword : public AItem
 	GENERATED_BODY()
 
 public:
+
+	struct FSwordStats
+	{
+		FName Name;
+		FImage Image;
+	};
+
 	ASword();
 
 	virtual void BeginPlay() override;

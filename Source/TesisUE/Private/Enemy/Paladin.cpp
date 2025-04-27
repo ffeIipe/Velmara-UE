@@ -11,7 +11,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 
-#include "Player/PlayerMain.h"
+#include "Interfaces/HitInterface.h"
 #include "EnhancedInputComponent.h"
 
 #include "EnhancedInputSubsystems.h"
@@ -24,11 +24,11 @@ APaladin::APaladin()
 	SwordMesh->SetupAttachment(GetMesh(), TEXT("RightHandSocket"));
 	SwordMesh->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
 
-	SwordBoxCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("SwordBoxCollider"));
-	SwordBoxCollider->SetupAttachment(SwordMesh);
-	SwordBoxCollider->SetRelativeLocation(FVector(0.f, 0.f, 48.f));
-	SwordBoxCollider->SetBoxExtent(FVector(3.f, 2.f, 36.f));
-	SwordBoxCollider->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
+	SwordCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("SwordBoxCollider"));
+	SwordCollider->SetupAttachment(SwordMesh);
+	SwordCollider->SetRelativeLocation(FVector(0.f, 0.f, 48.f));
+	SwordCollider->SetBoxExtent(FVector(3.f, 2.f, 36.f));
+	SwordCollider->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
 
 	BoxTraceStart = CreateDefaultSubobject<USceneComponent>(TEXT("Box Trace Start"));
 	BoxTraceStart->SetupAttachment(SwordMesh);
@@ -38,27 +38,27 @@ APaladin::APaladin()
 	BoxTraceEnd->SetupAttachment(SwordMesh);
 	BoxTraceStart->SetRelativeLocation(FVector(0.f, 0.f, 82.f));
 
-	Combat = CreateDefaultSubobject<UCombatComponent>(TEXT("Combat Component"));
+	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("Combat Component"));
 }
 
 void APaladin::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	SwordBoxCollider->OnComponentBeginOverlap.AddDynamic(this, &APaladin::OnBoxOverlap);
+	SwordCollider->OnComponentBeginOverlap.AddDynamic(this, &APaladin::OnSwordOverlap);
 
-	Combat->SetCharacterState(ECharacterStates::ECS_EquippedSword);
+	CombatComponent->SetCharacterState(ECharacterStates::ECS_EquippedSword);
 }
 
 void APaladin::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled)
 {
-	if (SwordBoxCollider)
+	if (SwordCollider)
 	{
-		SwordBoxCollider->SetCollisionEnabled(CollisionEnabled);
+		SwordCollider->SetCollisionEnabled(CollisionEnabled);
 	}
 }
 
-void APaladin::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	const FVector Start = BoxTraceStart->GetComponentLocation();
 	const FVector End = BoxTraceEnd->GetComponentLocation();
@@ -82,18 +82,22 @@ void APaladin::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Ot
 		true
 	);
 
-	//APlayerMain* Player = Cast<APlayerMain>(BoxHit.GetActor());
-	//if (Player && Player->GetCharacterAction() != ECharacterActions::ECA_Block)
-	//{
-	//	UGameplayStatics::ApplyDamage(
-	//		BoxHit.GetActor(),
-	//		Damage,
-	//		GetInstigator()->GetController(),
-	//		this,
-	//		UDamageType::StaticClass()
-	//	);
-	//	ActorsToIgnore.AddUnique(BoxHit.GetActor());
-	//}
+	IHitInterface* Entity = Cast<IHitInterface>(BoxHit.GetActor());
+	if (Entity/* && Player->GetCharacterAction() != ECharacterActions::ECA_Block*/)
+	{
+		UGameplayStatics::ApplyDamage(
+			BoxHit.GetActor(),
+			Damage,
+			GetInstigator()->GetController(),
+			this,
+			UDamageType::StaticClass()
+		);
+		ActorsToIgnore.AddUnique(BoxHit.GetActor());
+		
+		Entity->Execute_GetHit(BoxHit.GetActor(), BoxHit.ImpactPoint);
+
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::White, FString("Paladin Sword found: " + BoxHit.GetActor()->GetName()));
+	}
 	//else if (Player)
 	//{
 	//	PlayAnimMontage(HitReactMontage, 1.f, FName("FromFront"));
@@ -115,12 +119,12 @@ void APaladin::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 	if (!EnhancedInputComponent) return;
 
-	EnhancedInputComponent->BindAction(Combat->AttackAction, ETriggerEvent::Triggered, this, &APaladin::Attack);
+	EnhancedInputComponent->BindAction(CombatComponent->AttackAction, ETriggerEvent::Triggered, this, &APaladin::Attack);
 }
 
 void APaladin::Attack(const FInputActionValue& Value)
 {
-	Combat->Input_Attack(Value);
+	CombatComponent->Input_Attack(Value);
 }
 
 bool APaladin::IsLaunchable_Implementation()

@@ -23,10 +23,6 @@ UCombatComponent::UCombatComponent()
 	BufferAttackTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("BufferAttackTimeline"));
 
 	SoftLockTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("SoftLockTimeline"));
-
-	//FinisherLocation = CreateDefaultSubobject<USceneComponent>(TEXT("FinisherPosition"));
-	//
-	//CameraFinisherLocation = CreateDefaultSubobject<USceneComponent>(TEXT("CameraFinisherLocation"));
 }
 
 ECharacterActions UCombatComponent::SetCharacterAction(ECharacterActions NewAction)
@@ -79,7 +75,7 @@ void UCombatComponent::ResetState()
 	ResetJumpAttackStats();
 	ResetHeavyAttackStats();
 
-	if(PlayerForm) PlayerForm->Execute_ResetSpectralAttack(GetOwner());
+	if (PlayerForm) PlayerForm->Execute_ResetSpectralAttack(GetOwner());
 	//save dodge = false;
 }
 
@@ -275,7 +271,7 @@ void UCombatComponent::SoftLockOn()
 
 void UCombatComponent::RotationToTarget()
 {
-	if (SoftLockTarget && PlayerForm && PlayerForm->Execute_GetCharacterForm(GetOwner()) != ECharacterForm::ECF_Spectral)
+	if (SoftLockTarget)
 	{
 		SoftLockTimeline->PlayFromStart();
 	}
@@ -326,7 +322,7 @@ void UCombatComponent::ReleaseBlock()
 	SetCharacterAction(ECharacterActions::ECA_Nothing);
 }
 
-void UCombatComponent::FinishEnemy()
+void UCombatComponent::Execute()
 {
 	if (GetCharacterAction() == ECharacterActions::ECA_Finish) return;
 
@@ -499,6 +495,21 @@ void UCombatComponent::Input_Launch(const FInputActionValue& Value)
 		SoftLockOn();
 		OwningCharacter->PlayAnimMontage(LaunchMontage);
 	}
+}
+
+void UCombatComponent::Input_Block(const FInputActionValue& Value)
+{
+	Block();
+}
+
+void UCombatComponent::Input_ReleaseBlock(const FInputActionValue& Value)
+{
+	ReleaseBlock();
+}
+
+void UCombatComponent::Input_Execute(const FInputActionValue& Value)
+{
+	Execute();
 }
 
 void UCombatComponent::LightAttackEvent()

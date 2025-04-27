@@ -8,7 +8,6 @@
 #include "Enemy.generated.h"
 
 class UAttributeComponent;
-class UHealthBarComponent;
 class USpringArmComponent;
 class UInputAction;
 struct FInputActionValue;
@@ -96,9 +95,6 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere);
 	UMementoComponent* Memento;
-
-	UPROPERTY(VisibleAnywhere);
-	UHealthBarComponent* HealthBarWidget;
 
 	UPROPERTY(EditInstanceOnly)
 	UPromptWidgetComponent* PromptWidgetComponent;
@@ -189,7 +185,3 @@ private:
 
 	FName SelectRandomDieAnim();
 };
-
-
-
-

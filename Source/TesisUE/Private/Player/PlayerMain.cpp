@@ -14,6 +14,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/MementoComponent.h"
 #include "Components/CombatComponent.h"
+#include "Components/InventoryComponent.h"
 #include "Curves/CurveFloat.h"
 
 #include "Camera/CameraActor.h"
@@ -55,9 +56,11 @@ APlayerMain::APlayerMain()
 
 	Attributes = CreateDefaultSubobject<UAttributeComponent>(TEXT("AttibuteComponent"));
 
-	Memento = CreateDefaultSubobject<UMementoComponent>(TEXT("Memento"));
+	MementoComponent = CreateDefaultSubobject<UMementoComponent>(TEXT("Memento"));
 
-	Combat = CreateDefaultSubobject<UCombatComponent>(TEXT("Combat"));
+	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("Combat"));
+
+	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("Inventory"));
 }
 
 ECharacterForm APlayerMain::GetCharacterForm_Implementation()
@@ -67,9 +70,9 @@ ECharacterForm APlayerMain::GetCharacterForm_Implementation()
 
 void APlayerMain::PerformSpectralAttack_Implementation()
 {
-	if (Combat->GetCharacterAction() != ECharacterActions::ECA_Attack)
+	if (CombatComponent->GetCharacterAction() != ECharacterActions::ECA_Attack)
 	{
-		Combat->SetCharacterAction(ECharacterActions::ECA_Attack);
+		CombatComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
 		SearchTarget();
 		PlayAnimMontage(SpectralAttackCombo[SpectralAttackIndex]);
 
@@ -84,9 +87,9 @@ void APlayerMain::PerformSpectralAttack_Implementation()
 
 void APlayerMain::PerformSpectralBarrier_Implementation()
 {
-	if (Combat->GetCharacterAction() != ECharacterActions::ECA_Attack)
+	if (CombatComponent->GetCharacterAction() != ECharacterActions::ECA_Attack)
 	{
-		Combat->SetCharacterAction(ECharacterActions::ECA_Attack);
+		CombatComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
 		PlayAnimMontage(SpectralHeavyAttack);
 	}
 }
@@ -94,15 +97,20 @@ void APlayerMain::PerformSpectralBarrier_Implementation()
 void APlayerMain::ResetSpectralAttack_Implementation()
 {
 	SpectralAttackIndex = 0;
-	Combat->bIsSaveLightAttack = false;
+	CombatComponent->bIsSaveLightAttack = false;
+}
+
+void APlayerMain::GetHit_Implementation(const FVector& ImpactPoint)
+{
+
 }
 
 void APlayerMain::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled)
 {
-	if (EquippedWeapon && EquippedWeapon->GetWeaponBox())
+	if (InventoryComponent->EquippedWeapon && InventoryComponent->EquippedWeapon->GetWeaponBox())
 	{
-		EquippedWeapon->GetWeaponBox()->SetCollisionEnabled(CollisionEnabled);
-		EquippedWeapon->IgnoreActors.Empty();
+		InventoryComponent->EquippedWeapon->GetWeaponBox()->SetCollisionEnabled(CollisionEnabled);
+		InventoryComponent->EquippedWeapon->IgnoreActors.Empty();
 	}
 }
 
@@ -110,8 +118,8 @@ void APlayerMain::BeginPlay()
 {
 	Super::BeginPlay();
 
-	PlayerControllerRef = Cast<APlayerController>(GetController());
-
+	PlayerControllerRef = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+	
 	Attributes->RegenerateTick();
 	
 	for (TActorIterator<ACameraActor> It(GetWorld()); It; ++It)
@@ -142,7 +150,7 @@ void APlayerMain::BeginPlay()
 	{
 		if (ANewGameStateBase* NewGameStateBase = Cast<ANewGameStateBase>(NewGameMode->GameState))
 		{
-			if (Memento)
+			if (MementoComponent)
 			{
 				NewGameStateBase->RegisterMementoEntity(this);
 			}
@@ -152,7 +160,7 @@ void APlayerMain::BeginPlay()
 
 void APlayerMain::PerformDodge()
 {
-	if (Combat->GetCharacterAction() == ECharacterActions::ECA_Finish) return;
+	if (CombatComponent->GetCharacterAction() == ECharacterActions::ECA_Finish) return;
 
 	FVector MovementInput = GetLastMovementInputVector();
 	if (!MovementInput.IsNearlyZero())
@@ -163,7 +171,7 @@ void APlayerMain::PerformDodge()
 
 	StopDodgeBufferEvent();
 	DodgeBufferEvent(BufferDodgeDistance);
-	Combat->SetCharacterAction(ECharacterActions::ECA_Dodge);
+	CombatComponent->SetCharacterAction(ECharacterActions::ECA_Dodge);
 
 	if (PlayerFormComponent && PlayerFormComponent->GetCharacterForm() == ECharacterForm::ECF_Human)
 	{
@@ -212,7 +220,7 @@ void APlayerMain::SearchTarget()
 	FVector Start = GetActorLocation();
 	FVector End = GetActorLocation() + GetViewRotation().Vector() * TrackTargetDistance;
 
-	AActor* Enemy = Combat->SphereTraceForEnemies(Start, End);
+	AActor* Enemy = CombatComponent->SphereTraceForEnemies(Start, End);
 
 	if (Enemy)
 	{
@@ -229,7 +237,7 @@ float APlayerMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEven
 	{
 		if (DamageEvent.DamageTypeClass == USpectralTrapDamageType::StaticClass())
 		{
-			Combat->GetDirectionalReact(FName("KnockDown"));
+			CombatComponent->GetDirectionalReact(FName("KnockDown"));
 		}
 	}
 
@@ -238,7 +246,7 @@ float APlayerMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEven
 	if (Attributes && Attributes->IsAlive())
 	{
 		Attributes->ReceiveDamage(DamageAmount);
-		Combat->GetDirectionalReact(FName("Default"));
+		CombatComponent->GetDirectionalReact(FName("Default"));
 	}
 	else
 	{
@@ -305,6 +313,7 @@ void APlayerMain::PossessEnemy()
 			&& Attributes->RequiresEnergy(10.f)
 			)
 		{
+			
 			TargetEnemy->DisableAI();
 			PlayerControllerRef->Possess(TargetEnemy);
 			PossessedEnemy = TargetEnemy;
@@ -321,7 +330,7 @@ void APlayerMain::PossessEnemy()
 			GetMesh()->bPauseAnims = true;
 		}
 	}
-	else Combat->FinishEnemy();
+	else CombatComponent->Execute();
 }
 
 void APlayerMain::ReleasePossession()
@@ -346,7 +355,7 @@ void APlayerMain::ReleasePossession()
 
 void APlayerMain::Move(const FInputActionValue& Value)
 {
-	if (Combat->GetCharacterAction() == ECharacterActions::ECA_Block || Combat->GetCharacterAction() == ECharacterActions::ECA_Finish) return;
+	if (CombatComponent->GetCharacterAction() == ECharacterActions::ECA_Block || CombatComponent->GetCharacterAction() == ECharacterActions::ECA_Finish) return;
 
 	const FVector2D MoveVector = Value.Get<FVector2D>();
 
@@ -362,8 +371,6 @@ void APlayerMain::Move(const FInputActionValue& Value)
 
 void APlayerMain::Look(const FInputActionValue& Value)
 {
-	if (Combat->GetCharacterAction() == ECharacterActions::ECA_Finish) return;
-
 	const FVector2D LookingVector = Value.Get<FVector2D>();
 
 	AddControllerPitchInput(LookingVector.Y);
@@ -372,7 +379,7 @@ void APlayerMain::Look(const FInputActionValue& Value)
 
 void APlayerMain::Jump()
 {
-	if (Combat->GetCharacterAction() == ECharacterActions::ECA_Block || Combat->GetCharacterAction() == ECharacterActions::ECA_Finish) return;
+	if (CombatComponent->GetCharacterAction() == ECharacterActions::ECA_Block || CombatComponent->GetCharacterAction() == ECharacterActions::ECA_Finish) return;
 
 	PlayAnimMontage(JumpMontage, 1.f);
 
@@ -386,7 +393,7 @@ void APlayerMain::Jump()
 
 void APlayerMain::DoubleJump()
 {
-	if (Combat->GetCharacterAction() == ECharacterActions::ECA_Block) return;
+	if (CombatComponent->GetCharacterAction() == ECharacterActions::ECA_Block) return;
 
 	PlayAnimMontage(DoubleJumpMontage);
 	LaunchCharacter(FVector(0.f, 0.f, 800.f), false, true);
@@ -396,7 +403,7 @@ void APlayerMain::DoubleJump()
 void APlayerMain::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);
-	Combat->bIsLaunched = false;
+	CombatComponent->bIsLaunched = false;
 	CanDoubleJump = true;
 }
 
@@ -407,9 +414,11 @@ void APlayerMain::Interact(const FInputActionValue& Value)
 		if (ASword* OverlappingWeapon = Cast<ASword>(OverlappingItem))
 		{
 			OverlappingWeapon->Equip(GetMesh(), FName("RightHandSocket"), this, this);
-			Combat->SetCharacterState(ECharacterStates::ECS_EquippedSword);
+			CombatComponent->SetCharacterState(ECharacterStates::ECS_EquippedSword);
+
 			OverlappingItem = nullptr;
-			EquippedWeapon = OverlappingWeapon;
+			InventoryComponent->EquippedWeapon = OverlappingWeapon;
+			InventoryComponent->InventoryWeapons.Add(InventoryComponent->EquippedWeapon);
 		}
 	}
 	else
@@ -423,25 +432,40 @@ void APlayerMain::Interact(const FInputActionValue& Value)
 
 void APlayerMain::Attack(const FInputActionValue& Value)
 {
-	Combat->Input_Attack(Value);
+	CombatComponent->Input_Attack(Value);
 }
 
 void APlayerMain::HeavyAttack(const FInputActionValue& Value)
 {
-	Combat->Input_HeavyAttack(Value);
+	CombatComponent->Input_HeavyAttack(Value);
 }
 
 void APlayerMain::LaunchAttack(const FInputActionValue& Value)
 {
-	Combat->Input_Launch(Value);
+	CombatComponent->Input_Launch(Value);
+}
+
+void APlayerMain::Block(const FInputActionValue& Value)
+{
+	CombatComponent->Input_Block(Value);
+}
+
+void APlayerMain::ReleaseBlock(const FInputActionValue& Value)
+{
+	CombatComponent->Input_ReleaseBlock(Value);
+}
+
+void APlayerMain::Execute(const FInputActionValue& Value)
+{
+	CombatComponent->Input_Execute(Value);
 }
 
 void APlayerMain::ToggleForm() //TODO: extract to PlayerMain the "apply effects" functions for more flexibility here
 {
-	if (Combat->GetCharacterAction() == ECharacterActions::ECA_Dead
-		|| Combat->GetCharacterAction() == ECharacterActions::ECA_Block
-		|| Combat->GetCharacterAction() == ECharacterActions::ECA_Finish
-		|| Combat->GetCharacterAction() == ECharacterActions::ECA_Attack) return;
+	if (CombatComponent->GetCharacterAction() == ECharacterActions::ECA_Dead
+		|| CombatComponent->GetCharacterAction() == ECharacterActions::ECA_Block
+		|| CombatComponent->GetCharacterAction() == ECharacterActions::ECA_Finish
+		|| CombatComponent->GetCharacterAction() == ECharacterActions::ECA_Attack) return;
 
 	float CurrentTime = GetWorld()->GetTimeSeconds();
 	if (CurrentTime - LastTransformationTime < TransformationCooldown) return;
@@ -462,14 +486,9 @@ void APlayerMain::ToggleForm() //TODO: extract to PlayerMain the "apply effects"
 	LastTransformationTime = CurrentTime;
 }
 
-void APlayerMain::Block()
+void APlayerMain::SwitchWeapon()
 {
-	
-}
-
-void APlayerMain::ReleaseBlock()
-{
-
+	InventoryComponent->EquippedWeapon = InventoryComponent->InventoryWeapons[InventoryComponent->CurrentIndex];
 }
 
 void APlayerMain::WithEnergy()
@@ -482,8 +501,8 @@ void APlayerMain::WithEnergy()
 		Attributes->RegenerateTick();
 		GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = true;
 
-		if (EquippedWeapon)
-			EquippedWeapon->Enable(false);		
+		if (InventoryComponent->EquippedWeapon)
+			InventoryComponent->EquippedWeapon->Enable(false);
 	}
 }
 
@@ -492,7 +511,7 @@ void APlayerMain::OutOfEnergy()
 	PlayerFormComponent->ToggleForm(false);
 	Attributes->RegenerateTick();
 	GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = false;
-	if (EquippedWeapon) EquippedWeapon->Enable(true);
+	if (InventoryComponent->EquippedWeapon) InventoryComponent->EquippedWeapon->Enable(true);
 	if (PossessedEnemy) PossessedEnemy->UnPossess();
 }
 
@@ -520,7 +539,7 @@ void APlayerMain::Die()
 		{
 			if (ANewGameStateBase* NewGameStateBase = Cast<ANewGameStateBase>(NewGameMode->GameState))
 			{
-				if (Memento)
+				if (MementoComponent)
 				{
 					NewGameStateBase->LoadAllMementoStates();
 				}
@@ -533,7 +552,7 @@ void APlayerMain::ResetFollowCamera()
 {
 	if (FollowCamera && PlayerControllerRef)
 	{
-		Combat->SetCharacterAction(ECharacterActions::ECA_Nothing);
+		CombatComponent->SetCharacterAction(ECharacterActions::ECA_Nothing);
 		FollowCamera->AttachToComponent(CameraBoom, FAttachmentTransformRules::SnapToTargetIncludingScale, FName("SprinEndpoint"));
 		PlayerControllerRef->EnableInput(PlayerControllerRef);
 		bCanReceiveDamage = true;
@@ -562,13 +581,16 @@ void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlayerMain::Look);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &APlayerMain::Jump);
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &APlayerMain::Interact);
-		EnhancedInputComponent->BindAction(Combat->AttackAction, ETriggerEvent::Triggered, this, &APlayerMain::Attack);
-		EnhancedInputComponent->BindAction(Combat->HeavyAttackAction, ETriggerEvent::Triggered, this, &APlayerMain::HeavyAttack);
-		EnhancedInputComponent->BindAction(Combat->LaunchAction, ETriggerEvent::Triggered, this, &APlayerMain::LaunchAttack);
+
+		EnhancedInputComponent->BindAction(CombatComponent->AttackAction, ETriggerEvent::Triggered, this, &APlayerMain::Attack);
+		EnhancedInputComponent->BindAction(CombatComponent->HeavyAttackAction, ETriggerEvent::Triggered, this, &APlayerMain::HeavyAttack);
+		EnhancedInputComponent->BindAction(CombatComponent->LaunchAction, ETriggerEvent::Triggered, this, &APlayerMain::LaunchAttack);
+		EnhancedInputComponent->BindAction(CombatComponent->BlockAction, ETriggerEvent::Started, this, &APlayerMain::Block);
+		EnhancedInputComponent->BindAction(CombatComponent->BlockAction, ETriggerEvent::Completed, this, &APlayerMain::ReleaseBlock);
+
 		EnhancedInputComponent->BindAction(ChangeFormAction, ETriggerEvent::Started, this, &APlayerMain::ToggleForm);
-		EnhancedInputComponent->BindAction(Combat->BlockAction, ETriggerEvent::Started, this, &APlayerMain::Block);
-		EnhancedInputComponent->BindAction(Combat->BlockAction, ETriggerEvent::Completed, this, &APlayerMain::ReleaseBlock);
 		EnhancedInputComponent->BindAction(PossessAction, ETriggerEvent::Completed, this, &APlayerMain::PossessEnemy);
+
 		EnhancedInputComponent->BindAction(RestartAction, ETriggerEvent::Completed, this, &APlayerMain::RestartLevel);
 		EnhancedInputComponent->BindAction(GoToMenuAction, ETriggerEvent::Completed, this, &APlayerMain::GoToMainMenu);
 	}

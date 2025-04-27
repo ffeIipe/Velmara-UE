@@ -6,6 +6,11 @@
 #include "Components/ProgressBar.h"
 #include "Enemy/Enemy.h"
 
+UHealthBarComponent::UHealthBarComponent()
+{
+	PrimaryComponentTick.bCanEverTick = false;
+}
+
 void UHealthBarComponent::BeginPlay()
 {
 	Super::BeginPlay();
@@ -22,7 +27,7 @@ void UHealthBarComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	SetHealthOpacity(DeltaTime);
+	//SetHealthOpacity(DeltaTime);
 }
 
 void UHealthBarComponent::SetHealthPercent(float Percent)
