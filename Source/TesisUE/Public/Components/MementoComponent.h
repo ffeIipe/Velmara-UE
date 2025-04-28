@@ -19,6 +19,9 @@ public:
 
 	void LoadState();
 
+	//*useful when player falls
+	FORCEINLINE FTransform GetLastTransform() { return CurrentMementoState.Transform; };
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -35,6 +38,4 @@ private:
 	FMementoState GetCurrentEntityState(); 
 
 	void ApplyEntityState(const FMementoState& StateToApply);
-
-	class APlayerStart* PlayerStart;
 };

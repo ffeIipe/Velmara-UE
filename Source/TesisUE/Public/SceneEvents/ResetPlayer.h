@@ -31,4 +31,6 @@ private:
 		int32 OtherBodyIndex,
 		bool bFromSweep,
 		const FHitResult& SweepResult);
+
+	class APlayerStart* PlayerStart;
 };

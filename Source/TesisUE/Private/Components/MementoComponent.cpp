@@ -27,8 +27,6 @@ void UMementoComponent::LoadState()
 void UMementoComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	PlayerStart = Cast<APlayerStart>(UGameplayStatics::GetActorOfClass(GetWorld(), APlayerStart::StaticClass()));
 }
 
 UMementoComponent::FMementoState UMementoComponent::GetCurrentEntityState()
@@ -39,8 +37,6 @@ UMementoComponent::FMementoState UMementoComponent::GetCurrentEntityState()
 		State.Transform = Owner->GetActorTransform();
 		State.Health = Owner->GetComponentByClass<UAttributeComponent>()->GetHealth();
 		State.Energy = Owner->GetComponentByClass<UAttributeComponent>()->GetEnergy();
-		
-		PlayerStart->SetActorTransform(Owner->GetActorTransform());
 	}
 	return State;
 }
@@ -54,4 +50,3 @@ void UMementoComponent::ApplyEntityState(const FMementoState& StateToApply)
 		Owner->GetComponentByClass<UAttributeComponent>()->SetEnergy(StateToApply.Energy);
 	}
 }
-

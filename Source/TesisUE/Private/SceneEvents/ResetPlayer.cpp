@@ -7,6 +7,7 @@
 #include "GameFramework/GameModeBase.h"
 #include <Player/PlayerMain.h>
 #include "GameFramework/PlayerStart.h"
+#include "Components/MementoComponent.h"
 
 AResetPlayer::AResetPlayer()
 {
@@ -19,6 +20,7 @@ void AResetPlayer::BeginPlay()
     Super::BeginPlay();
 
     BoxCollider->OnComponentBeginOverlap.AddDynamic(this, &AResetPlayer::OnBoxOverlap);
+    PlayerStart = Cast<APlayerStart>(UGameplayStatics::GetActorOfClass(GetWorld(), APlayerStart::StaticClass())); 
 }
 
 void AResetPlayer::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -26,21 +28,24 @@ void AResetPlayer::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor
 {
     if (!OtherActor) return;
 
-    // Obtener el PlayerController
     APlayerController* PlayerController = UGameplayStatics::GetPlayerController(this, 0);
     if (!PlayerController) return;
 
-    // Verificar si el OtherActor es el Pawn controlado actualmente
     APawn* ControlledPawn = PlayerController->GetPawn();
+
+    APlayerMain* Player = Cast<APlayerMain>(OtherActor);
+
     if (OtherActor == ControlledPawn)
     {
-        // Obtener el PlayerStart
-        APlayerStart* PlayerStart = Cast<APlayerStart>(UGameplayStatics::GetActorOfClass(GetWorld(), APlayerStart::StaticClass()));
-        if (PlayerStart)
+        FTransform Transform;
+
+        if (Player)
         {
-            ControlledPawn->SetActorLocation(PlayerStart->GetActorLocation());
-            ControlledPawn->SetActorRotation(PlayerStart->GetActorRotation());
+            ControlledPawn->SetActorTransform(Player->MementoComponent->GetLastTransform());
+        }
+        else
+        {
+            ControlledPawn->SetActorTransform(PlayerStart->GetActorTransform());
         }
     }
 }
-
