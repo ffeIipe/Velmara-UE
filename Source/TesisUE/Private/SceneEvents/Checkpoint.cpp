@@ -4,12 +4,13 @@
 #include "SceneEvents/Checkpoint.h"
 #include "Player/PlayerMain.h"
 #include "Components/MementoComponent.h"
-#include <Kismet/GameplayStatics.h>
-#include <SceneEvents/NewGameStateBase.h>
+#include "Kismet/GameplayStatics.h"
+#include "SceneEvents/NewGameStateBase.h"
 
 void ACheckpoint::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	Super::OnSphereBeginOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
+	DisableCollision(); //fatal error
 
 	if (Player)
 	{
@@ -19,7 +20,6 @@ void ACheckpoint::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent,
 			NewGameState->SaveAllMementoStates();
 		}
 
-		DisableCollision();
 		Destroy();
 	}
 }

@@ -19,7 +19,7 @@ public:
 
 	void LoadState();
 
-	//*useful when player falls
+	//useful when player falls
 	FORCEINLINE FTransform GetLastTransform() { return CurrentMementoState.Transform; };
 
 protected:
