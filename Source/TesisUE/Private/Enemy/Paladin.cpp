@@ -149,7 +149,7 @@ void APaladin::LaunchEnemyUp()
 	isLaunched = true;
 	DisableAI();
 	PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
-	AddActorWorldOffset(FVector(0.f, 0.f, 300.f), false);
+	AddActorWorldOffset(FVector(0.f, 0.f, 350.f), false);
 	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
 }
 

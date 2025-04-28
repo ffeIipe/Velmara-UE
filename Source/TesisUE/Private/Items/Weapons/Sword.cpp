@@ -7,6 +7,9 @@
 #include "Kismet/GameplayStatics.h"
 #include "Interfaces/HitInterface.h"
 
+#include "Player/PlayerMain.h"
+#include "Components/CombatComponent.h"
+
 ASword::ASword()
 {
 	WeaponBox = CreateDefaultSubobject<UBoxComponent>(TEXT("Weapon Box"));
@@ -50,13 +53,21 @@ void ASword::Enable(bool Param)
 {
 	if (!ItemMesh) return;
 
+	ItemMesh->SetVisibility(Param);
+	SetActorHiddenInGame(!Param);
+	SetActorEnableCollision(Param);
+
+	APlayerMain* PlayerMain = Cast<APlayerMain>(Owner);
+
+	if (!PlayerMain) return;
+	
 	if (Param)
 	{
-		ItemMesh->SetVisibility(Param);
+		PlayerMain->CombatComponent->SetCharacterState(ECharacterStates::ECS_EquippedSword);
 	}
 	else
 	{
-		ItemMesh->SetVisibility(Param);
+		PlayerMain->CombatComponent->SetCharacterState(ECharacterStates::ECS_Unequipped);
 	}
 }
 
@@ -86,7 +97,7 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 		End,
 		FVector(10.f, 10.f, 10.f),
 		BoxTraceStart->GetComponentRotation(),
-		UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_WorldStatic),
+		UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_EngineTraceChannel3),
 		false,
 		IgnoreActors,
 		EDrawDebugTrace::None,
@@ -115,10 +126,9 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 
 				IgnoreActors.Add(HitActor);
 			}
-			else
+			else if (Hit.GetComponent()->GetCollisionObjectType() == ECollisionChannel::ECC_WorldStatic)
 			{
 				OnWallHit.Broadcast(Hit);
-				if (GEngine)GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("OnWallHit"));
 			}
 		}
 		if (GEngine)GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString(Hit.GetActor()->GetName()));
