@@ -277,6 +277,7 @@ void UInventoryComponent::DropItem(int ItemIndex)
 
 	UpdateInventoryUI();
 }
+//
 
 const TArray<ASword*>& UInventoryComponent::GetInventoryItems() const
 {
