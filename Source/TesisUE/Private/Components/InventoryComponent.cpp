@@ -17,7 +17,7 @@ UInventoryComponent::UInventoryComponent()
 
 void UInventoryComponent::BeginPlay()
 {
-	//Super::BeginPlay();
+	Super::BeginPlay();
 
 	PlayerControllerRef = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 
