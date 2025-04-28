@@ -35,4 +35,6 @@ private:
 	FMementoState GetCurrentEntityState(); 
 
 	void ApplyEntityState(const FMementoState& StateToApply);
+
+	class APlayerStart* PlayerStart;
 };

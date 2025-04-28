@@ -1,5 +1,7 @@
 #include "Components/MementoComponent.h"
 #include "Components/AttributeComponent.h"
+#include <Kismet/GameplayStatics.h>
+#include "GameFramework/PlayerStart.h"
 
 UMementoComponent::UMementoComponent()
 {	
@@ -26,6 +28,7 @@ void UMementoComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	PlayerStart = Cast<APlayerStart>(UGameplayStatics::GetActorOfClass(GetWorld(), APlayerStart::StaticClass()));
 }
 
 UMementoComponent::FMementoState UMementoComponent::GetCurrentEntityState()
@@ -36,6 +39,8 @@ UMementoComponent::FMementoState UMementoComponent::GetCurrentEntityState()
 		State.Transform = Owner->GetActorTransform();
 		State.Health = Owner->GetComponentByClass<UAttributeComponent>()->GetHealth();
 		State.Energy = Owner->GetComponentByClass<UAttributeComponent>()->GetEnergy();
+		
+		PlayerStart->SetActorTransform(Owner->GetActorTransform());
 	}
 	return State;
 }
