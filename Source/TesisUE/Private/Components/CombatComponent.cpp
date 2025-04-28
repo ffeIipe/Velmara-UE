@@ -430,7 +430,7 @@ AActor* UCombatComponent::SphereTraceForEnemies(FVector Start, FVector End)
 		ObjectTypes,
 		false,
 		ActorsToIgnore,
-		EDrawDebugTrace::ForDuration,
+		EDrawDebugTrace::None,
 		ResultHit,
 		true
 	);
