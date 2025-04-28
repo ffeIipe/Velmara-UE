@@ -44,7 +44,6 @@ public:
 	TSubclassOf<UDamageType> DamageTypeClass;
 
 protected:
-	//Pickeo de item
 	virtual void OnSphereBeginOverlap(
 		UPrimitiveComponent* OverlappedComponent,
 		AActor* OtherActor,
