@@ -107,12 +107,6 @@ void APlayerMain::GetHit_Implementation(const FVector& ImpactPoint)
 
 void APlayerMain::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled)
 {
-<<<<<<< Updated upstream
-	if (InventoryComponent->EquippedWeapon && InventoryComponent->EquippedWeapon->GetWeaponBox())
-	{
-		InventoryComponent->EquippedWeapon->GetWeaponBox()->SetCollisionEnabled(CollisionEnabled);
-		InventoryComponent->EquippedWeapon->IgnoreActors.Empty();
-=======
 	if (InventoryComponent)
 	{
 		AItem* CurrentItem = InventoryComponent->GetEquippedItem();
@@ -131,7 +125,6 @@ void APlayerMain::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEna
 				}
 			}
 		}
->>>>>>> Stashed changes
 	}
 }
 
@@ -430,20 +423,6 @@ void APlayerMain::Landed(const FHitResult& Hit)
 
 void APlayerMain::Interact(const FInputActionValue& Value)
 {
-<<<<<<< Updated upstream
-	if (PlayerFormComponent->GetCharacterForm() == ECharacterForm::ECF_Human)
-	{
-		if (ASword* OverlappingWeapon = Cast<ASword>(OverlappingItem))
-		{
-			OverlappingWeapon->Equip(GetMesh(), FName("RightHandSocket"), this, this);
-			CombatComponent->SetCharacterState(ECharacterStates::ECS_EquippedSword);
-
-			OverlappingItem = nullptr;
-			InventoryComponent->EquippedWeapon = OverlappingWeapon;
-			InventoryComponent->EquippedWeapon->OnWallHit.AddDynamic(this, &APlayerMain::OnWallCollision);
-			if (GEngine)GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Yellow, FString("Bound: OnWallHit -> OnWallCollision"));
-			InventoryComponent->InventoryWeapons.Add(InventoryComponent->EquippedWeapon);
-=======
 	if (InventoryComponent && InventoryComponent->IsInventoryOpen())
 	{
 		return;
@@ -464,7 +443,6 @@ void APlayerMain::Interact(const FInputActionValue& Value)
 				OverlappingItem = nullptr;
 			}
 			// else { // Mensaje inventario lleno? }
->>>>>>> Stashed changes
 		}
 	}
 	else
@@ -530,14 +508,6 @@ void APlayerMain::ToggleForm()
 	LastTransformationTime = CurrentTime;
 }
 
-<<<<<<< Updated upstream
-void APlayerMain::SwitchWeapon()
-{
-	InventoryComponent->EquippedWeapon = InventoryComponent->InventoryWeapons[InventoryComponent->CurrentIndex];
-}
-
-=======
->>>>>>> Stashed changes
 void APlayerMain::WithEnergy()
 {
 	if (Attributes->ItHasEnergy())
@@ -548,13 +518,11 @@ void APlayerMain::WithEnergy()
 		Attributes->RegenerateTick();
 		GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = true;
 
-<<<<<<< Updated upstream
-		if (InventoryComponent->EquippedWeapon)
-			InventoryComponent->EquippedWeapon->Enable(false);
-=======
 		if (InventoryComponent->GetEquippedItem())
 			InventoryComponent->GetEquippedItem()->EnableVisuals(false);
->>>>>>> Stashed changes
+
+		if (InventoryComponent->GetEquippedItem())
+			InventoryComponent->GetEquippedItem()->EnableVisuals(false);
 	}
 }
 
@@ -563,11 +531,11 @@ void APlayerMain::OutOfEnergy()
 	PlayerFormComponent->ToggleForm(false);
 	Attributes->RegenerateTick();
 	GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = false;
-<<<<<<< Updated upstream
-	if (InventoryComponent->EquippedWeapon) InventoryComponent->EquippedWeapon->Enable(true);
-=======
+
 	if (InventoryComponent->GetEquippedItem()) InventoryComponent->GetEquippedItem()->EnableVisuals(true);
->>>>>>> Stashed changes
+
+	if (InventoryComponent->GetEquippedItem()) InventoryComponent->GetEquippedItem()->EnableVisuals(true);
+
 	if (PossessedEnemy) PossessedEnemy->UnPossess();
 }
 
