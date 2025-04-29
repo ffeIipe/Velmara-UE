@@ -51,6 +51,12 @@ public:
 
 	virtual bool CanBeFinished_Implementation() override;
 
+	virtual bool IsLaunchable_Implementation();
+
+	virtual void LaunchUp_Implementation();
+
+	virtual void ShieldHit_Implementation();
+
 	virtual float TakeDamage(
 		float DamageAmount,
 		struct FDamageEvent const& DamageEvent,

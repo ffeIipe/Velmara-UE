@@ -225,6 +225,19 @@ bool AEnemy::CanBeFinished_Implementation()
 	return Attributes->GetHealthPercent() <= .2f;
 }
 
+bool AEnemy::IsLaunchable_Implementation()
+{
+	return false;
+}
+
+void AEnemy::LaunchUp_Implementation()
+{
+}
+
+void AEnemy::ShieldHit_Implementation()
+{
+}
+
 float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);

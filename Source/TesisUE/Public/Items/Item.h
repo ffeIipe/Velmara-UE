@@ -7,6 +7,7 @@
 #include "Item.generated.h"
 
 class UBoxComponent;
+class UPromptWidgetComponent;
 
 enum class EItemState : uint8
 {
@@ -22,6 +23,29 @@ class TESISUE_API AItem : public ATrigger
 public:	
 
 	AItem();
+
+public: // O protected si prefieres acceder vía getters
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Properties")
+	FText ItemDisplayName = FText::FromString("Item"); // Valor por defecto
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (MultiLine = true))
+	FText ItemDescription = FText::FromString("Default item description.");
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Properties")
+	UTexture2D* ItemIcon = nullptr;
+
+	virtual void BeginPlay();
+
+	virtual void Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwner, APawn* NewInstigator);
+	
+	virtual void Unequip();
+	
+	virtual void Use(class ACharacter* TargetCharacter);
+	
+	virtual void EnableVisuals(bool bEnable);
+	
+	virtual UPrimitiveComponent* GetCollisionComponent();
+
 
 protected:
 	UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
@@ -41,4 +65,7 @@ protected:
 		int32 OtherBodyIndex) override;
 
 	EItemState ItemState = EItemState::EIS_Hovering;
+	
+	UPROPERTY(VisibleAnywhere)
+	UPromptWidgetComponent* PromptWidget;
 };

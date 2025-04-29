@@ -30,8 +30,6 @@ public:
 
 	virtual void BeginPlay() override;
 
-	void Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwner, APawn* NewInstigator);
-
 	void AttachMeshToSocket(USceneComponent* InParent, const FName& InSocketName);
 
 	void Enable(bool Param);
@@ -42,6 +40,14 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage")
 	TSubclassOf<UDamageType> DamageTypeClass;
+
+	virtual void Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwner, APawn* NewInstigator) override;
+	
+	virtual void Unequip() override;
+	
+	virtual void EnableVisuals(bool bEnable) override;
+	
+	virtual UPrimitiveComponent* GetCollisionComponent() override;
 
 protected:
 	virtual void OnSphereBeginOverlap(

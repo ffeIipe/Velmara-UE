@@ -9,7 +9,7 @@
 #include "SceneEvents/NewGameModeBase.h"
 
 #include "Enemy/Paladin.h"
-#include "Interfaces/LaunchableInterface.h"
+#include "Interfaces/HitInterface.h"
 #include "Interfaces/FormInterface.h"
 
 #include "Player/PlayerMain.h"
@@ -360,7 +360,7 @@ void UCombatComponent::LaunchCharacterUp()
 	bIsLaunched = true;
 	OwningCharacter->AddActorWorldOffset(FVector(0.f, 0.f, 300.f), false);
 
-	ILaunchableInterface* Paladin = Cast<ILaunchableInterface>(SoftLockTarget);
+	IHitInterface* Paladin = Cast<IHitInterface>(SoftLockTarget);
 
 	if (SoftLockTarget && Paladin->Execute_IsLaunchable(SoftLockTarget))
 	{

@@ -207,6 +207,9 @@ protected:
 	
 	UPROPERTY(EditAnywhere, Category = "Input | Actions")
 	UInputAction* GoToMenuAction;
+	
+	UPROPERTY(EditAnywhere, Category = "Input | Actions")
+	UInputAction* InventoryAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	USpringArmComponent* CameraBoom;
@@ -216,14 +219,11 @@ protected:
 
 	UPROPERTY(VisibleAnywhere);
 	UMementoComponent* MementoComponent;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly);
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UInventoryComponent* InventoryComponent;
 
 private:
-	UPROPERTY();
-	EMainDamageTypes LastDamageType;
-
 	UPROPERTY(EditDefaultsOnly, Category = "BloodSense | Cooldown")
 	float TransformationCooldown;
 
@@ -304,4 +304,8 @@ private:
 	void Revive();
 
 	void LoadLastCheckpoint();
+
+	void ChangePrimaryWeapon();
+	
+	void ChangeSecondaryWeapon();
 };

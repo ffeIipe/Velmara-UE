@@ -15,12 +15,5 @@ class TESISUE_API ILaunchableInterface
 	GENERATED_BODY()
 
 public:
-	UFUNCTION(BlueprintNativeEvent)
-	bool IsLaunchable();
 
-	UFUNCTION(BlueprintNativeEvent)
-	void LaunchUp();
-	
-	UFUNCTION(BlueprintNativeEvent)
-	AActor* GetInterfaceOwner();
 };

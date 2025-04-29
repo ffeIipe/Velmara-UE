@@ -107,10 +107,31 @@ void APlayerMain::GetHit_Implementation(const FVector& ImpactPoint)
 
 void APlayerMain::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled)
 {
+<<<<<<< Updated upstream
 	if (InventoryComponent->EquippedWeapon && InventoryComponent->EquippedWeapon->GetWeaponBox())
 	{
 		InventoryComponent->EquippedWeapon->GetWeaponBox()->SetCollisionEnabled(CollisionEnabled);
 		InventoryComponent->EquippedWeapon->IgnoreActors.Empty();
+=======
+	if (InventoryComponent)
+	{
+		AItem* CurrentItem = InventoryComponent->GetEquippedItem();
+		if (CurrentItem)
+		{
+			UPrimitiveComponent* ItemCollisionComponent = CurrentItem->GetCollisionComponent();
+			if (ItemCollisionComponent)
+			{
+				ItemCollisionComponent->SetCollisionEnabled(CollisionEnabled);
+				if (ASword* Sword = Cast<ASword>(CurrentItem))
+				{
+					if (CollisionEnabled != ECollisionEnabled::NoCollision)
+					{
+						Sword->IgnoreActors.Empty();
+					}
+				}
+			}
+		}
+>>>>>>> Stashed changes
 	}
 }
 
@@ -409,6 +430,7 @@ void APlayerMain::Landed(const FHitResult& Hit)
 
 void APlayerMain::Interact(const FInputActionValue& Value)
 {
+<<<<<<< Updated upstream
 	if (PlayerFormComponent->GetCharacterForm() == ECharacterForm::ECF_Human)
 	{
 		if (ASword* OverlappingWeapon = Cast<ASword>(OverlappingItem))
@@ -421,6 +443,28 @@ void APlayerMain::Interact(const FInputActionValue& Value)
 			InventoryComponent->EquippedWeapon->OnWallHit.AddDynamic(this, &APlayerMain::OnWallCollision);
 			if (GEngine)GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Yellow, FString("Bound: OnWallHit -> OnWallCollision"));
 			InventoryComponent->InventoryWeapons.Add(InventoryComponent->EquippedWeapon);
+=======
+	if (InventoryComponent && InventoryComponent->IsInventoryOpen())
+	{
+		return;
+	}
+
+	if (PlayerFormComponent && PlayerFormComponent->GetCharacterForm() == ECharacterForm::ECF_Human)
+	{
+		if (OverlappingItem && InventoryComponent)
+		{
+			const bool bAdded = InventoryComponent->TryAddItem(OverlappingItem);
+			if (bAdded)
+			{
+				ASword* Sword = Cast<ASword>(OverlappingItem);
+				if (Sword)
+				{
+					Sword->OnWallHit.AddDynamic(this, &APlayerMain::OnWallCollision);
+				}
+				OverlappingItem = nullptr;
+			}
+			// else { // Mensaje inventario lleno? }
+>>>>>>> Stashed changes
 		}
 	}
 	else
@@ -486,11 +530,14 @@ void APlayerMain::ToggleForm()
 	LastTransformationTime = CurrentTime;
 }
 
+<<<<<<< Updated upstream
 void APlayerMain::SwitchWeapon()
 {
 	InventoryComponent->EquippedWeapon = InventoryComponent->InventoryWeapons[InventoryComponent->CurrentIndex];
 }
 
+=======
+>>>>>>> Stashed changes
 void APlayerMain::WithEnergy()
 {
 	if (Attributes->ItHasEnergy())
@@ -501,8 +548,13 @@ void APlayerMain::WithEnergy()
 		Attributes->RegenerateTick();
 		GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = true;
 
+<<<<<<< Updated upstream
 		if (InventoryComponent->EquippedWeapon)
 			InventoryComponent->EquippedWeapon->Enable(false);
+=======
+		if (InventoryComponent->GetEquippedItem())
+			InventoryComponent->GetEquippedItem()->EnableVisuals(false);
+>>>>>>> Stashed changes
 	}
 }
 
@@ -511,7 +563,11 @@ void APlayerMain::OutOfEnergy()
 	PlayerFormComponent->ToggleForm(false);
 	Attributes->RegenerateTick();
 	GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = false;
+<<<<<<< Updated upstream
 	if (InventoryComponent->EquippedWeapon) InventoryComponent->EquippedWeapon->Enable(true);
+=======
+	if (InventoryComponent->GetEquippedItem()) InventoryComponent->GetEquippedItem()->EnableVisuals(true);
+>>>>>>> Stashed changes
 	if (PossessedEnemy) PossessedEnemy->UnPossess();
 }
 
@@ -606,6 +662,16 @@ void APlayerMain::LoadLastCheckpoint()
 	}
 }
 
+void APlayerMain::ChangePrimaryWeapon()
+{
+	InventoryComponent->ChangeWeapon(0);
+}
+
+void APlayerMain::ChangeSecondaryWeapon()
+{
+	InventoryComponent->ChangeWeapon(1);
+}
+
 void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
@@ -628,5 +694,8 @@ void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 		EnhancedInputComponent->BindAction(RestartAction, ETriggerEvent::Completed, this, &APlayerMain::RestartLevel);
 		EnhancedInputComponent->BindAction(GoToMenuAction, ETriggerEvent::Completed, this, &APlayerMain::GoToMainMenu);
+		
+		EnhancedInputComponent->BindAction(InventoryComponent->Slot1_InventoryAction, ETriggerEvent::Started, this, &APlayerMain::ChangePrimaryWeapon);
+		EnhancedInputComponent->BindAction(InventoryComponent->Slot2_InventoryAction, ETriggerEvent::Started, this, &APlayerMain::ChangeSecondaryWeapon);
 	}
 }

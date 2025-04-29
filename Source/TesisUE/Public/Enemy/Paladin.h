@@ -10,7 +10,7 @@
 class UBoxComponent;
 
 UCLASS()
-class TESISUE_API APaladin : public AEnemy, public ILaunchableInterface
+class TESISUE_API APaladin : public AEnemy
 {
 	GENERATED_BODY()
 
@@ -21,7 +21,7 @@ public:
 
 	virtual void LaunchUp_Implementation() override;
 
-	virtual AActor* GetInterfaceOwner_Implementation() override;
+	virtual void ShieldHit_Implementation() override;
 
 protected:
 	void BeginPlay();

@@ -11,8 +11,6 @@ ASpectralObject::ASpectralObject()
 
 void ASpectralObject::BeginPlay()
 {
-    Super::BeginPlay();
-
    if (ItemMesh->GetMaterial(0))
    {
        SpectralMaterial = UMaterialInstanceDynamic::Create(ItemMesh->GetMaterial(0), this);

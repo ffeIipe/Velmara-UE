@@ -30,20 +30,15 @@ void ASword::BeginPlay()
 	Super::BeginPlay();
 
 	WeaponBox->OnComponentBeginOverlap.AddDynamic(this, &ASword::OnBoxOverlap);
-	DisableCollision();
 }
 
 void ASword::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwner, APawn* NewInstigator)
 {
+	AttachMeshToSocket(InParent, InSocketName);
 	SetOwner(NewOwner);
 	SetInstigator(NewInstigator);
-
-	AttachMeshToSocket(InParent, InSocketName);
 	ItemState = EItemState::EIS_Equipped;
-
-	DisableCollision();
 }
-
 void ASword::AttachMeshToSocket(USceneComponent* InParent, const FName& InSocketName)
 {
 	FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, true);
@@ -70,6 +65,50 @@ void ASword::Enable(bool Param)
 	{
 		PlayerMain->CombatComponent->SetCharacterState(ECharacterStates::ECS_Unequipped);
 	}
+}
+
+void ASword::Unequip()
+{
+	Super::Unequip();
+	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	ItemState = EItemState::EIS_Hovering;
+
+	UE_LOG(LogTemp, Log, TEXT("Sword %s unequipped"), *GetName());
+}
+
+void ASword::EnableVisuals(bool bEnable)
+{
+	Super::EnableVisuals(bEnable);
+
+	if (ItemMesh)
+	{
+		ItemMesh->SetVisibility(bEnable);
+	}
+	if (WeaponBox)
+	{
+		WeaponBox->SetCollisionEnabled(bEnable ? ECollisionEnabled::QueryOnly : ECollisionEnabled::NoCollision);
+	}
+
+	APlayerMain* PlayerOwner = Cast<APlayerMain>(GetOwner());
+	if (PlayerOwner && PlayerOwner->CombatComponent)
+	{
+		if (bEnable)
+		{
+			PlayerOwner->CombatComponent->SetCharacterState(ECharacterStates::ECS_EquippedSword);
+		}
+		else
+		{
+			if (ItemState == EItemState::EIS_Equipped)
+			{
+				PlayerOwner->CombatComponent->SetCharacterState(ECharacterStates::ECS_Unequipped);
+			}
+		}
+	}
+}
+
+UPrimitiveComponent* ASword::GetCollisionComponent()
+{
+	return WeaponBox;
 }
 
 void ASword::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -106,32 +145,35 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 		true
 	);
 	
+	if (HitResults.Num() <= 0) return;
+
 	for (const FHitResult& Hit : HitResults)
 	{
 		AActor* HitActor = Hit.GetActor();
-		if (HitActor && !IgnoreActors.Contains(HitActor))
+		if (HitActor && IgnoreActors.Contains(HitActor)) return;
+		
+		IHitInterface* HitInterface = Cast<IHitInterface>(HitActor);
+
+		if (HitInterface && HitInterface->Execute_IsLaunchable(HitActor))
 		{
-			if (IHitInterface* HitInterface = Cast<IHitInterface>(HitActor))
-			{
-				TSubclassOf<UDamageType> FinalDamageType = DamageTypeClass ? DamageTypeClass : TSubclassOf<UDamageType>(UDamageType::StaticClass());
+			TSubclassOf<UDamageType> FinalDamageType = DamageTypeClass ? DamageTypeClass : TSubclassOf<UDamageType>(UDamageType::StaticClass());
 
-				UGameplayStatics::ApplyDamage(
-					HitActor,
-					Damage,
-					GetInstigator()->GetController(),
-					GetOwner(),
-					FinalDamageType
-				);
-				HitInterface->Execute_GetHit(HitActor, Hit.ImpactPoint);
-				CameraShake();
+			UGameplayStatics::ApplyDamage(
+				HitActor,
+				Damage,
+				GetInstigator()->GetController(),
+				GetOwner(),
+				FinalDamageType
+			);
+			HitInterface->Execute_GetHit(HitActor, Hit.ImpactPoint);
+			CameraShake();
 
-				IgnoreActors.Add(HitActor);
-			}
-			else if (Hit.GetComponent()->GetCollisionObjectType() == ECollisionChannel::ECC_WorldStatic)
-			{
-				OnWallHit.Broadcast(Hit);
-			}
+			IgnoreActors.Add(HitActor);
 		}
-		if (GEngine)GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString(Hit.GetActor()->GetName()));
+		else if(HitInterface && !HitInterface->Execute_IsLaunchable(HitActor))
+		{
+			OnWallHit.Broadcast(Hit);
+			HitInterface->Execute_ShieldHit(HitActor);
+		}
 	}
 }

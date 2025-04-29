@@ -137,9 +137,9 @@ void APaladin::LaunchUp_Implementation()
 	LaunchEnemyUp();
 }
 
-AActor* APaladin::GetInterfaceOwner_Implementation()
+void APaladin::ShieldHit_Implementation()
 {
-	return GetOwner();
+	PlayAnimMontage(HitReactMontage, 1.f, FName("ShieldHit"));
 }
 
 void APaladin::LaunchEnemyUp()
