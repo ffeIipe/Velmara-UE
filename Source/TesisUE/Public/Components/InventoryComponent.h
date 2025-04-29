@@ -4,10 +4,6 @@
 #include "Components/ActorComponent.h"
 #include "InventoryComponent.generated.h"
 
-class UInventory;
-class ASword;
-class AItem;
-class UUserWidget;
 class AItem;
 class UUserWidget;
 class APlayerController;
@@ -23,7 +19,6 @@ public:
 
 protected:
     virtual void BeginPlay() override;
-
 
     UPROPERTY(EditDefaultsOnly, Category = "Inventory UI")
     TSubclassOf<UUserWidget> InventoryWidgetClass;

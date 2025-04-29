@@ -520,9 +520,6 @@ void APlayerMain::WithEnergy()
 
 		if (InventoryComponent->GetEquippedItem())
 			InventoryComponent->GetEquippedItem()->EnableVisuals(false);
-
-		if (InventoryComponent->GetEquippedItem())
-			InventoryComponent->GetEquippedItem()->EnableVisuals(false);
 	}
 }
 
@@ -531,11 +528,7 @@ void APlayerMain::OutOfEnergy()
 	PlayerFormComponent->ToggleForm(false);
 	Attributes->RegenerateTick();
 	GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = false;
-
 	if (InventoryComponent->GetEquippedItem()) InventoryComponent->GetEquippedItem()->EnableVisuals(true);
-
-	if (InventoryComponent->GetEquippedItem()) InventoryComponent->GetEquippedItem()->EnableVisuals(true);
-
 	if (PossessedEnemy) PossessedEnemy->UnPossess();
 }
 
