@@ -32,7 +32,8 @@ void ANewGameStateBase::LoadAllMementoStates()
 {
 	for (AActor* Entity : MementoEntities)
 	{
-		if (UMementoComponent* MementoComp = Entity->GetComponentByClass<UMementoComponent>())
+		UMementoComponent* MementoComp = Entity->GetComponentByClass<UMementoComponent>();
+		if (MementoComp)
 		{
 			MementoComp->LoadState();
 		}
