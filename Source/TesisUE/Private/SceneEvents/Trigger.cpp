@@ -26,6 +26,7 @@ void ATrigger::BeginPlay()
 void ATrigger::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	Player = Cast<APlayerMain>(OtherActor);
+	if (GEngine && Player) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Green, FString("ATrigger::OnSphereBeginOverlap"));
 }
 
 void ATrigger::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
@@ -33,6 +34,7 @@ void ATrigger::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AAct
 	if (Player)
 	{
 		Player->SetOverlappingItem(nullptr);
+		if (GEngine && Player) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Red, FString("ATrigger::OnSphereEndOverlap"));
 	}
 }
 

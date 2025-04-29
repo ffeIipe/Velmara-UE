@@ -6,6 +6,12 @@
 #include "Kismet/GameplayStatics.h"
 #include "DamageTypes/SpectralTrapDamageType.h"
 
+ASpectralTrap::ASpectralTrap()
+{
+	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
+	StaticMesh->SetupAttachment(GetRootComponent());
+}
+
 void ASpectralTrap::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	Super::OnSphereBeginOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
@@ -29,9 +35,8 @@ void ASpectralTrap::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent,
 
 void ASpectralTrap::ApplyTrapDamage()
 {
-	AController* InstigatorController = GetInstigator() ? GetInstigator()->GetController() : nullptr;
-
-	TSubclassOf<UDamageType> FinalDamageType = DamageTypeClass ? DamageTypeClass : TSubclassOf<UDamageType>(UDamageType::StaticClass());
+	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Green, FString("ASpectralTrap::ApplyTrapDamage"));
+	AController* InstigatorController = OverlappingPlayer ? OverlappingPlayer->GetController() : nullptr;
 
 	UGameplayStatics::ApplyDamage(
 		OverlappingPlayer,

@@ -89,3 +89,4 @@ private:
     UPROPERTY(EditDefaultsOnly, Category = "Inventory")
     FName HandSocketName = FName("RightHandSocket");
 };
+//

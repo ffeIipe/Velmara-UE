@@ -3,21 +3,19 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "SpectralMode/SpectralObject.h"
+#include "SceneEvents/Trigger.h"
 #include "SpectralTrap.generated.h"
 
 class APlayerMain;
 
 UCLASS()
-class TESISUE_API ASpectralTrap : public ASpectralObject
+class TESISUE_API ASpectralTrap : public ATrigger
 {
 	GENERATED_BODY()
 
-public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage")
-	TSubclassOf<UDamageType> DamageTypeClass;
-
 private:
+	ASpectralTrap();
+
 	void OnSphereBeginOverlap(
 		UPrimitiveComponent* OverlappedComponent,
 		AActor* OtherActor,
@@ -37,4 +35,7 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Trap")
 	float Damage = 10.0f;
+
+	UPROPERTY(VisibleAnywhere)
+	UStaticMeshComponent* StaticMesh;
 };

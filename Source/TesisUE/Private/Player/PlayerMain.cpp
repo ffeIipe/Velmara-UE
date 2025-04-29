@@ -247,20 +247,19 @@ float APlayerMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEven
 {
 	//TODO: player healthbar and fx to receive damage
 
-	if (DamageEvent.DamageTypeClass)
+	if (!bCanReceiveDamage) return 0.f;
+	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Green, FString("APlayerMain::TakeDamage"));
+	if (Attributes && Attributes->IsAlive())
 	{
-		if (DamageEvent.DamageTypeClass == USpectralTrapDamageType::StaticClass())
+		if (DamageEvent.DamageTypeClass && DamageEvent.DamageTypeClass == USpectralTrapDamageType::StaticClass())
 		{
 			CombatComponent->GetDirectionalReact(FName("KnockDown"));
 		}
-	}
-
-	if (!bCanReceiveDamage) return 0.f;
-	
-	if (Attributes && Attributes->IsAlive())
-	{
-		Attributes->ReceiveDamage(DamageAmount);
-		CombatComponent->GetDirectionalReact(FName("Default"));
+		else
+		{
+			Attributes->ReceiveDamage(DamageAmount);
+			CombatComponent->GetDirectionalReact(FName("Default"));
+		}
 	}
 	else
 	{
