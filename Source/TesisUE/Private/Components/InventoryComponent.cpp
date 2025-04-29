@@ -21,22 +21,16 @@ void UInventoryComponent::BeginPlay()
 
 	PlayerControllerRef = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 
-	// InventoryWidgetClass es TSubclassOf<UInventory>
     if (ensure(InventoryWidgetClass) && PlayerControllerRef && PlayerControllerRef->IsLocalController())
     {
-        // Creamos el widget principal. Sabemos que será de tipo UInventory* o derivado.
         InventoryWidget = CreateWidget<UInventory>(PlayerControllerRef, InventoryWidgetClass);
 
-        // Verificamos que se creó y que tiene un WidgetTree para poder buscar dentro
         if (InventoryWidget && InventoryWidget->WidgetTree)
         {
             InventoryWidget->AddToViewport();
             InventoryWidget->SetVisibility(ESlateVisibility::Hidden);
 
-            // --- LÓGICA PARA ENCONTRAR Y BINDEAR SLOTS HIJOS ---
-
             TArray<UWidget*> FoundWidgets;
-            // Obtiene TODOS los widgets hijos dentro del árbol del InventoryWidget principal
             InventoryWidget->WidgetTree->GetAllWidgets(FoundWidgets);
 
             UE_LOG(LogTemp, Log, TEXT("InventoryComponent: Found %d total widgets in InventoryWidget tree ('%s'). Searching for slots inheriting from UInventory..."),
@@ -45,18 +39,13 @@ void UInventoryComponent::BeginPlay()
             int BoundSlots = 0;
             for (UWidget* Widget : FoundWidgets)
             {
-                // Intentar convertir el widget encontrado a UInventory (la clase C++ padre)
                 UInventory* PotentialSlotWidget = Cast<UInventory>(Widget);
 
-                // Comprobar si el cast tuvo éxito Y MUY IMPORTANTE:
-                // Si NO es el mismo widget principal (InventoryWidget)
                 if (PotentialSlotWidget && PotentialSlotWidget != InventoryWidget)
                 {
-                    // ¡Encontrado! Es un widget hijo que hereda de UInventory (debería ser tu WBP_Inventory_Item)
-                    // Conecta nuestra función HandleSlotClicked al delegado OnWeaponButtonClickedEvent de ESTE slot específico.
                     PotentialSlotWidget->OnWeaponButtonClickedEvent.AddDynamic(this, &UInventoryComponent::HandleSlotClicked);
                     BoundSlots++;
-                    // Accedemos a WeaponIndex porque UInventory lo tiene definido
+
                     UE_LOG(LogTemp, Log, TEXT("InventoryComponent:   -> Successfully bound to delegate of SlotWidget: %s (Inherits UInventory, Index: %d)"),
                            *PotentialSlotWidget->GetName(), PotentialSlotWidget->WeaponIndex);
                 }
@@ -68,8 +57,6 @@ void UInventoryComponent::BeginPlay()
             } else {
                  UE_LOG(LogTemp, Log, TEXT("InventoryComponent: Finished binding. Total slots bound: %d"), BoundSlots);
             }
-
-            // --- FIN LÓGICA MODIFICADA ---
         }
         else
         {
@@ -82,7 +69,6 @@ void UInventoryComponent::BeginPlay()
     }
 }
 
-// Mostrar Inventario
 void UInventoryComponent::ShowInventory()
 {
 	if (InventoryWidget)
