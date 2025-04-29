@@ -107,27 +107,10 @@ void APlayerMain::GetHit_Implementation(const FVector& ImpactPoint)
 
 void APlayerMain::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled)
 {
-	//if (InventoryComponent->EquippedWeapon && InventoryComponent->EquippedWeapon->GetWeaponBox())
-	//{
-	//	InventoryComponent->EquippedWeapon->GetWeaponBox()->SetCollisionEnabled(CollisionEnabled);
-	//	InventoryComponent->EquippedWeapon->IgnoreActors.Empty();
-	//}
-	
-	// Obtener el item equipado desde el componente de inventario 
-	ASword* CurrentItem = InventoryComponent ? InventoryComponent->GetEquippedSword() : nullptr;
-
-	if (CurrentItem)
+	if (InventoryComponent->EquippedWeapon && InventoryComponent->EquippedWeapon->GetWeaponBox())
 	{
-		UPrimitiveComponent* ItemCollisionBox = CurrentItem->GetWeaponBox(); // Necesitas esta función en AItem o AWeapon
-		if (ItemCollisionBox)
-		{
-			ItemCollisionBox->SetCollisionEnabled(CollisionEnabled);
-			CurrentItem->IgnoreActors.Empty();
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("PlayerMain::SetItemCollisionEnabled: EquippedItem %s has no WeaponBox."), *CurrentItem->GetName());
-		}
+		InventoryComponent->EquippedWeapon->GetWeaponBox()->SetCollisionEnabled(CollisionEnabled);
+		InventoryComponent->EquippedWeapon->IgnoreActors.Empty();
 	}
 }
 
@@ -196,7 +179,7 @@ void APlayerMain::PerformDodge()
 	}
 	else
 	{
-		//directional animation based on last movement input vector of the mouse
+		//directional animation based on last movement input vector
 		PlayAnimMontage(SpectralDodgeMontage);
 	}
 }
@@ -249,19 +232,21 @@ void APlayerMain::SearchTarget()
 float APlayerMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	//TODO: player healthbar and fx to receive damage
-	if (!bCanReceiveDamage) return 0.f;
 
-	if (Attributes && Attributes->IsAlive())
+	if (DamageEvent.DamageTypeClass)
 	{
-		if (DamageEvent.DamageTypeClass && DamageEvent.DamageTypeClass == USpectralTrapDamageType::StaticClass())
+		if (DamageEvent.DamageTypeClass == USpectralTrapDamageType::StaticClass())
 		{
 			CombatComponent->GetDirectionalReact(FName("KnockDown"));
 		}
-		else
-		{
-			Attributes->ReceiveDamage(DamageAmount);
-			CombatComponent->GetDirectionalReact(FName("Default"));
-		}
+	}
+
+	if (!bCanReceiveDamage) return 0.f;
+	
+	if (Attributes && Attributes->IsAlive())
+	{
+		Attributes->ReceiveDamage(DamageAmount);
+		CombatComponent->GetDirectionalReact(FName("Default"));
 	}
 	else
 	{
@@ -423,64 +408,23 @@ void APlayerMain::Landed(const FHitResult& Hit)
 }
 
 void APlayerMain::Interact(const FInputActionValue& Value)
-{	//
-	//if (PlayerFormComponent->GetCharacterForm() == ECharacterForm::ECF_Human)
-	//{
-	//	if (ASword* OverlappingWeapon = Cast<ASword>(OverlappingItem))
-	//	{
-	//		OverlappingWeapon->Equip(GetMesh(), FName("RightHandSocket"), this, this);
-	//		CombatComponent->SetCharacterState(ECharacterStates::ECS_EquippedSword);
-	//
-	//		OverlappingItem = nullptr;
-	//		InventoryComponent->AddItem(OverlappingWeapon);
-	//		//InventoryComponent->EquippedWeapon->OnWallHit.AddDynamic(this, &APlayerMain::OnWallCollision);
-	//		//if (GEngine)GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Yellow, FString("Bound: OnWallHit -> OnWallCollision"));
-	//	}
-	//}
-	//else
-	//{
-	//	if (ISpectralInteractable* OverlappingObject = Cast<ISpectralInteractable>(OverlappingItem))
-	//	{
-	//		OverlappingObject->SpectralInteract();
-	//	}
-	//}
-
-	if (InventoryComponent && InventoryComponent->bIsInventoryOpen) return;
-
+{
 	if (PlayerFormComponent->GetCharacterForm() == ECharacterForm::ECF_Human)
 	{
-		if (OverlappingItem && InventoryComponent) // Verificar que ambos existen
+		if (ASword* OverlappingWeapon = Cast<ASword>(OverlappingItem))
 		{
-			UE_LOG(LogTemp, Log, TEXT("PlayerMain::Interact: Attempting to pick up %s"), *OverlappingItem->GetName());
-			
-			Cast<ASword>(OverlappingItem)->Equip(GetMesh(), FName("RightHandSocket"), this, this);
-			const bool bAdded = InventoryComponent->AddItem(Cast<ASword>(OverlappingItem));
+			OverlappingWeapon->Equip(GetMesh(), FName("RightHandSocket"), this, this);
+			CombatComponent->SetCharacterState(ECharacterStates::ECS_EquippedSword);
 
-			if (bAdded)
-			{
-				// Si se añadió correctamente, ya no estamos 'overlapping' con él en el sentido de poder recogerlo de nuevo.
-				// El propio AddItem debería ocultar/desactivar el actor.
-				
-				OverlappingItem = nullptr; // Limpiar la referencia local
-
-				// Binding para OnWallHit (si AItem tiene ese delegado)
-				ASword* Equipped = InventoryComponent->GetEquippedSword();
-				if (Equipped && Equipped == InventoryComponent->GetInventoryItems().Last()) // Si el item recién añadido fue equipado
-				{
-
-					// Asegúrate que AItem tenga el delegado OnWallHit
-					// Equipped->OnWallHit.AddUniqueDynamic(this, &APlayerMain::OnWallCollision);
-					// GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Yellow, FString::Printf(TEXT("Bound OnWallHit for %s"), *Equipped->GetName()));
-				}
-
-			}
+			OverlappingItem = nullptr;
+			InventoryComponent->EquippedWeapon = OverlappingWeapon;
+			InventoryComponent->EquippedWeapon->OnWallHit.AddDynamic(this, &APlayerMain::OnWallCollision);
+			if (GEngine)GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Yellow, FString("Bound: OnWallHit -> OnWallCollision"));
+			InventoryComponent->InventoryWeapons.Add(InventoryComponent->EquippedWeapon);
 		}
-		// else if (OverlappingItem == nullptr) { // Debug }
-		// else if (InventoryComponent == nullptr) { // Debug }
 	}
-	else // Forma Espectral
+	else
 	{
-		// Lógica de interacción espectral (parece estar bien como estaba)
 		if (ISpectralInteractable* OverlappingObject = Cast<ISpectralInteractable>(OverlappingItem))
 		{
 			OverlappingObject->SpectralInteract();
@@ -542,10 +486,10 @@ void APlayerMain::ToggleForm()
 	LastTransformationTime = CurrentTime;
 }
 
-//void APlayerMain::SwitchWeapon()
-//{
-//	InventoryComponent->EquippedWeapon = InventoryComponent->InventoryWeapons[InventoryComponent->CurrentIndex];
-//}
+void APlayerMain::SwitchWeapon()
+{
+	InventoryComponent->EquippedWeapon = InventoryComponent->InventoryWeapons[InventoryComponent->CurrentIndex];
+}
 
 void APlayerMain::WithEnergy()
 {
@@ -557,8 +501,8 @@ void APlayerMain::WithEnergy()
 		Attributes->RegenerateTick();
 		GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = true;
 
-		if (InventoryComponent->GetEquippedSword())
-			InventoryComponent->GetEquippedSword()->Enable(false);
+		if (InventoryComponent->EquippedWeapon)
+			InventoryComponent->EquippedWeapon->Enable(false);
 	}
 }
 
@@ -567,7 +511,7 @@ void APlayerMain::OutOfEnergy()
 	PlayerFormComponent->ToggleForm(false);
 	Attributes->RegenerateTick();
 	GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = false;
-	if (InventoryComponent->GetEquippedSword()) InventoryComponent->GetEquippedSword()->Enable(true);
+	if (InventoryComponent->EquippedWeapon) InventoryComponent->EquippedWeapon->Enable(true);
 	if (PossessedEnemy) PossessedEnemy->UnPossess();
 }
 
@@ -644,7 +588,7 @@ void APlayerMain::GoToMainMenu()
 void APlayerMain::OnWallCollision(const FHitResult& HitResult)
 {
 	if (GEngine)GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, FString("APlayerMain::OnWallCollision"));
-	CombatComponent->GetDirectionalReact("Default");
+	CombatComponent->GetDirectionalReact(FName("Default"));
 }
 
 void APlayerMain::LoadLastCheckpoint()

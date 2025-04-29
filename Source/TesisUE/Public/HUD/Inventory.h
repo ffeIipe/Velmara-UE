@@ -19,10 +19,9 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnWeaponButtonClicked OnWeaponButtonClickedEvent;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int WeaponIndex;
-
 private:
 	UFUNCTION(BlueprintCallable, meta = (AllowPrivateAccess = "true"))
 	void OnClicked(int NewWeaponIndex);
+
+	int WeaponIndex;
 };

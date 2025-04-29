@@ -84,7 +84,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ResetFollowCamera();
 
-
 protected:
 	/*
 	* Base

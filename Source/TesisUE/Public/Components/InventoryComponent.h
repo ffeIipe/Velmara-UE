@@ -6,76 +6,49 @@
 #include "Components/ActorComponent.h"
 #include "InventoryComponent.generated.h"
 
-// Forward declarations
-class UInventory; // El widget de UI
-class ASword; // Clase base para items/armas
+class UInventory;
+class ASword;
 class APlayerController;
 
-UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
+UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class TESISUE_API UInventoryComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
-public:
+public:	
 	UInventoryComponent();
 
-	UFUNCTION(BlueprintCallable, Category = "Inventory|UI")
+	UFUNCTION(BlueprintCallable)
 	void ShowInventory();
 
-	UFUNCTION(BlueprintCallable, Category = "Inventory|UI")
+	UFUNCTION(BlueprintCallable)
 	void HideInventory();
 
-	UFUNCTION(BlueprintCallable, Category = "Inventory|Logic")
-	bool AddItem(ASword* ItemToAdd);
+	UFUNCTION()
+	void SwitchWeapon(int NewWeaponIndex);
 
-	UFUNCTION(BlueprintCallable, Category = "Inventory|Logic")
-	void SwitchItem(int ItemIndex);
+	FORCEINLINE UInventory* GetInventoryWidget() { return InventoryWidget; };
 
-	UFUNCTION(BlueprintCallable, Category = "Inventory|Logic")
-	void DropItem(int ItemIndex);
+	bool bIsInventoryOpen;
 
-	UFUNCTION(BlueprintPure, Category = "Inventory|UI")
-	FORCEINLINE UInventory* GetInventoryWidget() const { return InventoryWidget; }
+	int CurrentIndex = 0;
 
-	UFUNCTION(BlueprintPure, Category = "Inventory|Logic")
-	FORCEINLINE ASword* GetEquippedSword() const { return EquippedItem; }
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon", meta = (AllowPrivateAccess))
+	ASword* EquippedWeapon;
 
-	UFUNCTION(BlueprintPure, Category = "Inventory|Logic")
-	const TArray<ASword*>& GetInventoryItems() const;
+	UPROPERTY(VisibleAnywhere)
+	TArray<ASword*> InventoryWeapons;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory|State")
-	bool bIsInventoryOpen = false;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory|State")
-	int CurrentItemIndex = -1;
-
-	/** Llama a esta función para actualizar visualmente el widget del inventario. Implementar en BP o C++. */
-	UFUNCTION(BlueprintImplementableEvent, Category = "Inventory|UI")
-	void UpdateInventoryUI();
 
 protected:
 	virtual void BeginPlay() override;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Inventory|Config")
-	int MaxInventorySize = 3;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory|UI")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<UInventory> InventoryWidgetClass;
 
 private:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory|State", meta = (AllowPrivateAccess = "true"))
-	ASword* EquippedItem = nullptr;
+	UPROPERTY(EditDefaultsOnly)
+	UInventory* InventoryWidget;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory|State", meta = (AllowPrivateAccess = "true"))
-	TArray<ASword*> InventoryItems;
-
-	UPROPERTY()
-	UInventory* InventoryWidget = nullptr;
-
-
-	UPROPERTY()
-	APlayerController* PlayerControllerRef = nullptr;
-
-	UFUNCTION()
-	void HandleSlotClicked(int ClickedIndex);
+	APlayerController* PlayerController = nullptr;
 };

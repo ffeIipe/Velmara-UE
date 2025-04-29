@@ -2,5 +2,6 @@
 
 void UInventory::OnClicked(int NewWeaponIndex)
 {
+	WeaponIndex = NewWeaponIndex;
 	OnWeaponButtonClickedEvent.Broadcast(WeaponIndex);
 }
