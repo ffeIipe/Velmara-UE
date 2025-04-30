@@ -10,7 +10,7 @@
 void ACheckpoint::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	Super::OnSphereBeginOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
-	DisableCollision(); //fatal error
+	DisableCollision();
 
 	if (Player)
 	{
@@ -18,8 +18,7 @@ void ACheckpoint::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent,
 		if (ANewGameStateBase* NewGameState = Cast<ANewGameStateBase>(BaseGameState)) //child
 		{
 			NewGameState->SaveAllMementoStates();
+			SetLifeSpan(1.f);
 		}
-
-		Destroy();
 	}
 }
