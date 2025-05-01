@@ -16,13 +16,16 @@
 #include "Components/CombatComponent.h"
 #include "Components/InventoryComponent.h"
 #include "Components/CharacterStateComponent.h"
+#include "Components/SpectralWeaponComponent.h"
 #include "Curves/CurveFloat.h"
 
 #include "Camera/CameraActor.h"
 #include "Enemy/Spectre.h"
 #include "Enemy/Enemy.h"
 #include "Enemy/Paladin.h"
+
 #include "Items/Weapons/Sword.h"
+#include "Items/Weapons/Weapon.h"
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -64,32 +67,39 @@ APlayerMain::APlayerMain()
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("Inventory"));
 
 	CharacterStateComponent = CreateDefaultSubobject<UCharacterStateComponent>(TEXT("CharacterStates"));
+
+	SpectralWeaponComponent = CreateDefaultSubobject<USpectralWeaponComponent>(TEXT("SpectralWeapon"));
+	SpectralWeaponComponent->AttachToOwner(GetMesh(), FName("RightHandSocketWeapon"));
 }
 
 void APlayerMain::PerformSpectralAttack_Implementation()
 {
-	if (CharacterStateComponent->GetCurrentCharacterState().Action != ECharacterActions::ECA_Attack)
-	{
-		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
-		SearchTarget();
-		PlayAnimMontage(SpectralAttackCombo[SpectralAttackIndex]);
+	//if (CharacterStateComponent->GetCurrentCharacterState().Action != ECharacterActions::ECA_Attack)
+	//{
+	//	CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
+	//	SearchTarget();
+	//	PlayAnimMontage(SpectralAttackCombo[SpectralAttackIndex]);
+	//
+	//	SpectralAttackIndex++;
+	//
+	//	if (SpectralAttackIndex >= SpectralAttackCombo.Num())
+	//	{
+	//		SpectralAttackIndex = 0;
+	//	}
+	//}
 
-		SpectralAttackIndex++;
-
-		if (SpectralAttackIndex >= SpectralAttackCombo.Num())
-		{
-			SpectralAttackIndex = 0;
-		}
-	}
+	SpectralWeaponComponent->PrimaryFire();
 }
 
 void APlayerMain::PerformSpectralBarrier_Implementation()
 {
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Attack }))
-	{
-		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
-		PlayAnimMontage(SpectralHeavyAttack);
-	}
+	//if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Attack }))
+	//{
+	//	CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
+	//	PlayAnimMontage(SpectralHeavyAttack);
+	//}
+
+	SpectralWeaponComponent->SecondaryFire();
 }
 
 void APlayerMain::ResetSpectralAttack_Implementation()

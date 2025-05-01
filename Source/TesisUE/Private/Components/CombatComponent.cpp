@@ -436,7 +436,7 @@ void UCombatComponent::Input_HeavyAttack(const FInputActionValue& Value)
 	//save dodge = false;
 	bIsSaveLightAttack = false;
 
-	if (CanAttack())
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Attack, ECharacterActions::ECA_Dodge }))
 	{
 		if (!bIsLaunched)
 		{
@@ -455,10 +455,6 @@ void UCombatComponent::Input_HeavyAttack(const FInputActionValue& Value)
 
 void UCombatComponent::Input_Launch(const FInputActionValue& Value)
 {
-	const TArray<ECharacterActions> CharacterActionsToCheck = { ECharacterActions::ECA_Attack };
-	const TArray<ECharacterStates> CharacterStatesToCheck = { ECharacterStates::ECS_EquippedSword };
-	const TArray<ECharacterForm> CharacterFormToCheck = { ECharacterForm::ECF_Human};
-
 	if (CanAttack())
 	{
 		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);

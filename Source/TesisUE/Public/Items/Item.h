@@ -47,6 +47,12 @@ public:
 	virtual UPrimitiveComponent* GetCollisionComponent();
 
 protected:
+	struct FItemStats
+	{
+		FName Name;
+		FImage Image;
+	};
+
 	UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
 	UStaticMeshComponent* ItemMesh;
 

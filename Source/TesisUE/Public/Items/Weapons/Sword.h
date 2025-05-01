@@ -22,12 +22,6 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Collision")
 	FOnWallHitSignature OnWallHit;
 
-	struct FSwordStats
-	{
-		FName Name;
-		FImage Image;
-	};
-
 	ASword();
 
 	virtual void BeginPlay() override;

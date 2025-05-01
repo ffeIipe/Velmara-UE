@@ -10,21 +10,23 @@
 #include "Interfaces/CharacterState.h"
 #include "PlayerMain.generated.h"
 
-class UCameraComponent;
-class USpringArmComponent;
 class UInputMappingContext;
 class UInputAction;
 struct FInputActionValue;
-class UTimelineComponent;
-class AItem;
-class UPlayerFormComponent;
 class AEnemy;
+class AItem;
+class AWeapon;
 class UAttributeComponent;
 class UBoxComponent;
 class UMementoComponent;
 class UCombatComponent;
 class UInventoryComponent;
 class UCharacterStateComponent;
+class UPlayerFormComponent;
+class UTimelineComponent;
+class UCameraComponent;
+class USpringArmComponent;
+class USpectralWeaponComponent;
 
 UCLASS()
 class TESISUE_API APlayerMain : public ACharacter, public IHitInterface, public ICharacterState, public IFormInterface
@@ -59,9 +61,6 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
-
-	UPROPERTY(VisibleAnywhere, Category = "Forms")
-	UPlayerFormComponent* PlayerFormComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	bool CanDoubleJump = true;
@@ -128,6 +127,9 @@ protected:
 	public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	UCombatComponent* CombatComponent;
+
+	UPROPERTY(VisibleAnywhere, Category = "Forms")
+	UPlayerFormComponent* PlayerFormComponent;
 
 	UPROPERTY()
 	UTimelineComponent* BufferDodgeTimeline;
@@ -230,7 +232,9 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UCharacterStateComponent* CharacterStateComponent;
-
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	USpectralWeaponComponent* SpectralWeaponComponent;
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "BloodSense | Cooldown")
 	float TransformationCooldown;
@@ -291,8 +295,6 @@ private:
 	void ToggleForm();
 
 	void Die();
-
-	void SwitchWeapon();
 
 	UFUNCTION()
 	void WithEnergy();

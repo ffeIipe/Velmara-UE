@@ -20,8 +20,8 @@ AItem::AItem()
 void AItem::BeginPlay()
 {
 	Super::BeginPlay();
-
-	PromptWidget->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
+	if (PromptWidget)
+ PromptWidget->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
 }
 
 void AItem::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwner, APawn* NewInstigator)
