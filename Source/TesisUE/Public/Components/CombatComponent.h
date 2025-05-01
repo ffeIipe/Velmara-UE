@@ -136,8 +136,6 @@ private:
 
 	bool CanAttack();
 
-	void BaseAttack(TArray<UAnimMontage*> AttackMontage, int AttackIndex);
-
 public:
 	UPROPERTY(VisibleAnywhere, Category = "Attack | LightAttack")
 	bool bIsSaveLightAttack;

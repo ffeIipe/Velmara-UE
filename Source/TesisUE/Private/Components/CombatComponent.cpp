@@ -77,12 +77,35 @@ void UCombatComponent::BeginPlay()
 
 void UCombatComponent::LightAttack(int AttackIndex)
 {
-	BaseAttack(LightAttackCombo, AttackIndex);
+	StopAttackBufferEvent();
+	StartAttackBufferEvent(BufferAttackDistance);
+	OwnerCharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
+	SoftLockOn();
+	OwningCharacter->PlayAnimMontage(LightAttackCombo[AttackIndex]);
+
+	LightAttackIndex++;
+
+	if (LightAttackIndex >= LightAttackCombo.Num())
+	{
+		LightAttackIndex = 0;
+	}
 }
 
 void UCombatComponent::JumpAttack(int AttackIndex)
 {
-	BaseAttack(JumpAttackCombo, AttackIndex);
+	OwnerCharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
+	SoftLockOn();
+
+	OwningCharacter->PlayAnimMontage(JumpAttackCombo[AttackIndex]);
+
+	JumpAttackIndex++;
+
+	if (JumpAttackIndex >= JumpAttackCombo.Num())
+	{
+		JumpAttackIndex = 0;
+		OwningCharacter->PlayAnimMontage(CrasherMontage, 1.f);
+		bIsLaunched = false;
+	}
 }
 
 void UCombatComponent::PerformComboStarter(int AttackIndex)
@@ -121,7 +144,20 @@ void UCombatComponent::PerformComboExtender(int AttackIndex)
 
 void UCombatComponent::HeavyAttack(int AttackIndex)
 {
-	BaseAttack(HeavyAttackCombo, AttackIndex);
+	StopAttackBufferEvent();
+	StartAttackBufferEvent(BufferAttackDistance);
+	OwnerCharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
+
+	OwningCharacter->PlayAnimMontage(HeavyAttackCombo[AttackIndex]);
+
+	SoftLockOn();
+
+	HeavyAttackIndex++;
+
+	if (HeavyAttackIndex >= HeavyAttackCombo.Num())
+	{
+		HeavyAttackIndex = 0;
+	}
 }
 
 void UCombatComponent::StartAttackBufferEvent(float BufferAmount)
@@ -371,25 +407,6 @@ bool UCombatComponent::CanAttack()
 			!OwnerCharacterStateComponent->IsFormEqualToAny({ECharacterForm::ECF_Spectral}));
 }
 
-void UCombatComponent::BaseAttack(TArray<UAnimMontage*> AttackMontage, int AttackIndex)
-{
-	if (CanAttack())
-	{
-		StopAttackBufferEvent();
-		StartAttackBufferEvent(BufferAttackDistance);
-		OwnerCharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
-		SoftLockOn();
-		OwningCharacter->PlayAnimMontage(AttackMontage[AttackIndex]);
-
-		AttackIndex++;
-
-		if (AttackIndex >= AttackMontage.Num())
-		{
-			AttackIndex = 0;
-		}
-	}
-}
-
 void UCombatComponent::Input_Attack(const FInputActionValue& Value)
 {
 	//save dodge = false
@@ -464,6 +481,7 @@ void UCombatComponent::LightAttackEvent()
 	}
 	else if (bIsLaunched)
 	{
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Orange, FString("IsLaunched"));
 		JumpAttack(JumpAttackIndex);
 	}
 	else
