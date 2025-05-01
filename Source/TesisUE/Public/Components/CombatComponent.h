@@ -31,7 +31,7 @@ public:
 
 	IFormInterface* SpectralAttacks;
 
-	UCharacterStateComponent* OwnerCharacterStateComponent;
+	UCharacterStateComponent* CharacterStateComponent;
 
 protected:
 	void BeginPlay() override;

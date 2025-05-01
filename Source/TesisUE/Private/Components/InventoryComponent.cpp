@@ -52,7 +52,7 @@ bool UInventoryComponent::TryAddItem(AItem* ItemToAdd)
         if (InventorySlots[i] == nullptr)
         {
             InventorySlots[i] = ItemToAdd;
-            ItemToAdd->EnableVisuals(false);
+            ChangeWeapon(i);
             UpdateInventoryUI();
             return true;
         }

@@ -76,7 +76,7 @@ void UPlayerFormComponent::ApplyHumanEffects()
     CharacterStateComponent->SetCharacterForm(ECharacterForm::ECF_Human);
     SpectralEffectTimeline->Reverse();
 
-    //TODO: improve it with a subscription to an a static classS
+    //TODO: improve it with a subscription to an a static class
     for (TActorIterator<ASpectralObject> It(GetWorld()); It; ++It)
     {
         It->SetSpectralVisibility(false);
