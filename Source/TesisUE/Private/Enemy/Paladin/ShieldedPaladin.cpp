@@ -38,3 +38,8 @@ bool AShieldedPaladin::IsLaunchable_Implementation()
 {
     return bIsDisarmed;
 }
+
+UCharacterStateComponent* AShieldedPaladin::GetCharacterStateComponent_Implementation()
+{
+    return CharacterStateComponent;
+}

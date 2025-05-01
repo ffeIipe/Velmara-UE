@@ -13,6 +13,7 @@ UCLASS()
 class TESISUE_API UPlayerMainAnimInstance : public UAnimInstance
 {
 	GENERATED_BODY()
+
 public:
 
 	virtual void NativeInitializeAnimation() override;
@@ -23,9 +24,6 @@ public:
 
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
 	UCharacterMovementComponent* PlayerMainCharacterMovement;
-
-	UPROPERTY(BlueprintReadOnly, Category = "PlayerForm")
-	UPlayerFormComponent* PlayerFormComponent;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
 	float GroundSpeed;
@@ -39,8 +37,6 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Movement | Character State")
 	ECharacterStates CharacterState;
 	
-	UPROPERTY(BlueprintReadOnly, Category = "PlayerForm")
-	ECharacterForm PlayerForm;
-
-
+	UPROPERTY(BlueprintReadOnly, Category = "Movement | Character Form")
+	ECharacterForm CharacterForm;
 };

@@ -15,6 +15,7 @@
 #include "Components/MementoComponent.h"
 #include "Components/CombatComponent.h"
 #include "Components/InventoryComponent.h"
+#include "Components/CharacterStateComponent.h"
 #include "Curves/CurveFloat.h"
 
 #include "Camera/CameraActor.h"
@@ -47,11 +48,11 @@ APlayerMain::APlayerMain()
 
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 
+	BufferDodgeTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("BufferDodgeTimeline"));
+	
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("Camera Boom"));
 	CameraBoom->SetupAttachment(GetRootComponent());
 
-	BufferDodgeTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("BufferDodgeTimeline"));
-	
 	PlayerFormComponent = CreateDefaultSubobject<UPlayerFormComponent>(TEXT("PlayerFormComponent"));
 
 	Attributes = CreateDefaultSubobject<UAttributeComponent>(TEXT("AttibuteComponent"));
@@ -61,18 +62,15 @@ APlayerMain::APlayerMain()
 	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("Combat"));
 
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("Inventory"));
-}
 
-ECharacterForm APlayerMain::GetCharacterForm_Implementation()
-{
-	return PlayerFormComponent->GetCharacterForm();
+	CharacterStateComponent = CreateDefaultSubobject<UCharacterStateComponent>(TEXT("CharacterStates"));
 }
 
 void APlayerMain::PerformSpectralAttack_Implementation()
 {
-	if (CombatComponent->GetCharacterAction() != ECharacterActions::ECA_Attack)
+	if (CharacterStateComponent->GetCurrentCharacterState().Action != ECharacterActions::ECA_Attack)
 	{
-		CombatComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
+		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
 		SearchTarget();
 		PlayAnimMontage(SpectralAttackCombo[SpectralAttackIndex]);
 
@@ -87,9 +85,9 @@ void APlayerMain::PerformSpectralAttack_Implementation()
 
 void APlayerMain::PerformSpectralBarrier_Implementation()
 {
-	if (CombatComponent->GetCharacterAction() != ECharacterActions::ECA_Attack)
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Attack }))
 	{
-		CombatComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
+		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
 		PlayAnimMontage(SpectralHeavyAttack);
 	}
 }
@@ -103,6 +101,11 @@ void APlayerMain::ResetSpectralAttack_Implementation()
 void APlayerMain::GetHit_Implementation(const FVector& ImpactPoint)
 {
 
+}
+
+UCharacterStateComponent* APlayerMain::GetCharacterStateComponent_Implementation()
+{
+	return CharacterStateComponent;
 }
 
 void APlayerMain::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled)
@@ -172,29 +175,53 @@ void APlayerMain::BeginPlay()
 	}
 }
 
-void APlayerMain::PerformDodge()
+void APlayerMain::Dodge()
 {
-	if (CombatComponent->GetCharacterAction() == ECharacterActions::ECA_Finish) return;
-
-	FVector MovementInput = GetLastMovementInputVector();
-	if (!MovementInput.IsNearlyZero())
+	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Dodge }))
 	{
-		FRotator LookRotation = MovementInput.Rotation();
-		SetActorRotation(FRotator(0.f, LookRotation.Yaw, 0.f));
-	}
-
-	StopDodgeBufferEvent();
-	DodgeBufferEvent(BufferDodgeDistance);
-	CombatComponent->SetCharacterAction(ECharacterActions::ECA_Dodge);
-
-	if (PlayerFormComponent && PlayerFormComponent->GetCharacterForm() == ECharacterForm::ECF_Human)
-	{
-		PlayAnimMontage(DodgeMontage);
+		bIsSaveDodge = true;
 	}
 	else
 	{
-		//directional animation based on last movement input vector
-		PlayAnimMontage(SpectralDodgeMontage);
+		PerformDodge();
+	}
+}
+
+void APlayerMain::DodgeSaveEvent()
+{
+	if (bIsSaveDodge)
+	{
+		bIsSaveDodge = false;
+
+		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Nothing);
+		PerformDodge();
+	}
+}
+
+void APlayerMain::PerformDodge()
+{
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Finish }))
+	{
+		FVector MovementInput = GetLastMovementInputVector();
+		if (!MovementInput.IsNearlyZero())
+		{
+			FRotator LookRotation = MovementInput.Rotation();
+			SetActorRotation(FRotator(0.f, LookRotation.Yaw, 0.f));
+		}
+
+		StopDodgeBufferEvent();
+		DodgeBufferEvent(BufferDodgeDistance);
+		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Dodge);
+
+		if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Human)
+		{
+			PlayAnimMontage(DodgeMontage);
+		}
+		else
+		{
+			//directional animation based on last movement input vector
+			PlayAnimMontage(SpectralDodgeMontage);
+		}
 	}
 }
 
@@ -245,10 +272,8 @@ void APlayerMain::SearchTarget()
 
 float APlayerMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
-	//TODO: player healthbar and fx to receive damage
-
 	if (!bCanReceiveDamage) return 0.f;
-	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Green, FString("APlayerMain::TakeDamage"));
+
 	if (Attributes && Attributes->IsAlive())
 	{
 		if (DamageEvent.DamageTypeClass && DamageEvent.DamageTypeClass == USpectralTrapDamageType::StaticClass())
@@ -315,7 +340,7 @@ AEnemy* APlayerMain::GetTargetEnemy()
 
 void APlayerMain::PossessEnemy()
 {
-	if (PlayerFormComponent->GetCharacterForm() == ECharacterForm::ECF_Spectral)
+	if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
 	{
 		AEnemy* TargetEnemy = GetTargetEnemy();
 		PlayerControllerRef = Cast<APlayerController>(GetController());
@@ -368,18 +393,19 @@ void APlayerMain::ReleasePossession()
 
 void APlayerMain::Move(const FInputActionValue& Value)
 {
-	if (CombatComponent->GetCharacterAction() == ECharacterActions::ECA_Block || CombatComponent->GetCharacterAction() == ECharacterActions::ECA_Finish) return;
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Block, ECharacterActions::ECA_Finish }))
+	{
+		const FVector2D MoveVector = Value.Get<FVector2D>();
 
-	const FVector2D MoveVector = Value.Get<FVector2D>();
+		const FRotator ControlRotation = GetControlRotation();
+		const FRotator YawRotation(0.f, ControlRotation.Yaw, 0.f);
 
-	const FRotator ControlRotation = GetControlRotation();
-	const FRotator YawRotation(0.f, ControlRotation.Yaw, 0.f);
+		const FVector DirectionForward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+		const FVector DirectionSideward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
-	const FVector DirectionForward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-	const FVector DirectionSideward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-
-	AddMovementInput(DirectionForward, MoveVector.Y);
-	AddMovementInput(DirectionSideward, MoveVector.X);
+		AddMovementInput(DirectionForward, MoveVector.Y);
+		AddMovementInput(DirectionSideward, MoveVector.X);
+	}
 }
 
 void APlayerMain::Look(const FInputActionValue& Value)
@@ -392,25 +418,27 @@ void APlayerMain::Look(const FInputActionValue& Value)
 
 void APlayerMain::Jump()
 {
-	if (CombatComponent->GetCharacterAction() == ECharacterActions::ECA_Block || CombatComponent->GetCharacterAction() == ECharacterActions::ECA_Finish) return;
-
-	PlayAnimMontage(JumpMontage, 1.f);
-
-	Super::Jump();
-
-	if (GetCharacterMovement()->IsFalling() && CanDoubleJump)
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Block, ECharacterActions::ECA_Finish }))
 	{
-		DoubleJump();
+		PlayAnimMontage(JumpMontage, 1.f);
+
+		Super::Jump();
+
+		if (GetCharacterMovement()->IsFalling() && CanDoubleJump)
+		{
+			DoubleJump();
+		}
 	}
 }
 
 void APlayerMain::DoubleJump()
 {
-	if (CombatComponent->GetCharacterAction() == ECharacterActions::ECA_Block) return;
-
-	PlayAnimMontage(DoubleJumpMontage);
-	LaunchCharacter(FVector(0.f, 0.f, 800.f), false, true);
-	CanDoubleJump = false;
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Block }))
+	{
+		PlayAnimMontage(DoubleJumpMontage);
+		LaunchCharacter(FVector(0.f, 0.f, 800.f), false, true);
+		CanDoubleJump = false;
+	}
 }
 
 void APlayerMain::Landed(const FHitResult& Hit)
@@ -427,7 +455,7 @@ void APlayerMain::Interact(const FInputActionValue& Value)
 		return;
 	}
 
-	if (PlayerFormComponent && PlayerFormComponent->GetCharacterForm() == ECharacterForm::ECF_Human)
+	if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Human)
 	{
 		if (OverlappingItem && InventoryComponent)
 		{
@@ -441,7 +469,7 @@ void APlayerMain::Interact(const FInputActionValue& Value)
 				}
 				OverlappingItem = nullptr;
 			}
-			// else { // Mensaje inventario lleno? }
+			// else { // full inventory }
 		}
 	}
 	else
@@ -485,18 +513,20 @@ void APlayerMain::Execute(const FInputActionValue& Value)
 
 void APlayerMain::ToggleForm()
 {
-	TArray<ECharacterActions> ActionsToCheck = { ECharacterActions::ECA_Dead, ECharacterActions::ECA_Block, ECharacterActions::ECA_Finish, ECharacterActions::ECA_Attack };
-	if (CombatComponent->IsActionEqualToAny(ActionsToCheck)) return;
+	if (CharacterStateComponent->IsActionEqualToAny({ 
+		ECharacterActions::ECA_Dead, 
+		ECharacterActions::ECA_Block, 
+		ECharacterActions::ECA_Finish, 
+		ECharacterActions::ECA_Attack })) return;
 
 	float CurrentTime = GetWorld()->GetTimeSeconds();
 	if (CurrentTime - LastTransformationTime < TransformationCooldown) return;
 	LastTransformationTime = 0;
 
-	if (PlayerFormComponent->GetCharacterForm() != ECharacterForm::ECF_Spectral)
+	if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Human)
 	{
 		WithEnergy();
 	}
-
 	else
 	{
 		Attributes->StopDecreaseEnergy();
@@ -549,7 +579,7 @@ void APlayerMain::Die()
 		}
 		
 		GetCharacterMovement()->DisableMovement();
-		CombatComponent->SetCharacterAction(ECharacterActions::ECA_Dead);
+		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Dead);
 
 		FTimerHandle TimerHandle_LoadCheckpoint;
 		GetWorldTimerManager().SetTimer(TimerHandle_LoadCheckpoint, this, &APlayerMain::LoadLastCheckpoint, 2.0f, false);
@@ -573,7 +603,7 @@ void APlayerMain::Revive()
 		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
 		if (CombatComponent)
 		{
-			CombatComponent->SetCharacterAction(ECharacterActions::ECA_Nothing);
+			CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Nothing);
 		}
 	}
 }
@@ -582,7 +612,7 @@ void APlayerMain::ResetFollowCamera()
 {
 	if (FollowCamera && PlayerControllerRef)
 	{
-		CombatComponent->SetCharacterAction(ECharacterActions::ECA_Nothing);
+		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Nothing);
 		FollowCamera->AttachToComponent(CameraBoom, FAttachmentTransformRules::SnapToTargetIncludingScale, FName("SprinEndpoint"));
 		PlayerControllerRef->EnableInput(PlayerControllerRef);
 		bCanReceiveDamage = true;
@@ -641,6 +671,7 @@ void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APlayerMain::Move);
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlayerMain::Look);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &APlayerMain::Jump);
+		EnhancedInputComponent->BindAction(DodgeAction, ETriggerEvent::Started, this, &APlayerMain::Dodge);
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &APlayerMain::Interact);
 
 		EnhancedInputComponent->BindAction(CombatComponent->AttackAction, ETriggerEvent::Triggered, this, &APlayerMain::Attack);

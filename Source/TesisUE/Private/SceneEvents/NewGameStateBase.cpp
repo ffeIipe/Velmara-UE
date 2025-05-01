@@ -21,9 +21,12 @@ void ANewGameStateBase::SaveAllMementoStates()
 {
 	for (AActor* Entity : MementoEntities)
 	{
-		if (UMementoComponent* MementoComp = Entity->GetComponentByClass<UMementoComponent>())
+		if (IsValid(Entity))
 		{
-			MementoComp->SaveState();
+			if (UMementoComponent* MementoComp = Entity->GetComponentByClass<UMementoComponent>())
+			{
+				MementoComp->SaveState();
+			}
 		}
 	}
 }

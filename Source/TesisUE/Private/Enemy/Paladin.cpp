@@ -7,6 +7,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/BoxComponent.h"
 #include "Components/CombatComponent.h"
+#include "Components/CharacterStateComponent.h"
 
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -39,6 +40,8 @@ APaladin::APaladin()
 	BoxTraceStart->SetRelativeLocation(FVector(0.f, 0.f, 82.f));
 
 	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("Combat Component"));
+
+	CharacterStateComponent = CreateDefaultSubobject<UCharacterStateComponent>(TEXT("CharacterStateComponent"));
 }
 
 void APaladin::BeginPlay()
@@ -47,7 +50,7 @@ void APaladin::BeginPlay()
 	
 	SwordCollider->OnComponentBeginOverlap.AddDynamic(this, &APaladin::OnSwordOverlap);
 
-	CombatComponent->SetCharacterState(ECharacterStates::ECS_EquippedSword);
+	CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_EquippedSword);
 }
 
 void APaladin::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled)
@@ -140,6 +143,11 @@ void APaladin::LaunchUp_Implementation()
 void APaladin::ShieldHit_Implementation()
 {
 	PlayAnimMontage(HitReactMontage, 1.f, FName("ShieldHit"));
+}
+
+UCharacterStateComponent* APaladin::GetCharacterStateComponent_Implementation()
+{
+	return CharacterStateComponent;
 }
 
 void APaladin::LaunchEnemyUp()

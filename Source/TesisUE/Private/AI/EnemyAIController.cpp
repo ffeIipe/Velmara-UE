@@ -5,7 +5,7 @@
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
 #include "BehaviorTree/BlackboardComponent.h"
-#include "Components/PlayerFormComponent.h"
+#include "Components/CharacterStateComponent.h"
 #include "Enemy/Enemy.h"
 
 AEnemyAIController::AEnemyAIController(const FObjectInitializer& ObjectInitializer)
@@ -52,13 +52,13 @@ void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Sti
 	APawn* PlayerPawn = Cast<APawn>(Actor);
 	if (!PlayerPawn) return;
 
-	UPlayerFormComponent* PlayerFormComponent = PlayerPawn->FindComponentByClass<UPlayerFormComponent>();
+	UCharacterStateComponent* CharacterStateComponent = PlayerPawn->FindComponentByClass<UCharacterStateComponent>();
 
 	AEnemy* Enemy = Cast<AEnemy>(GetPawn());
 
 	if (!Enemy) return;
 
-	if (Enemy->GetEnemyType() == EEnemyType::Paladin && PlayerFormComponent && PlayerFormComponent->GetCharacterForm() == ECharacterForm::ECF_Spectral)
+	if (Enemy->GetEnemyType() == EEnemyType::Paladin && CharacterStateComponent && CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
 	{
 		BlackboardComponent->ClearValue(FName("TargetActor"));
 		BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), false);

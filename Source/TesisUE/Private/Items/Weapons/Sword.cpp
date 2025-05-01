@@ -8,7 +8,8 @@
 #include "Interfaces/HitInterface.h"
 
 #include "Player/PlayerMain.h"
-#include "Components/CombatComponent.h"
+#include "Interfaces/CharacterState.h"
+#include "Components/CharacterStateComponent.h"
 
 ASword::ASword()
 {
@@ -38,6 +39,9 @@ void ASword::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwn
 	SetOwner(NewOwner);
 	SetInstigator(NewInstigator);
 	ItemState = EItemState::EIS_Equipped;
+
+	CharacterStateInterface = Cast<ICharacterState>(NewOwner);
+	CharacterStateComponent = CharacterStateInterface->Execute_GetCharacterStateComponent(NewOwner);
 }
 void ASword::AttachMeshToSocket(USceneComponent* InParent, const FName& InSocketName)
 {
@@ -53,17 +57,15 @@ void ASword::Enable(bool Param)
 	SetActorHiddenInGame(!Param);
 	SetActorEnableCollision(Param);
 
-	APlayerMain* PlayerMain = Cast<APlayerMain>(Owner);
-
-	if (!PlayerMain) return;
+	if (!CharacterStateComponent) return;
 	
 	if (Param)
 	{
-		PlayerMain->CombatComponent->SetCharacterState(ECharacterStates::ECS_EquippedSword);
+		CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_EquippedSword);
 	}
 	else
 	{
-		PlayerMain->CombatComponent->SetCharacterState(ECharacterStates::ECS_Unequipped);
+		CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_Unequipped);
 	}
 }
 
@@ -72,6 +74,9 @@ void ASword::Unequip()
 	Super::Unequip();
 	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 	ItemState = EItemState::EIS_Hovering;
+
+	CharacterStateInterface = nullptr;
+	CharacterStateComponent = nullptr;
 
 	UE_LOG(LogTemp, Log, TEXT("Sword %s unequipped"), *GetName());
 }
@@ -89,18 +94,17 @@ void ASword::EnableVisuals(bool bEnable)
 		WeaponBox->SetCollisionEnabled(bEnable ? ECollisionEnabled::QueryOnly : ECollisionEnabled::NoCollision);
 	}
 
-	APlayerMain* PlayerOwner = Cast<APlayerMain>(GetOwner());
-	if (PlayerOwner && PlayerOwner->CombatComponent)
+	if (CharacterStateComponent)
 	{
 		if (bEnable)
 		{
-			PlayerOwner->CombatComponent->SetCharacterState(ECharacterStates::ECS_EquippedSword);
+			CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_EquippedSword);
 		}
 		else
 		{
 			if (ItemState == EItemState::EIS_Equipped)
 			{
-				PlayerOwner->CombatComponent->SetCharacterState(ECharacterStates::ECS_Unequipped);
+				CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_Unequipped);
 			}
 		}
 	}

@@ -16,8 +16,8 @@ class TESISUE_API IFormInterface
 	GENERATED_BODY()
 
 public:
-	UFUNCTION(BlueprintNativeEvent)
-	ECharacterForm GetCharacterForm();
+	//UFUNCTION(BlueprintNativeEvent)
+	//ECharacterForm GetCharacterForm();
 
 	UFUNCTION(BlueprintNativeEvent)
 	void PerformSpectralAttack();
@@ -27,6 +27,4 @@ public:
 	
 	UFUNCTION(BlueprintNativeEvent)
 	void ResetSpectralAttack();
-
-
 };

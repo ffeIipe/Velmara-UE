@@ -11,6 +11,8 @@ class UMaterialParameterCollection;
 class UTimelineComponent;
 class UCurveFloat;
 class ASword;
+class ICharacterState;
+class UCharacterStateComponent;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class TESISUE_API UPlayerFormComponent : public UActorComponent
@@ -23,17 +25,17 @@ public:
     UFUNCTION(BlueprintCallable)
     void ToggleForm(bool CanToggle);
 
-    ECharacterForm GetCharacterForm() const { return CurrentForm; }
-
 protected:
     virtual void BeginPlay() override;
 
 private:
+    ICharacterState* CharacterStateInterface;
+
+    UCharacterStateComponent* CharacterStateComponent;
+
     void ApplySpectralEffects();
 
     void ApplyHumanEffects();
-
-    ECharacterForm CurrentForm;
 
     bool bIsSpectralActive = false;
 

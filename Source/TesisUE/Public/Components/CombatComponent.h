@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "Player/CharacterStates.h"
 #include "CombatComponent.generated.h"
 
 class UInputAction;
@@ -12,6 +11,7 @@ struct FInputActionValue;
 class UTimelineComponent;
 class UCurveFloat;
 class IFormInterface;
+class ICharacterState;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class TESISUE_API UCombatComponent : public UActorComponent
@@ -23,32 +23,15 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "SoftLock")
 	FORCEINLINE AActor* GetSoftLockTarget() const { return SoftLockTarget; }
-
-	UFUNCTION(BlueprintPure, Category = "FSM")
-	FORCEINLINE ECharacterActions GetCharacterAction() const { return CharacterAction; }
-
-	UFUNCTION(BlueprintPure, Category = "FSM")
-	FORCEINLINE ECharacterStates GetCharacterState() const { return CharacterState; }
-
-	UFUNCTION(BlueprintCallable, Category = "FSM")
-	ECharacterActions SetCharacterAction(ECharacterActions NewAction);
-	
-	UFUNCTION(BlueprintCallable, Category = "FSM")
-	ECharacterStates SetCharacterState(ECharacterStates NewState);
-
-	UFUNCTION(BlueprintPure, Category = "FSM")
-	bool IsActionEqualToAny(const TArray<ECharacterActions>& FormsToCheck);
-
-	UFUNCTION(BlueprintPure, Category = "FSM")
-	bool IsStateEqualToAny(const TArray<ECharacterStates>& StatesToCheck);
-
-	UFUNCTION(BlueprintPure, Category = "PlayerForm")
-	bool IsFormEqualToAny(const TArray<ECharacterForm>& StatesToCheck);
 	
 	UFUNCTION(BlueprintCallable, Category = "Attack")
 	void ResetState();
 
-	IFormInterface* PlayerForm;
+	ICharacterState* CharacterStateInterface;
+
+	IFormInterface* SpectralAttacks;
+
+	UCharacterStateComponent* OwnerCharacterStateComponent;
 
 protected:
 	void BeginPlay() override;
@@ -139,10 +122,6 @@ private:
 
 	ACharacter* OwningCharacter;
 
-	ECharacterActions CharacterAction = ECharacterActions::ECA_Nothing;
-
-	ECharacterStates CharacterState = ECharacterStates::ECS_Unequipped;
-
 	UPROPERTY(VisibleAnywhere, Category = "Attack | LightAttack")
 	int LightAttackIndex = 0;
 
@@ -154,6 +133,10 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "Attack | ComboAttack")
 	int ComboExtenderIndex = 0;
+
+	bool CanAttack();
+
+	void BaseAttack(TArray<UAnimMontage*> AttackMontage, int AttackIndex);
 
 public:
 	UPROPERTY(VisibleAnywhere, Category = "Attack | LightAttack")

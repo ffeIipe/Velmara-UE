@@ -24,9 +24,9 @@ public:
 
 	AItem();
 
-public: // O protected si prefieres acceder vía getters
+public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Properties")
-	FText ItemDisplayName = FText::FromString("Item"); // Valor por defecto
+	FText ItemDisplayName = FText::FromString("Item");
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (MultiLine = true))
 	FText ItemDescription = FText::FromString("Default item description.");
@@ -45,7 +45,6 @@ public: // O protected si prefieres acceder vía getters
 	virtual void EnableVisuals(bool bEnable);
 	
 	virtual UPrimitiveComponent* GetCollisionComponent();
-
 
 protected:
 	UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")

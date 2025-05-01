@@ -2,6 +2,7 @@
 
 
 #include "Components/PlayerFormComponent.h"
+#include "Interfaces/CharacterState.h"
 #include "GameFramework/Actor.h"
 #include "Engine/World.h"
 #include "Kismet/GameplayStatics.h"
@@ -18,7 +19,6 @@
 UPlayerFormComponent::UPlayerFormComponent()
 {
     PrimaryComponentTick.bCanEverTick = false;
-    CurrentForm = ECharacterForm::ECF_Human;
 
     SpectralEffectTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("SpectralEffectTimeline"));
 
@@ -33,6 +33,12 @@ void UPlayerFormComponent::BeginPlay()
 {
     Super::BeginPlay();
 
+    CharacterStateInterface = Cast<ICharacterState>(GetOwner());
+
+    CharacterStateComponent = CharacterStateInterface->Execute_GetCharacterStateComponent(GetOwner());
+
+    CharacterStateComponent->SetCharacterForm(ECharacterForm::ECF_Human);
+
     if (SpectralCurve)
     {
         FOnTimelineFloat ProgressFunction;
@@ -45,7 +51,7 @@ void UPlayerFormComponent::ToggleForm(bool CanToggle)
 {
     if (CanToggle)
     {
-        CurrentForm == ECharacterForm::ECF_Human ? ApplySpectralEffects() : ApplyHumanEffects();
+        CharacterStateComponent->IsFormEqualToAny({ ECharacterForm::ECF_Human }) ? ApplySpectralEffects() : ApplyHumanEffects();
     }
     else
     {
@@ -55,10 +61,10 @@ void UPlayerFormComponent::ToggleForm(bool CanToggle)
 
 void UPlayerFormComponent::ApplySpectralEffects()
 {
-    CurrentForm = ECharacterForm::ECF_Spectral;
+    CharacterStateComponent->SetCharacterForm(ECharacterForm::ECF_Spectral);
     SpectralEffectTimeline->PlayFromStart();
 
-    //TODO: find and enable spectrals objects WITH AN STATIC CLASS or smt like that
+    //TODO: improve it with a subscription to an a static class
     for (TActorIterator<ASpectralObject> It(GetWorld()); It; ++It)
     {
         It->SetSpectralVisibility(true);
@@ -67,10 +73,10 @@ void UPlayerFormComponent::ApplySpectralEffects()
 
 void UPlayerFormComponent::ApplyHumanEffects()
 {
-    CurrentForm = ECharacterForm::ECF_Human;
+    CharacterStateComponent->SetCharacterForm(ECharacterForm::ECF_Human);
     SpectralEffectTimeline->Reverse();
 
-    //find and disable spectrals objects
+    //TODO: improve it with a subscription to an a static classS
     for (TActorIterator<ASpectralObject> It(GetWorld()); It; ++It)
     {
         It->SetSpectralVisibility(false);

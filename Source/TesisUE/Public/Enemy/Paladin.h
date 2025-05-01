@@ -4,13 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "Enemy/Enemy.h"
-#include "Interfaces/LaunchableInterface.h"
+#include "Interfaces/CharacterState.h"
 #include "Paladin.generated.h"
 
 class UBoxComponent;
 
 UCLASS()
-class TESISUE_API APaladin : public AEnemy
+class TESISUE_API APaladin : public AEnemy, public ICharacterState
 {
 	GENERATED_BODY()
 
@@ -22,6 +22,8 @@ public:
 	virtual void LaunchUp_Implementation() override;
 
 	virtual void ShieldHit_Implementation() override;
+
+	virtual UCharacterStateComponent* GetCharacterStateComponent_Implementation() override;
 
 protected:
 	void BeginPlay();
@@ -45,6 +47,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components | Combat")
 	UCombatComponent* CombatComponent;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components | CharacterStateComponent")
+	UCharacterStateComponent* CharacterStateComponent;
 
 	UFUNCTION(BlueprintCallable)
 	virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);

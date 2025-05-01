@@ -7,6 +7,8 @@
 #include "Sword.generated.h"
 
 class UBoxComponent;
+class ICharacterState;
+class UCharacterStateComponent;
 
 UCLASS()
 class TESISUE_API ASword : public AItem
@@ -76,6 +78,10 @@ protected:
 	void CameraShake();
 
 private:
+	ICharacterState* CharacterStateInterface = nullptr;
+
+	UCharacterStateComponent* CharacterStateComponent = nullptr;
+
 	UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
 	UBoxComponent* WeaponBox;
 

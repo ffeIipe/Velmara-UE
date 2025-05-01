@@ -10,11 +10,12 @@
 
 #include "Enemy/Paladin.h"
 #include "Interfaces/HitInterface.h"
+#include "Interfaces/CharacterState.h"
 #include "Interfaces/FormInterface.h"
 
 #include "Player/PlayerMain.h"
 #include "Camera/CameraActor.h"
-#include <Enemy/Paladin/ShieldedPaladin.h>
+#include "Enemy/Paladin/ShieldedPaladin.h"
 
 UCombatComponent::UCombatComponent()
 {
@@ -25,39 +26,6 @@ UCombatComponent::UCombatComponent()
 	SoftLockTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("SoftLockTimeline"));
 }
 
-ECharacterActions UCombatComponent::SetCharacterAction(ECharacterActions NewAction)
-{
-	if (NewAction != CharacterAction)
-	{
-		CharacterAction = NewAction;
-	}
-	return NewAction;
-}
-
-ECharacterStates UCombatComponent::SetCharacterState(ECharacterStates NewState)
-{
-	if (NewState != CharacterState)
-	{
-		CharacterState = NewState;
-	}
-	return NewState;
-}
-
-bool UCombatComponent::IsActionEqualToAny(const TArray<ECharacterActions>& ActionsToCheck)
-{
-	return ActionsToCheck.Contains(CharacterAction);
-}
-
-bool UCombatComponent::IsStateEqualToAny(const TArray<ECharacterStates>& StatesToCheck)
-{
-	return StatesToCheck.Contains(CharacterState);
-}
-
-bool UCombatComponent::IsFormEqualToAny(const TArray<ECharacterForm>& FormsToCheck)
-{
-	return FormsToCheck.Contains(PlayerForm->Execute_GetCharacterForm(GetOwner()));
-}
-
 void UCombatComponent::ResetState()
 {
 	if (OwningCharacter->GetCharacterMovement()->IsFlying())
@@ -66,16 +34,16 @@ void UCombatComponent::ResetState()
 	}
 
 	const TArray<ECharacterActions> CharacterActionsToCheck = { ECharacterActions::ECA_Block };
-	if (!IsActionEqualToAny(CharacterActionsToCheck))
+	if (!OwnerCharacterStateComponent->IsActionEqualToAny(CharacterActionsToCheck))
 	{
-		SetCharacterAction(ECharacterActions::ECA_Nothing);
+		OwnerCharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Nothing);
 	}
 
 	ResetLightAttackStats();
 	ResetJumpAttackStats();
 	ResetHeavyAttackStats();
 
-	if (PlayerForm) PlayerForm->Execute_ResetSpectralAttack(GetOwner());
+	if (SpectralAttacks) SpectralAttacks->Execute_ResetSpectralAttack(GetOwner());
 	//save dodge = false;
 }
 
@@ -86,7 +54,11 @@ void UCombatComponent::BeginPlay()
 
 	OwningCharacter = Cast<ACharacter>(GetOwner());
 
-	PlayerForm = Cast<IFormInterface>(GetOwner());
+	CharacterStateInterface = Cast<ICharacterState>(GetOwner());
+
+	SpectralAttacks = Cast<IFormInterface>(GetOwner());
+
+	OwnerCharacterStateComponent = CharacterStateInterface->Execute_GetCharacterStateComponent(GetOwner());
 
 	if (BufferCurve)
 	{
@@ -105,52 +77,22 @@ void UCombatComponent::BeginPlay()
 
 void UCombatComponent::LightAttack(int AttackIndex)
 {
-	if (GetCharacterAction() != ECharacterActions::ECA_Attack && GetCharacterState() != ECharacterStates::ECS_Unequipped)
-	{
-		StopAttackBufferEvent();
-		StartAttackBufferEvent(BufferAttackDistance);
-		SetCharacterAction(ECharacterActions::ECA_Attack);
-		SoftLockOn();
-		OwningCharacter->PlayAnimMontage(LightAttackCombo[AttackIndex]);
-
-		LightAttackIndex++;
-
-		if (LightAttackIndex >= LightAttackCombo.Num())
-		{
-			LightAttackIndex = 0;
-		}
-	}
+	BaseAttack(LightAttackCombo, AttackIndex);
 }
 
 void UCombatComponent::JumpAttack(int AttackIndex)
 {
-	if (GetCharacterAction() != ECharacterActions::ECA_Attack && GetCharacterState() != ECharacterStates::ECS_Unequipped)
-	{
-		OwningCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
-		SetCharacterAction(ECharacterActions::ECA_Attack);
-		SoftLockOn();
-
-		OwningCharacter->PlayAnimMontage(JumpAttackCombo[AttackIndex]);
-
-		JumpAttackIndex++;
-
-		if (JumpAttackIndex >= JumpAttackCombo.Num())
-		{
-			JumpAttackIndex = 0;
-			OwningCharacter->PlayAnimMontage(CrasherMontage, 1.f);
-			bIsLaunched = false;
-		}
-	}
+	BaseAttack(JumpAttackCombo, AttackIndex);
 }
 
 void UCombatComponent::PerformComboStarter(int AttackIndex)
 {
-	if (GetCharacterAction() != ECharacterActions::ECA_Attack && GetCharacterAction() != ECharacterActions::ECA_Dodge && GetCharacterState() != ECharacterStates::ECS_Unequipped)
+	if (CanAttack())
 	{
 		ComboExtenderIndex = AttackIndex;
 		StopAttackBufferEvent();
 		StartAttackBufferEvent(BufferAttackDistance);
-		SetCharacterAction(ECharacterActions::ECA_Attack);
+		OwnerCharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
 
 		OwningCharacter->PlayAnimMontage(ComboStarterAttack[AttackIndex - 1]);
 
@@ -163,11 +105,11 @@ void UCombatComponent::PerformComboStarter(int AttackIndex)
 
 void UCombatComponent::PerformComboExtender(int AttackIndex)
 {
-	if (GetCharacterAction() != ECharacterActions::ECA_Attack && GetCharacterAction() != ECharacterActions::ECA_Dodge && GetCharacterState() != ECharacterStates::ECS_Unequipped)
+	if (CanAttack())
 	{
 		StopAttackBufferEvent();
 		StartAttackBufferEvent(BufferAttackDistance);
-		SetCharacterAction(ECharacterActions::ECA_Attack);
+		OwnerCharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
 
 		OwningCharacter->PlayAnimMontage(ComboExtenderAttack[AttackIndex - 1]);
 
@@ -179,23 +121,7 @@ void UCombatComponent::PerformComboExtender(int AttackIndex)
 
 void UCombatComponent::HeavyAttack(int AttackIndex)
 {
-	if (GetCharacterAction() != ECharacterActions::ECA_Attack && GetCharacterState() != ECharacterStates::ECS_Unequipped)
-	{
-		StopAttackBufferEvent();
-		StartAttackBufferEvent(BufferAttackDistance);
-		SetCharacterAction(ECharacterActions::ECA_Attack);
-
-		OwningCharacter->PlayAnimMontage(HeavyAttackCombo[AttackIndex]);
-
-		SoftLockOn();
-
-		HeavyAttackIndex++;
-
-		if (HeavyAttackIndex >= HeavyAttackCombo.Num())
-		{
-			HeavyAttackIndex = 0;
-		}
-	}
+	BaseAttack(HeavyAttackCombo, AttackIndex);
 }
 
 void UCombatComponent::StartAttackBufferEvent(float BufferAmount)
@@ -298,10 +224,10 @@ void UCombatComponent::GetDirectionalReact(FName Section)
 
 void UCombatComponent::Block()
 {
-	if (GetCharacterState() != ECharacterStates::ECS_Unequipped)
+	if (OwnerCharacterStateComponent->GetCurrentCharacterState().State != ECharacterStates::ECS_Unequipped)
 	{
 		OwningCharacter->PlayAnimMontage(BlockMontage, 1.f, FName("BlockIdle"));
-		SetCharacterAction(ECharacterActions::ECA_Block);
+		OwnerCharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Block);
 	}
 }
 
@@ -313,12 +239,12 @@ void UCombatComponent::ReceiveBlock()
 void UCombatComponent::ReleaseBlock()
 {
 	OwningCharacter->StopAnimMontage(BlockMontage);
-	SetCharacterAction(ECharacterActions::ECA_Nothing);
+	OwnerCharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Nothing);
 }
 
 void UCombatComponent::Execute()
 {
-	if (GetCharacterAction() == ECharacterActions::ECA_Finish) return;
+	if (OwnerCharacterStateComponent->GetCurrentCharacterState().Action == ECharacterActions::ECA_Finish) return;
 
 	if (AActor* Enemy = SphereTraceForEnemies(OwningCharacter->GetActorLocation(), OwningCharacter->GetActorLocation() + OwningCharacter->GetActorForwardVector() * 40.f))
 	{
@@ -326,7 +252,7 @@ void UCombatComponent::Execute()
 		{
 			if (IHitInterface::Execute_CanBeFinished(Enemy))
 			{
-				SetCharacterAction(ECharacterActions::ECA_Finish);
+				OwnerCharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Finish);
 
 				Enemy->SetActorLocation(FVector(
 					GetOwner()->GetActorLocation().X + 160.f,
@@ -379,7 +305,7 @@ void UCombatComponent::Crasher()
 {
 	SoftLockOn();
 	OwningCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
-	CharacterAction = ECharacterActions::ECA_Attack;
+	OwnerCharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
 
 	FVector Start = OwningCharacter->GetActorLocation();
 	FVector End = Start + FVector(0.f, 0.f, -100000.f);
@@ -438,19 +364,44 @@ AActor* UCombatComponent::SphereTraceForEnemies(FVector Start, FVector End)
 	return ResultHit.GetActor();
 }
 
+bool UCombatComponent::CanAttack()
+{
+	return (!OwnerCharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Attack, ECharacterActions::ECA_Dodge }) &&
+			!OwnerCharacterStateComponent->IsStateEqualToAny({ ECharacterStates::ECS_Unequipped }) &&
+			!OwnerCharacterStateComponent->IsFormEqualToAny({ECharacterForm::ECF_Spectral}));
+}
+
+void UCombatComponent::BaseAttack(TArray<UAnimMontage*> AttackMontage, int AttackIndex)
+{
+	if (CanAttack())
+	{
+		StopAttackBufferEvent();
+		StartAttackBufferEvent(BufferAttackDistance);
+		OwnerCharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
+		SoftLockOn();
+		OwningCharacter->PlayAnimMontage(AttackMontage[AttackIndex]);
+
+		AttackIndex++;
+
+		if (AttackIndex >= AttackMontage.Num())
+		{
+			AttackIndex = 0;
+		}
+	}
+}
+
 void UCombatComponent::Input_Attack(const FInputActionValue& Value)
 {
 	//save dodge = false
 	bIsSaveHeavyAttack = false;
 
-	const TArray<ECharacterActions> CharacterActionsToCheck = { ECharacterActions::ECA_Attack, ECharacterActions::ECA_Dodge};
-	if (IsActionEqualToAny(CharacterActionsToCheck))
+	if (CanAttack())
 	{
-		bIsSaveLightAttack = true;
+		LightAttackEvent();
 	}
 	else
 	{
-		LightAttackEvent();
+		bIsSaveLightAttack = true;
 	}
 }
 
@@ -459,12 +410,7 @@ void UCombatComponent::Input_HeavyAttack(const FInputActionValue& Value)
 	//save dodge = false;
 	bIsSaveLightAttack = false;
 
-	const TArray<ECharacterActions> CharacterActionsToCheck = { ECharacterActions::ECA_Attack, ECharacterActions::ECA_Dodge };
-	if (IsActionEqualToAny(CharacterActionsToCheck))
-	{
-		bIsSaveHeavyAttack = true;
-	}
-	else
+	if (CanAttack())
 	{
 		if (!bIsLaunched)
 		{
@@ -473,7 +419,11 @@ void UCombatComponent::Input_HeavyAttack(const FInputActionValue& Value)
 		else
 		{
 			Crasher();
-		}
+		}	
+	}
+	else
+	{
+		bIsSaveHeavyAttack = true;
 	}
 }
 
@@ -483,9 +433,9 @@ void UCombatComponent::Input_Launch(const FInputActionValue& Value)
 	const TArray<ECharacterStates> CharacterStatesToCheck = { ECharacterStates::ECS_EquippedSword };
 	const TArray<ECharacterForm> CharacterFormToCheck = { ECharacterForm::ECF_Human};
 
-	if (!IsActionEqualToAny(CharacterActionsToCheck) && IsStateEqualToAny(CharacterStatesToCheck) && IsFormEqualToAny(CharacterFormToCheck))
+	if (CanAttack())
 	{
-		SetCharacterAction(ECharacterActions::ECA_Attack);
+		OwnerCharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
 		SoftLockOn();
 		OwningCharacter->PlayAnimMontage(LaunchMontage);
 	}
@@ -508,9 +458,9 @@ void UCombatComponent::Input_Execute(const FInputActionValue& Value)
 
 void UCombatComponent::LightAttackEvent()
 {
-	if (PlayerForm && PlayerForm->Execute_GetCharacterForm(GetOwner()) == ECharacterForm::ECF_Spectral)
+	if (OwnerCharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
 	{
-		PlayerForm->Execute_PerformSpectralAttack(GetOwner());
+		SpectralAttacks->Execute_PerformSpectralAttack(GetOwner());
 	}
 	else if (bIsLaunched)
 	{
@@ -524,9 +474,9 @@ void UCombatComponent::LightAttackEvent()
 
 void UCombatComponent::HeavyAttackEvent()
 {
-	if (PlayerForm && PlayerForm->Execute_GetCharacterForm(GetOwner()) == ECharacterForm::ECF_Spectral)
+	if (OwnerCharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
 	{
-		PlayerForm->Execute_PerformSpectralBarrier(GetOwner());
+		SpectralAttacks->Execute_PerformSpectralBarrier(GetOwner());
 	}
 	else
 	{
@@ -536,19 +486,17 @@ void UCombatComponent::HeavyAttackEvent()
 
 void UCombatComponent::SaveLightAttackEvent()
 {
-	const TArray<ECharacterActions> CharacterActionsToCheck = { ECharacterActions::ECA_Attack };
-
 	if (bIsSaveLightAttack)
 	{
 		bIsSaveLightAttack = false;
-		SetCharacterAction(ECharacterActions::ECA_Nothing);
+		OwnerCharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Nothing);
 		LightAttackEvent();
 	}
 	else if (bIsSaveLightAttack && LightAttackIndex > 0)
 	{
-		if (IsActionEqualToAny(CharacterActionsToCheck))
+		if (OwnerCharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Attack }))
 		{
-			SetCharacterAction(ECharacterActions::ECA_Nothing);
+			OwnerCharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Nothing);
 			PerformComboStarter(LightAttackIndex);
 		}
 	}
@@ -556,16 +504,14 @@ void UCombatComponent::SaveLightAttackEvent()
 
 void UCombatComponent::SaveHeavyAttackEvent()
 {
-	const TArray<ECharacterActions> CharacterActionsToCheck = { ECharacterActions::ECA_Attack };
-
 	if (bIsSaveHeavyAttack)
 	{
 		bIsSaveHeavyAttack = false;
 		if (!bIsLaunched)
 		{
-			if (IsActionEqualToAny(CharacterActionsToCheck))
+			if (OwnerCharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Attack }))
 			{
-				SetCharacterAction(ECharacterActions::ECA_Nothing);
+				OwnerCharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Nothing);
 				HeavyAttackEvent();
 			}
 			else
@@ -580,9 +526,9 @@ void UCombatComponent::SaveHeavyAttackEvent()
 	}
 	else if (bIsSaveHeavyAttack && ComboExtenderIndex > 0)
 	{
-		if (IsActionEqualToAny(CharacterActionsToCheck))
+		if (OwnerCharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Attack }))
 		{
-			SetCharacterAction(ECharacterActions::ECA_Nothing);
+			OwnerCharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Nothing);
 		}
 		else if (ComboExtenderAttack.Num() >= ComboExtenderIndex)
 		{

@@ -7,6 +7,7 @@
 #include "CharacterStates.h"
 #include "Interfaces/FormInterface.h"
 #include "Interfaces/HitInterface.h"
+#include "Interfaces/CharacterState.h"
 #include "PlayerMain.generated.h"
 
 class UCameraComponent;
@@ -26,16 +27,15 @@ class UBoxComponent;
 class UMementoComponent;
 class UCombatComponent;
 class UInventoryComponent;
+class UCharacterStateComponent;
 
 UCLASS()
-class TESISUE_API APlayerMain : public ACharacter, public IFormInterface, public IHitInterface
+class TESISUE_API APlayerMain : public ACharacter, public IHitInterface, public ICharacterState, public IFormInterface
 {
 	GENERATED_BODY()
 
 public:
 	APlayerMain();
-
-	virtual ECharacterForm GetCharacterForm_Implementation() override;
 
 	virtual void PerformSpectralAttack_Implementation() override;
 
@@ -44,6 +44,8 @@ public:
 	virtual void ResetSpectralAttack_Implementation() override;
 
 	virtual void GetHit_Implementation(const FVector& ImpactPoint) override;
+
+	virtual UCharacterStateComponent* GetCharacterStateComponent_Implementation() override;
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
@@ -115,7 +117,13 @@ protected:
 	UAnimMontage* JumpMontage;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Dodge")
-	bool bSaveDodge = false;
+	bool bIsSaveDodge = false;
+
+	UFUNCTION()
+	void Dodge();
+
+	UFUNCTION(BlueprintCallable)
+	void DodgeSaveEvent();
 
 	UFUNCTION(BlueprintCallable, Category = "Dodge")
 	void PerformDodge();
@@ -222,6 +230,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UInventoryComponent* InventoryComponent;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UCharacterStateComponent* CharacterStateComponent;
 
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "BloodSense | Cooldown")

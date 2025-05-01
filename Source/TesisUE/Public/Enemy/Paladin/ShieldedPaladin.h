@@ -34,6 +34,8 @@ protected:
 
 	bool IsLaunchable_Implementation() override;
 
+	UCharacterStateComponent* GetCharacterStateComponent_Implementation() override;
+
 private:
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* ShieldMesh;
