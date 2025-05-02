@@ -10,6 +10,7 @@
 #include "Player/PlayerMain.h"
 #include "Interfaces/CharacterState.h"
 #include "Components/CharacterStateComponent.h"
+#include "Components/CombatComponent.h"
 
 ASword::ASword()
 {
@@ -77,8 +78,6 @@ void ASword::Unequip()
 
 	CharacterStateInterface = nullptr;
 	CharacterStateComponent = nullptr;
-
-	UE_LOG(LogTemp, Log, TEXT("Sword %s unequipped"), *GetName());
 }
 
 void ASword::EnableVisuals(bool bEnable)
@@ -141,43 +140,46 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 		End,
 		FVector(10.f, 10.f, 10.f),
 		BoxTraceStart->GetComponentRotation(),
-		UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_GameTraceChannel3),
+		UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_Visibility),
 		false,
 		IgnoreActors,
 		EDrawDebugTrace::ForDuration,
 		HitResults,
 		true
 	);
-	
-	if (HitResults.Num() <= 0) return;
 
 	for (const FHitResult& Hit : HitResults)
 	{
-		AActor* HitActor = Hit.GetActor();
-		if (HitActor && IgnoreActors.Contains(HitActor)) return;
-		
-		IHitInterface* HitInterface = Cast<IHitInterface>(HitActor);
-
-		if (HitInterface && HitInterface->Execute_IsLaunchable(HitActor))
+		if (AActor* HitActor = Hit.GetActor())
 		{
-			TSubclassOf<UDamageType> FinalDamageType = DamageTypeClass ? DamageTypeClass : TSubclassOf<UDamageType>(UDamageType::StaticClass());
+			if (IHitInterface* HitInterface = Cast<IHitInterface>(HitActor))
+			{
+				if (HitInterface->Execute_IsLaunchable(HitActor))
+				{
+					TSubclassOf<UDamageType> FinalDamageType = DamageTypeClass ? DamageTypeClass : TSubclassOf<UDamageType>(UDamageType::StaticClass());
 
-			UGameplayStatics::ApplyDamage(
-				HitActor,
-				Damage,
-				GetInstigator()->GetController(),
-				GetOwner(),
-				FinalDamageType
-			);
-			HitInterface->Execute_GetHit(HitActor, Hit.ImpactPoint);
-			CameraShake();
+					UGameplayStatics::ApplyDamage(
+						HitActor,
+						Damage,
+						GetInstigator()->GetController(),
+						GetOwner(),
+						FinalDamageType
+					);
 
-			IgnoreActors.Add(HitActor);
-		}
-		else if(HitInterface && !HitInterface->Execute_IsLaunchable(HitActor))
-		{
-			OnWallHit.Broadcast(Hit);
-			HitInterface->Execute_ShieldHit(HitActor);
+					HitInterface->Execute_GetHit(HitActor, Hit.ImpactPoint);
+					IgnoreActors.Add(HitActor);
+				}
+				else if (!HitInterface->Execute_IsLaunchable(HitActor))
+				{
+					Player = Cast<APlayerMain>(GetInstigator());
+					Player->CombatComponent->GetDirectionalReact(FName("ReactToShield"));
+				}
+				CameraShake();
+			}
+			//else
+			//{
+			//	OnWallHit.Broadcast(Hit);
+			//}
 		}
 	}
 }

@@ -37,6 +37,8 @@ public:
 
     void AttachToOwner(USceneComponent* InParent, FName SocketName);
 
+    void EnableSpectralWeapon(bool Enable);
+
 protected:
     virtual void Fire(bool bIsPrimary);
 

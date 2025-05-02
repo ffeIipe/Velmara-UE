@@ -262,8 +262,6 @@ void UCombatComponent::UpdateSoftLockOn(float Alpha)
 
 void UCombatComponent::GetDirectionalReact(FName Section)
 {
-	if (Section != FName("KnockDown")) Section = FName("Default");
-
 	OwningCharacter->PlayAnimMontage(HitReactMontage, 1.f, Section);
 }
 
@@ -333,12 +331,12 @@ void UCombatComponent::LaunchCharacterUp()
 
 	IHitInterface* Paladin = Cast<IHitInterface>(SoftLockTarget);
 
-	if (SoftLockTarget && Paladin->Execute_IsLaunchable(SoftLockTarget))
+	if (Paladin->Execute_IsLaunchable(SoftLockTarget))
 	{
 		Paladin->Execute_LaunchUp(SoftLockTarget);
 		OwningCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
 	}
-	else if (SoftLockTarget && !Paladin->Execute_IsLaunchable(SoftLockTarget))
+	else if (!Paladin->Execute_IsLaunchable(SoftLockTarget))
 	{
 		OwningCharacter->PlayAnimMontage(HitReactMontage);
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), BlockSound, GetOwner()->GetActorLocation());

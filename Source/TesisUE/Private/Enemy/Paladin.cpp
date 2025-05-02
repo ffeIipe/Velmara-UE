@@ -6,6 +6,7 @@
 
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/BoxComponent.h"
+#include "Components/AttributeComponent.h"
 #include "Components/CombatComponent.h"
 #include "Components/CharacterStateComponent.h"
 
@@ -21,6 +22,8 @@
 
 APaladin::APaladin()
 {
+	Attributes->AttachShield(GetMesh(), FName("LeftHandSocket"));
+
 	SwordMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SwordMesh"));
 	SwordMesh->SetupAttachment(GetMesh(), TEXT("RightHandSocket"));
 	SwordMesh->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
@@ -42,6 +45,11 @@ APaladin::APaladin()
 	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("Combat Component"));
 
 	CharacterStateComponent = CreateDefaultSubobject<UCharacterStateComponent>(TEXT("CharacterStateComponent"));
+}
+
+bool APaladin::IsLaunchable_Implementation()
+{
+	return !Attributes->IsShielded();
 }
 
 void APaladin::BeginPlay()
@@ -125,29 +133,43 @@ void APaladin::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	EnhancedInputComponent->BindAction(CombatComponent->AttackAction, ETriggerEvent::Triggered, this, &APaladin::Attack);
 }
 
+void APaladin::ShieldHit()
+{
+	PlayAnimMontage(HitReactMontage, 1.f, FName("ShieldHit"));
+}
+
 void APaladin::Attack(const FInputActionValue& Value)
 {
 	CombatComponent->Input_Attack(Value);
 }
 
-bool APaladin::IsLaunchable_Implementation()
-{
-	return true;
-}
-
 void APaladin::LaunchUp_Implementation()
 {
-	LaunchEnemyUp();
-}
-
-void APaladin::ShieldHit_Implementation()
-{
-	PlayAnimMontage(HitReactMontage, 1.f, FName("ShieldHit"));
+	if (!Attributes->IsShielded()) LaunchEnemyUp();
 }
 
 UCharacterStateComponent* APaladin::GetCharacterStateComponent_Implementation()
 {
 	return CharacterStateComponent;
+}
+
+float APaladin::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	if (Attributes->IsAlive())
+	{
+		if (Attributes->GetShieldMesh())
+		{
+			if (Attributes->IsShielded())
+			{
+				Attributes->ReceiveShieldDamage(DamageAmount);
+				ShieldHit();
+			}
+			else if (!Attributes->bIsDisarmed) Attributes->DettachShield();
+
+			else Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+		}
+	}
+	return DamageAmount;
 }
 
 void APaladin::LaunchEnemyUp()

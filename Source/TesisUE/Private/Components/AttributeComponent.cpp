@@ -1,12 +1,13 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "Components/AttributeComponent.h"
 
 UAttributeComponent::UAttributeComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 	bIsDraining = false;
+
+	ShieldMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ShieldMeshComponent"));
+
+	CurrentShieldHealth = MaxShieldHealth;
 }
 
 void UAttributeComponent::ReceiveDamage(float Damage)
@@ -66,6 +67,27 @@ bool UAttributeComponent::ItHasFullEnergy()
 	return Energy >= 99.9f;
 }
 
+void UAttributeComponent::AttachShield(USceneComponent* InParent, FName SocketName)
+{
+	ShieldMeshComponent->SetupAttachment(InParent, SocketName);
+}
+
+void UAttributeComponent::DettachShield()
+{
+	if (ShieldMeshComponent)
+	{
+		ShieldMeshComponent->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+		ShieldMeshComponent->SetSimulatePhysics(true);
+		ShieldMeshComponent->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
+		bIsDisarmed = true;
+	}
+}
+
+bool UAttributeComponent::IsShielded()
+{
+	return CurrentShieldHealth > .01f;
+}
+
 void UAttributeComponent::BeginPlay()
 {
 	Super::BeginPlay();
@@ -80,7 +102,7 @@ void UAttributeComponent::DrainTick()
 {
 	if (ItHasEnergy())
 	{
-		Energy = FMath::Clamp(Energy - DrainTickValue, 0.f, 100.f);
+		Energy = FMath::Clamp(Energy - DrainTickValue, 1.f, 100.f);
 	}
 	else
 	{
@@ -110,7 +132,12 @@ void UAttributeComponent::DecreaseEnergyBy(float EnergyToDecrease)
 	Energy -= EnergyToDecrease;
 }
 
+void UAttributeComponent::ReceiveShieldDamage(float Damage)
+{
+	CurrentShieldHealth = FMath::Clamp(CurrentShieldHealth - Damage, 0.f, MaxShieldHealth);
+}
+
 void UAttributeComponent::RegenerateEnergy()
 {
-	Energy = FMath::Clamp(Energy + RegenerateTickValue, 0.f, 100.f);
+	Energy = FMath::Clamp(Energy + RegenerateTickValue, 1.f, 100.f);
 }

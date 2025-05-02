@@ -19,72 +19,100 @@ public:
 
 	void ReceiveDamage(float Damage);
 
-	UFUNCTION(BlueprintCallable, Category = "Health | Getters")
+	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Health | Getters")
 	float GetHealthPercent();
 	
-	UFUNCTION(BlueprintCallable, Category = "Health | Getters")
+	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Health | Getters")
 	FORCEINLINE float GetHealth() { return Health; };
 	
-	UFUNCTION(BlueprintCallable, Category = "Health | Setters")
+	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Health | Setters")
 	FORCEINLINE void SetHealth(float Amount) { Health = Amount; };
 
 	UFUNCTION(BlueprintCallable, Category = "Health")
 	bool IsAlive();
 
-	UFUNCTION(BlueprintCallable, Category = "Energy | Getters")
+	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Energy | Getters")
 	FORCEINLINE float GetEnergy() { return Energy; };
 
-	UFUNCTION(BlueprintCallable, Category = "Energy | Getters")
+	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Energy | Getters")
 	float GetEnergyPercent();
 
-	UFUNCTION(BlueprintCallable, Category = "Energy | Setters")
+	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Energy | Setters")
 	void IncreaseEnergy(float Amount);
 	
 	UFUNCTION(BlueprintCallable, Category = "Energy | Setters")
 	FORCEINLINE void SetEnergy(float Amount) { Energy = Amount; };
 
-	UFUNCTION(BlueprintCallable, Category = "Energy")
+	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Energy")
 	void StartDecreaseEnergy();
 
-	UFUNCTION(BlueprintCallable, Category = "Energy")
+	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Energy")
 	void StopDecreaseEnergy();
 
-	UFUNCTION(BlueprintCallable, Category = "Energy")
+	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Energy")
 	bool ItHasEnergy();
 	
-	UFUNCTION(BlueprintCallable, Category = "Energy")
+	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Energy")
 	bool ItHasFullEnergy();
 
-	UFUNCTION(BlueprintCallable, Category = "Energy")
+	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Energy")
 	void RegenerateTick();
 
+	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Energy")
 	bool RequiresEnergy(float EnergyRequired);
-	
+
+	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Energy")
 	void DecreaseEnergyBy(float EnergyToDecrease);
 
 	TFunction<void()> OnDepletedCallback;
 
-protected:
+	void ReceiveShieldDamage(float Damage);
 
+	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Shield")
+	FORCEINLINE UStaticMesh* GetShieldMesh() { return ShieldMeshComponent->GetStaticMesh(); };
+
+	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Shield")
+	void AttachShield(USceneComponent* InParent, FName SocketName);
+	
+	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Shield")
+	void DettachShield();
+
+	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Shield")
+	bool IsShielded();
+
+	UPROPERTY(EditAnywhere, Category = "Actor Properties | Shield")
+	bool bIsDisarmed = false;
+
+protected:
 	virtual void BeginPlay() override;
 
-private:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Actor Properties | Shield")
+	class UStaticMeshComponent* ShieldMeshComponent;
 
-	UPROPERTY(EditAnywhere, Category = "Actor Properties|Health");
+private:
+	UPROPERTY(EditAnywhere, Category = "Actor Properties | Health");
 	float Health;
 
-	UPROPERTY(EditAnywhere, Category = "Actor Properties|Health");
+	UPROPERTY(EditAnywhere, Category = "Actor Properties | Health");
 	float MaxHealth;
 	
-	UPROPERTY(EditAnywhere, Category = "Actor Properties|Energy")
+	UPROPERTY(EditAnywhere, Category = "Actor Properties | Energy")
 	float Energy;
 	
-	UPROPERTY(EditAnywhere, Category = "Actor Properties|Energy")
+	UPROPERTY(EditAnywhere, Category = "Actor Properties | Energy")
 	float DrainTickValue = 2.f;
 
-	UPROPERTY(EditAnywhere, Category = "Actor Properties|Energy")
+	UPROPERTY(EditAnywhere, Category = "Actor Properties | Energy")
 	float RegenerateTickValue = .5f;
+
+	UPROPERTY(EditAnywhere, Category = "Actor Properties | Shield")
+	float MaxShieldHealth = 100.f;
 	
+	UPROPERTY(EditAnywhere, Category = "Actor Properties | Shield")
+	float CurrentShieldHealth;
+	
+	UPROPERTY(EditAnywhere, Category = "Actor Properties | Shield")
+	class UStaticMesh* ShieldMesh;
 
 	FTimerHandle EnergyDecreaseTimerHandle;
 	

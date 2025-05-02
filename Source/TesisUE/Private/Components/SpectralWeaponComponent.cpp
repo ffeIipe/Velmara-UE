@@ -124,35 +124,41 @@ void USpectralWeaponComponent::Fire(bool bIsPrimary)
             Hit,
             TraceStart,
             CurrentTraceEnd,
-            ECC_GameTraceChannel3,
+            ECC_Visibility,
             QueryParams
         );
 
-        DrawDebugLine(GetWorld(), TraceStart, bHit ? Hit.ImpactPoint : CurrentTraceEnd, FColor::Red, false, 2.0f, 0, 1.0f);
-
         if (bHit)
         {
-            IHitInterface* Entity = Cast<IHitInterface>(Hit.GetActor());
-
-            if (Entity)
+            if (AActor* HitActor = Hit.GetActor())
             {
-                float BaseDamage = bIsPrimary ? 50.f : 15.f;
-                UGameplayStatics::ApplyPointDamage(
-                    Hit.GetActor(),
-                    BaseDamage,
-                    TraceDirection,
-                    Hit,
-                    MyInstigator->GetController(),  //who cause the dmg?
-                    GetOwner(),                     //what cause the dmg?
-                    UDamageType::StaticClass()      //type of dmg
-                );
+                if (IHitInterface* Entity = Cast<IHitInterface>(HitActor))
+                {
+                    float BaseDamage = bIsPrimary ? 50.f : 15.f;
+                    UGameplayStatics::ApplyPointDamage(
+                        Hit.GetActor(),
+                        BaseDamage,
+                        TraceDirection,
+                        Hit,
+                        MyInstigator->GetController(),  //who cause the dmg?
+                        GetOwner(),                     //what cause the dmg?
+                        UDamageType::StaticClass()      //type of dmg
+                    );
 
-                Entity->Execute_GetHit(Hit.GetActor(), Hit.ImpactPoint);
-
-                //decals in Hit.ImpactPoint
-                DrawDebugSphere(GetWorld(), Hit.ImpactPoint, 10.f, 12, FColor::Green, false, 2.0f);
+                    Entity->Execute_GetHit(Hit.GetActor(), Hit.ImpactPoint);
+                    //decals in Hit.ImpactPoint
+                    
+                }
+                else
+                {
+                    if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Red, FString("WallHit"));
+                    DrawDebugSphere(GetWorld(), Hit.ImpactPoint, 10.f, 12, FColor::Green, false, 2.0f);
+                }
             }
         }
+        else return;
+
+        DrawDebugLine(GetWorld(), TraceStart, bHit ? Hit.ImpactPoint : CurrentTraceEnd, FColor::Red, false, 2.0f, 0, 1.0f);
     }
 }
 
@@ -175,4 +181,12 @@ void USpectralWeaponComponent::FinishReload()
 void USpectralWeaponComponent::AttachToOwner(USceneComponent* InParent, FName SocketName)
 {
     SpectralWeaponMeshComponent->SetupAttachment(InParent, SocketName);
+}
+
+void USpectralWeaponComponent::EnableSpectralWeapon(bool Enable)
+{
+    if (SpectralWeaponMeshComponent)
+    {
+        SpectralWeaponMeshComponent->SetVisibility(Enable);
+    }
 }

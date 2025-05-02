@@ -21,9 +21,13 @@ public:
 
 	virtual void LaunchUp_Implementation() override;
 
-	virtual void ShieldHit_Implementation() override;
-
 	virtual UCharacterStateComponent* GetCharacterStateComponent_Implementation() override;
+
+	float TakeDamage(
+		float DamageAmount,
+		struct FDamageEvent const& DamageEvent,
+		class AController* EventInstigator,
+		AActor* DamageCauser) override;
 
 protected:
 	void BeginPlay();
@@ -82,6 +86,8 @@ protected:
 	void ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoint) override;
 
 private:
+	void ShieldHit();
+
 	void Attack(const FInputActionValue& Value);
 
 	void Finisher(const FInputActionValue& Value);

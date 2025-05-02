@@ -25,11 +25,10 @@ public:
 	bool CanBeFinished();
 
 	UFUNCTION(BlueprintNativeEvent)
-	bool IsLaunchable();
-
-	UFUNCTION(BlueprintNativeEvent)
 	void LaunchUp();
 	
 	UFUNCTION(BlueprintNativeEvent)
-	void ShieldHit();
+	bool IsLaunchable();
+
+
 };

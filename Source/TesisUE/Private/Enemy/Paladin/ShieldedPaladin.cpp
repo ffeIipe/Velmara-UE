@@ -18,6 +18,8 @@ void AShieldedPaladin::Disarm()
         ShieldMesh->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
         bIsDisarmed = true;
     }
+
+    //ShieldMesh->OnComponentBeginOverlap.AddDynamic
 }
 
 float AShieldedPaladin::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)

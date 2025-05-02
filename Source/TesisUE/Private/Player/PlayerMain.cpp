@@ -74,31 +74,11 @@ APlayerMain::APlayerMain()
 
 void APlayerMain::PerformSpectralAttack_Implementation()
 {
-	//if (CharacterStateComponent->GetCurrentCharacterState().Action != ECharacterActions::ECA_Attack)
-	//{
-	//	CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
-	//	SearchTarget();
-	//	PlayAnimMontage(SpectralAttackCombo[SpectralAttackIndex]);
-	//
-	//	SpectralAttackIndex++;
-	//
-	//	if (SpectralAttackIndex >= SpectralAttackCombo.Num())
-	//	{
-	//		SpectralAttackIndex = 0;
-	//	}
-	//}
-
 	SpectralWeaponComponent->PrimaryFire();
 }
 
 void APlayerMain::PerformSpectralBarrier_Implementation()
 {
-	//if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Attack }))
-	//{
-	//	CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
-	//	PlayAnimMontage(SpectralHeavyAttack);
-	//}
-
 	SpectralWeaponComponent->SecondaryFire();
 }
 
@@ -148,6 +128,9 @@ void APlayerMain::BeginPlay()
 	PlayerControllerRef = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 	
 	Attributes->RegenerateTick();
+	
+	CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral ?
+	SpectralWeaponComponent->EnableSpectralWeapon(true) : SpectralWeaponComponent->EnableSpectralWeapon(false);
 	
 	for (TActorIterator<ACameraActor> It(GetWorld()); It; ++It)
 	{
@@ -557,6 +540,8 @@ void APlayerMain::WithEnergy()
 		Attributes->RegenerateTick();
 		GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = true;
 
+		SpectralWeaponComponent->EnableSpectralWeapon(true);
+
 		if (InventoryComponent->GetEquippedItem())
 			InventoryComponent->GetEquippedItem()->EnableVisuals(false);
 	}
@@ -567,6 +552,9 @@ void APlayerMain::OutOfEnergy()
 	PlayerFormComponent->ToggleForm(false);
 	Attributes->RegenerateTick();
 	GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = false;
+
+	SpectralWeaponComponent->EnableSpectralWeapon(false);
+
 	if (InventoryComponent->GetEquippedItem()) InventoryComponent->GetEquippedItem()->EnableVisuals(true);
 	if (PossessedEnemy) PossessedEnemy->UnPossess();
 }
@@ -644,7 +632,7 @@ void APlayerMain::GoToMainMenu()
 void APlayerMain::OnWallCollision(const FHitResult& HitResult)
 {
 	if (GEngine)GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, FString("APlayerMain::OnWallCollision"));
-	CombatComponent->GetDirectionalReact(FName("Default"));
+	CombatComponent->GetDirectionalReact(FName("ReactToShield"));
 }
 
 void APlayerMain::LoadLastCheckpoint()
