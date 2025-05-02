@@ -10,7 +10,7 @@ ATrigger::ATrigger()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	BoxCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxCollider"));
-	BoxCollider->SetupAttachment(GetRootComponent());
+	RootComponent = BoxCollider;
 }
 
 // Called when the game starts or when spawned

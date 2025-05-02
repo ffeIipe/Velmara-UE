@@ -1,15 +1,14 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "SpectralMode/SpectralTrap.h"
 #include "Player/PlayerMain.h"
+#include "Components/AttributeComponent.h"
+#include "Components/BoxComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "DamageTypes/SpectralTrapDamageType.h"
 
 ASpectralTrap::ASpectralTrap()
 {
-	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
-	StaticMesh->SetupAttachment(GetRootComponent());
+	AttributeComponent = CreateDefaultSubobject<UAttributeComponent>(TEXT("AttributeComponent"));
+	AttributeComponent->AttachShield(GetRootComponent(), FName(""));
 }
 
 void ASpectralTrap::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -45,4 +44,25 @@ void ASpectralTrap::ApplyTrapDamage()
 		this,
 		USpectralTrapDamageType::StaticClass()
 	);
+}
+
+float ASpectralTrap::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	if (AttributeComponent->GetShieldMesh())
+	{
+		if (AttributeComponent->IsShielded())
+		{
+			AttributeComponent->ReceiveShieldDamage(DamageAmount);
+		}
+		else if (!AttributeComponent->bIsDisarmed)
+		{
+			AttributeComponent->DettachShield();
+			BoxCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			SetLifeSpan(5.f);
+		}
+	}
+
+	return DamageAmount;
 }

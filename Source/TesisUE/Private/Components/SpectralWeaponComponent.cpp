@@ -132,19 +132,19 @@ void USpectralWeaponComponent::Fire(bool bIsPrimary)
         {
             if (AActor* HitActor = Hit.GetActor())
             {
+                float BaseDamage = bIsPrimary ? 50.f : 15.f;
+                UGameplayStatics::ApplyPointDamage(
+                    Hit.GetActor(),
+                    BaseDamage,
+                    TraceDirection,
+                    Hit,
+                    MyInstigator->GetController(),  //who cause the dmg?
+                    GetOwner(),                     //what cause the dmg?
+                    UDamageType::StaticClass()      //type of dmg
+                );
+
                 if (IHitInterface* Entity = Cast<IHitInterface>(HitActor))
                 {
-                    float BaseDamage = bIsPrimary ? 50.f : 15.f;
-                    UGameplayStatics::ApplyPointDamage(
-                        Hit.GetActor(),
-                        BaseDamage,
-                        TraceDirection,
-                        Hit,
-                        MyInstigator->GetController(),  //who cause the dmg?
-                        GetOwner(),                     //what cause the dmg?
-                        UDamageType::StaticClass()      //type of dmg
-                    );
-
                     Entity->Execute_GetHit(Hit.GetActor(), Hit.ImpactPoint);
                     //decals in Hit.ImpactPoint
                     
