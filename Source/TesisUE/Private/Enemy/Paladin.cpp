@@ -157,10 +157,15 @@ float APaladin::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 {
 	if (Attributes->IsAlive())
 	{
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::White, FString("IS ALIVE"));
+
 		if (Attributes->GetShieldMesh())
 		{
+			if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Emerald, FString("VALID SHIELD MESH"));
+
 			if (Attributes->IsShielded())
 			{
+				if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Emerald, FString("IS SHIELDED"));
 				Attributes->ReceiveShieldDamage(DamageAmount);
 				ShieldHit();
 			}
@@ -168,6 +173,7 @@ float APaladin::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 
 			else Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 		}
+		else Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 	}
 	return DamageAmount;
 }

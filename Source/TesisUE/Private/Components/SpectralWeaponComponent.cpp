@@ -2,6 +2,7 @@
 #include "Components/ActorComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/BoxComponent.h"
+#include "Components/AttributeComponent.h"
 
 #include "Sound/SoundCue.h"
 #include "Particles/ParticleSystemComponent.h"
@@ -29,10 +30,15 @@ void USpectralWeaponComponent::BeginPlay()
 {
     Super::BeginPlay();
 
-    if (SpectralWeaponMesh && SpectralWeaponMeshComponent)
+    if (SpectralWeaponMesh && GetSpectralWeaponMeshComponent())
     {
-        SpectralWeaponMeshComponent->SetStaticMesh(SpectralWeaponMesh);
+        GetSpectralWeaponMeshComponent()->SetStaticMesh(SpectralWeaponMesh);
     }
+
+    OwnerInstigator = GetOwner()->GetInstigator();
+    OwnerCharacter = Cast<ACharacter>(GetOwner());
+    OwnerController = Cast<APlayerController>(OwnerInstigator->GetController());
+    OwnerAttributeComponent = GetOwner()->GetComponentByClass<UAttributeComponent>();
 
     CurrentAmmo = MaxAmmo;
 }
@@ -75,48 +81,45 @@ void USpectralWeaponComponent::SecondaryFire()
 void USpectralWeaponComponent::Fire(bool bIsPrimary)
 {
     bIsFireEnable = false;
+   
+    if (!OwnerInstigator || !OwnerCharacter|| !OwnerController) return;
 
-    APawn* MyInstigator = GetOwner()->GetInstigator();
-    if (!MyInstigator) return;
-
-    APlayerController* PlayerController = Cast<APlayerController>(MyInstigator->GetController());
-    if (!PlayerController) return;
-
-    FVector CameraLocation;
+    FVector TraceStart;
     FRotator CameraRotation;
-    PlayerController->GetPlayerViewPoint(CameraLocation, CameraRotation);
-
-    FVector TraceStart = CameraLocation;
+    OwnerController->GetPlayerViewPoint(TraceStart, CameraRotation);
 
     FVector TraceDirection = CameraRotation.Vector();
-    float TraceLength = 10000.f;
-    FVector TraceEnd = TraceStart + (TraceDirection * TraceLength);
+    FVector TraceEnd = TraceStart + (TraceDirection * 10000.f);
 
     FCollisionQueryParams QueryParams;
     QueryParams.AddIgnoredActor(GetOwner());
-    QueryParams.AddIgnoredActor(MyInstigator);
+    QueryParams.AddIgnoredActor(OwnerInstigator);
     QueryParams.bTraceComplex = true;
     QueryParams.bReturnPhysicalMaterial = false;
 
     if (MuzzleFlash)
     {
-        UGameplayStatics::SpawnEmitterAttached(MuzzleFlash, SpectralWeaponMeshComponent, FName("MuzzleSocket"));
+        UGameplayStatics::SpawnEmitterAttached(MuzzleFlash, GetSpectralWeaponMeshComponent(), FName("MuzzleSocket"));
     }
     if (FireSound)
     {
         UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetOwner()->GetActorLocation());
     }
 
-    int32 NumTraces = bIsPrimary ? 1 : 5;
-    float SpreadAngle = bIsPrimary ? 0.f : 5.0f;
+    OwnerCharacter->PlayAnimMontage(SpectralFireAnimation);
+    UGameplayStatics::PlayWorldCameraShake(this, CameraShake, GetOwner()->GetActorLocation(), 0.f, 500.f);
+    OwnerAttributeComponent->DecreaseEnergyBy(bIsPrimary ? PrimaryEnergyCost : SecondaryEnergyCost);
+    
+    int32 NumTraces = bIsPrimary ? 1 : Shells;
+    float CurrentSpreadAngle = bIsPrimary ? 0.f : SpreadAngle;
 
     for (int32 i = 0; i < NumTraces; ++i)
     {
         FVector CurrentTraceEnd = TraceEnd;
         if (!bIsPrimary)
         {
-            FVector SpreadDirection = FMath::VRandCone(TraceDirection, FMath::DegreesToRadians(SpreadAngle));
-            CurrentTraceEnd = TraceStart + (SpreadDirection * TraceLength);
+            FVector SpreadDirection = FMath::VRandCone(TraceDirection, FMath::DegreesToRadians(CurrentSpreadAngle));
+            CurrentTraceEnd = TraceStart + (SpreadDirection * 10000.f);
         }
 
         FHitResult Hit;
@@ -132,22 +135,21 @@ void USpectralWeaponComponent::Fire(bool bIsPrimary)
         {
             if (AActor* HitActor = Hit.GetActor())
             {
-                float BaseDamage = bIsPrimary ? 50.f : 15.f;
+                float BaseDamage = bIsPrimary ? PrimaryDamage : SecondaryDamage;
                 UGameplayStatics::ApplyPointDamage(
                     Hit.GetActor(),
                     BaseDamage,
                     TraceDirection,
                     Hit,
-                    MyInstigator->GetController(),  //who cause the dmg?
-                    GetOwner(),                     //what cause the dmg?
-                    UDamageType::StaticClass()      //type of dmg
+                    OwnerController,             //who cause the dmg?
+                    GetOwner(),                  //what cause the dmg?
+                    UDamageType::StaticClass()   //type of dmg
                 );
 
                 if (IHitInterface* Entity = Cast<IHitInterface>(HitActor))
                 {
                     Entity->Execute_GetHit(Hit.GetActor(), Hit.ImpactPoint);
                     //decals in Hit.ImpactPoint
-                    
                 }
                 else
                 {
@@ -168,6 +170,8 @@ void USpectralWeaponComponent::Reload()
     
     bIsReloading = true;
 
+    if (!OwnerCharacter) return;
+    OwnerCharacter->PlayAnimMontage(SpectralReloadAnimation);
     SetTimer(TimerHandle_Reload, ReloadTime, &USpectralWeaponComponent::FinishReload);
 }
 
@@ -180,13 +184,13 @@ void USpectralWeaponComponent::FinishReload()
 
 void USpectralWeaponComponent::AttachToOwner(USceneComponent* InParent, FName SocketName)
 {
-    SpectralWeaponMeshComponent->SetupAttachment(InParent, SocketName);
+    GetSpectralWeaponMeshComponent()->SetupAttachment(InParent, SocketName);
 }
 
 void USpectralWeaponComponent::EnableSpectralWeapon(bool Enable)
 {
-    if (SpectralWeaponMeshComponent)
+    if (GetSpectralWeaponMeshComponent())
     {
-        SpectralWeaponMeshComponent->SetVisibility(Enable);
+        GetSpectralWeaponMeshComponent()->SetVisibility(Enable);
     }
 }

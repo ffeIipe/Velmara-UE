@@ -170,6 +170,9 @@ void APlayerMain::BeginPlay()
 
 void APlayerMain::Dodge()
 {
+	if (GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling || 
+		GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Flying) return;
+
 	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Dodge }))
 	{
 		bIsSaveDodge = true;
@@ -426,7 +429,7 @@ void APlayerMain::Jump()
 
 void APlayerMain::DoubleJump()
 {
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Block }))
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Block, ECharacterActions::ECA_Finish }))
 	{
 		PlayAnimMontage(DoubleJumpMontage);
 		LaunchCharacter(FVector(0.f, 0.f, 800.f), false, true);

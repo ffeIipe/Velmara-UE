@@ -326,17 +326,16 @@ void UCombatComponent::Execute()
 
 void UCombatComponent::LaunchCharacterUp()
 {
-	bIsLaunched = true;
-	OwningCharacter->AddActorWorldOffset(FVector(0.f, 0.f, 300.f), false);
-
 	IHitInterface* Paladin = Cast<IHitInterface>(SoftLockTarget);
 
-	if (Paladin->Execute_IsLaunchable(SoftLockTarget))
+	if (SoftLockTarget && Paladin->Execute_IsLaunchable(SoftLockTarget))
 	{
 		Paladin->Execute_LaunchUp(SoftLockTarget);
 		OwningCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
+		bIsLaunched = true;
+		OwningCharacter->AddActorWorldOffset(FVector(0.f, 0.f, 300.f), false);
 	}
-	else if (!Paladin->Execute_IsLaunchable(SoftLockTarget))
+	else if (SoftLockTarget && !Paladin->Execute_IsLaunchable(SoftLockTarget))
 	{
 		OwningCharacter->PlayAnimMontage(HitReactMontage);
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), BlockSound, GetOwner()->GetActorLocation());

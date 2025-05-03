@@ -12,6 +12,14 @@ void ANewGameStateBase::RegisterMementoEntity(AActor* Entity)
 	}
 }
 
+void ANewGameStateBase::UnregisterMementoEntity(AActor* Entity)
+{
+	if (Entity && Entity->GetComponentByClass<UMementoComponent>())
+	{
+		MementoEntities.Remove(Entity);
+	}
+}
+
 TArray<AActor*> ANewGameStateBase::GetMementoEntities() const
 {
 	return MementoEntities;

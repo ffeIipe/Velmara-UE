@@ -42,6 +42,7 @@ private:
     UPROPERTY(EditDefaultsOnly, Category = "BloodSense")
     UMaterialParameterCollection* BloodSenseMaterialCollection;
 
+    UPROPERTY(VisibleAnywhere)
     UTimelineComponent* SpectralEffectTimeline;
 
     UPROPERTY(EditDefaultsOnly, Category = "BloodSense")
