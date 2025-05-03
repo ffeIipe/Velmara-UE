@@ -19,6 +19,11 @@ class TESISUE_API UCombatComponent : public UActorComponent
 	GENERATED_BODY()
 
 public:	
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWallHitSignature, const FHitResult&, HitResult);
+	
+	UPROPERTY(BlueprintAssignable, Category = "Collision")
+	FOnWallHitSignature OnWallHit;
+
 	UCombatComponent();
 
 	UFUNCTION(BlueprintCallable, Category = "SoftLock")
@@ -62,6 +67,9 @@ protected:
 
 	UFUNCTION(BlueprintCallable, Category = "SoftLock")
 	void SoftLockOn();
+	
+	UFUNCTION(BlueprintCallable, Category = "SoftLock")
+	void ValidateWall();
 
 	UFUNCTION(BlueprintCallable, Category = "SoftLock")
 	void RotationToTarget();

@@ -15,7 +15,8 @@ enum class ECharacterActions : uint8
 	ECA_Dodge UMETA(DisplayName = "Dodge"),
 	ECA_Dead UMETA(DisplayName = "Death"),
 	ECA_Block UMETA(DisplayName = "Block"),
-	ECA_Finish UMETA(DisplayName = "Finish")
+	ECA_Finish UMETA(DisplayName = "Finish"),
+	ECA_Stun UMETA(DisplayName = "Stun")
 };
 
 UENUM(BlueprintType)

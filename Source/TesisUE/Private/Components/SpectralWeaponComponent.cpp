@@ -101,10 +101,6 @@ void USpectralWeaponComponent::Fire(bool bIsPrimary)
     {
         UGameplayStatics::SpawnEmitterAttached(MuzzleFlash, GetSpectralWeaponMeshComponent(), FName("MuzzleSocket"));
     }
-    if (FireSound)
-    {
-        UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetOwner()->GetActorLocation());
-    }
 
     OwnerCharacter->PlayAnimMontage(SpectralFireAnimation);
     UGameplayStatics::PlayWorldCameraShake(this, CameraShake, GetOwner()->GetActorLocation(), 0.f, 500.f);
@@ -115,6 +111,11 @@ void USpectralWeaponComponent::Fire(bool bIsPrimary)
 
     for (int32 i = 0; i < NumTraces; ++i)
     {
+        if (FireSound)
+        {
+            UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetOwner()->GetActorLocation());
+        }
+
         FVector CurrentTraceEnd = TraceEnd;
         if (!bIsPrimary)
         {

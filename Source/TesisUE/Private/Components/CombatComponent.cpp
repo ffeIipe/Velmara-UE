@@ -234,6 +234,51 @@ void UCombatComponent::SoftLockOn()
 	}
 }
 
+void UCombatComponent::ValidateWall()
+{
+	TArray<AActor*> ObjectsToIgnore;
+	ObjectsToIgnore.Add(GetOwner());
+
+	FHitResult Hit;
+
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(GetOwner());
+	QueryParams.bTraceComplex = true;
+	QueryParams.bReturnPhysicalMaterial = false;
+
+	FVector Start = GetOwner()->GetActorLocation();
+	FVector End = Start + (GetOwner()->GetActorForwardVector() * 100.f);
+
+	bool bHit = GetWorld()->LineTraceSingleByChannel(
+		Hit,
+		Start,
+		End,
+		ECollisionChannel::ECC_GameTraceChannel4,
+		QueryParams
+	);
+
+	if (bHit)
+	{
+		AActor* HitActor = Hit.GetActor();
+		if (HitActor)
+		{
+			OnWallHit.Broadcast(Hit);
+			if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Red, FString(Hit.GetActor()->GetName()));
+		}
+	}
+
+	DrawDebugLine(
+		GetWorld(),
+		Start,
+		bHit ? Hit.ImpactPoint : End,
+		FColor::Red,
+		false,
+		2.0f,
+		0,
+		1.0f
+	);
+}
+
 void UCombatComponent::RotationToTarget()
 {
 	if (SoftLockTarget)
@@ -477,6 +522,7 @@ void UCombatComponent::Input_Execute(const FInputActionValue& Value)
 
 void UCombatComponent::LightAttackEvent()
 {
+
 	if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
 	{
 		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Orange, FString("SpectralAttack"));
@@ -486,10 +532,12 @@ void UCombatComponent::LightAttackEvent()
 	{
 		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Orange, FString("IsLaunched"));
 		JumpAttack(JumpAttackIndex);
+		ValidateWall();
 	}
 	else
 	{
 		LightAttack(LightAttackIndex);
+		ValidateWall();
 	}
 }
 

@@ -132,6 +132,8 @@ void APlayerMain::BeginPlay()
 	CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral ?
 	SpectralWeaponComponent->EnableSpectralWeapon(true) : SpectralWeaponComponent->EnableSpectralWeapon(false);
 	
+	CombatComponent->OnWallHit.AddDynamic(this, &APlayerMain::OnWallCollision);
+
 	for (TActorIterator<ACameraActor> It(GetWorld()); It; ++It)
 	{
 		FollowCamera = *It;
@@ -196,7 +198,7 @@ void APlayerMain::DodgeSaveEvent()
 
 void APlayerMain::PerformDodge()
 {
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Finish }))
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Finish, ECharacterActions::ECA_Stun }))
 	{
 		FVector MovementInput = GetLastMovementInputVector();
 		if (!MovementInput.IsNearlyZero())
@@ -275,6 +277,8 @@ float APlayerMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEven
 		if (DamageEvent.DamageTypeClass && DamageEvent.DamageTypeClass == USpectralTrapDamageType::StaticClass())
 		{
 			CombatComponent->GetDirectionalReact(FName("KnockDown"));
+			CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Stun);
+			Attributes->ReceiveDamage(DamageAmount);
 		}
 		else
 		{
@@ -414,7 +418,7 @@ void APlayerMain::Look(const FInputActionValue& Value)
 
 void APlayerMain::Jump()
 {
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Block, ECharacterActions::ECA_Finish }))
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Block, ECharacterActions::ECA_Finish, ECharacterActions::ECA_Stun }))
 	{
 		PlayAnimMontage(JumpMontage, 1.f);
 
@@ -479,32 +483,50 @@ void APlayerMain::Interact(const FInputActionValue& Value)
 
 void APlayerMain::Attack(const FInputActionValue& Value)
 {
-	CombatComponent->Input_Attack(Value);
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun }))
+	{
+		CombatComponent->Input_Attack(Value);
+	}
 }
 
 void APlayerMain::HeavyAttack(const FInputActionValue& Value)
 {
-	CombatComponent->Input_HeavyAttack(Value);
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun }))
+	{
+		CombatComponent->Input_HeavyAttack(Value);
+	}
 }
 
 void APlayerMain::LaunchAttack(const FInputActionValue& Value)
 {
-	CombatComponent->Input_Launch(Value);
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun }))
+	{
+		CombatComponent->Input_Launch(Value);
+	}
 }
 
 void APlayerMain::Block(const FInputActionValue& Value)
 {
-	CombatComponent->Input_Block(Value);
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun }))
+	{
+		CombatComponent->Input_Block(Value);
+	}
 }
 
 void APlayerMain::ReleaseBlock(const FInputActionValue& Value)
 {
-	CombatComponent->Input_ReleaseBlock(Value);
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun })) 
+	{
+		CombatComponent->Input_ReleaseBlock(Value);
+	}
 }
 
 void APlayerMain::Execute(const FInputActionValue& Value)
 {
-	CombatComponent->Input_Execute(Value);
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun }))
+	{
+		CombatComponent->Input_Execute(Value);
+	}
 }
 
 void APlayerMain::ToggleForm()
@@ -513,7 +535,9 @@ void APlayerMain::ToggleForm()
 		ECharacterActions::ECA_Dead, 
 		ECharacterActions::ECA_Block, 
 		ECharacterActions::ECA_Finish, 
-		ECharacterActions::ECA_Attack })) return;
+		ECharacterActions::ECA_Attack,
+		ECharacterActions::ECA_Stun})
+	) return;
 
 	float CurrentTime = GetWorld()->GetTimeSeconds();
 	if (CurrentTime - LastTransformationTime < TransformationCooldown) return;
@@ -635,6 +659,7 @@ void APlayerMain::GoToMainMenu()
 void APlayerMain::OnWallCollision(const FHitResult& HitResult)
 {
 	if (GEngine)GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, FString("APlayerMain::OnWallCollision"));
+	StopAnimMontage();
 	CombatComponent->GetDirectionalReact(FName("ReactToShield"));
 }
 
