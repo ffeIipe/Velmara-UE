@@ -22,4 +22,7 @@ public:
 	void UnregisterEnemy(AEnemy* Enemy);
 	
 	void SetEnemiesAIEnabled(bool bEnabled);
+
+private:
+	virtual void BeginPlay();
 };

@@ -31,11 +31,20 @@ void ATrigger::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AA
 
 void ATrigger::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	if (Player)
-	{
-		Player->SetOverlappingItem(nullptr);
-		if (GEngine && Player) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Red, FString("ATrigger::OnSphereEndOverlap"));
-	}
+    UWorld* World = GetWorld();
+    if (!IsValid(World)) return;
+
+    APlayerMain* LeavingPlayer = Cast<APlayerMain>(OtherActor);
+
+    if (IsValid(Player) && Player == LeavingPlayer)
+    {
+        Player->SetOverlappingItem(nullptr);
+        Player = nullptr;
+    }
+    else if (LeavingPlayer)
+    {
+        LeavingPlayer->SetOverlappingItem(nullptr);
+    }
 }
 
 void ATrigger::DisableCollision()

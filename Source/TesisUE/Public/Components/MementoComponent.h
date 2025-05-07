@@ -1,41 +1,59 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "MementoComponent.generated.h"
 
+USTRUCT(BlueprintType)
+struct FEntityMementoState
+{
+    GENERATED_BODY()
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+    UPROPERTY(VisibleAnywhere, Category = "Memento State")
+    FTransform Transform;
+
+    UPROPERTY(VisibleAnywhere, Category = "Memento State")
+    float Health;
+
+    UPROPERTY(VisibleAnywhere, Category = "Memento State")
+    float Energy;
+
+    // Constructor por defecto para inicializar valores
+    FEntityMementoState()
+        : Health(100.0f) // Valores por defecto, ajústalos según tu juego
+        , Energy(100.0f)
+    {
+        Transform = FTransform::Identity;
+    }
+};
+
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class TESISUE_API UMementoComponent : public UActorComponent
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
-public:	
-	UMementoComponent();
+public:
+    UMementoComponent();
 
-	void SaveState();
+    UFUNCTION(BlueprintCallable, Category = "Memento")
+    void SaveState();
 
-	void LoadState();
+    UFUNCTION(BlueprintCallable, Category = "Memento")
+    void LoadState();
 
-	//useful when player falls
-	FORCEINLINE FTransform GetLastTransform() { return CurrentMementoState.Transform; };
+    UFUNCTION(BlueprintPure, Category = "Memento")
+    FEntityMementoState GetCurrentSavedState() const { return InternalMementoState; }
+
+    UFUNCTION(BlueprintCallable, Category = "Memento")
+    void ApplyExternalState(const FEntityMementoState& StateToApply);
+
+    FORCEINLINE FTransform GetLastSavedTransform() { return InternalMementoState.Transform; }
 
 protected:
-	virtual void BeginPlay() override;
+    virtual void BeginPlay() override;
 
-private:	
-	struct FMementoState
-	{
-		FTransform Transform;
-		float Health;
-		float Energy;
-	};
+    FEntityMementoState InternalMementoState;
 
-	FMementoState CurrentMementoState;
-
-	FMementoState GetCurrentEntityState(); 
-
-	void ApplyEntityState(const FMementoState& StateToApply);
+private:
+    FEntityMementoState CaptureOwnerState() const;
 };

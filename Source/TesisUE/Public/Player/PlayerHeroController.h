@@ -7,10 +7,10 @@
 #include "GenericTeamAgentInterface.h"
 #include "PlayerHeroController.generated.h"
 
+class UUserWidget;
+class USoundMix;
+class UWBP_OptionsMenu;
 
-/**
- * 
- */
 UCLASS()
 class TESISUE_API APlayerHeroController : public APlayerController, public IGenericTeamAgentInterface
 {
@@ -18,11 +18,34 @@ class TESISUE_API APlayerHeroController : public APlayerController, public IGene
 	
 public:
 	APlayerHeroController();
+	
+	UFUNCTION(BlueprintCallable, Category = "Pause")
+	void TogglePauseMenu();
 
-	//~ Begin IGenericTeamAgentInterface Interface.
+protected:
+	virtual void BeginPlay() override;
+
+	virtual void SetupInputComponent() override;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
+	TSubclassOf<UUserWidget> PauseMenuWidgetClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
+	TSubclassOf<UUserWidget> OptionsMenuWidgetClass_Pause;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Audio")
+	USoundMix* PauseSoundMix;
+
 	virtual FGenericTeamId GetGenericTeamId() const override;
-	//~ End IGenericTeamAgentInterface Interface
 
 private:
+	UPROPERTY()
+	UUserWidget* CurrentPauseMenuInstance;
+
+	UPROPERTY()
+	UUserWidget* CurrentOptionsMenuInstance_Pause;
+
+	bool bIsGamePausedExplicitly;
+
 	FGenericTeamId HeroTeamID;
 };

@@ -41,7 +41,7 @@ void AResetPlayer::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor
 
         if (Player)
         {
-            ControlledPawn->SetActorTransform(Player->MementoComponent->GetLastTransform());
+            ControlledPawn->SetActorTransform(Player->MementoComponent->GetLastSavedTransform());
         }
         else
         {

@@ -2,6 +2,7 @@
 
 
 #include "SceneEvents/NewGameModeBase.h"
+#include "SceneEvents/NewGameInstance.h"
 #include "Enemy/Enemy.h"
 
 void ANewGameModeBase::RegisterEnemy(AEnemy* Enemy)
@@ -22,5 +23,16 @@ void ANewGameModeBase::SetEnemiesAIEnabled(bool bEnabled)
 		{
 			bEnabled ? Enemy->EnableAI() : Enemy->DisableAI();
 		}
+	}
+}
+
+void ANewGameModeBase::BeginPlay()
+{
+	Super::BeginPlay();
+
+	UNewGameInstance* NewGameInstance = Cast<UNewGameInstance>(GetGameInstance());
+	if (NewGameInstance)
+	{
+		NewGameInstance->ApplyPendingLoadedDataToWorld();
 	}
 }

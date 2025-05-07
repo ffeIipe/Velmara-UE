@@ -6,19 +6,33 @@
 #include "Components/MementoComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "SceneEvents/NewGameStateBase.h"
+#include "SceneEvents/NewGameInstance.h"
 
-void ACheckpoint::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void ACheckpoint::OnSphereBeginOverlap(
+    UPrimitiveComponent* OverlappedComponent,
+    AActor* OtherActor,
+    UPrimitiveComponent* OtherComp,
+    int32 OtherBodyIndex,
+    bool bFromSweep,
+    const FHitResult& SweepResult)
 {
-	Super::OnSphereBeginOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
-	DisableCollision();
+    Super::OnSphereBeginOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
 
-	if (Player)
-	{
-		AGameStateBase* BaseGameState = UGameplayStatics::GetGameState(GetWorld()); //father
-		if (ANewGameStateBase* NewGameState = Cast<ANewGameStateBase>(BaseGameState)) //child
-		{
-			NewGameState->SaveAllMementoStates();
-			SetLifeSpan(1.f);
-		}
-	}
+    APlayerMain* OverlappingPlayer = Cast<APlayerMain>(OtherActor);
+
+    if (OverlappingPlayer)
+    {
+        DisableCollision();
+
+        UNewGameInstance* GameInst = Cast<UNewGameInstance>(GetGameInstance());
+        if (GameInst)
+        {
+            if (GameInst->SavePlayerProgress(GameInst->ActiveSaveSlotIndex))
+            {
+                UE_LOG(LogTemp, Log, TEXT("ACheckpoint: Player progress saved via GameInstance. Slot: %d"), GameInst->ActiveSaveSlotIndex);
+            }
+        }
+
+        SetLifeSpan(1.f);
+    }
 }

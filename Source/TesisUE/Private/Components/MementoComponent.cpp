@@ -1,52 +1,71 @@
 #include "Components/MementoComponent.h"
 #include "Components/AttributeComponent.h"
-#include <Kismet/GameplayStatics.h>
-#include "GameFramework/PlayerStart.h"
+#include "GameFramework/Actor.h"
 
 UMementoComponent::UMementoComponent()
-{	
-	PrimaryComponentTick.bCanEverTick = false;
-}
-
-void UMementoComponent::SaveState()
 {
-	if (GetOwner())
-	{
-		CurrentMementoState = GetCurrentEntityState();
-	}
-}
-
-void UMementoComponent::LoadState()
-{
-	if (GetOwner())
-	{
-		ApplyEntityState(CurrentMementoState);
-	}
+    PrimaryComponentTick.bCanEverTick = false;
+    InternalMementoState = FEntityMementoState();
 }
 
 void UMementoComponent::BeginPlay()
 {
-	Super::BeginPlay();
+    Super::BeginPlay();
+
+    SaveState();
 }
 
-UMementoComponent::FMementoState UMementoComponent::GetCurrentEntityState()
+void UMementoComponent::SaveState()
 {
-	FMementoState State;
-	if (AActor* Owner = GetOwner())
-	{
-		State.Transform = Owner->GetActorTransform();
-		State.Health = Owner->GetComponentByClass<UAttributeComponent>()->GetHealth();
-		State.Energy = Owner->GetComponentByClass<UAttributeComponent>()->GetEnergy();
-	}
-	return State;
+    if (GetOwner())
+    {
+        InternalMementoState = CaptureOwnerState();
+    }
 }
 
-void UMementoComponent::ApplyEntityState(const FMementoState& StateToApply)
+void UMementoComponent::LoadState()
 {
-	if (AActor* Owner = GetOwner())
-	{
-		Owner->SetActorTransform(StateToApply.Transform);
-		Owner->GetComponentByClass<UAttributeComponent>()->SetHealth(StateToApply.Health);
-		Owner->GetComponentByClass<UAttributeComponent>()->SetEnergy(StateToApply.Energy);
-	}
+    if (GetOwner())
+    {
+        ApplyExternalState(InternalMementoState);
+    }
+}
+
+void UMementoComponent::ApplyExternalState(const FEntityMementoState& StateToApply)
+{
+    AActor* Owner = GetOwner();
+    if (Owner)
+    {
+        Owner->SetActorTransform(StateToApply.Transform);
+        UAttributeComponent* AttrComp = Owner->GetComponentByClass<UAttributeComponent>();
+        if (AttrComp)
+        {
+            AttrComp->SetHealth(StateToApply.Health);
+            AttrComp->SetEnergy(StateToApply.Energy);
+        }
+
+        InternalMementoState = StateToApply;
+    }
+}
+
+FEntityMementoState UMementoComponent::CaptureOwnerState() const
+{
+    FEntityMementoState State;
+    AActor* Owner = GetOwner();
+    if (Owner)
+    {
+        State.Transform = Owner->GetActorTransform();
+        UAttributeComponent* AttrComp = Owner->GetComponentByClass<UAttributeComponent>();
+        if (AttrComp)
+        {
+            State.Health = AttrComp->GetHealth();
+            State.Energy = AttrComp->GetEnergy();
+        }
+        else
+        {
+            State.Health = 0.0f;
+            State.Energy = 0.0f;
+        }
+    }
+    return State;
 }

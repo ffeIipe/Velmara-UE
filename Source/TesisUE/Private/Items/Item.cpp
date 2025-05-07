@@ -63,11 +63,25 @@ void AItem::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 
 void AItem::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	Super::OnSphereEndOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex);
+    Super::OnSphereEndOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex);
 
-	if (Player)
-	{
-		PromptWidget->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
-		Player->SetOverlappingItem(nullptr);
-	}
+    APlayerMain* CurrentOverlappingPlayer = Cast<APlayerMain>(OtherActor);
+
+    if (IsValid(Player) && Player == CurrentOverlappingPlayer)
+    {
+        if (PromptWidget && PromptWidget->GetWidget())
+        {
+            PromptWidget->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
+        }
+        Player->SetOverlappingItem(nullptr);
+    }
+
+    if (IsValid(Player) && Player == CurrentOverlappingPlayer)
+    {
+
+    }
+    else if (CurrentOverlappingPlayer)
+    {
+        CurrentOverlappingPlayer->SetOverlappingItem(nullptr);
+    }
 }
