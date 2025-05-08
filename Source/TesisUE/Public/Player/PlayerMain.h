@@ -236,6 +236,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	USpectralWeaponComponent* SpectralWeaponComponent;
 
+	UFUNCTION()
+	void OnWallCollision(const FHitResult& HitResult);
+
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "BloodSense | Cooldown")
 	float TransformationCooldown;
@@ -308,9 +311,6 @@ private:
 	
 	UFUNCTION()
 	void GoToMainMenu();
-
-	UFUNCTION()
-	void OnWallCollision(const FHitResult& HitResult);
 
 	void Revive();
 

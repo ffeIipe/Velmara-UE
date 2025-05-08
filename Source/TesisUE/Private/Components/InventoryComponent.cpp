@@ -15,7 +15,7 @@ UInventoryComponent::UInventoryComponent()
 void UInventoryComponent::BeginPlay()
 {
     Super::BeginPlay();
-    InventorySlots.Init(nullptr, MaxSlots);
+    //InventorySlots.Init(nullptr, MaxSlots);
 
     PlayerControllerRef = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 
@@ -45,47 +45,45 @@ void UInventoryComponent::InitializeInventoryWidget()
 
 bool UInventoryComponent::TryAddItem(AItem* ItemToAdd)
 {
-    if (!ItemToAdd) return false;
+    if (!IsValid(ItemToAdd))
+    {
+        return false;
+    }
 
     for (int32 i = 0; i < InventorySlots.Num(); ++i)
     {
         if (InventorySlots[i] == nullptr)
         {
             InventorySlots[i] = ItemToAdd;
+
             ChangeWeapon(i);
+
             UpdateInventoryUI();
             return true;
         }
     }
-    return false;
+
+    return false; // Inventario lleno
 }
 
 void UInventoryComponent::EquipItemFromSlot(int32 SlotIndex)
 {
-    if (!InventorySlots.IsValidIndex(SlotIndex) || InventorySlots[SlotIndex] == nullptr)
-    {
-        return;
-    }
+    if (!InventorySlots.IsValidIndex(SlotIndex) || InventorySlots[SlotIndex] == nullptr) return; 
 
-    //if (SlotIndex == EquippedSlotIndex)
-    //{
-    //    // UnequipCurrentItem();
-    //    // HideInventory(); // Cierra inventario si desequipas
-    //    return;
-    //}
+    AItem* ItemToEquip = InventorySlots[SlotIndex];
 
     UnequipCurrentItem();
 
-    AItem* ItemToEquip = InventorySlots[SlotIndex];
     ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
 
-    if (OwnerCharacter && ItemToEquip)
+    if (IsValid(OwnerCharacter) && IsValid(ItemToEquip))
     {
         USceneComponent* AttachParent = OwnerCharacter->GetMesh();
         if (AttachParent)
         {
             ItemToEquip->Equip(AttachParent, HandSocketName, OwnerCharacter, OwnerCharacter);
-            ItemToEquip->EnableVisuals(true);
+
+            ItemToEquip->EnableVisuals(true); // Hacer visible y actualizar estado
 
             EquippedItem = ItemToEquip;
             EquippedSlotIndex = SlotIndex;
@@ -93,7 +91,7 @@ void UInventoryComponent::EquipItemFromSlot(int32 SlotIndex)
     }
 
     UpdateInventoryUI();
-    HideInventory();
+    // HideInventory(); // Comentado - Ocultar inventario (UI) aquí podría no ser siempre deseado
 }
 
 void UInventoryComponent::DropItemFromSlot(int32 SlotIndex)
@@ -131,11 +129,20 @@ void UInventoryComponent::DropItemFromSlot(int32 SlotIndex)
 
 void UInventoryComponent::UnequipCurrentItem()
 {
-    if (EquippedItem)
+    if (IsValid(EquippedItem)) // Verificar validez
     {
-        EquippedItem->EnableVisuals(false);
+        EquippedItem->EnableVisuals(false); // Ocultar y actualizar estado
         EquippedItem = nullptr;
         EquippedSlotIndex = -1;
+    }
+    else
+    {
+        // Si EquippedItem ya era null, simplemente asegurarse que el índice también sea -1
+        if (EquippedSlotIndex != -1)
+        {
+            EquippedSlotIndex = -1;
+        }
+        // else { // Ya estaba todo desequipado, no imprimir nada }
     }
 }
 

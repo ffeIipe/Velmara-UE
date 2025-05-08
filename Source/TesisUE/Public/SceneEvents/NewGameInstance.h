@@ -95,4 +95,6 @@ private:
     
     UPROPERTY()
     UUserWidget* CurrentLoadingScreenInstance;
+
+    FString PlayerCharacterGetNameSafe(ACharacter* Char) const;
 };

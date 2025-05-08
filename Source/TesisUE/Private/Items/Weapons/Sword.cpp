@@ -34,6 +34,7 @@ void ASword::BeginPlay()
 	WeaponBox->OnComponentBeginOverlap.AddDynamic(this, &ASword::OnBoxOverlap);
 }
 
+// En Sword.cpp
 void ASword::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwner, APawn* NewInstigator)
 {
 	AttachMeshToSocket(InParent, InSocketName);
@@ -42,7 +43,10 @@ void ASword::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwn
 	ItemState = EItemState::EIS_Equipped;
 
 	CharacterStateInterface = Cast<ICharacterState>(NewOwner);
-	CharacterStateComponent = CharacterStateInterface->Execute_GetCharacterStateComponent(NewOwner);
+	if (CharacterStateInterface)
+	{
+		CharacterStateComponent = CharacterStateInterface->Execute_GetCharacterStateComponent(NewOwner);
+	}
 }
 void ASword::AttachMeshToSocket(USceneComponent* InParent, const FName& InSocketName)
 {
@@ -80,32 +84,21 @@ void ASword::Unequip()
 	CharacterStateComponent = nullptr;
 }
 
+// En Sword.cpp
 void ASword::EnableVisuals(bool bEnable)
 {
-	Super::EnableVisuals(bEnable);
+	Super::EnableVisuals(bEnable); // Llama a AItem::EnableVisuals
 
-	if (ItemMesh)
-	{
-		ItemMesh->SetVisibility(bEnable);
-	}
-	if (WeaponBox)
-	{
-		WeaponBox->SetCollisionEnabled(bEnable ? ECollisionEnabled::QueryOnly : ECollisionEnabled::NoCollision);
-	}
+	if (ItemMesh) ItemMesh->SetVisibility(bEnable);
 
-	if (CharacterStateComponent)
+	// El WeaponBox se maneja en AItem::EnableVisuals si esa es la intención, o aquí:
+	// if (WeaponBox) WeaponBox->SetCollisionEnabled(bEnable ? ECollisionEnabled::QueryOnly : ECollisionEnabled::NoCollision);
+
+
+	if (CharacterStateComponent) // Este se obtiene en ASword::Equip
 	{
-		if (bEnable)
-		{
-			CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_EquippedSword);
-		}
-		else
-		{
-			if (ItemState == EItemState::EIS_Equipped)
-			{
-				CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_Unequipped);
-			}
-		}
+		ECharacterStates NewState = bEnable ? ECharacterStates::ECS_EquippedSword : ECharacterStates::ECS_Unequipped;		
+		CharacterStateComponent->SetCharacterState(NewState);
 	}
 }
 

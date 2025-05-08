@@ -658,7 +658,6 @@ void APlayerMain::GoToMainMenu()
 
 void APlayerMain::OnWallCollision(const FHitResult& HitResult)
 {
-	if (GEngine)GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, FString("APlayerMain::OnWallCollision"));
 	StopAnimMontage();
 	CombatComponent->GetDirectionalReact(FName("ReactToShield"));
 }

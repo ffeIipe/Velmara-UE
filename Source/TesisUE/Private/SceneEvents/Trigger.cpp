@@ -1,11 +1,7 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "SceneEvents/Trigger.h"
 #include "Components/BoxComponent.h"
 #include "Player/PlayerMain.h"
 
-// Sets default values
 ATrigger::ATrigger()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -13,7 +9,6 @@ ATrigger::ATrigger()
 	RootComponent = BoxCollider;
 }
 
-// Called when the game starts or when spawned
 void ATrigger::BeginPlay()
 {
 	Super::BeginPlay();
@@ -54,4 +49,3 @@ void ATrigger::DisableCollision()
 		BoxCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 }
-

@@ -73,7 +73,8 @@ protected:
 
 private:
 	ICharacterState* CharacterStateInterface = nullptr;
-
+	
+	UPROPERTY()
 	UCharacterStateComponent* CharacterStateComponent = nullptr;
 
 	UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")

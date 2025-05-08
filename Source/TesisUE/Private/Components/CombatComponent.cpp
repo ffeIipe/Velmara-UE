@@ -263,7 +263,6 @@ void UCombatComponent::ValidateWall()
 		if (HitActor)
 		{
 			OnWallHit.Broadcast(Hit);
-			if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Red, FString(Hit.GetActor()->GetName()));
 		}
 	}
 
@@ -384,7 +383,6 @@ void UCombatComponent::LaunchCharacterUp()
 	{
 		OwningCharacter->PlayAnimMontage(HitReactMontage);
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), BlockSound, GetOwner()->GetActorLocation());
-		if (GEngine)GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Orange, FString("Not LaunchUp"));
 	}
 }
 
@@ -525,12 +523,10 @@ void UCombatComponent::LightAttackEvent()
 
 	if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
 	{
-		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Orange, FString("SpectralAttack"));
 		SpectralAttacks->Execute_PerformSpectralAttack(GetOwner());
 	}
 	else if (bIsLaunched)
 	{
-		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Orange, FString("IsLaunched"));
 		JumpAttack(JumpAttackIndex);
 		ValidateWall();
 	}

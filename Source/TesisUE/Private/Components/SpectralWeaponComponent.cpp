@@ -154,7 +154,6 @@ void USpectralWeaponComponent::Fire(bool bIsPrimary)
                 }
                 else
                 {
-                    if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Red, FString("WallHit"));
                     DrawDebugSphere(GetWorld(), Hit.ImpactPoint, 10.f, 12, FColor::Green, false, 2.0f);
                 }
             }

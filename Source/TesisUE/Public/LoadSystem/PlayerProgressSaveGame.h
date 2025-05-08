@@ -5,6 +5,19 @@
 #include "Components/MementoComponent.h"
 #include "PlayerProgressSaveGame.generated.h"
 
+class AItem;
+
+USTRUCT(BlueprintType)
+struct FInventoryItemSaveData
+{
+    GENERATED_BODY()
+
+    UPROPERTY(VisibleAnywhere, Category = "SaveGameData")
+    TSubclassOf<AItem> ItemClass;
+
+    FInventoryItemSaveData() : ItemClass(nullptr) {}
+};
+
 USTRUCT(BlueprintType)
 struct FEnemySaveData
 {
@@ -38,6 +51,12 @@ public:
 
     UPROPERTY(VisibleAnywhere, Category = "SaveGameData|Player")
     FEntityMementoState PlayerState;
+
+    UPROPERTY(VisibleAnywhere, Category = "SaveGameData|Inventory")
+    TArray<FInventoryItemSaveData> InventorySlotsData;
+
+    UPROPERTY(VisibleAnywhere, Category = "SaveGameData|Inventory")
+    int32 EquippedSlotIndexInSave;
 
     UPROPERTY(VisibleAnywhere, Category = "SaveGameData|Enemies")
     TArray<FEnemySaveData> EnemiesData;

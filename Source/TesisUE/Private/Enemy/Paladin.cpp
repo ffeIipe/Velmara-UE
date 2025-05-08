@@ -106,8 +106,6 @@ void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 		ActorsToIgnore.AddUnique(BoxHit.GetActor());
 		
 		Entity->Execute_GetHit(BoxHit.GetActor(), BoxHit.ImpactPoint);
-
-		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::White, FString("Paladin Sword found: " + BoxHit.GetActor()->GetName()));
 	}
 	//else if (Player)
 	//{
@@ -157,15 +155,10 @@ float APaladin::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 {
 	if (Attributes->IsAlive())
 	{
-		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::White, FString("IS ALIVE"));
-
 		if (Attributes->GetShieldMesh())
 		{
-			if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Emerald, FString("VALID SHIELD MESH"));
-
 			if (Attributes->IsShielded())
-			{
-				if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Emerald, FString("IS SHIELDED"));
+			{				
 				Attributes->ReceiveShieldDamage(DamageAmount);
 				ShieldHit();
 			}

@@ -17,23 +17,20 @@ class TESISUE_API UInventoryComponent : public UActorComponent
 public:
     UInventoryComponent();
 
+    UPROPERTY(EditDefaultsOnly, Category = "Inventory")
+    int32 MaxSlots = 2;
+
+    UPROPERTY(VisibleAnywhere, Category = "Inventory", Transient)
+    int32 EquippedSlotIndex = -1;
+
 protected:
     virtual void BeginPlay() override;
 
     UPROPERTY(EditDefaultsOnly, Category = "Inventory UI")
     TSubclassOf<UUserWidget> InventoryWidgetClass;
 
-    UPROPERTY(EditDefaultsOnly, Category = "Inventory")
-    int32 MaxSlots = 2;
-
-    UPROPERTY(VisibleAnywhere, Category = "Inventory", Transient) // Transient si no necesita guardarse
-        TArray<AItem*> InventorySlots;
-
     UPROPERTY(VisibleAnywhere, Category = "Inventory", Transient)
     AItem* EquippedItem = nullptr;
-
-    UPROPERTY(VisibleAnywhere, Category = "Inventory", Transient)
-    int32 EquippedSlotIndex = -1;
 
     UPROPERTY(Transient)
     UUserWidget* InventoryWidgetInstance = nullptr;
@@ -47,6 +44,9 @@ protected:
     void K2_RefreshInventoryUI(const TArray<AItem*>& Items);
 
 public:
+    UPROPERTY(EditAnywhere, Category = "Inventory", Transient) // Transient si no necesita guardarse
+    TArray<AItem*> InventorySlots;
+
     UFUNCTION(BlueprintPure, Category = "Inventory")
     AItem* GetEquippedItem() const { return EquippedItem; }
 
@@ -81,10 +81,12 @@ public:
     UPROPERTY(EditDefaultsOnly, Category = "Inventory | Inputs")
     UInputAction* Slot2_InventoryAction;
 
+    void UnequipCurrentItem();
+    
+    void UpdateInventoryUI();
+
 private:
     void InitializeInventoryWidget();
-    void UpdateInventoryUI();
-    void UnequipCurrentItem();
 
     UPROPERTY(EditDefaultsOnly, Category = "Inventory")
     FName HandSocketName = FName("RightHandSocket");

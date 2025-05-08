@@ -8,6 +8,10 @@
 #include "EngineUtils.h" 
 #include "Enemy/Enemy.h"
 #include "Blueprint/UserWidget.h"
+#include "Player/PlayerMain.h"
+#include "Components/InventoryComponent.h"
+#include "Items/Item.h"
+#include "Items/Weapons/Sword.h"
 
 UNewGameInstance::UNewGameInstance()
 {
@@ -39,7 +43,6 @@ void UNewGameInstance::SetDefaultGameSettings()
 
     if (CurrentSettings)
     {
-        // Obtener resolución del escritorio como un buen valor por defecto
         if (GEngine && GEngine->GameUserSettings)
         {
             CurrentSettings->ScreenResolution = GEngine->GameUserSettings->GetDesktopResolution();
@@ -197,74 +200,92 @@ bool UNewGameInstance::SavePlayerProgress(int32 SlotIndex)
     FString CurrentSlotName = FString::Printf(TEXT("%s%d"), *ProgressSaveSlotPrefix, ActiveSaveSlotIndex);
 
     UPlayerProgressSaveGame* SaveGameInstance = Cast<UPlayerProgressSaveGame>(UGameplayStatics::CreateSaveGameObject(UPlayerProgressSaveGame::StaticClass()));
-    if (!SaveGameInstance)
-    {
-        UE_LOG(LogTemp, Error, TEXT("NewGameInstance: Could not create SaveGameObject for PlayerProgress."));
-        return false;
-    }
-
+    if (!SaveGameInstance) return false;
+ 
     SaveGameInstance->CurrentLevelName = UGameplayStatics::GetCurrentLevelName(this);
 
     ACharacter* PlayerCharacter = UGameplayStatics::GetPlayerCharacter(this, 0);
-    if (PlayerCharacter)
+    if (IsValid(PlayerCharacter)) // Usar IsValid
     {
         UMementoComponent* PlayerMemento = PlayerCharacter->FindComponentByClass<UMementoComponent>();
         if (PlayerMemento)
         {
             PlayerMemento->SaveState();
             SaveGameInstance->PlayerState = PlayerMemento->GetCurrentSavedState();
-            UE_LOG(LogTemp, Log, TEXT("NewGameInstance: Player state saved. Pos: %s"), *SaveGameInstance->PlayerState.Transform.GetLocation().ToString());
         }
-        else
-        {
-            UE_LOG(LogTemp, Warning, TEXT("NewGameInstance: PlayerCharacter does not have a MementoComponent. Player state not saved."));
-        }
-    }
-    else
-    {
-        UE_LOG(LogTemp, Warning, TEXT("NewGameInstance: PlayerCharacter not found. Player state not saved."));
     }
 
-    SaveGameInstance->EnemiesData.Empty();
-    UWorld* CurrentWorld = GetWorld();
-    if (CurrentWorld)
+
+
+    if (IsValid(PlayerCharacter))
     {
-        for (TActorIterator<AActor> It(CurrentWorld); It; ++It)
+        UInventoryComponent* PlayerInventory = PlayerCharacter->FindComponentByClass<UInventoryComponent>();
+        if (PlayerInventory)
         {
-            AActor* Actor = *It;
-            if (Actor && Actor != PlayerCharacter)
+            SaveGameInstance->InventorySlotsData.Empty(); // Limpiar antes de llenar
+            const TArray<AItem*>& CurrentInventoryItems = PlayerInventory->GetInventoryItems();
+            AItem* CurrentlyEquippedItemByGetter = PlayerInventory->GetEquippedItem();
+            int32 EquippedSlotIndexFromGetter = PlayerInventory->EquippedSlotIndex; // Leer el índice directamente
+
+            for (int32 i = 0; i < CurrentInventoryItems.Num(); ++i) // Usar índice para loguear mejor
             {
-                UMementoComponent* EnemyMemento = Actor->FindComponentByClass<UMementoComponent>();
-                if (EnemyMemento)
+                AItem* ItemInSlot = CurrentInventoryItems[i];
+                FInventoryItemSaveData ItemData;
+                if (IsValid(ItemInSlot)) // Usar IsValid
                 {
-                    EnemyMemento->SaveState();
-                    FEnemySaveData EnemyData;
-                    EnemyData.EnemyID = Actor->GetFName(); // ¡IMPORTANTE! Esto solo funciona bien para enemigos con nombres únicos persistentes en el nivel.
-                    // Para enemigos spawneados dinámicamente, necesitarás un sistema de ID más robusto.
-                    EnemyData.EnemyState = EnemyMemento->GetCurrentSavedState();
-                    // Determinar si está "vivo" (podrías tener una función IsAlive() en AttributeComponent o en el enemigo mismo)
-                    // Por ahora, asumiremos que si tiene Memento y se guarda, está "vivo" en algún estado.
-                    // Podrías querer chequear su vida actual desde EnemyState.Health.
-                    EnemyData.bIsAlive = EnemyData.EnemyState.Health > 0;
+                    ItemData.ItemClass = ItemInSlot->GetClass();
+                }
+                else
+                {
+                    ItemData.ItemClass = nullptr;
+                }
+                SaveGameInstance->InventorySlotsData.Add(ItemData);
+            }
 
-                    SaveGameInstance->EnemiesData.Add(EnemyData);
+
+            int32 CalculatedEquippedSlotForSave = -1;
+            if (IsValid(CurrentlyEquippedItemByGetter))
+            {                              
+                if (EquippedSlotIndexFromGetter != -1 &&
+                    CurrentInventoryItems.IsValidIndex(EquippedSlotIndexFromGetter) &&
+                    CurrentInventoryItems[EquippedSlotIndexFromGetter] == CurrentlyEquippedItemByGetter)
+                {
+                    CalculatedEquippedSlotForSave = EquippedSlotIndexFromGetter;                
+                }
+                else
+                {
+                    bool bFoundByIteration = false;
+                    for (int32 i = 0; i < CurrentInventoryItems.Num(); ++i)
+                    {
+                        if (CurrentInventoryItems[i] == CurrentlyEquippedItemByGetter)
+                        {
+                            CalculatedEquippedSlotForSave = i;
+                            bFoundByIteration = true;                           
+                            break;
+                        }
+                    }
+                    if (!bFoundByIteration)
+                    {                       
+                        CalculatedEquippedSlotForSave = -1; // Asegurarse que sea -1 si no se encuentra
+                    }
                 }
             }
+            else
+            {             
+                CalculatedEquippedSlotForSave = -1; // Asegurarse que sea -1 si no hay nada equipado
+            }
+
+            SaveGameInstance->EquippedSlotIndexInSave = CalculatedEquippedSlotForSave;
         }
-        UE_LOG(LogTemp, Log, TEXT("NewGameInstance: Saved data for %d enemies."), SaveGameInstance->EnemiesData.Num());
     }
 
     SaveGameInstance->Timestamp = FDateTime::UtcNow();
     SaveGameInstance->SaveSlotIndex = ActiveSaveSlotIndex;
-
-    if (UGameplayStatics::SaveGameToSlot(SaveGameInstance, CurrentSlotName, DefaultUserIndex))
-    {
-        UE_LOG(LogTemp, Log, TEXT("NewGameInstance: Player progress saved successfully to slot %s."), *CurrentSlotName);
-        return true;
-    }
-
-    UE_LOG(LogTemp, Error, TEXT("NewGameInstance: Failed to save player progress to slot %s."), *CurrentSlotName);
-    return false;
+   
+    if (UGameplayStatics::SaveGameToSlot(SaveGameInstance, CurrentSlotName, DefaultUserIndex)) return true;
+    
+    else return false;
+    
 }
 
 bool UNewGameInstance::LoadPlayerProgress(int32 SlotIndex)
@@ -274,7 +295,6 @@ bool UNewGameInstance::LoadPlayerProgress(int32 SlotIndex)
 
     if (!DoesProgressSaveExist(ActiveSaveSlotIndex))
     {
-        UE_LOG(LogTemp, Warning, TEXT("NewGameInstance: No save game found in slot %s."), *CurrentSlotName);
         bIsLoadingPlayerProgress = false;
         return false;
     }
@@ -286,12 +306,10 @@ bool UNewGameInstance::LoadPlayerProgress(int32 SlotIndex)
         bIsLoadingPlayerProgress = true;
         ShowLoadingScreen();
 
-        UE_LOG(LogTemp, Log, TEXT("NewGameInstance: Save game loaded from slot %s. Opening level %s."), *CurrentSlotName, *PendingGameDataToLoad->CurrentLevelName);
         UGameplayStatics::OpenLevel(this, FName(*PendingGameDataToLoad->CurrentLevelName));
         return true;
     }
 
-    UE_LOG(LogTemp, Error, TEXT("NewGameInstance: Failed to load save game from slot %s or cast failed."), *CurrentSlotName);
     bIsLoadingPlayerProgress = false;
     return false;
 }
@@ -300,11 +318,10 @@ void UNewGameInstance::ApplyPendingLoadedDataToWorld()
 {
     if (!PendingGameDataToLoad)
     {
-        UE_LOG(LogTemp, Log, TEXT("NewGameInstance::ApplyPendingLoadedDataToWorld: No pending data to apply."));
+        bIsLoadingPlayerProgress = false;
+        HideLoadingScreen();
         return;
     }
-
-    UE_LOG(LogTemp, Log, TEXT("NewGameInstance::ApplyPendingLoadedDataToWorld: Applying data for level %s"), *PendingGameDataToLoad->CurrentLevelName);
 
     ACharacter* PlayerCharacter = UGameplayStatics::GetPlayerCharacter(this, 0);
     if (PlayerCharacter)
@@ -313,59 +330,147 @@ void UNewGameInstance::ApplyPendingLoadedDataToWorld()
         if (PlayerMemento)
         {
             PlayerMemento->ApplyExternalState(PendingGameDataToLoad->PlayerState);
-            UE_LOG(LogTemp, Log, TEXT("NewGameInstance: Player state applied. New Pos: %s"), *PlayerCharacter->GetActorLocation().ToString());
         }
-        else
-        {
-            UE_LOG(LogTemp, Warning, TEXT("NewGameInstance: PlayerCharacter has no MementoComponent. Cannot apply saved state."));
-        }
-    }
-    else
-    {
-        UE_LOG(LogTemp, Warning, TEXT("NewGameInstance: PlayerCharacter not found in ApplyPendingLoadedDataToWorld."));
-    }
 
-    UWorld* CurrentWorld = GetWorld();
-    if (CurrentWorld)
-    {
-        for (const FEnemySaveData& SavedEnemyData : PendingGameDataToLoad->EnemiesData)
+        UInventoryComponent* PlayerInventory = PlayerCharacter->FindComponentByClass<UInventoryComponent>();
+        if (PlayerInventory)
         {
-            AActor* FoundEnemy = nullptr;
-            for (TActorIterator<AActor> It(CurrentWorld); It; ++It)
+            if (PlayerInventory->InventorySlots.Num() != PlayerInventory->MaxSlots)
             {
-                AActor* PotentialEnemy = *It;
-                if (PotentialEnemy && PotentialEnemy != PlayerCharacter && PotentialEnemy->GetFName() == SavedEnemyData.EnemyID)
-                {
-                    FoundEnemy = PotentialEnemy;
-                    break;
-                }
+                PlayerInventory->InventorySlots.Init(nullptr, PlayerInventory->MaxSlots);
             }
 
-            if (FoundEnemy)
+            FActorSpawnParameters SpawnParams;
+            SpawnParams.Owner = PlayerCharacter;
+            SpawnParams.Instigator = PlayerCharacter;
+            SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+            for (int32 i = 0; i < PendingGameDataToLoad->InventorySlotsData.Num(); ++i)
             {
-                if (SavedEnemyData.bIsAlive)
+                if (!PlayerInventory->InventorySlots.IsValidIndex(i)) continue;
+
+                const FInventoryItemSaveData& SavedItemData = PendingGameDataToLoad->InventorySlotsData[i];
+                if (SavedItemData.ItemClass != nullptr)
                 {
-                    UMementoComponent* EnemyMemento = FoundEnemy->FindComponentByClass<UMementoComponent>();
-                    if (EnemyMemento)
+                    AItem* NewItem = GetWorld()->SpawnActor<AItem>(SavedItemData.ItemClass, PlayerCharacter->GetActorLocation(), PlayerCharacter->GetActorRotation(), SpawnParams);
+                    if (NewItem)
                     {
-                        EnemyMemento->ApplyExternalState(SavedEnemyData.EnemyState);
+                        NewItem->EnableVisuals(false);
+                        NewItem->SetOwner(PlayerCharacter);
+                        PlayerInventory->InventorySlots[i] = NewItem;
+
+                        if (ASword* Sword = Cast<ASword>(NewItem))
+                        {
+                            if (APlayerMain* Player = Cast<APlayerMain>(PlayerCharacter))
+                            {
+                                Sword->OnWallHit.AddDynamic(Player, &APlayerMain::OnWallCollision);
+                            }
+                        }
                     }
                     else
                     {
-                        UE_LOG(LogTemp, Warning, TEXT("NewGameInstance: Enemy %s found but has no MementoComponent. State partially/not applied."), *FoundEnemy->GetName());
+                        PlayerInventory->InventorySlots[i] = nullptr;
                     }
                 }
                 else
                 {
-                    FoundEnemy->Destroy();
+                    PlayerInventory->InventorySlots[i] = nullptr;
+                }
+            }
+            PlayerInventory->UpdateInventoryUI();
+
+            if (PendingGameDataToLoad->EquippedSlotIndexInSave != -1 &&
+                PlayerInventory->InventorySlots.IsValidIndex(PendingGameDataToLoad->EquippedSlotIndexInSave) &&
+                PlayerInventory->InventorySlots[PendingGameDataToLoad->EquippedSlotIndexInSave] != nullptr)
+            {
+                PlayerInventory->EquipItemFromSlot(PendingGameDataToLoad->EquippedSlotIndexInSave);
+            }
+            else
+            {
+                PlayerInventory->UnequipCurrentItem();
+                if (APlayerMain* Player = Cast<APlayerMain>(PlayerCharacter))
+                {
+                    if (ICharacterState* CSInterface = Cast<ICharacterState>(Player))
+                    {
+                        UCharacterStateComponent* CharStateComp = CSInterface->Execute_GetCharacterStateComponent(Player);
+                        if (CharStateComp)
+                        {
+                            CharStateComp->SetCharacterState(ECharacterStates::ECS_Unequipped);
+                        }
+                    }
+                }
+            }
+        }
+
+        UWorld* CurrentWorld = GetWorld();
+        if (CurrentWorld && PendingGameDataToLoad->EnemiesData.Num() > 0)
+        {
+            for (TActorIterator<AEnemy> It(CurrentWorld); It; ++It)
+            {
+                AEnemy* EnemyInWorld = *It;
+                if (!EnemyInWorld) continue;
+
+                bool bFoundInData = false;
+                for (const FEnemySaveData& SavedEnemyData : PendingGameDataToLoad->EnemiesData)
+                {
+                    if (EnemyInWorld->GetFName() == SavedEnemyData.EnemyID)
+                    {
+                        bFoundInData = true;
+                        if (SavedEnemyData.bIsAlive)
+                        {
+                            UMementoComponent* EnemyMemento = EnemyInWorld->FindComponentByClass<UMementoComponent>();
+                            if (EnemyMemento)
+                            {
+                                EnemyMemento->ApplyExternalState(SavedEnemyData.EnemyState);
+                            }
+                        }
+                        else
+                        {
+                            EnemyInWorld->Destroy();
+                        }
+                        break;
+                    }
+                }
+                if (!bFoundInData) { EnemyInWorld->Destroy(); }
+            }
+
+            for (const FEnemySaveData& SavedEnemyData : PendingGameDataToLoad->EnemiesData)
+            {
+                AActor* FoundEnemy = nullptr;
+                for (TActorIterator<AActor> It(CurrentWorld); It; ++It)
+                {
+                    AActor* PotentialEnemy = *It;
+                    if (PotentialEnemy && PotentialEnemy != PlayerCharacter && PotentialEnemy->GetFName() == SavedEnemyData.EnemyID)
+                    {
+                        UMementoComponent* EnemyMementoTest = PotentialEnemy->FindComponentByClass<UMementoComponent>();
+                        if (EnemyMementoTest)
+                        {
+                            FoundEnemy = PotentialEnemy;
+                            break;
+                        }
+                    }
+                }
+
+                if (FoundEnemy)
+                {
+                    if (SavedEnemyData.bIsAlive)
+                    {
+                        UMementoComponent* EnemyMemento = FoundEnemy->FindComponentByClass<UMementoComponent>();
+                        if (EnemyMemento)
+                        {
+                            EnemyMemento->ApplyExternalState(SavedEnemyData.EnemyState);
+                        }
+                    }
+                    else
+                    {
+                        FoundEnemy->Destroy();
+                    }
                 }
             }
         }
     }
 
-    UE_LOG(LogTemp, Log, TEXT("NewGameInstance: Finished applying loaded data."));
     PendingGameDataToLoad = nullptr;
-
     bIsLoadingPlayerProgress = false;
 }
 
