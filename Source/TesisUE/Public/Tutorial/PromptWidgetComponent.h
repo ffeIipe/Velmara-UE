@@ -20,6 +20,8 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Prompt")
     void LoadAndApplyPrompt();
 
+    void EnablePromptWidget(bool bIsEnable);
+
 protected:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Prompt")
     UDataTable* PromptDataTable;

@@ -20,16 +20,25 @@ AInputPromptTrigger::AInputPromptTrigger()
     PromptWidgetComponent->SetupAttachment(GetRootComponent());
     PromptWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
     PromptWidgetComponent->SetDrawAtDesiredSize(true);
-    PromptWidgetComponent->SetVisibility(false);
+}
+
+void AInputPromptTrigger::BeginPlay()
+{
+    Super::BeginPlay();
+    
+    if (PromptWidgetComponent)
+    {
+        PromptWidgetComponent->EnablePromptWidget(false);
+    }
 }
 
 void AInputPromptTrigger::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
     Super::OnSphereBeginOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
 
-    if (Player)
+    if (Player && PromptWidgetComponent)
     {
-        PromptWidgetComponent->SetVisibility(true);
+        PromptWidgetComponent->EnablePromptWidget(true);
     }
 }
 
@@ -37,9 +46,9 @@ void AInputPromptTrigger::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComp
 {
     Super::OnSphereEndOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex);
 
-    if (Player)
+    if (PromptWidgetComponent)
     {
-        PromptWidgetComponent->SetVisibility(false);
+        PromptWidgetComponent->EnablePromptWidget(false);
     }
 }
 

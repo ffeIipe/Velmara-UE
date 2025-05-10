@@ -37,3 +37,16 @@ void UPromptWidgetComponent::LoadAndApplyPrompt()
         PromptWidget->InitializePrompt(*PromptRow, bUseGamepadIcon);
     }
 }
+
+void UPromptWidgetComponent::EnablePromptWidget(bool bIsEnable)
+{
+    bIsEnable ? 
+        GetWidget()->SetVisibility(ESlateVisibility::Visible) : 
+        GetWidget()->SetVisibility(ESlateVisibility::Collapsed);
+
+    bIsEnable ?
+        SetVisibility(true) :
+        SetVisibility(false);
+
+    if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, FString(" UPromptWidgetComponent::EnablePromptWidget"));
+}

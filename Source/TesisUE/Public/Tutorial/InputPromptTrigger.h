@@ -18,6 +18,8 @@ public:
     AInputPromptTrigger();
 
 protected:
+	virtual void BeginPlay() override;
+
 	void OnSphereBeginOverlap(
 		UPrimitiveComponent* OverlappedComponent,
 		AActor* OtherActor,
