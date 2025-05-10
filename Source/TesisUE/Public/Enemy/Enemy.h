@@ -106,10 +106,10 @@ protected:
 	UPromptWidgetComponent* PromptWidgetComponent;
 	
 	UPROPERTY(EditAnywhere);
-	float MinEnergy = 8.f;
+	float MinEnergy = 1.f;
 	
 	UPROPERTY(EditAnywhere);
-	float MaxEnergy = 10.f;
+	float MaxEnergy = 3.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Montages");
 	UAnimMontage* HitReactMontage;

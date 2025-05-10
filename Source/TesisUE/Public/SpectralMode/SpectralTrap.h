@@ -7,7 +7,6 @@
 #include "SpectralTrap.generated.h"
 
 class APlayerMain;
-class UAttributeComponent;
 
 UCLASS()
 class TESISUE_API ASpectralTrap : public ATrigger
@@ -15,8 +14,6 @@ class TESISUE_API ASpectralTrap : public ATrigger
 	GENERATED_BODY()
 
 private:
-	ASpectralTrap();
-
 	void OnSphereBeginOverlap(
 		UPrimitiveComponent* OverlappedComponent,
 		AActor* OtherActor,
@@ -32,19 +29,8 @@ private:
 
 	void ApplyTrapDamage();
 
-	virtual float TakeDamage
-	(
-		float DamageAmount,
-		struct FDamageEvent const& DamageEvent,
-		class AController* EventInstigator,
-		AActor* DamageCauser
-	) override;
-
 	APlayerMain* OverlappingPlayer = nullptr;
 
 	UPROPERTY(EditAnywhere, Category = "Trap")
 	float Damage = 10.0f;
-
-	UPROPERTY(VisibleAnywhere)
-	UAttributeComponent* AttributeComponent;
 };

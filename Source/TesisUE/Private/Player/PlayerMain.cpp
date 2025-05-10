@@ -545,6 +545,7 @@ void APlayerMain::ToggleForm()
 
 	if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Human)
 	{
+		Attributes->StartDecreaseEnergy();
 		WithEnergy();
 	}
 	else
