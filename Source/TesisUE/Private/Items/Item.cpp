@@ -21,12 +21,13 @@ void AItem::BeginPlay()
 {
 	Super::BeginPlay();
 	if (PromptWidget)
- PromptWidget->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
+		PromptWidget->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
 }
 
 void AItem::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwner, APawn* NewInstigator)
 {
 	PromptWidget->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
+	DisableCollision();
 }
 
 void AItem::Unequip()
@@ -42,7 +43,7 @@ void AItem::EnableVisuals(bool bEnable)
 {
 	SetActorHiddenInGame(!bEnable);
 	SetActorEnableCollision(bEnable);
-	PromptWidget->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
+	PromptWidget->GetWidget()->SetVisibility(ESlateVisibility::Collapsed);
 }
 
 UPrimitiveComponent* AItem::GetCollisionComponent()

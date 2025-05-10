@@ -4,7 +4,6 @@
 #include "Components/BoxComponent.h"
 #include "Components/AttributeComponent.h"
 
-#include "Sound/SoundCue.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "Particles/ParticleSystem.h"
 
@@ -57,25 +56,31 @@ void USpectralWeaponComponent::SetTimer(FTimerHandle TimerHandle, float Time, vo
 
 void USpectralWeaponComponent::PrimaryFire()
 {
-    if (CurrentAmmo >= 1 && !bIsReloading && bIsFireEnable)
+    if (OwnerAttributeComponent->RequiresEnergy(PrimaryEnergyRequired))
     {
-        Fire(true);
-        CurrentAmmo--;
-        SetTimer(TimerHandle_BetweenPrimaryShots, .2f, &USpectralWeaponComponent::EnableFire);
+        if (CurrentAmmo >= 1 && !bIsReloading && bIsFireEnable)
+        {
+            Fire(true);
+            CurrentAmmo--;
+            SetTimer(TimerHandle_BetweenPrimaryShots, .2f, &USpectralWeaponComponent::EnableFire);
+        }
+        else Reload();
     }
-    else Reload();
 }
 
 void USpectralWeaponComponent::SecondaryFire()
 {
-    if (CurrentAmmo == 3 && !bIsReloading && bIsFireEnable)
+    if (OwnerAttributeComponent->RequiresEnergy(SecondaryEnergyRequired))
     {
-        Fire(false);
-        CurrentAmmo = 0;
-        SetTimer(TimerHandle_BetweenPrimaryShots, 1.f, &USpectralWeaponComponent::EnableFire);
-    }
-    else Reload();
-    //else out of ammo sound   
+        if (CurrentAmmo == 3 && !bIsReloading && bIsFireEnable)
+        {
+            Fire(false);
+            CurrentAmmo = 0;
+            SetTimer(TimerHandle_BetweenPrimaryShots, 1.f, &USpectralWeaponComponent::EnableFire);
+        }
+        else Reload();
+        //else out of ammo sound   
+    }   
 }
 
 void USpectralWeaponComponent::Fire(bool bIsPrimary)

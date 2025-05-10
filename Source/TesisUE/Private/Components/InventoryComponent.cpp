@@ -10,12 +10,12 @@
 UInventoryComponent::UInventoryComponent()
 {
     PrimaryComponentTick.bCanEverTick = false;
+    InventorySlots.Init(nullptr, MaxSlots);
 }
 
 void UInventoryComponent::BeginPlay()
 {
     Super::BeginPlay();
-    //InventorySlots.Init(nullptr, MaxSlots);
 
     PlayerControllerRef = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 
@@ -38,7 +38,7 @@ void UInventoryComponent::InitializeInventoryWidget()
         if (InventoryWidgetInstance)
         {
             InventoryWidgetInstance->AddToViewport();
-            InventoryWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
+            InventoryWidgetInstance->SetVisibility(ESlateVisibility::Collapsed);
         }
     }
 }
@@ -83,7 +83,7 @@ void UInventoryComponent::EquipItemFromSlot(int32 SlotIndex)
         {
             ItemToEquip->Equip(AttachParent, HandSocketName, OwnerCharacter, OwnerCharacter);
 
-            ItemToEquip->EnableVisuals(true); // Hacer visible y actualizar estado
+            ItemToEquip->EnableVisuals(true);
 
             EquippedItem = ItemToEquip;
             EquippedSlotIndex = SlotIndex;
@@ -91,7 +91,6 @@ void UInventoryComponent::EquipItemFromSlot(int32 SlotIndex)
     }
 
     UpdateInventoryUI();
-    // HideInventory(); // Comentado - Ocultar inventario (UI) aquí podría no ser siempre deseado
 }
 
 void UInventoryComponent::DropItemFromSlot(int32 SlotIndex)

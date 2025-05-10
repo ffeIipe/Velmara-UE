@@ -22,28 +22,34 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Primary Shot")
     float PrimaryDamage;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Primary Shot")
+    float PrimaryEnergyRequired;
+   
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Primary Shot")
+    float PrimaryEnergyCost = 5.f;
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Secondary Shot")
     float SecondaryDamage;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Secondary Shot")
+    float SecondaryEnergyRequired;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Secondary Shot")
     float SpreadAngle = 3.f;
     
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Secondary Shot")
     int32 Shells;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties")
-    int32 MaxAmmo = 3;
-    
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties")
-    float ReloadTime = .5f;
-    
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Primary Shot")
-    float PrimaryEnergyCost = 5.f;
     
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Secondary Shot")
     float SecondaryEnergyCost = 5.f;
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon Properties")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Both")
+    int32 MaxAmmo = 3;
+    
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Both")
+    float ReloadTime = .5f;
+    
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon Properties | Both")
     int32 CurrentAmmo;
 
     UFUNCTION(BlueprintCallable, Category = "Weapon")

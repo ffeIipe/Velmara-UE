@@ -34,7 +34,6 @@ void ASword::BeginPlay()
 	WeaponBox->OnComponentBeginOverlap.AddDynamic(this, &ASword::OnBoxOverlap);
 }
 
-// En Sword.cpp
 void ASword::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwner, APawn* NewInstigator)
 {
 	AttachMeshToSocket(InParent, InSocketName);
@@ -48,6 +47,7 @@ void ASword::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwn
 		CharacterStateComponent = CharacterStateInterface->Execute_GetCharacterStateComponent(NewOwner);
 	}
 }
+
 void ASword::AttachMeshToSocket(USceneComponent* InParent, const FName& InSocketName)
 {
 	FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, true);
@@ -84,10 +84,9 @@ void ASword::Unequip()
 	CharacterStateComponent = nullptr;
 }
 
-// En Sword.cpp
 void ASword::EnableVisuals(bool bEnable)
 {
-	Super::EnableVisuals(bEnable); // Llama a AItem::EnableVisuals
+	Super::EnableVisuals(bEnable);
 
 	if (ItemMesh) ItemMesh->SetVisibility(bEnable);
 
@@ -95,7 +94,7 @@ void ASword::EnableVisuals(bool bEnable)
 	// if (WeaponBox) WeaponBox->SetCollisionEnabled(bEnable ? ECollisionEnabled::QueryOnly : ECollisionEnabled::NoCollision);
 
 
-	if (CharacterStateComponent) // Este se obtiene en ASword::Equip
+	if (CharacterStateComponent)
 	{
 		ECharacterStates NewState = bEnable ? ECharacterStates::ECS_EquippedSword : ECharacterStates::ECS_Unequipped;		
 		CharacterStateComponent->SetCharacterState(NewState);
