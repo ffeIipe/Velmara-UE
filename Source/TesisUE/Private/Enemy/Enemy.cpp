@@ -104,7 +104,7 @@ void AEnemy::Die()
 	
 	Cast<ANewGameStateBase>(UGameplayStatics::GetGameState(GetWorld()))->UnregisterMementoEntity(this);
 
-	PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
+	PromptWidgetComponent->SetVisibility(false);
 
 	Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->UnregisterEnemy(this);
 	ResetEnemy();
