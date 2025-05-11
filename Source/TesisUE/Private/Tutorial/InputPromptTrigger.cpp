@@ -46,9 +46,8 @@ void AInputPromptTrigger::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComp
 {
     Super::OnSphereEndOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex);
 
-    if (PromptWidgetComponent)
+    if (Player && PromptWidgetComponent)
     {
         PromptWidgetComponent->EnablePromptWidget(false);
     }
 }
-
