@@ -1,6 +1,5 @@
 #include "SpectralMode/SpectralTrap.h"
 #include "Player/PlayerMain.h"
-#include "Components/AttributeComponent.h"
 #include "Components/BoxComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "DamageTypes/SpectralTrapDamageType.h"
