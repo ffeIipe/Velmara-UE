@@ -16,7 +16,6 @@ class TESISUE_API ASword : public AItem
 	GENERATED_BODY()
 
 public:
-
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWallHitSignature, const FHitResult&, HitResult);
 
 	UPROPERTY(BlueprintAssignable, Category = "Collision")

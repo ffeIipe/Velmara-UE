@@ -2,6 +2,7 @@
 
 
 #include "SpectralMode/SpectralObjectInteractable.h"
+#include "Kismet/GameplayStatics.h"
 
 ASpectralObjectInteractable::ASpectralObjectInteractable()
 {
@@ -16,5 +17,9 @@ void ASpectralObjectInteractable::BeginPlay()
 
 void ASpectralObjectInteractable::SpectralInteract_Implementation()
 {
-	DoorMesh->SetVisibility(false);
+	if (OpenDoorSFX)
+	{
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), OpenDoorSFX, DoorMesh->GetComponentLocation());
+	}
+	DoorMesh->DestroyComponent();
 }

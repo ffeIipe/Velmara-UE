@@ -19,4 +19,7 @@ public:
 
 	UPROPERTY(EditAnywhere)
 	UStaticMeshComponent* DoorMesh;
+
+	UPROPERTY(EditAnywhere)
+	USoundBase* OpenDoorSFX;
 };

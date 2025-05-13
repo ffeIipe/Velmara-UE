@@ -17,7 +17,7 @@ void ASpectralObject::BeginPlay()
        ItemMesh->SetMaterial(0, SpectralMaterial);
    }
    
-   SetSpectralVisibility(true);
+   SetSpectralVisibility(false);
 }
 
 void ASpectralObject::SetSpectralVisibility(bool bIsPlayerInHumanForm)
