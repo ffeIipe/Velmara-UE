@@ -354,8 +354,6 @@ FName AEnemy::SelectRandomDieAnim()
 		return FName("");
 		break;
 	}
-
-	return FName("");
 }
 
 void AEnemy::SetEnemyState(EEnemyState NewState)

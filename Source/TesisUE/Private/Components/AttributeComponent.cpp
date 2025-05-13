@@ -32,7 +32,7 @@ float UAttributeComponent::GetEnergyPercent()
 
 void UAttributeComponent::IncreaseEnergy(float Amount)
 {
-	Energy = FMathf::Clamp(Energy + Amount, 0.f, 100.f);
+	Energy = FMath::Clamp(Energy + Amount, 0.f, 100.f);
 }
 
 void UAttributeComponent::StartDecreaseEnergy()
