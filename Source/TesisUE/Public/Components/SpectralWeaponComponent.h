@@ -19,20 +19,18 @@ class TESISUE_API USpectralWeaponComponent : public UActorComponent
 public:	
 	USpectralWeaponComponent();
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Primary Shot")
-    float PrimaryDamage;
+    void InitializeSpectralWeaponComponent();
+
+    bool bWasInitialized = false;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Primary Shot")
-    float PrimaryEnergyRequired;
+    float PrimaryDamage;
    
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Primary Shot")
     float PrimaryEnergyCost = 5.f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Secondary Shot")
     float SecondaryDamage;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Secondary Shot")
-    float SecondaryEnergyRequired;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Secondary Shot")
     float SpreadAngle = 3.f;

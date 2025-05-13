@@ -12,6 +12,7 @@ AItem::AItem()
 	RootComponent = ItemMesh;
 
 	BoxCollider->SetupAttachment(GetRootComponent());
+	BoxCollider->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 
 	PromptWidget = CreateDefaultSubobject<UPromptWidgetComponent>(TEXT("PromptTrigger"));
 	PromptWidget->SetupAttachment(GetRootComponent());
@@ -26,8 +27,8 @@ void AItem::BeginPlay()
 
 void AItem::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwner, APawn* NewInstigator)
 {
-	PromptWidget->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
 	DisableCollision();
+	PromptWidget->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
 }
 
 void AItem::Unequip()
@@ -43,7 +44,7 @@ void AItem::EnableVisuals(bool bEnable)
 {
 	SetActorHiddenInGame(!bEnable);
 	SetActorEnableCollision(bEnable);
-	PromptWidget->GetWidget()->SetVisibility(ESlateVisibility::Collapsed);
+	PromptWidget->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
 }
 
 UPrimitiveComponent* AItem::GetCollisionComponent()
@@ -58,7 +59,8 @@ void AItem::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 	if (Player)
 	{
 		PromptWidget->GetWidget()->SetVisibility(ESlateVisibility::Visible);
-		Player->SetOverlappingItem(this);
+		//Player->SetOverlappingItem(this);
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Cyan, FString("AItem::OnSphereBeginOverlap"));
 	}
 }
 
@@ -74,7 +76,7 @@ void AItem::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor*
         {
             PromptWidget->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
         }
-        Player->SetOverlappingItem(nullptr);
+        //Player->SetOverlappingItem(nullptr);
     }
 
     if (IsValid(Player) && Player == CurrentOverlappingPlayer)
@@ -83,6 +85,6 @@ void AItem::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor*
     }
     else if (CurrentOverlappingPlayer)
     {
-        CurrentOverlappingPlayer->SetOverlappingItem(nullptr);
+        //CurrentOverlappingPlayer->SetOverlappingItem(nullptr);
     }
 }

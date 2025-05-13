@@ -19,6 +19,7 @@ ASword::ASword()
 	WeaponBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	WeaponBox->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
 	WeaponBox->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
+	WeaponBox->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Ignore);
 
 	BoxTraceStart = CreateDefaultSubobject<USceneComponent>(TEXT("Box Trace Start"));
 	BoxTraceStart->SetupAttachment(GetRootComponent());
@@ -36,6 +37,8 @@ void ASword::BeginPlay()
 
 void ASword::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwner, APawn* NewInstigator)
 {
+	Super::Equip(InParent, InSocketName, NewOwner, NewInstigator);
+
 	AttachMeshToSocket(InParent, InSocketName);
 	SetOwner(NewOwner);
 	SetInstigator(NewInstigator);
@@ -54,29 +57,10 @@ void ASword::AttachMeshToSocket(USceneComponent* InParent, const FName& InSocket
 	ItemMesh->AttachToComponent(InParent, TransformRules, InSocketName);
 }
 
-void ASword::Enable(bool Param)
-{
-	if (!ItemMesh) return;
-
-	ItemMesh->SetVisibility(Param);
-	SetActorHiddenInGame(!Param);
-	SetActorEnableCollision(Param);
-
-	if (!CharacterStateComponent) return;
-	
-	if (Param)
-	{
-		CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_EquippedSword);
-	}
-	else
-	{
-		CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_Unequipped);
-	}
-}
-
 void ASword::Unequip()
 {
 	Super::Unequip();
+
 	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 	ItemState = EItemState::EIS_Hovering;
 
@@ -113,7 +97,7 @@ void ASword::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AAct
 
 void ASword::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	Super::OnSphereEndOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex); //linea 124 donde tira fatal error
+	Super::OnSphereEndOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex);
 }
 
 void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)

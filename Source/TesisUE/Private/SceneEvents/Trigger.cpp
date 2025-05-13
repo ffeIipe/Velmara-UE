@@ -47,5 +47,6 @@ void ATrigger::DisableCollision()
 	if (BoxCollider)
 	{
 		BoxCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		BoxCollider->SetCollisionResponseToAllChannels(ECR_Ignore);
 	}
 }

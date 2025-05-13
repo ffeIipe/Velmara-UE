@@ -19,20 +19,31 @@
 
 USpectralWeaponComponent::USpectralWeaponComponent()
 {
-    SpectralWeaponMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SpectralWeaponMesh"));
+    //SpectralWeaponMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SpectralWeaponMesh"));
 
     MaxAmmo = 3;
     CurrentAmmo = MaxAmmo;
+}
+
+void USpectralWeaponComponent::InitializeSpectralWeaponComponent()
+{
+    bWasInitialized = true;
+    SpectralWeaponMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SpectralWeaponMesh"));
+
+    if (SpectralWeaponMesh && GetSpectralWeaponMeshComponent())
+    {
+        GetSpectralWeaponMeshComponent()->SetStaticMesh(SpectralWeaponMesh);
+    }
 }
 
 void USpectralWeaponComponent::BeginPlay()
 {
     Super::BeginPlay();
 
-    if (SpectralWeaponMesh && GetSpectralWeaponMeshComponent())
-    {
-        GetSpectralWeaponMeshComponent()->SetStaticMesh(SpectralWeaponMesh);
-    }
+    //if (SpectralWeaponMesh && GetSpectralWeaponMeshComponent())
+    //{
+    //    GetSpectralWeaponMeshComponent()->SetStaticMesh(SpectralWeaponMesh);
+    //}
 
     OwnerInstigator = GetOwner()->GetInstigator();
     OwnerCharacter = Cast<ACharacter>(GetOwner());
@@ -56,7 +67,7 @@ void USpectralWeaponComponent::SetTimer(FTimerHandle TimerHandle, float Time, vo
 
 void USpectralWeaponComponent::PrimaryFire()
 {
-    if (OwnerAttributeComponent->RequiresEnergy(PrimaryEnergyRequired))
+    if (OwnerAttributeComponent->RequiresEnergy(PrimaryEnergyCost))
     {
         if (CurrentAmmo >= 1 && !bIsReloading && bIsFireEnable)
         {
@@ -65,12 +76,17 @@ void USpectralWeaponComponent::PrimaryFire()
             SetTimer(TimerHandle_BetweenPrimaryShots, .2f, &USpectralWeaponComponent::EnableFire);
         }
         else Reload();
+        //TODO: else out of ammo sound  
+    }
+    else
+    {
+        //TODO: out of energy
     }
 }
 
 void USpectralWeaponComponent::SecondaryFire()
 {
-    if (OwnerAttributeComponent->RequiresEnergy(SecondaryEnergyRequired))
+    if (OwnerAttributeComponent->RequiresEnergy(SecondaryEnergyCost))
     {
         if (CurrentAmmo == 3 && !bIsReloading && bIsFireEnable)
         {
@@ -79,8 +95,12 @@ void USpectralWeaponComponent::SecondaryFire()
             SetTimer(TimerHandle_BetweenPrimaryShots, 1.f, &USpectralWeaponComponent::EnableFire);
         }
         else Reload();
-        //else out of ammo sound   
-    }   
+        //TODO: else out of ammo sound   
+    }
+    else
+    {
+        //TODO: out of energy
+    }
 }
 
 void USpectralWeaponComponent::Fire(bool bIsPrimary)
@@ -189,6 +209,8 @@ void USpectralWeaponComponent::FinishReload()
 
 void USpectralWeaponComponent::AttachToOwner(USceneComponent* InParent, FName SocketName)
 {
+    if (!bWasInitialized) return;
+
     GetSpectralWeaponMeshComponent()->SetupAttachment(InParent, SocketName);
 }
 

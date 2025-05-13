@@ -27,8 +27,6 @@ public:
 	virtual void BeginPlay() override;
 
 	void AttachMeshToSocket(USceneComponent* InParent, const FName& InSocketName);
-
-	void Enable(bool Param);
 	
 	FORCEINLINE UBoxComponent* GetWeaponBox() const { return WeaponBox; }
 

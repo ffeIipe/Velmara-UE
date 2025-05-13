@@ -42,7 +42,7 @@ void UPromptWidgetComponent::EnablePromptWidget(bool bIsEnable)
 {
     bIsEnable ? 
         GetWidget()->SetVisibility(ESlateVisibility::Visible) : 
-        GetWidget()->SetVisibility(ESlateVisibility::Collapsed);
+        GetWidget()->SetVisibility(ESlateVisibility::Hidden);
 
     bIsEnable ?
         SetVisibility(true) :

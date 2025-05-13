@@ -17,17 +17,13 @@ void ASpectralObject::BeginPlay()
        ItemMesh->SetMaterial(0, SpectralMaterial);
    }
    
-   SetSpectralVisibility(false);
+   SetSpectralVisibility(true);
 }
 
 void ASpectralObject::SetSpectralVisibility(bool bIsPlayerInHumanForm)
 {
-    if (!SpectralMaterial)
-    {
-        UE_LOG(LogTemp, Error, TEXT("SpectralMaterial is nullptr in ASpectralObject::SetSpectralVisibility"));
-        return;
-    }
-
+    if (!SpectralMaterial) return;
+    
     bool bShouldBeVisible = (VisibleTo == ECharacterForm::ECF_Spectral) ? bIsPlayerInHumanForm : !bIsPlayerInHumanForm;
 
     float AlphaValue = bShouldBeVisible ? 1.0f : 0.3f;

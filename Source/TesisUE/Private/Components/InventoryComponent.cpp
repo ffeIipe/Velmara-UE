@@ -128,15 +128,14 @@ void UInventoryComponent::DropItemFromSlot(int32 SlotIndex)
 
 void UInventoryComponent::UnequipCurrentItem()
 {
-    if (IsValid(EquippedItem)) // Verificar validez
+    if (IsValid(EquippedItem))
     {
-        EquippedItem->EnableVisuals(false); // Ocultar y actualizar estado
+        EquippedItem->EnableVisuals(false);
         EquippedItem = nullptr;
         EquippedSlotIndex = -1;
     }
     else
     {
-        // Si EquippedItem ya era null, simplemente asegurarse que el índice también sea -1
         if (EquippedSlotIndex != -1)
         {
             EquippedSlotIndex = -1;

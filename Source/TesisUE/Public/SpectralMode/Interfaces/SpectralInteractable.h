@@ -21,5 +21,6 @@ class TESISUE_API ISpectralInteractable
 	GENERATED_BODY()
 
 public:
-	virtual void SpectralInteract() = 0;
+	UFUNCTION(BlueprintNativeEvent)
+	void SpectralInteract();
 };

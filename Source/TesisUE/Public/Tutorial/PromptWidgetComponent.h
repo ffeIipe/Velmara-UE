@@ -4,9 +4,6 @@
 #include "Components/WidgetComponent.h"
 #include "PromptWidgetComponent.generated.h"
 
-/**
- * 
- */
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class TESISUE_API UPromptWidgetComponent : public UWidgetComponent
 {

@@ -25,7 +25,6 @@
 #include "Enemy/Paladin.h"
 
 #include "Items/Weapons/Sword.h"
-#include "Items/Weapons/Weapon.h"
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -455,30 +454,51 @@ void APlayerMain::Interact(const FInputActionValue& Value)
 		return;
 	}
 
-	if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Human)
+	FVector TraceStart;
+	FRotator CameraRotation;
+	Controller->GetPlayerViewPoint(TraceStart, CameraRotation);
+
+	FVector TraceDirection = CameraRotation.Vector();
+	FVector TraceEnd = TraceStart + (TraceDirection * 1000.f);
+
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(GetOwner());
+	QueryParams.AddIgnoredActor(this);
+	QueryParams.bTraceComplex = true;
+	QueryParams.bReturnPhysicalMaterial = false;
+
+	FHitResult Hit;
+	bool bHit = GetWorld()->LineTraceSingleByChannel(
+		Hit,
+		TraceStart,
+		TraceEnd,
+		ECC_Visibility,
+		QueryParams
+	);
+
+	if (bHit && InventoryComponent)
 	{
-		if (OverlappingItem && InventoryComponent)
+		if (AActor* HitObject = Hit.GetActor())
 		{
-			const bool bAdded = InventoryComponent->TryAddItem(OverlappingItem);
-			if (bAdded)
+			if (ASword* HitSword = Cast<ASword>(HitObject))
 			{
-				ASword* Sword = Cast<ASword>(OverlappingItem);
-				if (Sword)
+				if (InventoryComponent->TryAddItem(HitSword))
 				{
-					Sword->OnWallHit.AddDynamic(this, &APlayerMain::OnWallCollision);
+					QueryParams.AddIgnoredActor(HitSword);
+					HitSword->OnWallHit.AddDynamic(this, &APlayerMain::OnWallCollision);
 				}
-				OverlappingItem = nullptr;
 			}
-			// else { // full inventory }
+			else if (ISpectralInteractable* SpectralObjectInteractable = Cast<ISpectralInteractable>(HitObject))
+			{
+				if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
+				{
+					if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 10.f, FColor::Orange, FString("SpectralObjectInteractable Valid"));
+					SpectralObjectInteractable->Execute_SpectralInteract(HitObject);
+				}
+			}
 		}
 	}
-	else
-	{
-		if (ISpectralInteractable* OverlappingObject = Cast<ISpectralInteractable>(OverlappingItem))
-		{
-			OverlappingObject->SpectralInteract();
-		}
-	}
+	DrawDebugLine(GetWorld(), TraceStart, bHit ? Hit.ImpactPoint : TraceEnd, FColor::Red, false, 2.0f, 0, 1.0f);
 }
 
 void APlayerMain::Attack(const FInputActionValue& Value)
@@ -698,7 +718,7 @@ void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlayerMain::Look);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &APlayerMain::Jump);
 		EnhancedInputComponent->BindAction(DodgeAction, ETriggerEvent::Started, this, &APlayerMain::Dodge);
-		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &APlayerMain::Interact);
+		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &APlayerMain::Interact);
 
 		EnhancedInputComponent->BindAction(CombatComponent->AttackAction, ETriggerEvent::Triggered, this, &APlayerMain::Attack);
 		EnhancedInputComponent->BindAction(CombatComponent->HeavyAttackAction, ETriggerEvent::Triggered, this, &APlayerMain::HeavyAttack);
