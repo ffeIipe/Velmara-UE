@@ -44,7 +44,7 @@ void AItem::EnableVisuals(bool bEnable)
 {
 	SetActorHiddenInGame(!bEnable);
 	SetActorEnableCollision(bEnable);
-	PromptWidget->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
+	PromptWidget->EnablePromptWidget(false);
 }
 
 UPrimitiveComponent* AItem::GetCollisionComponent()
@@ -58,7 +58,7 @@ void AItem::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 
 	if (Player)
 	{
-		PromptWidget->GetWidget()->SetVisibility(ESlateVisibility::Visible);
+		PromptWidget->EnablePromptWidget(true);
 		//Player->SetOverlappingItem(this);
 		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Cyan, FString("AItem::OnSphereBeginOverlap"));
 	}
@@ -74,17 +74,14 @@ void AItem::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor*
     {
         if (PromptWidget && PromptWidget->GetWidget())
         {
-            PromptWidget->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
+			PromptWidget->EnablePromptWidget(false);
         }
-        //Player->SetOverlappingItem(nullptr);
-    }
-
-    if (IsValid(Player) && Player == CurrentOverlappingPlayer)
-    {
-
     }
     else if (CurrentOverlappingPlayer)
     {
-        //CurrentOverlappingPlayer->SetOverlappingItem(nullptr);
+		if (PromptWidget && PromptWidget->GetWidget())
+		{
+			PromptWidget->EnablePromptWidget(false);
+		}
     }
 }

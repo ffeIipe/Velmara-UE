@@ -459,7 +459,7 @@ void APlayerMain::Interact(const FInputActionValue& Value)
 	Controller->GetPlayerViewPoint(TraceStart, CameraRotation);
 
 	FVector TraceDirection = CameraRotation.Vector();
-	FVector TraceEnd = TraceStart + (TraceDirection * 1000.f);
+	FVector TraceEnd = TraceStart + (TraceDirection * InteractTraceLenght);
 
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(GetOwner());
@@ -478,23 +478,24 @@ void APlayerMain::Interact(const FInputActionValue& Value)
 
 	if (bHit && InventoryComponent)
 	{
-		if (AActor* HitObject = Hit.GetActor())
+		if (ASword* HitSword = Cast<ASword>(Hit.GetActor()))
 		{
-			if (ASword* HitSword = Cast<ASword>(HitObject))
+			if (InventoryComponent->TryAddItem(HitSword))
 			{
-				if (InventoryComponent->TryAddItem(HitSword))
-				{
-					QueryParams.AddIgnoredActor(HitSword);
-					HitSword->OnWallHit.AddDynamic(this, &APlayerMain::OnWallCollision);
-				}
+				QueryParams.AddIgnoredActor(HitSword);
+				HitSword->OnWallHit.AddDynamic(this, &APlayerMain::OnWallCollision);
 			}
-			else if (ISpectralInteractable* SpectralObjectInteractable = Cast<ISpectralInteractable>(HitObject))
+		}
+		else if (AItem* HitItem = Cast<AItem>(Hit.GetActor()))
+		{
+			HitItem->Use(this);
+		}
+		else if (ISpectralInteractable* SpectralObjectInteractable = Cast<ISpectralInteractable>(Hit.GetActor()))
+		{
+			if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
 			{
-				if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
-				{
-					if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 10.f, FColor::Orange, FString("SpectralObjectInteractable Valid"));
-					SpectralObjectInteractable->Execute_SpectralInteract(HitObject);
-				}
+				if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 10.f, FColor::Orange, FString("SpectralObjectInteractable Valid"));
+				SpectralObjectInteractable->Execute_SpectralInteract(Hit.GetActor());
 			}
 		}
 	}

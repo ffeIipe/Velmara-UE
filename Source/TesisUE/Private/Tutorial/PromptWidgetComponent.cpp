@@ -40,13 +40,17 @@ void UPromptWidgetComponent::LoadAndApplyPrompt()
 
 void UPromptWidgetComponent::EnablePromptWidget(bool bIsEnable)
 {
-    bIsEnable ? 
-        GetWidget()->SetVisibility(ESlateVisibility::Visible) : 
-        GetWidget()->SetVisibility(ESlateVisibility::Hidden);
+    ESlateVisibility NewWidgetVisibility = bIsEnable ? ESlateVisibility::Visible : ESlateVisibility::Hidden;
+    bool bNewComponentVisibility = bIsEnable;
 
-    bIsEnable ?
-        SetVisibility(true) :
-        SetVisibility(false);
+    if (GetWidget())
+    {
+        GetWidget()->SetVisibility(NewWidgetVisibility);
+    }
+    SetVisibility(bNewComponentVisibility);
 
-    if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, FString(" UPromptWidgetComponent::EnablePromptWidget"));
+    if (GEngine)
+    {
+        GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, FString("UPromptWidgetComponent::EnablePromptWidget"));
+    }
 }

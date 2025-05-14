@@ -17,10 +17,10 @@ void ATrigger::BeginPlay()
 	BoxCollider->OnComponentEndOverlap.AddDynamic(this, &ATrigger::OnSphereEndOverlap);
 }
 
-
 void ATrigger::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	Player = Cast<APlayerMain>(OtherActor);
+
 	if (GEngine && Player) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Green, FString("ATrigger::OnSphereBeginOverlap"));
 }
 
@@ -35,10 +35,12 @@ void ATrigger::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AAct
     {
         Player->SetOverlappingItem(nullptr);
         Player = nullptr;
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Red, FString("ATrigger::OnSphereEndOverlap"));
     }
     else if (LeavingPlayer)
     {
         LeavingPlayer->SetOverlappingItem(nullptr);
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Red, FString("ATrigger::OnSphereEndOverlap"));
     }
 }
 

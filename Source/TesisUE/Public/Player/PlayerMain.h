@@ -88,28 +88,22 @@ protected:
 	*/
 	virtual void BeginPlay() override;
 
-	/*
-	* Interact
-	*/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SpectralMode")
-	float SpectralInteractDistance;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interact")
+	float InteractTraceLenght;
 
-	/*
-	* Dodge
-	*/
-	UPROPERTY(BlueprintReadWrite, Category = "Dodge")
+	UPROPERTY(BlueprintReadWrite, Category = "Montages | Dodge")
 	UAnimMontage* DodgeMontage;
 
-	UPROPERTY(BlueprintReadWrite, Category = "Dodge")
+	UPROPERTY(BlueprintReadWrite, Category = "Montages | Dodge")
 	UAnimMontage* SpectralDodgeMontage;
 	
-	UPROPERTY(BlueprintReadWrite, Category = "DoubleJump")
+	UPROPERTY(BlueprintReadWrite, Category = "Montages | DoubleJump")
 	UAnimMontage* DoubleJumpMontage;
 	
-	UPROPERTY(BlueprintReadWrite, Category = "Death")
+	UPROPERTY(BlueprintReadWrite, Category = "Montages | Death")
 	UAnimMontage* DeathMontage;
 	
-	UPROPERTY(BlueprintReadWrite, Category = "Jump")
+	UPROPERTY(BlueprintReadWrite, Category = "Montages | Jump")
 	UAnimMontage* JumpMontage;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Dodge")
@@ -152,19 +146,13 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void UpdateBuffer(float Alpha, float BufferDistance);
 
-	/*
-	* Light Attack
-	*/
 	UPROPERTY(BlueprintReadWrite, Category = "SpectralMode | SpectralAttack")
 	int SpectralAttackIndex = 0;
 	
-	UPROPERTY(BlueprintReadOnly, Category = "SpectralMode | SpectralAttack")
+	UPROPERTY(BlueprintReadOnly, Category = "Montages | SpectralMode | SpectralAttack")
 	TArray<UAnimMontage*> SpectralAttackCombo;
-	
-	/*
-	* Heavy Attack
-	*/
-	UPROPERTY(BlueprintReadOnly, Category = "SpectralMode | SpectralAttack")
+
+	UPROPERTY(BlueprintReadOnly, Category = "Montages | SpectralMode | SpectralAttack")
 	UAnimMontage* SpectralHeavyAttack;
 
 	UPROPERTY(EditAnywhere, Category = "SpectralAttack")
@@ -179,9 +167,6 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "SpectralAttack")
 	void SearchTarget();
 
-	/*
-	* Inputs
-	*/
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputMappingContext* CharacterContext;
 
