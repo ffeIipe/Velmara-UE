@@ -374,10 +374,10 @@ void UCombatComponent::LaunchCharacterUp()
 
 	if (SoftLockTarget && Paladin->Execute_IsLaunchable(SoftLockTarget))
 	{
-		Paladin->Execute_LaunchUp(SoftLockTarget);
 		OwningCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
 		bIsLaunched = true;
-		OwningCharacter->AddActorWorldOffset(FVector(0.f, 0.f, 300.f), false);
+		GetOwner()->AddActorLocalOffset(FVector(0.f, 0.f, 300.f));
+		Paladin->Execute_LaunchUp(SoftLockTarget, FVector(GetOwner()->GetActorLocation()));
 	}
 	else if (SoftLockTarget && !Paladin->Execute_IsLaunchable(SoftLockTarget))
 	{
@@ -392,7 +392,7 @@ void UCombatComponent::Crasher()
 	OwningCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
 	CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
 
-	FVector Start = OwningCharacter->GetActorLocation();
+	FVector Start = OwningCharacter->GetMesh()->GetBoneLocation(FName("root"));
 	FVector End = Start + FVector(0.f, 0.f, -100000.f);
 
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;

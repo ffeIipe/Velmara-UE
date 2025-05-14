@@ -1,6 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "SceneEvents/NewGameStateBase.h"
 #include "Components/MementoComponent.h"
 
@@ -43,7 +40,7 @@ void ANewGameStateBase::LoadAllMementoStates()
 {
 	for (AActor* Entity : MementoEntities)
 	{
-		if (IsValid(Entity))
+		if (IsValid(Entity) && IsValid(Entity->GetComponentByClass<UMementoComponent>()))
 		{
 			UMementoComponent* MementoComp = Entity->GetComponentByClass<UMementoComponent>();
 			if (MementoComp)

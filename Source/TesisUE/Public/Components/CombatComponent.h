@@ -12,6 +12,7 @@ class UTimelineComponent;
 class UCurveFloat;
 class IFormInterface;
 class ICharacterState;
+class UCharacterStateComponent;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class TESISUE_API UCombatComponent : public UActorComponent
@@ -37,6 +38,12 @@ public:
 	IFormInterface* SpectralAttacks;
 
 	UCharacterStateComponent* CharacterStateComponent;
+
+	UPROPERTY(EditAnywhere, Category = "Attack | Finisher")
+	USceneComponent* FinisherLocation;
+
+	UPROPERTY(EditAnywhere, Category = "Attack | Finisher")
+	USceneComponent* CameraFinisherLocation;
 
 protected:
 	void BeginPlay() override;
@@ -91,12 +98,6 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "SoftLock")
 	UCurveFloat* SoftLockCurve;
-
-	UPROPERTY(VisibleAnywhere, Category = "Attack | Finisher")
-	USceneComponent* FinisherLocation;
-
-	UPROPERTY(VisibleAnywhere, Category = "Attack | Finisher")
-	USceneComponent* CameraFinisherLocation;
 
 	UFUNCTION(BlueprintCallable, Category = "Attack | JumpAttack")
 	void LaunchCharacterUp();

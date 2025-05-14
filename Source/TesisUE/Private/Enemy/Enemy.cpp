@@ -174,16 +174,6 @@ void AEnemy::ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoi
 
 void AEnemy::GetHit_Implementation(const FVector& ImpactPoint)
 {
-	if (Attributes && Attributes->IsAlive() && GetEnemyState() != EEnemyState::EES_Died)
-	{
-		ReactToDamage(LastDamageType, ImpactPoint);
-	}
-	else
-	{
-		PlayAnimMontage(DeathMontage, 1.f, SelectRandomDieAnim());
-		Die();
-	}
-
 	if (HitSound)
 	{
 		UGameplayStatics::PlaySoundAtLocation(
@@ -232,7 +222,7 @@ bool AEnemy::IsLaunchable_Implementation()
 	return false;
 }
 
-void AEnemy::LaunchUp_Implementation()
+void AEnemy::LaunchUp_Implementation(const FVector& InstigatorLocation)
 {
 }
 

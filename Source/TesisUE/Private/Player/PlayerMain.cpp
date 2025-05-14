@@ -62,6 +62,9 @@ APlayerMain::APlayerMain()
 	MementoComponent = CreateDefaultSubobject<UMementoComponent>(TEXT("Memento"));
 
 	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("Combat"));
+	CombatComponent->FinisherLocation = CreateDefaultSubobject<USceneComponent>(TEXT("FinisherLocation"));
+	CombatComponent->FinisherLocation->SetupAttachment(GetMesh());
+	CombatComponent->FinisherLocation->SetRelativeLocation(FVector(-8.f, 80.f, 0.f));
 
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("Inventory"));
 

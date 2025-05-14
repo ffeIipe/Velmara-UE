@@ -53,7 +53,7 @@ public:
 
 	virtual bool IsLaunchable_Implementation();
 
-	virtual void LaunchUp_Implementation();
+	virtual void LaunchUp_Implementation(const FVector& InstigatorLocation);
 
 	virtual void ShieldHit_Implementation();
 
@@ -160,14 +160,15 @@ protected:
 		
 	UFUNCTION()		
 	virtual void ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoint);
-
-private:
-
-	UPROPERTY(EditDefaultsOnly)
-	class UBehaviorTree* BTAsset;
-
+	
 	UPROPERTY();
 	EMainDamageTypes LastDamageType;
+
+	FName SelectRandomDieAnim();
+
+private:
+	UPROPERTY(EditDefaultsOnly)
+	class UBehaviorTree* BTAsset;
 
 	AAIController* AIOriginalController;
 
@@ -188,6 +189,4 @@ private:
 
 	UFUNCTION(BlueprintCallable)
 	void DeactivateEnemyCollision();
-
-	FName SelectRandomDieAnim();
 };

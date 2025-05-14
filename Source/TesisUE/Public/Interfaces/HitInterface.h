@@ -25,7 +25,7 @@ public:
 	bool CanBeFinished();
 
 	UFUNCTION(BlueprintNativeEvent)
-	void LaunchUp();
+	void LaunchUp(const FVector& InstigatorLocation);
 	
 	UFUNCTION(BlueprintNativeEvent)
 	bool IsLaunchable();

@@ -141,9 +141,24 @@ void APaladin::Attack(const FInputActionValue& Value)
 	CombatComponent->Input_Attack(Value);
 }
 
-void APaladin::LaunchUp_Implementation()
+void APaladin::LaunchUp_Implementation(const FVector& InstigatorLocation)
 {
-	if (!Attributes->IsShielded()) LaunchEnemyUp();
+	if (!Attributes->IsShielded()) LaunchEnemyUp(InstigatorLocation);
+}
+
+void APaladin::GetHit_Implementation(const FVector& ImpactPoint)
+{
+	Super::GetHit_Implementation(ImpactPoint);
+
+	if (Attributes && Attributes->IsAlive() && GetEnemyState() != EEnemyState::EES_Died)
+	{
+		ReactToDamage(LastDamageType, ImpactPoint);
+	}
+	else
+	{
+		PlayAnimMontage(DeathMontage, 1.f, SelectRandomDieAnim());
+		Die();
+	}
 }
 
 UCharacterStateComponent* APaladin::GetCharacterStateComponent_Implementation()
@@ -171,14 +186,14 @@ float APaladin::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 	return DamageAmount;
 }
 
-void APaladin::LaunchEnemyUp()
+void APaladin::LaunchEnemyUp(const FVector& InstigatorLocation)
 {
 	if (isLaunched) return;
 
 	isLaunched = true;
 	DisableAI();
 	PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
-	AddActorWorldOffset(FVector(0.f, 0.f, 300.f), false);
+	SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, InstigatorLocation.Z));
 	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
 }
 
@@ -196,6 +211,8 @@ void APaladin::HitInAir()
 	PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
 	GetCharacterMovement()->IsFlying();
 	DisableAI();
+
+	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.F, FColor::Emerald, FString("APaladin::HitInAir"));
 }
 
 void APaladin::ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoint)

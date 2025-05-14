@@ -19,7 +19,9 @@ public:
 
 	virtual bool IsLaunchable_Implementation() override;
 
-	virtual void LaunchUp_Implementation() override;
+	virtual void LaunchUp_Implementation(const FVector& InstigatorLocation) override;
+
+	void GetHit_Implementation(const FVector& ImpactPoint) override;
 
 	virtual UCharacterStateComponent* GetCharacterStateComponent_Implementation() override;
 
@@ -75,7 +77,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* AttackAction;
 
-	void LaunchEnemyUp();
+	void LaunchEnemyUp(const FVector& InstigatorLocation);
 
 	UFUNCTION(BlueprintCallable)
 	void CrashDown();
