@@ -17,7 +17,7 @@ class TESISUE_API APaladin : public AEnemy, public ICharacterState
 public:
 	APaladin();
 
-	virtual bool IsLaunchable_Implementation() override;
+	virtual bool IsLaunchable_Implementation(ACharacter* DamageCauser) override;
 
 	virtual void LaunchUp_Implementation(const FVector& InstigatorLocation) override;
 
@@ -69,6 +69,11 @@ protected:
 		bool bFromSweep,
 		const FHitResult& SweepResult);
 
+	TArray<AEnemy*> GenerateSphereOverlapToDetectOtherEnemies(const FVector& Origin, AActor* HitEnemyToExclude);
+
+	UPROPERTY(EditAnywhere)
+	float RadiusToNotifyAllies = 2500.f;
+
 	void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
 	UFUNCTION(BlueprintImplementableEvent)
@@ -88,6 +93,9 @@ protected:
 	void ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoint) override;
 
 private:
+	UPROPERTY(EditAnywhere)
+	USoundBase* ShieldImpactSFX;
+
 	void ShieldHit();
 
 	void Attack(const FInputActionValue& Value);

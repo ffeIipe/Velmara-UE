@@ -1,4 +1,5 @@
 #include "Enemy/Paladin.h"
+#include "Player/PlayerMain.h"
 
 #include "Engine/DamageEvents.h"
 #include "GameFramework/DamageType.h"
@@ -47,9 +48,20 @@ APaladin::APaladin()
 	CharacterStateComponent = CreateDefaultSubobject<UCharacterStateComponent>(TEXT("CharacterStateComponent"));
 }
 
-bool APaladin::IsLaunchable_Implementation()
+bool APaladin::IsLaunchable_Implementation(ACharacter* DamageCauser)
 {
-	return !Attributes->IsShielded();
+	if (Attributes->IsShielded())
+	{
+		APlayerMain* TempPlayerRef = Cast<APlayerMain>(DamageCauser);
+		TempPlayerRef->CombatComponent->GetDirectionalReact(FName("ReactToShield"));
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShieldImpactSFX, Attributes->GetShieldMeshComponent()->GetComponentLocation());
+
+		return false; //its not launchable
+	}
+	else
+	{
+		return true; //now its launchable, because it has no longer the shield equipped
+	}
 }
 
 void APaladin::BeginPlay()
@@ -76,48 +88,114 @@ void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 
 	FHitResult BoxHit;
 
-	TArray<AActor*> ActorsToIgnore;
-	ActorsToIgnore.Add(this);
+	TArray<AActor*> ActorsToIgnoreForBoxTrace;
+	ActorsToIgnoreForBoxTrace.Add(this);
 
-	UKismetSystemLibrary::BoxTraceSingle(
+	// UKismetSystemLibrary::BoxTraceSingle YA está haciendo el overlap de la espada.
+	// El evento OnSwordOverlap se llama cuando ALGO ya ha hecho overlap con el componente espada.
+	// A menos que BoxTraceStart y BoxTraceEnd definan un volumen *diferente* al de la espada,
+	// este BoxTrace aquí podría ser redundante o para un efecto secundario más preciso.
+	// Si el 'OverlappedComponent' es la propia espada y 'OtherActor' es el enemigo,
+	// podrías usar 'OtherActor' directamente en lugar de hacer otro trace.
+	// Pero sigamos tu lógica actual:
+
+	bool bHitOccurred = UKismetSystemLibrary::BoxTraceSingle(
 		this,
 		Start,
 		End,
-		FVector(5.f, 5.f, 5.f),
+		FVector(5.f, 5.f, 5.f), // Considera hacer este tamaño configurable
 		BoxTraceStart->GetComponentRotation(),
-		UEngineTypes::ConvertToTraceType(ECC_Pawn),
+		UEngineTypes::ConvertToTraceType(ECC_Pawn), // Asegúrate que tus enemigos usan este canal y bloquean/solapan
 		false,
-		ActorsToIgnore,
-		EDrawDebugTrace::None,
+		ActorsToIgnoreForBoxTrace,
+		EDrawDebugTrace::ForDuration, // Cambiado a ForDuration para ver el trace
 		BoxHit,
 		true
 	);
 
-	IHitInterface* Entity = Cast<IHitInterface>(BoxHit.GetActor());
-	if (Entity/* && Player->GetCharacterAction() != ECharacterActions::ECA_Block*/)
+	if (bHitOccurred && BoxHit.GetActor())
 	{
-		UGameplayStatics::ApplyDamage(
-			BoxHit.GetActor(),
-			Damage,
-			GetInstigator()->GetController(),
-			this,
-			UDamageType::StaticClass()
-		);
-		ActorsToIgnore.AddUnique(BoxHit.GetActor());
-		
-		Entity->Execute_GetHit(BoxHit.GetActor(), BoxHit.ImpactPoint);
-	}
-	//else if (Player)
-	//{
-	//	PlayAnimMontage(HitReactMontage, 1.f, FName("FromFront"));
-	//	Player->ReceiveBlock();
-	//}
+		IHitInterface* Entity = Cast<IHitInterface>(BoxHit.GetActor());
+		if (Entity)
+		{
+			UGameplayStatics::ApplyDamage(
+				BoxHit.GetActor(),
+				Damage, // Asegúrate que 'Damage' tiene un valor asignado
+				GetInstigatorController(), // Mejor que GetInstigator()->GetController()
+				this,
+				UDamageType::StaticClass()
+			);
 
-	//TODO: fx to play if player has been damaged
-	/*if (APlayerMain* Player = Cast<APlayerMain>(BoxHit.GetActor()))
+			// No necesitas añadir a ActorsToIgnore aquí para el SphereOverlap, ya que esa función lo manejará.
+			Entity->Execute_GetHit(BoxHit.GetActor(), BoxHit.ImpactPoint);
+		}
+
+		// Ahora, notificar a otros enemigos cercanos (excluyendo al que acabamos de golpear)
+		TArray<AEnemy*> NearbyEnemies = GenerateSphereOverlapToDetectOtherEnemies(BoxHit.ImpactPoint, BoxHit.GetActor());
+		for (AEnemy* EnemyToAlert : NearbyEnemies)
+		{
+			if (IsValid(EnemyToAlert)) // IsValid es una buena práctica
+			{
+				// El Paladín (this) es la amenaza
+				EnemyToAlert->NotifyThreat(this);
+			}
+		}
+	}
+}
+
+TArray<AEnemy*> APaladin::GenerateSphereOverlapToDetectOtherEnemies(const FVector& Origin, AActor* HitEnemyToExclude) // Renombrado y con parámetro para excluir
+{
+	TArray<AActor*> ActorsToIgnoreForSphere;
+	ActorsToIgnoreForSphere.Add(this); // Ignorar al propio Paladín
+	if (HitEnemyToExclude)
 	{
-		Player->GetHit()
-	}*/
+		ActorsToIgnoreForSphere.Add(HitEnemyToExclude); // Ignorar al enemigo que ya fue golpeado directamente
+	}
+
+	TArray<AActor*> OverlappedActors; // Para SphereOverlapActors
+
+	// Definir los tipos de objeto que queremos detectar (solo Pawns en este caso)
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
+
+	// Usar SphereOverlapActors es más directo para este caso
+	bool bOverlapOccurred = UKismetSystemLibrary::SphereOverlapActors(
+		GetWorld(),
+		Origin, // Centro de la esfera
+		RadiusToNotifyAllies, // Radio de la esfera (considera renombrar esta variable a RadiusToNotifyEnemies)
+		ObjectTypes, // Qué tipos de objetos buscar
+		AEnemy::StaticClass(), // Filtrar solo por la clase AEnemy
+		ActorsToIgnoreForSphere,
+		OverlappedActors
+	);
+
+	// Visualizar la esfera de detección (muy útil para debug)
+	DrawDebugSphere(
+		GetWorld(),
+		Origin,
+		RadiusToNotifyAllies,
+		24, // Segmentos
+		FColor::Yellow,
+		false, // Persistent lines
+		5.0f   // Lifetime
+	);
+
+	TArray<AEnemy*> EnemiesFound;
+	if (bOverlapOccurred)
+	{
+		for (AActor* Actor : OverlappedActors)
+		{
+			AEnemy* EnemyActor = Cast<AEnemy>(Actor);
+			// El filtro de clase en SphereOverlapActors ya debería asegurar esto,
+			// pero un Cast y una comprobación no hacen daño.
+			if (EnemyActor)
+			{
+				EnemiesFound.Add(EnemyActor);
+			}
+		}
+	}
+
+	return EnemiesFound;
 }
 
 void APaladin::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

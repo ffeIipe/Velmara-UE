@@ -82,6 +82,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ResetFollowCamera();
 
+	UFUNCTION(BlueprintCallable, Category = "Forms")
+	void ToggleForm();
+
 protected:
 	/*
 	* Base
@@ -280,8 +283,6 @@ private:
 	void ReleaseBlock(const FInputActionValue& Value);
 	
 	void Execute(const FInputActionValue& Value);
-
-	void ToggleForm();
 
 	void Die();
 

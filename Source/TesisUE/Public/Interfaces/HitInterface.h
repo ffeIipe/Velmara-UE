@@ -28,7 +28,7 @@ public:
 	void LaunchUp(const FVector& InstigatorLocation);
 	
 	UFUNCTION(BlueprintNativeEvent)
-	bool IsLaunchable();
+	bool IsLaunchable(class ACharacter* DamageCauser);
 
 
 };

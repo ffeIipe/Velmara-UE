@@ -20,6 +20,10 @@
 #include "Tutorial/PromptWidgetComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "SceneEvents/NewGameStateBase.h"
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
+#include "AI/EnemyAIController.h"
+#include "BehaviorTree/BlackboardComponent.h"
 
 AEnemy::AEnemy()
 {
@@ -119,6 +123,26 @@ void AEnemy::Die()
 	SetLifeSpan(5.f);
 }
 
+void AEnemy::NotifyThreat(AActor* ThreatActor) // ThreatActor será el Paladín
+{
+	if (!ThreatActor) // Siempre es buena idea verificar punteros nulos
+	{
+		return;
+	}
+
+	AAIController* AIController = Cast<AAIController>(GetController());
+	if (AIController && AIController->GetBlackboardComponent()) // Asegúrate que el BlackboardComponent exista
+	{
+		AIController->GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), ThreatActor);
+
+		AEnemyAIController* EnemyAIController = Cast<AEnemyAIController>(AIController);
+		if (EnemyAIController)
+		{
+			EnemyAIController->bPauseEnemyPerceptionUpdate = true;
+		}
+	}
+}
+
 void AEnemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -136,6 +160,7 @@ void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AEnemy::Look);
 	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &AEnemy::Jump);
 	EnhancedInputComponent->BindAction(UnPossessAction, ETriggerEvent::Completed, this, &AEnemy::UnPossess);
+	EnhancedInputComponent->BindAction(UnPossessAndKillAction, ETriggerEvent::Completed, this, &AEnemy::UnPossessAndKill);
 }
 
 void AEnemy::Move(const FInputActionValue& Value)
@@ -179,15 +204,22 @@ void AEnemy::GetHit_Implementation(const FVector& ImpactPoint)
 		UGameplayStatics::PlaySoundAtLocation(
 			this,
 			HitSound,
-			ImpactPoint);
-	}
-	if (HitParticles)
-	{
-		UGameplayStatics::SpawnEmitterAtLocation(
-			GetWorld(),
-			HitParticles,
 			ImpactPoint
 		);
+	}
+	if (NiagaraSystem)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(),
+			NiagaraSystem,
+			ImpactPoint
+		);
+
+		//UGameplayStatics::SpawnEmitterAtLocation(
+		//	GetWorld(),
+		//	HitParticles,
+		//	ImpactPoint
+		//);
 	}
 }
 
@@ -234,8 +266,6 @@ float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AC
 {
 	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
-	DamageCauserOf = DamageCauser;
-
 	const UDamageTypeMain* MainDamageType = DamageEvent.DamageTypeClass
 		? Cast<UDamageTypeMain>(DamageEvent.DamageTypeClass->GetDefaultObject())
 		: nullptr;
@@ -244,19 +274,35 @@ float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AC
 		? MainDamageType->DamageType
 		: EMainDamageTypes::EMDT_None;
 
-	if (Attributes)
-	{
-		if (Attributes->IsAlive())
-		{
-			Attributes->ReceiveDamage(DamageAmount);
+	DamageCauserOf = DamageCauser;
 
-			if (Execute_CanBeFinished(this))
+	if (DamageCauser)
+	{
+		AEnemy* EnemyDamageCauser = Cast<AEnemy>(DamageCauser);
+		if (EnemyDamageCauser)
+		{
+			AAIController* AIController = Cast<AAIController>(GetController());
+			if (AIController)
 			{
-				PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Visible);
-				PromptWidgetComponent->LoadAndApplyPrompt();
+				AIController->GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), DamageCauser);
+				Cast<AEnemyAIController>(AIController)->bPauseEnemyPerceptionUpdate = true;
 			}
 		}
-		else Die();
+
+		if (Attributes)
+		{
+			if (Attributes->IsAlive())
+			{
+				Attributes->ReceiveDamage(DamageAmount);
+
+				if (Execute_CanBeFinished(this))
+				{
+					PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Visible);
+					PromptWidgetComponent->LoadAndApplyPrompt();
+				}
+			}
+			else Die();
+		}
 	}
 	return DamageAmount;
 }
@@ -366,6 +412,7 @@ void AEnemy::EnableAI()
 	{
 		AIOriginalController->Possess(this);
 		AIOriginalController->AAIController::RunBehaviorTree(BTAsset);
+		Cast<AEnemyAIController>(AIOriginalController)->bPauseEnemyPerceptionUpdate = false;
 	}
 }
 
@@ -386,11 +433,29 @@ void AEnemy::OnPossessed(APlayerMain* NewOwner)
 	GetCharacterMovement()->BrakingDecelerationWalking = 1000.f;
 }
 
-void AEnemy::UnPossess()
+void AEnemy::UnPossessBase()
 {
 	bUseControllerRotationYaw = true;
 	PossessionOwner->ReleasePossession();
-	PossessionOwner->GetAttributes()->DecreaseEnergyBy(10.f);
-	PlayAnimMontage(DeathMontage, 1.f, FName("UnpossessDeath"));
-	Die();
+}
+
+void AEnemy::UnPossess()
+{
+	if (PossessionOwner->GetAttributes()->RequiresEnergy(UnpossesEnergyTax))
+	{
+		UnPossessBase();
+		PossessionOwner->GetAttributes()->DecreaseEnergyBy(UnpossesEnergyTax);
+	}
+}
+
+void AEnemy::UnPossessAndKill()
+{
+	if (PossessionOwner->GetAttributes()->RequiresEnergy(UnpossesEnergyTax))
+	{
+		UnPossessBase();
+		PossessionOwner->GetAttributes()->DecreaseEnergyBy(UnpossesAndKillEnergyTax);
+		PlayAnimMontage(DeathMontage, 1.f, FName("UnpossessDeath"));
+		Die();
+		PossessionOwner->ToggleForm();
+	}
 }

@@ -70,6 +70,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Shield")
 	FORCEINLINE UStaticMesh* GetShieldMesh() { return ShieldMeshComponent->GetStaticMesh(); };
+	
+	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Shield")
+	FORCEINLINE UStaticMeshComponent* GetShieldMeshComponent() { return ShieldMeshComponent; };
 
 	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Shield")
 	void AttachShield(USceneComponent* InParent, FName SocketName);

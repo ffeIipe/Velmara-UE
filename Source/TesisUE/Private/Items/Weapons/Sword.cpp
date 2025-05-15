@@ -132,7 +132,7 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 		{
 			if (IHitInterface* HitInterface = Cast<IHitInterface>(HitActor))
 			{
-				if (HitInterface->Execute_IsLaunchable(HitActor))
+				if (HitInterface->Execute_IsLaunchable(HitActor, Cast<ACharacter>(Owner)))
 				{
 					TSubclassOf<UDamageType> FinalDamageType = DamageTypeClass ? DamageTypeClass : TSubclassOf<UDamageType>(UDamageType::StaticClass());
 
@@ -146,11 +146,6 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 
 					HitInterface->Execute_GetHit(HitActor, Hit.ImpactPoint);
 					IgnoreActors.Add(HitActor);
-				}
-				else if (!HitInterface->Execute_IsLaunchable(HitActor)) //TODO: the sword dont have to be who activates this, it must be the enemy that delegates that cant be damaged
-				{
-					Player = Cast<APlayerMain>(GetInstigator());
-					Player->CombatComponent->GetDirectionalReact(FName("ReactToShield"));
 				}
 				CameraShake();
 			}

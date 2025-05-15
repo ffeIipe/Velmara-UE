@@ -372,17 +372,12 @@ void UCombatComponent::LaunchCharacterUp()
 {
 	IHitInterface* Paladin = Cast<IHitInterface>(SoftLockTarget);
 
-	if (SoftLockTarget && Paladin->Execute_IsLaunchable(SoftLockTarget))
+	if (SoftLockTarget && Paladin->Execute_IsLaunchable(SoftLockTarget, OwningCharacter))
 	{
 		OwningCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
 		bIsLaunched = true;
 		GetOwner()->AddActorLocalOffset(FVector(0.f, 0.f, 300.f));
 		Paladin->Execute_LaunchUp(SoftLockTarget, FVector(GetOwner()->GetActorLocation()));
-	}
-	else if (SoftLockTarget && !Paladin->Execute_IsLaunchable(SoftLockTarget))
-	{
-		OwningCharacter->PlayAnimMontage(HitReactMontage);
-		UGameplayStatics::PlaySoundAtLocation(GetWorld(), BlockSound, GetOwner()->GetActorLocation());
 	}
 }
 
@@ -419,7 +414,9 @@ void UCombatComponent::Crasher()
 	if (bHit)
 	{
 		OwningCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
-		OwningCharacter->SetActorLocation(Hit.ImpactPoint);
+
+		FVector NewLocation = FVector(Hit.ImpactPoint.X, Hit.ImpactPoint.Y, Hit.ImpactPoint.Z - OwningCharacter->GetActorLocation().Z);
+		GetOwner()->SetActorLocation(NewLocation);
 	}
 }
 

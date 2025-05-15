@@ -19,6 +19,9 @@ class UPromptWidgetComponent;
 class UMementoComponent;
 class UCombatComponent;
 
+class UNiagaraSystem;
+class UNiagaraComponent;
+
 UENUM(BlueprintType)
 enum class EEnemyType : uint8
 {
@@ -41,8 +44,10 @@ class TESISUE_API AEnemy : public ACharacter, public IHitInterface
 	GENERATED_BODY()
 
 public:
-	
 	AEnemy();
+
+	bool bWasPossessed = false;
+
 	virtual void Tick(float DeltaTime) override;
 
 	virtual void GetHit_Implementation(const FVector& ImpactPoint) override;
@@ -85,7 +90,15 @@ public:
 	void OnPossessed(APlayerMain* NewOwner);
 	
 	UFUNCTION()
+	void UnPossessBase();
+	
+	UFUNCTION()
 	void UnPossess();
+
+	UFUNCTION()
+	void UnPossessAndKill();
+
+	void NotifyThreat(AActor* ThreatActor);
 
 protected:
 	virtual void BeginPlay() override;
@@ -105,11 +118,17 @@ protected:
 	UPROPERTY(EditInstanceOnly)
 	UPromptWidgetComponent* PromptWidgetComponent;
 	
-	UPROPERTY(EditAnywhere);
+	UPROPERTY(EditAnywhere, Category = "Energy | Energy Drop");
 	float MinEnergy = 1.f;
 	
-	UPROPERTY(EditAnywhere);
+	UPROPERTY(EditAnywhere, Category = "Energy| Energy Drop");
 	float MaxEnergy = 3.f;
+	
+	UPROPERTY(EditAnywhere, Category = "Energy| Energy Tax");
+	float UnpossesEnergyTax = 3.f;
+	
+	UPROPERTY(EditAnywhere, Category = "Energy| Energy Tax");
+	float UnpossesAndKillEnergyTax = 3.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Montages");
 	UAnimMontage* HitReactMontage;
@@ -124,7 +143,7 @@ protected:
 	USoundBase* HitSound;
 
 	UPROPERTY(EditAnywhere, Category = "Visual Effects");
-	UParticleSystem* HitParticles;
+	UNiagaraSystem* NiagaraSystem;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "EnemyType")
 	EEnemyType EnemyType;
@@ -145,6 +164,9 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	UInputAction* UnPossessAction;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	UInputAction* UnPossessAndKillAction;
 
 	virtual void Move(const FInputActionValue& Value);
 	

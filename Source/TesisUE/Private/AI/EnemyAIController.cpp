@@ -44,6 +44,8 @@ ETeamAttitude::Type AEnemyAIController::GetTeamAttitudeTowards(const AActor& Oth
 
 void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
+	if (bPauseEnemyPerceptionUpdate) return;
+
 	if (!Actor) return;
 
 	UBlackboardComponent* BlackboardComponent = GetBlackboardComponent();
@@ -65,10 +67,10 @@ void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Sti
 		StopMovement();
 		return;
 	}
-
+	
 	if (Stimulus.WasSuccessfullySensed())
 	{
 		BlackboardComponent->SetValueAsObject(FName("TargetActor"), Actor);
 		BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), true);
 	}
-}
+}	

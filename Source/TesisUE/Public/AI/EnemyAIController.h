@@ -24,6 +24,8 @@ public:
 	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
 	//~ End IGenericTeamAgentInterface Interface
 
+	bool bPauseEnemyPerceptionUpdate = false;
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UAIPerceptionComponent* EnemyPerceptionComponent;
