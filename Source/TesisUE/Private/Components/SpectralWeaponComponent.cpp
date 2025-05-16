@@ -19,31 +19,26 @@
 
 USpectralWeaponComponent::USpectralWeaponComponent()
 {
-    //SpectralWeaponMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SpectralWeaponMesh"));
+    SpectralWeaponMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SpectralWeaponMesh"));
+    GetSpectralWeaponMeshComponent()->SetVisibility(false);
 
     MaxAmmo = 3;
     CurrentAmmo = MaxAmmo;
 }
 
-void USpectralWeaponComponent::InitializeSpectralWeaponComponent()
+void USpectralWeaponComponent::InitializeSpectralWeaponComponent(bool bShouldBeVisible)
 {
     bWasInitialized = true;
-    SpectralWeaponMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SpectralWeaponMesh"));
 
-    if (SpectralWeaponMesh && GetSpectralWeaponMeshComponent())
+    if (GetSpectralWeaponMeshComponent())
     {
-        GetSpectralWeaponMeshComponent()->SetStaticMesh(SpectralWeaponMesh);
+        GetSpectralWeaponMeshComponent()->SetVisibility(bShouldBeVisible);
     }
 }
 
 void USpectralWeaponComponent::BeginPlay()
 {
     Super::BeginPlay();
-
-    //if (SpectralWeaponMesh && GetSpectralWeaponMeshComponent())
-    //{
-    //    GetSpectralWeaponMeshComponent()->SetStaticMesh(SpectralWeaponMesh);
-    //}
 
     OwnerInstigator = GetOwner()->GetInstigator();
     OwnerCharacter = Cast<ACharacter>(GetOwner());
@@ -67,6 +62,8 @@ void USpectralWeaponComponent::SetTimer(FTimerHandle TimerHandle, float Time, vo
 
 void USpectralWeaponComponent::PrimaryFire()
 {
+    if (!bWasInitialized) return;
+
     if (OwnerAttributeComponent->RequiresEnergy(PrimaryEnergyCost))
     {
         if (CurrentAmmo >= 1 && !bIsReloading && bIsFireEnable)
@@ -86,6 +83,8 @@ void USpectralWeaponComponent::PrimaryFire()
 
 void USpectralWeaponComponent::SecondaryFire()
 {
+    if (!bWasInitialized) return;
+
     if (OwnerAttributeComponent->RequiresEnergy(SecondaryEnergyCost))
     {
         if (CurrentAmmo == 3 && !bIsReloading && bIsFireEnable)

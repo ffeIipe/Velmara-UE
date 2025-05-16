@@ -68,7 +68,7 @@ void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Sti
 		return;
 	}
 	
-	if (Stimulus.WasSuccessfullySensed())
+	if (Stimulus.WasSuccessfullySensed() && CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Human)
 	{
 		BlackboardComponent->SetValueAsObject(FName("TargetActor"), Actor);
 		BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), true);

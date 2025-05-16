@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -19,7 +17,7 @@ class TESISUE_API USpectralWeaponComponent : public UActorComponent
 public:	
 	USpectralWeaponComponent();
 
-    void InitializeSpectralWeaponComponent();
+    void InitializeSpectralWeaponComponent(bool bShouldBeVisible);
 
     bool bWasInitialized = false;
 
@@ -82,9 +80,6 @@ protected:
     
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Weapon FX")
     UAnimMontage* SpectralReloadAnimation;
-    
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Weapon FX")
-    UStaticMesh* SpectralWeaponMesh;
 
     UPROPERTY(VisibleDefaultsOnly, BlueprintReadWrite, Category = "Weapon Properties | Weapon FX")
     class UStaticMeshComponent* SpectralWeaponMeshComponent;

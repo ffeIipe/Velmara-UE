@@ -24,7 +24,6 @@ protected:
 
     UMaterialInstanceDynamic* SpectralMaterial;
 
-private:
     UPROPERTY(EditInstanceOnly, Category = "Visibility")
     ECharacterForm VisibleTo;
 };

@@ -7,7 +7,8 @@
 ASpectralObjectInteractable::ASpectralObjectInteractable()
 {
 	DoorMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DoorMesh"));
-	DoorMesh->SetupAttachment(GetRootComponent());
+
+	VisibleTo = ECharacterForm::ECF_Spectral;
 }
 
 void ASpectralObjectInteractable::BeginPlay()

@@ -90,7 +90,7 @@ public:
 	void OnPossessed(APlayerMain* NewOwner);
 	
 	UFUNCTION()
-	void UnPossessBase();
+	virtual void UnPossessBase();
 	
 	UFUNCTION()
 	void UnPossess();

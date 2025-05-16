@@ -77,7 +77,7 @@ public:
 	bool bCanReceiveDamage = true;
 
 	UFUNCTION(BlueprintCallable)
-	void ReleasePossession();
+	void ReleasePossession(AEnemy* EnemyPossessed);
 
 	UFUNCTION(BlueprintCallable)
 	void ResetFollowCamera();

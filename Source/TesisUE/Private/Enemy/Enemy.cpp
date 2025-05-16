@@ -105,33 +105,69 @@ void AEnemy::BeginPlay()
 void AEnemy::Die()
 {
 	SetEnemyState(EEnemyState::EES_Died);
-	
-	Cast<ANewGameStateBase>(UGameplayStatics::GetGameState(GetWorld()))->UnregisterMementoEntity(this);
 
-	PromptWidgetComponent->SetVisibility(false);
+	if (AGameStateBase* GameState = UGameplayStatics::GetGameState(GetWorld()))
+	{
+		if (ANewGameStateBase* NewGameStateBase = Cast<ANewGameStateBase>(GameState))
+		{
+			NewGameStateBase->UnregisterMementoEntity(this);
+		}
+	}
 
-	Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->UnregisterEnemy(this);
+	if (PromptWidgetComponent)
+	{
+		PromptWidgetComponent->SetVisibility(false);
+	}
+
+	if (AGameModeBase* GameMode = UGameplayStatics::GetGameMode(GetWorld()))
+	{
+		if (ANewGameModeBase* NewGameMode = Cast<ANewGameModeBase>(GameMode))
+		{
+			NewGameMode->UnregisterEnemy(this);
+		}
+	}
+
 	ResetEnemy();
 
 	DisableAI();
 
-	if (APlayerMain* Player = Cast<APlayerMain>(DamageCauserOf))
+	if (APlayerMain* PlayerOwner = Cast<APlayerMain>(PossessionOwner))
 	{
-		Player->GetAttributes()->IncreaseEnergy(Attributes->GetEnergy());
+		if (IsValid(PlayerOwner))
+		{
+			UnPossess();
+		}
+		else
+		{
+			PossessionOwner = nullptr;
+		}
 	}
+	else if (PossessionOwner != nullptr)
+	{
+		PossessionOwner = nullptr;
+	}
+
+	// if (APlayerMain* Player = Cast<APlayerMain>(DamageCauserOf))
+	// {
+	//     if (IsValid(Player) && Player->GetAttributes())
+	//     {
+	//         Player->GetAttributes()->IncreaseEnergy(Attributes ? Attributes->GetEnergy() : 0.f);
+	//     }
+	// }
+	// DamageCauserOf = nullptr; // Es buena práctica limpiar punteros después de usarlos si ya no son necesarios.
 
 	SetLifeSpan(5.f);
 }
 
-void AEnemy::NotifyThreat(AActor* ThreatActor) // ThreatActor será el Paladín
+void AEnemy::NotifyThreat(AActor* ThreatActor)
 {
-	if (!ThreatActor) // Siempre es buena idea verificar punteros nulos
+	if (!ThreatActor)
 	{
 		return;
 	}
 
 	AAIController* AIController = Cast<AAIController>(GetController());
-	if (AIController && AIController->GetBlackboardComponent()) // Asegúrate que el BlackboardComponent exista
+	if (AIController && AIController->GetBlackboardComponent())
 	{
 		AIController->GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), ThreatActor);
 
@@ -278,8 +314,7 @@ float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AC
 
 	if (DamageCauser)
 	{
-		AEnemy* EnemyDamageCauser = Cast<AEnemy>(DamageCauser);
-		if (EnemyDamageCauser)
+		if (AEnemy* EnemyDamageCauser = Cast<AEnemy>(DamageCauser))
 		{
 			AAIController* AIController = Cast<AAIController>(GetController());
 			if (AIController)
@@ -410,9 +445,11 @@ void AEnemy::EnableAI()
 {
 	if (AIOriginalController)
 	{
-		AIOriginalController->Possess(this);
-		AIOriginalController->AAIController::RunBehaviorTree(BTAsset);
-		Cast<AEnemyAIController>(AIOriginalController)->bPauseEnemyPerceptionUpdate = false;
+		if (!PossessionOwner)
+		{ 
+			AIOriginalController->Possess(this);
+			AIOriginalController->AAIController::RunBehaviorTree(BTAsset);
+		}
 	}
 }
 
@@ -423,39 +460,101 @@ USpringArmComponent* AEnemy::GetSpringArm()
 
 void AEnemy::OnPossessed(APlayerMain* NewOwner)
 {
+	if (!IsValid(NewOwner)) return;
+
 	PossessionOwner = NewOwner;
 
 	bUseControllerRotationYaw = false;
-	GetCharacterMovement()->bUseControllerDesiredRotation = false;
-	GetCharacterMovement()->bOrientRotationToMovement = true;
-	GetCharacterMovement()->RotationRate = FRotator(0.f, 500.f, 0.f);
-	GetCharacterMovement()->MaxWalkSpeed = 800.f;
-	GetCharacterMovement()->BrakingDecelerationWalking = 1000.f;
+	if (GetCharacterMovement())
+	{
+		GetCharacterMovement()->bUseControllerDesiredRotation = false;
+		GetCharacterMovement()->bOrientRotationToMovement = true;
+		GetCharacterMovement()->RotationRate = FRotator(0.f, 500.f, 0.f);
+		GetCharacterMovement()->MaxWalkSpeed = 800.f;
+		GetCharacterMovement()->BrakingDecelerationWalking = 1000.f;
+	}
+
+	if (Attributes)
+	{
+		Attributes->StartDecreaseEnergy();
+		Attributes->OnDepletedCallback = [this, WeakOwningPlayer = TWeakObjectPtr<APlayerMain>(NewOwner)]() {
+			if (WeakOwningPlayer.IsValid())
+			{
+				UnPossess();
+			}
+			else
+			{
+				if (PossessionOwner == WeakOwningPlayer.Get(true))
+				{
+					PossessionOwner = nullptr;
+				}
+			}
+			};
+	}
 }
 
 void AEnemy::UnPossessBase()
 {
 	bUseControllerRotationYaw = true;
-	PossessionOwner->ReleasePossession();
+
+	if (APlayerMain* PlayerOwner = Cast<APlayerMain>(PossessionOwner))
+	{
+		if (IsValid(PlayerOwner))
+		{
+			PlayerOwner->ReleasePossession(this);
+		}
+	}
+
+	AAIController* AIController = Cast<AAIController>(GetController());
+	if (AIController)
+	{
+		AIController->GetBlackboardComponent()->ClearValue(FName("TargetActor"));
+		Cast<AEnemyAIController>(AIController)->bPauseEnemyPerceptionUpdate = false;
+	}
 }
 
 void AEnemy::UnPossess()
 {
-	if (PossessionOwner->GetAttributes()->RequiresEnergy(UnpossesEnergyTax))
+	APlayerMain* PlayerOwner = Cast<APlayerMain>(PossessionOwner);
+
+	if (PlayerOwner && IsValid(PlayerOwner))
 	{
-		UnPossessBase();
-		PossessionOwner->GetAttributes()->DecreaseEnergyBy(UnpossesEnergyTax);
+		if (PlayerOwner->GetAttributes() && PlayerOwner->GetAttributes()->RequiresEnergy(UnpossesEnergyTax))
+		{
+			UnPossessBase();
+			PlayerOwner->GetAttributes()->DecreaseEnergyBy(UnpossesEnergyTax);
+			PossessionOwner = nullptr;
+			EnableAI();
+		}
 	}
+	else PossessionOwner = nullptr;
 }
 
 void AEnemy::UnPossessAndKill()
 {
-	if (PossessionOwner->GetAttributes()->RequiresEnergy(UnpossesEnergyTax))
+	APlayerMain* PlayerToToggleForm = PossessionOwner;
+
+	if (IsValid(PlayerToToggleForm) && PlayerToToggleForm->GetAttributes() && PlayerToToggleForm->GetAttributes()->RequiresEnergy(UnpossesAndKillEnergyTax))
 	{
 		UnPossessBase();
-		PossessionOwner->GetAttributes()->DecreaseEnergyBy(UnpossesAndKillEnergyTax);
+
+		if (IsValid(PlayerToToggleForm) && PlayerToToggleForm->GetAttributes())
+		{
+			PlayerToToggleForm->GetAttributes()->DecreaseEnergyBy(UnpossesAndKillEnergyTax);
+		}
+
 		PlayAnimMontage(DeathMontage, 1.f, FName("UnpossessDeath"));
-		Die();
-		PossessionOwner->ToggleForm();
+		Die(); 
+
+		if (IsValid(PlayerToToggleForm))
+		{
+			if (IsValid(PlayerToToggleForm->CharacterStateComponent))
+			{
+				PlayerToToggleForm->ToggleForm();
+			}
+		}
+
+		EnableAI();
+		PossessionOwner = nullptr;
 	}
 }

@@ -34,6 +34,8 @@ public:
 protected:
 	void BeginPlay();
 	
+	void Die() override;
+	
 	TArray<AActor*> IgnoreActors;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -91,6 +93,8 @@ protected:
 	void HitInAir();
 
 	void ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoint) override;
+
+	void UnPossessBase() override;
 
 private:
 	UPROPERTY(EditAnywhere)

@@ -20,6 +20,10 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 
+#include "AI/EnemyAIController.h"
+#include "BehaviorTree/BlackboardComponent.h"
+#include "AIController.h"
+
 
 APaladin::APaladin()
 {
@@ -73,11 +77,31 @@ void APaladin::BeginPlay()
 	CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_EquippedSword);
 }
 
+void APaladin::Die()
+{
+	Super::Die();
+
+	TArray<AEnemy*> NearbyEnemies = GenerateSphereOverlapToDetectOtherEnemies(GetActorLocation(), this);
+	for (AEnemy* NearbyEnemy : NearbyEnemies)
+	{
+		if (IsValid(NearbyEnemy))
+		{
+			AAIController* AIController = Cast<AAIController>(NearbyEnemy->GetController());
+			if (AIController)
+			{
+				AIController->GetBlackboardComponent()->ClearValue(FName("TargetActor"));
+				Cast<AEnemyAIController>(AIController)->bPauseEnemyPerceptionUpdate = false;
+			}
+		}
+	}
+}
+
 void APaladin::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled)
 {
 	if (SwordCollider)
 	{
 		SwordCollider->SetCollisionEnabled(CollisionEnabled);
+		IgnoreActors.Empty();
 	}
 }
 
@@ -87,28 +111,20 @@ void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 	const FVector End = BoxTraceEnd->GetComponentLocation();
 
 	FHitResult BoxHit;
-
-	TArray<AActor*> ActorsToIgnoreForBoxTrace;
-	ActorsToIgnoreForBoxTrace.Add(this);
-
-	// UKismetSystemLibrary::BoxTraceSingle YA está haciendo el overlap de la espada.
-	// El evento OnSwordOverlap se llama cuando ALGO ya ha hecho overlap con el componente espada.
-	// A menos que BoxTraceStart y BoxTraceEnd definan un volumen *diferente* al de la espada,
-	// este BoxTrace aquí podría ser redundante o para un efecto secundario más preciso.
-	// Si el 'OverlappedComponent' es la propia espada y 'OtherActor' es el enemigo,
-	// podrías usar 'OtherActor' directamente en lugar de hacer otro trace.
-	// Pero sigamos tu lógica actual:
+	
+	IgnoreActors;
+	IgnoreActors.Add(this);
 
 	bool bHitOccurred = UKismetSystemLibrary::BoxTraceSingle(
 		this,
 		Start,
 		End,
-		FVector(5.f, 5.f, 5.f), // Considera hacer este tamaño configurable
+		FVector(10.f, 10.f, 10.f),
 		BoxTraceStart->GetComponentRotation(),
-		UEngineTypes::ConvertToTraceType(ECC_Pawn), // Asegúrate que tus enemigos usan este canal y bloquean/solapan
+		UEngineTypes::ConvertToTraceType(ECC_Pawn),
 		false,
-		ActorsToIgnoreForBoxTrace,
-		EDrawDebugTrace::ForDuration, // Cambiado a ForDuration para ver el trace
+		IgnoreActors,
+		EDrawDebugTrace::ForDuration,
 		BoxHit,
 		true
 	);
@@ -120,64 +136,61 @@ void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 		{
 			UGameplayStatics::ApplyDamage(
 				BoxHit.GetActor(),
-				Damage, // Asegúrate que 'Damage' tiene un valor asignado
-				GetInstigatorController(), // Mejor que GetInstigator()->GetController()
+				Damage,
+				GetInstigatorController(),
 				this,
 				UDamageType::StaticClass()
 			);
 
-			// No necesitas añadir a ActorsToIgnore aquí para el SphereOverlap, ya que esa función lo manejará.
 			Entity->Execute_GetHit(BoxHit.GetActor(), BoxHit.ImpactPoint);
 		}
 
-		// Ahora, notificar a otros enemigos cercanos (excluyendo al que acabamos de golpear)
-		TArray<AEnemy*> NearbyEnemies = GenerateSphereOverlapToDetectOtherEnemies(BoxHit.ImpactPoint, BoxHit.GetActor());
-		for (AEnemy* EnemyToAlert : NearbyEnemies)
+		if (PossessionOwner)
 		{
-			if (IsValid(EnemyToAlert)) // IsValid es una buena práctica
+			TArray<AEnemy*> NearbyEnemies = GenerateSphereOverlapToDetectOtherEnemies(BoxHit.ImpactPoint, BoxHit.GetActor());
+			for (AEnemy* EnemyToAlert : NearbyEnemies)
 			{
-				// El Paladín (this) es la amenaza
-				EnemyToAlert->NotifyThreat(this);
+				if (IsValid(EnemyToAlert))
+				{
+					EnemyToAlert->NotifyThreat(this);
+				}
 			}
 		}
 	}
 }
 
-TArray<AEnemy*> APaladin::GenerateSphereOverlapToDetectOtherEnemies(const FVector& Origin, AActor* HitEnemyToExclude) // Renombrado y con parámetro para excluir
+TArray<AEnemy*> APaladin::GenerateSphereOverlapToDetectOtherEnemies(const FVector& Origin, AActor* HitEnemyToExclude)
 {
 	TArray<AActor*> ActorsToIgnoreForSphere;
-	ActorsToIgnoreForSphere.Add(this); // Ignorar al propio Paladín
+	ActorsToIgnoreForSphere.Add(this);
 	if (HitEnemyToExclude)
 	{
-		ActorsToIgnoreForSphere.Add(HitEnemyToExclude); // Ignorar al enemigo que ya fue golpeado directamente
+		ActorsToIgnoreForSphere.Add(HitEnemyToExclude);
 	}
 
-	TArray<AActor*> OverlappedActors; // Para SphereOverlapActors
+	TArray<AActor*> OverlappedActors;
 
-	// Definir los tipos de objeto que queremos detectar (solo Pawns en este caso)
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
 	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
 
-	// Usar SphereOverlapActors es más directo para este caso
 	bool bOverlapOccurred = UKismetSystemLibrary::SphereOverlapActors(
 		GetWorld(),
-		Origin, // Centro de la esfera
-		RadiusToNotifyAllies, // Radio de la esfera (considera renombrar esta variable a RadiusToNotifyEnemies)
-		ObjectTypes, // Qué tipos de objetos buscar
-		AEnemy::StaticClass(), // Filtrar solo por la clase AEnemy
+		Origin,
+		RadiusToNotifyAllies,
+		ObjectTypes,
+		AEnemy::StaticClass(),
 		ActorsToIgnoreForSphere,
 		OverlappedActors
 	);
 
-	// Visualizar la esfera de detección (muy útil para debug)
 	DrawDebugSphere(
 		GetWorld(),
 		Origin,
 		RadiusToNotifyAllies,
-		24, // Segmentos
+		24,
 		FColor::Yellow,
-		false, // Persistent lines
-		5.0f   // Lifetime
+		false,
+		5.0f
 	);
 
 	TArray<AEnemy*> EnemiesFound;
@@ -186,8 +199,7 @@ TArray<AEnemy*> APaladin::GenerateSphereOverlapToDetectOtherEnemies(const FVecto
 		for (AActor* Actor : OverlappedActors)
 		{
 			AEnemy* EnemyActor = Cast<AEnemy>(Actor);
-			// El filtro de clase en SphereOverlapActors ya debería asegurar esto,
-			// pero un Cast y una comprobación no hacen daño.
+
 			if (EnemyActor)
 			{
 				EnemiesFound.Add(EnemyActor);
@@ -314,4 +326,18 @@ void APaladin::ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactP
 		DirectionalHitReact(ImpactPoint);
 		break;
 	}
+}
+
+void APaladin::UnPossessBase()
+{
+	Super::UnPossessBase();
+
+	//TArray<AEnemy*> NearbyEnemies = GenerateSphereOverlapToDetectOtherEnemies(GetActorLocation(), this);
+	//for (AEnemy* EnemyToAlert : NearbyEnemies)
+	//{
+	//	if (IsValid(EnemyToAlert))
+	//	{
+	//		EnemyToAlert->NotifyThreat(this);
+	//	}
+	//}
 }

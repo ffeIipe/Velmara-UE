@@ -38,6 +38,10 @@
 #include "Engine/DamageEvents.h"
 #include "DamageTypes/SpectralTrapDamageType.h"
 
+
+#include "Logging/LogMacros.h" // Para UE_LOG, aunque a menudo ya está incluido
+#include "UObject/NameTypes.h" // Para GetNameSafe()
+
 APlayerMain::APlayerMain()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -71,7 +75,7 @@ APlayerMain::APlayerMain()
 	CharacterStateComponent = CreateDefaultSubobject<UCharacterStateComponent>(TEXT("CharacterStates"));
 
 	SpectralWeaponComponent = CreateDefaultSubobject<USpectralWeaponComponent>(TEXT("SpectralWeapon"));
-	SpectralWeaponComponent->AttachToOwner(GetMesh(), FName("RightHandSocketWeapon"));
+	SpectralWeaponComponent->GetSpectralWeaponMeshComponent()->SetupAttachment(GetMesh(), FName("RightHandSocketWeapon"));
 }
 
 void APlayerMain::PerformSpectralAttack_Implementation()
@@ -353,7 +357,6 @@ void APlayerMain::PossessEnemy()
 			&& Attributes->RequiresEnergy(10.f)
 			)
 		{
-			
 			TargetEnemy->DisableAI();
 			PlayerControllerRef->Possess(TargetEnemy);
 			PossessedEnemy = TargetEnemy;
@@ -373,23 +376,45 @@ void APlayerMain::PossessEnemy()
 	else CombatComponent->Execute();
 }
 
-void APlayerMain::ReleasePossession()
+void APlayerMain::ReleasePossession(AEnemy* EnemyBeingUnpossessed)
 {
 	if (PlayerControllerRef)
 	{
 		PlayerControllerRef->Possess(this);
-		PossessedEnemy->DisableInput(PlayerControllerRef);
-		PossessedEnemy->EnableAI();
-		FollowCamera->AttachToComponent(CameraBoom, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("SpringEndpoint"));
-		PlayerControllerRef->SetViewTargetWithBlend(FollowCamera, 1.f);
+
+		if (IsValid(this->PossessedEnemy))
+		{
+			this->PossessedEnemy->DisableInput(PlayerControllerRef);
+			this->PossessedEnemy->EnableAI();
+		}
+
+		if (IsValid(FollowCamera) && IsValid(CameraBoom))
+		{
+			FollowCamera->AttachToComponent(CameraBoom, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("SpringEndpoint"));
+			PlayerControllerRef->SetViewTargetWithBlend(FollowCamera, 1.f);
+		}
 	}
 
 	SetActorHiddenInGame(false);
 	SetActorEnableCollision(true);
-	SetActorLocation(PossessedEnemy->GetActorLocation());
-	SetActorRotation(PossessedEnemy->GetActorRotation());
-	GetMesh()->bPauseAnims = false;
-	PossessedEnemy = nullptr;
+
+	if (IsValid(EnemyBeingUnpossessed))
+	{
+		SetActorLocation(EnemyBeingUnpossessed->GetActorLocation());
+		SetActorRotation(EnemyBeingUnpossessed->GetActorRotation());
+	}
+	else if (IsValid(this->PossessedEnemy))
+	{
+		SetActorLocation(this->PossessedEnemy->GetActorLocation());
+		SetActorRotation(this->PossessedEnemy->GetActorRotation());
+	}
+
+	if (GetMesh())
+	{
+		GetMesh()->bPauseAnims = false;
+	}
+
+	this->PossessedEnemy = nullptr;
 }
 
 
@@ -483,15 +508,14 @@ void APlayerMain::Interact(const FInputActionValue& Value)
 	{
 		if (ASword* HitSword = Cast<ASword>(Hit.GetActor()))
 		{
-			if (InventoryComponent->TryAddItem(HitSword))
+			if (CharacterStateComponent->GetCurrentCharacterState().Form != ECharacterForm::ECF_Spectral)
 			{
-				QueryParams.AddIgnoredActor(HitSword);
-				HitSword->OnWallHit.AddDynamic(this, &APlayerMain::OnWallCollision);
+				if (InventoryComponent->TryAddItem(HitSword))
+				{
+					QueryParams.AddIgnoredActor(HitSword);
+					HitSword->OnWallHit.AddDynamic(this, &APlayerMain::OnWallCollision);
+				}
 			}
-		}
-		else if (AItem* HitItem = Cast<AItem>(Hit.GetActor()))
-		{
-			HitItem->Use(this);
 		}
 		else if (ISpectralInteractable* SpectralObjectInteractable = Cast<ISpectralInteractable>(Hit.GetActor()))
 		{
@@ -500,6 +524,10 @@ void APlayerMain::Interact(const FInputActionValue& Value)
 				if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 10.f, FColor::Orange, FString("SpectralObjectInteractable Valid"));
 				SpectralObjectInteractable->Execute_SpectralInteract(Hit.GetActor());
 			}
+		}
+		else if (AItem* HitItem = Cast<AItem>(Hit.GetActor()))
+		{
+			HitItem->Use(this);
 		}
 	}
 	DrawDebugLine(GetWorld(), TraceStart, bHit ? Hit.ImpactPoint : TraceEnd, FColor::Red, false, 2.0f, 0, 1.0f);
@@ -555,17 +583,25 @@ void APlayerMain::Execute(const FInputActionValue& Value)
 
 void APlayerMain::ToggleForm()
 {
-	if (CharacterStateComponent->IsActionEqualToAny({ 
-		ECharacterActions::ECA_Dead, 
-		ECharacterActions::ECA_Block, 
-		ECharacterActions::ECA_Finish, 
+	if (!IsValid(CharacterStateComponent)) return;
+	
+	if (!GetWorld()) return;
+
+	if (!IsValid(Attributes)) return;
+
+	if (CharacterStateComponent->IsActionEqualToAny({
+		ECharacterActions::ECA_Dead,
+		ECharacterActions::ECA_Block,
+		ECharacterActions::ECA_Finish,
 		ECharacterActions::ECA_Attack,
-		ECharacterActions::ECA_Stun})
-	) return;
+		ECharacterActions::ECA_Stun })
+		)
+	{
+		return;
+	}
 
 	float CurrentTime = GetWorld()->GetTimeSeconds();
 	if (CurrentTime - LastTransformationTime < TransformationCooldown) return;
-	LastTransformationTime = 0;
 
 	if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Human)
 	{
@@ -602,13 +638,35 @@ void APlayerMain::WithEnergy()
 void APlayerMain::OutOfEnergy()
 {
 	PlayerFormComponent->ToggleForm(false);
-	Attributes->RegenerateTick();
-	GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = false;
+	if (Attributes)
+	{
+		Attributes->RegenerateTick();
+	}
 
-	SpectralWeaponComponent->EnableSpectralWeapon(false);
+	if (GetCharacterMovement() && GetCharacterMovement()->GetPawnOwner())
+	{
+		GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = false;
+	}
 
-	if (InventoryComponent->GetEquippedItem()) InventoryComponent->GetEquippedItem()->EnableVisuals(true);
-	if (PossessedEnemy) PossessedEnemy->UnPossess();
+	if (SpectralWeaponComponent)
+	{
+		SpectralWeaponComponent->EnableSpectralWeapon(false);
+	}
+
+	if (InventoryComponent && InventoryComponent->GetEquippedItem())
+	{
+		InventoryComponent->GetEquippedItem()->EnableVisuals(true);
+	}
+
+	if (this->PossessedEnemy)
+	{
+		if (IsValid(this->PossessedEnemy))
+		{
+			this->PossessedEnemy->UnPossess();
+		}
+		else this->PossessedEnemy = nullptr;
+		
+	}
 }
 
 void APlayerMain::Die()
