@@ -85,7 +85,16 @@ void UAttributeComponent::DettachShield()
 
 bool UAttributeComponent::IsShielded()
 {
-	return CurrentShieldHealth > .01f;
+	if (CurrentShieldHealth > .01f)
+	{
+		bIsDisarmed = false;
+		return true;
+	}
+	else
+	{
+		DettachShield();
+		return false;
+	}
 }
 
 void UAttributeComponent::BeginPlay()
@@ -137,6 +146,11 @@ void UAttributeComponent::DecreaseEnergyBy(float EnergyToDecrease)
 void UAttributeComponent::ReceiveShieldDamage(float Damage)
 {
 	CurrentShieldHealth = FMath::Clamp(CurrentShieldHealth - Damage, 0.f, MaxShieldHealth);
+
+	if (CurrentShieldHealth <= 0.f)
+	{
+		DettachShield();
+	}
 }
 
 void UAttributeComponent::RegenerateEnergy()

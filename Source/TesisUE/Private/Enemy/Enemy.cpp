@@ -542,7 +542,10 @@ void AEnemy::UnPossessAndKill()
 			PlayerToToggleForm->GetAttributes()->DecreaseEnergyBy(UnpossesAndKillEnergyTax);
 		}
 
+		DisableAI();
+		StopAnimMontage();
 		PlayAnimMontage(DeathMontage, 1.f, FName("UnpossessDeath"));
+
 		Die(DamageCauserOf); 
 
 		if (IsValid(PlayerToToggleForm))
@@ -553,7 +556,6 @@ void AEnemy::UnPossessAndKill()
 			}
 		}
 
-		EnableAI();
 		PossessionOwner = nullptr;
 	}
 }

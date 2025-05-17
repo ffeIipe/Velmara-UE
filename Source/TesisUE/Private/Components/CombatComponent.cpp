@@ -331,7 +331,14 @@ void UCombatComponent::ReleaseBlock()
 
 void UCombatComponent::Execute()
 {
-	if (CharacterStateComponent->GetCurrentCharacterState().Action == ECharacterActions::ECA_Finish) return;
+	if (CharacterStateComponent->IsStateEqualToAny({ ECharacterStates::ECS_Unequipped })) return;
+
+	if (CharacterStateComponent->IsActionEqualToAny({ 
+		ECharacterActions::ECA_Dead,
+		ECharacterActions::ECA_Dodge,
+		ECharacterActions::ECA_Finish,
+		ECharacterActions::ECA_Stun
+		})) return;
 
 	if (AActor* Enemy = SphereTraceForEnemies(OwningCharacter->GetActorLocation(), OwningCharacter->GetActorLocation() + OwningCharacter->GetActorForwardVector() * 40.f))
 	{

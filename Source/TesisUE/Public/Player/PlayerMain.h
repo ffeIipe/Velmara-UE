@@ -166,6 +166,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "SpectralAttack")
 	float TrackTargetRadius;
+	
+	UPROPERTY(EditAnywhere, Category = "Interact")
+	float InteractTargetRadius;
 
 	UFUNCTION(BlueprintCallable, Category = "SpectralAttack")
 	void SearchTarget();

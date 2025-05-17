@@ -271,10 +271,9 @@ float APaladin::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 				Attributes->ReceiveShieldDamage(DamageAmount);
 				ShieldHit();
 			}
-			else if (!Attributes->bIsDisarmed)
+			else
 			{
 				UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShieldDettachSFX, Attributes->GetShieldMeshComponent()->GetComponentLocation());
-				Attributes->DettachShield();
 			}
 		}
 		else

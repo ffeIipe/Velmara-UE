@@ -38,10 +38,6 @@
 #include "Engine/DamageEvents.h"
 #include "DamageTypes/SpectralTrapDamageType.h"
 
-
-#include "Logging/LogMacros.h" // Para UE_LOG, aunque a menudo ya está incluido
-#include "UObject/NameTypes.h" // Para GetNameSafe()
-
 APlayerMain::APlayerMain()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -341,9 +337,13 @@ AEnemy* APlayerMain::GetTargetEnemy()
 
 	if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_GameTraceChannel3, QueryParams))
 	{
-		if (AEnemy* Enemy = Cast<AEnemy>(HitResult.GetActor()))
+		if (IHitInterface* Entity = Cast<IHitInterface>(HitResult.GetActor()))
 		{
-			return Enemy;
+			if (Entity->Execute_IsLaunchable(HitResult.GetActor(), this))
+			{
+				return Cast<AEnemy>(HitResult.GetActor());
+			}
+			else return nullptr;
 		}
 		else return nullptr;
 	}
@@ -495,47 +495,60 @@ void APlayerMain::Interact(const FInputActionValue& Value)
 	FVector TraceDirection = CameraRotation.Vector();
 	FVector TraceEnd = TraceStart + (TraceDirection * InteractTraceLenght);
 
-	FCollisionQueryParams QueryParams;
-	QueryParams.AddIgnoredActor(GetOwner());
-	QueryParams.AddIgnoredActor(this);
-	QueryParams.bTraceComplex = true;
-	QueryParams.bReturnPhysicalMaterial = false;
+	//FCollisionQueryParams QueryParams;
+	//QueryParams.AddIgnoredActor(GetOwner());
+	//QueryParams.AddIgnoredActor(this);
+	//QueryParams.bTraceComplex = true;
+	//QueryParams.bReturnPhysicalMaterial = false;
 
-	FHitResult Hit;
-	bool bHit = GetWorld()->LineTraceSingleByChannel(
-		Hit,
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Visibility));
+
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.Add(GetOwner());
+
+	FHitResult ResultHit;
+
+	bool bHit = UKismetSystemLibrary::SphereTraceSingleForObjects(
+		GetWorld(),
 		TraceStart,
 		TraceEnd,
-		ECC_Visibility,
-		QueryParams
+		InteractTargetRadius,
+		ObjectTypes,
+		false,
+		ActorsToIgnore,
+		EDrawDebugTrace::ForDuration,
+		ResultHit,
+		true
 	);
+
 
 	if (bHit && InventoryComponent)
 	{
-		if (ASword* HitSword = Cast<ASword>(Hit.GetActor()))
+		if (ASword* HitSword = Cast<ASword>(ResultHit.GetActor()))
 		{
 			if (CharacterStateComponent->GetCurrentCharacterState().Form != ECharacterForm::ECF_Spectral)
 			{
 				if (InventoryComponent->TryAddItem(HitSword))
 				{
-					QueryParams.AddIgnoredActor(HitSword);
+					ActorsToIgnore.Add(HitSword);
 					HitSword->OnWallHit.AddDynamic(this, &APlayerMain::OnWallCollision);
 				}
 			}
 		}
-		else if (ISpectralInteractable* SpectralObjectInteractable = Cast<ISpectralInteractable>(Hit.GetActor()))
+		else if (ISpectralInteractable* SpectralObjectInteractable = Cast<ISpectralInteractable>(ResultHit.GetActor()))
 		{
 			if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
 			{
-				SpectralObjectInteractable->Execute_SpectralInteract(Hit.GetActor());
+				SpectralObjectInteractable->Execute_SpectralInteract(ResultHit.GetActor());
 			}
 		}
-		else if (AItem* HitItem = Cast<AItem>(Hit.GetActor()))
+		else if (AItem* HitItem = Cast<AItem>(ResultHit.GetActor()))
 		{
 			HitItem->Use(this);
 		}
 	}
-	DrawDebugLine(GetWorld(), TraceStart, bHit ? Hit.ImpactPoint : TraceEnd, FColor::Red, false, 2.0f, 0, 1.0f);
+	//DrawDebugLine(GetWorld(), TraceStart, bHit ? ResultHit.ImpactPoint : TraceEnd, FColor::Red, false, 2.0f, 0, 1.0f);
 }
 
 void APlayerMain::Attack(const FInputActionValue& Value)
