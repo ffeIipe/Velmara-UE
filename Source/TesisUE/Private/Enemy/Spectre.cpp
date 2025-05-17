@@ -3,7 +3,28 @@
 #include "Components/CapsuleComponent.h"
 #include "Kismet/GameplayStatics.h"
 
-void ASpectre::GetHit_Implementation(const FVector& ImpactPoint)
+#include "Engine/DamageEvents.h"
+#include "GameFramework/DamageType.h"
+#include "DamageTypes/SpectralTrapDamageType.h"
+
+
+float ASpectre::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	if (DamageEvent.DamageTypeClass == USpectralTrapDamageType::StaticClass())
+	{
+		if (Attributes)
+		{
+			if (Attributes->IsAlive())
+			{
+				Attributes->ReceiveDamage(DamageAmount);
+			}
+			else Die();
+		}
+	}
+	return DamageAmount;
+}
+
+void ASpectre::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType)
 {
 	if (Attributes && Attributes->IsAlive())
 	{
@@ -14,7 +35,7 @@ void ASpectre::GetHit_Implementation(const FVector& ImpactPoint)
 		Die();
 	}
 
-	Super::GetHit_Implementation(ImpactPoint);
+	Super::GetHit_Implementation(ImpactPoint, UDamageType::StaticClass());
 }
 
 void ASpectre::Die()

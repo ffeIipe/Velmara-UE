@@ -50,7 +50,7 @@ public:
 
 	virtual void Tick(float DeltaTime) override;
 
-	virtual void GetHit_Implementation(const FVector& ImpactPoint) override;
+	virtual void GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType) override;
 
 	virtual void GetFinished_Implementation() override;
 

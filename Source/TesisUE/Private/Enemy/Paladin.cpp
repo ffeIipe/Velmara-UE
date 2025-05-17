@@ -4,6 +4,7 @@
 #include "Engine/DamageEvents.h"
 #include "GameFramework/DamageType.h"
 #include "DamageTypes/DamageTypeMain.h"
+#include "DamageTypes/SpectralTrapDamageType.h"
 
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/BoxComponent.h"
@@ -57,7 +58,7 @@ bool APaladin::IsLaunchable_Implementation(ACharacter* DamageCauser)
 	if (Attributes->IsShielded())
 	{
 		APlayerMain* TempPlayerRef = Cast<APlayerMain>(DamageCauser);
-		TempPlayerRef->CombatComponent->GetDirectionalReact(FName("ReactToShield"));
+		TempPlayerRef->CombatComponent->HitReactJumpToSection(FName("ReactToShield"));
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShieldImpactSFX, Attributes->GetShieldMeshComponent()->GetComponentLocation());
 
 		return false; //its not launchable
@@ -142,7 +143,7 @@ void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 				UDamageType::StaticClass()
 			);
 
-			Entity->Execute_GetHit(BoxHit.GetActor(), BoxHit.ImpactPoint);
+			Entity->Execute_GetHit(BoxHit.GetActor(), BoxHit.ImpactPoint, UDamageType::StaticClass());
 		}
 
 		if (PossessionOwner)
@@ -236,12 +237,14 @@ void APaladin::LaunchUp_Implementation(const FVector& InstigatorLocation)
 	if (!Attributes->IsShielded()) LaunchEnemyUp(InstigatorLocation);
 }
 
-void APaladin::GetHit_Implementation(const FVector& ImpactPoint)
+void APaladin::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType)
 {
-	Super::GetHit_Implementation(ImpactPoint);
+	Super::GetHit_Implementation(ImpactPoint, DamageType);
 
 	if (Attributes && Attributes->IsAlive() && GetEnemyState() != EEnemyState::EES_Died)
 	{
+		if (DamageType == USpectralTrapDamageType::StaticClass()) return;
+
 		ReactToDamage(LastDamageType, ImpactPoint);
 	}
 	else
@@ -260,18 +263,33 @@ float APaladin::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 {
 	if (Attributes->IsAlive())
 	{
-		if (Attributes->GetShieldMesh())
+		if (DamageEvent.DamageTypeClass == USpectralTrapDamageType::StaticClass())
 		{
 			if (Attributes->IsShielded())
-			{				
+			{
+				UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShieldImpactSFX, Attributes->GetShieldMeshComponent()->GetComponentLocation());
 				Attributes->ReceiveShieldDamage(DamageAmount);
 				ShieldHit();
 			}
-			else if (!Attributes->bIsDisarmed) Attributes->DettachShield();
-
-			else Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+			else if (!Attributes->bIsDisarmed)
+			{
+				UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShieldDettachSFX, Attributes->GetShieldMeshComponent()->GetComponentLocation());
+				Attributes->DettachShield();
+			}
 		}
-		else Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+		else
+		{
+			if (!Attributes->IsShielded())
+			{
+				Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+			}
+			else
+			{
+				APlayerMain* TempPlayerRef = Cast<APlayerMain>(DamageCauser);
+				TempPlayerRef->CombatComponent->HitReactJumpToSection(FName("ReactToShield"));
+				UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShieldImpactSFX, Attributes->GetShieldMeshComponent()->GetComponentLocation());
+			}
+		}
 	}
 	return DamageAmount;
 }
@@ -301,8 +319,6 @@ void APaladin::HitInAir()
 	PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
 	GetCharacterMovement()->IsFlying();
 	DisableAI();
-
-	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.F, FColor::Emerald, FString("APaladin::HitInAir"));
 }
 
 void APaladin::ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoint)

@@ -233,7 +233,7 @@ void AEnemy::ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoi
 	//future reactions for diff enemies
 }
 
-void AEnemy::GetHit_Implementation(const FVector& ImpactPoint)
+void AEnemy::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType)
 {
 	if (HitSound)
 	{
@@ -250,12 +250,6 @@ void AEnemy::GetHit_Implementation(const FVector& ImpactPoint)
 			NiagaraSystem,
 			ImpactPoint
 		);
-
-		//UGameplayStatics::SpawnEmitterAtLocation(
-		//	GetWorld(),
-		//	HitParticles,
-		//	ImpactPoint
-		//);
 	}
 }
 

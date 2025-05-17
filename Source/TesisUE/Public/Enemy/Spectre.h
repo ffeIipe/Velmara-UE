@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -15,6 +13,13 @@ class TESISUE_API ASpectre : public AEnemy
 	GENERATED_BODY()
 	
 protected:
-	void GetHit_Implementation(const FVector& ImpactPoint) override;
+	float TakeDamage(
+		float DamageAmount,
+		struct FDamageEvent const& DamageEvent,
+		class AController* EventInstigator,
+		AActor* DamageCauser) override;
+
+	void GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType) override;
+
 	void Die() override;
 };

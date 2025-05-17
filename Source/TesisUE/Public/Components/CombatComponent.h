@@ -119,7 +119,10 @@ public:
 	void Execute();
 
 	UFUNCTION()
-	void GetDirectionalReact(FName Section);
+	void GetDirectionalReact(const FVector& ImpactPoint);
+	
+	UFUNCTION()
+	void HitReactJumpToSection(FName Section);
 
 	UFUNCTION()
 	AActor* SphereTraceForEnemies(FVector Start, FVector End);

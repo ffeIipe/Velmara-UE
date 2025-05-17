@@ -304,10 +304,10 @@ void UCombatComponent::UpdateSoftLockOn(float Alpha)
 	GetOwner()->SetActorRotation(NewRotation);
 }
 
-void UCombatComponent::GetDirectionalReact(FName Section)
-{
-	OwningCharacter->PlayAnimMontage(HitReactMontage, 1.f, Section);
-}
+//void UCombatComponent::GetDirectionalReact(FName Section)
+//{
+//	OwningCharacter->PlayAnimMontage(HitReactMontage, 1.f, Section);
+//}
 
 void UCombatComponent::Block()
 {
@@ -366,6 +366,48 @@ void UCombatComponent::Execute()
 			else return;
 		}
 	}
+}
+
+void UCombatComponent::GetDirectionalReact(const FVector& ImpactPoint)
+{
+	const FVector Forward = GetOwner()->GetActorForwardVector();
+	const FVector ToHit = (ImpactPoint - GetOwner()->GetActorLocation()).GetSafeNormal();
+
+	const double CosAngle = FVector::DotProduct(Forward, ToHit);
+
+	double Angle = FMath::Acos(CosAngle);
+
+	Angle = FMath::RadiansToDegrees(Angle);
+
+	const FVector CrossProduct = FVector::CrossProduct(Forward, ToHit);
+	if (CrossProduct.Z < 0)
+	{
+		Angle *= -1.f;
+	}
+
+	FName Section("FromBack");
+
+	if (Angle >= -45.f && Angle < 45.f)
+	{
+		Section = FName("FromFront");
+	}
+
+	else if (Angle >= -135.f && Angle < -45.f)
+	{
+		Section = FName("FromLeft");
+	}
+
+	else if (Angle >= 45.f && Angle < 135.f)
+	{
+		Section = FName("FromRight");
+	}
+
+	OwningCharacter->PlayAnimMontage(HitReactMontage, 1.f, Section);
+}
+
+void UCombatComponent::HitReactJumpToSection(FName Section)
+{
+	OwningCharacter->PlayAnimMontage(HitReactMontage, 1.f, Section);
 }
 
 void UCombatComponent::LaunchCharacterUp()

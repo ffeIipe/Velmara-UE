@@ -16,6 +16,8 @@
 #include "Math/UnrealMathUtility.h"
 #include "DrawDebugHelpers.h"
 
+#include "DamageTypes/SpectralTrapDamageType.h"
+
 
 USpectralWeaponComponent::USpectralWeaponComponent()
 {
@@ -44,6 +46,8 @@ void USpectralWeaponComponent::BeginPlay()
     OwnerCharacter = Cast<ACharacter>(GetOwner());
     OwnerController = Cast<APlayerController>(OwnerInstigator->GetController());
     OwnerAttributeComponent = GetOwner()->GetComponentByClass<UAttributeComponent>();
+
+    !bWasInitialized ? EnableSpectralWeapon(false) : EnableSpectralWeapon(true);
 
     CurrentAmmo = MaxAmmo;
 }
@@ -168,12 +172,12 @@ void USpectralWeaponComponent::Fire(bool bIsPrimary)
                     Hit,
                     OwnerController,             //who cause the dmg?
                     GetOwner(),                  //what cause the dmg?
-                    UDamageType::StaticClass()   //type of dmg
+                    USpectralTrapDamageType::StaticClass()   //type of dmg
                 );
 
                 if (IHitInterface* Entity = Cast<IHitInterface>(HitActor))
                 {
-                    Entity->Execute_GetHit(Hit.GetActor(), Hit.ImpactPoint);
+                    Entity->Execute_GetHit(Hit.GetActor(), Hit.ImpactPoint, USpectralTrapDamageType::StaticClass());
                     //decals in Hit.ImpactPoint
                 }
                 else
@@ -215,8 +219,12 @@ void USpectralWeaponComponent::AttachToOwner(USceneComponent* InParent, FName So
 
 void USpectralWeaponComponent::EnableSpectralWeapon(bool Enable)
 {
-    if (GetSpectralWeaponMeshComponent())
+    if (GetSpectralWeaponMeshComponent() && bWasInitialized)
     {
         GetSpectralWeaponMeshComponent()->SetVisibility(Enable);
+    }
+    else
+    {
+        GetSpectralWeaponMeshComponent()->SetVisibility(false);
     }
 }

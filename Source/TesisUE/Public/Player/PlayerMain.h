@@ -42,7 +42,7 @@ public:
 
 	virtual void ResetSpectralAttack_Implementation() override;
 
-	virtual void GetHit_Implementation(const FVector& ImpactPoint) override;
+	virtual void GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType) override;
 
 	virtual UCharacterStateComponent* GetCharacterStateComponent_Implementation() override;
 

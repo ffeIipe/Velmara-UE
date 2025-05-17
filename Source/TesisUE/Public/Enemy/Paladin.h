@@ -21,7 +21,7 @@ public:
 
 	virtual void LaunchUp_Implementation(const FVector& InstigatorLocation) override;
 
-	void GetHit_Implementation(const FVector& ImpactPoint) override;
+	void GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType) override;
 
 	virtual UCharacterStateComponent* GetCharacterStateComponent_Implementation() override;
 
@@ -97,8 +97,11 @@ protected:
 	void UnPossessBase() override;
 
 private:
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "SFX")
 	USoundBase* ShieldImpactSFX;
+	
+	UPROPERTY(EditAnywhere, Category = "SFX")
+	USoundBase* ShieldDettachSFX;
 
 	void ShieldHit();
 

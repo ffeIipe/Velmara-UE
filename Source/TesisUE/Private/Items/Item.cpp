@@ -59,8 +59,6 @@ void AItem::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 	if (Player)
 	{
 		PromptWidget->EnablePromptWidget(true);
-		//Player->SetOverlappingItem(this);
-		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Cyan, FString("AItem::OnSphereBeginOverlap"));
 	}
 }
 

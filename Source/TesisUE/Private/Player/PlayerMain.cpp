@@ -94,9 +94,17 @@ void APlayerMain::ResetSpectralAttack_Implementation()
 	CombatComponent->bIsSaveLightAttack = false;
 }
 
-void APlayerMain::GetHit_Implementation(const FVector& ImpactPoint)
+void APlayerMain::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType)
 {
-
+	if (DamageType == USpectralTrapDamageType::StaticClass())
+	{
+		CombatComponent->HitReactJumpToSection(FName("KnockDown"));
+	}
+	else
+	{
+		CombatComponent->GetDirectionalReact(ImpactPoint);
+		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Stun);
+	}
 }
 
 UCharacterStateComponent* APlayerMain::GetCharacterStateComponent_Implementation()
@@ -282,14 +290,12 @@ float APlayerMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEven
 	{
 		if (DamageEvent.DamageTypeClass && DamageEvent.DamageTypeClass == USpectralTrapDamageType::StaticClass())
 		{
-			CombatComponent->GetDirectionalReact(FName("KnockDown"));
 			CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Stun);
 			Attributes->ReceiveDamage(DamageAmount);
 		}
 		else
 		{
 			Attributes->ReceiveDamage(DamageAmount);
-			CombatComponent->GetDirectionalReact(FName("Default"));
 		}
 	}
 	else
@@ -521,7 +527,6 @@ void APlayerMain::Interact(const FInputActionValue& Value)
 		{
 			if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
 			{
-				if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 10.f, FColor::Orange, FString("SpectralObjectInteractable Valid"));
 				SpectralObjectInteractable->Execute_SpectralInteract(Hit.GetActor());
 			}
 		}
@@ -677,6 +682,7 @@ void APlayerMain::Die()
 
 		if (DeathMontage)
 		{
+			StopAnimMontage();
 			PlayAnimMontage(DeathMontage);
 		}
 		
@@ -742,7 +748,7 @@ void APlayerMain::GoToMainMenu()
 void APlayerMain::OnWallCollision(const FHitResult& HitResult)
 {
 	StopAnimMontage();
-	CombatComponent->GetDirectionalReact(FName("ReactToShield"));
+	CombatComponent->HitReactJumpToSection(FName("ReactToShield"));
 }
 
 void APlayerMain::LoadLastCheckpoint()
