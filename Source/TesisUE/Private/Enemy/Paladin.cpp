@@ -78,9 +78,9 @@ void APaladin::BeginPlay()
 	CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_EquippedSword);
 }
 
-void APaladin::Die()
+void APaladin::Die(AActor* DamageCauser)
 {
-	Super::Die();
+	Super::Die(DamageCauser);
 
 	TArray<AEnemy*> NearbyEnemies = GenerateSphereOverlapToDetectOtherEnemies(GetActorLocation(), this);
 	for (AEnemy* NearbyEnemy : NearbyEnemies)
@@ -250,7 +250,7 @@ void APaladin::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDa
 	else
 	{
 		PlayAnimMontage(DeathMontage, 1.f, SelectRandomDieAnim());
-		Die();
+		Die(DamageCauserOf);
 	}
 }
 
@@ -336,6 +336,7 @@ void APaladin::ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactP
 		break;
 
 	case EMainDamageTypes::EMDT_Finisher:
+		GetFinished_Implementation();
 		return;
 		break;
 	default:

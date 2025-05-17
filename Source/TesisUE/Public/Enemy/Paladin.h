@@ -34,7 +34,7 @@ public:
 protected:
 	void BeginPlay();
 	
-	void Die() override;
+	void Die(AActor* DamageCauser) override;
 	
 	TArray<AActor*> IgnoreActors;
 

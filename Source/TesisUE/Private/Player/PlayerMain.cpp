@@ -369,7 +369,7 @@ void APlayerMain::PossessEnemy()
 
 			TargetEnemy->EnableInput(PlayerControllerRef);
 			TargetEnemy->AutoPossessPlayer = EAutoReceiveInput::Player0;
-			TargetEnemy->OnPossessed(this);
+			TargetEnemy->OnPossessed(this, Attributes->GetEnergy());
 
 			FollowCamera->AttachToComponent(TargetEnemy->SpringArm, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("SpringEndpoint"));
 			PlayerControllerRef->SetViewTargetWithBlend(FollowCamera, 1.f);
@@ -612,6 +612,7 @@ void APlayerMain::ToggleForm()
 	{
 		Attributes->StartDecreaseEnergy();
 		WithEnergy();
+		Attributes->StopRegenerateTick();
 	}
 	else
 	{

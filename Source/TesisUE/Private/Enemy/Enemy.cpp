@@ -82,8 +82,6 @@ void AEnemy::BeginPlay()
 			}
 		}
 	}
-
-	Attributes->IncreaseEnergy(FMath::RandRange(MinEnergy, MaxEnergy));
 	
 	if (PromptWidgetComponent)
 	{
@@ -102,7 +100,7 @@ void AEnemy::BeginPlay()
 	}
 }
 
-void AEnemy::Die()
+void AEnemy::Die(AActor* DamageCauser)
 {
 	SetEnemyState(EEnemyState::EES_Died);
 
@@ -147,14 +145,16 @@ void AEnemy::Die()
 		PossessionOwner = nullptr;
 	}
 
-	// if (APlayerMain* Player = Cast<APlayerMain>(DamageCauserOf))
-	// {
-	//     if (IsValid(Player) && Player->GetAttributes())
-	//     {
-	//         Player->GetAttributes()->IncreaseEnergy(Attributes ? Attributes->GetEnergy() : 0.f);
-	//     }
-	// }
-	// DamageCauserOf = nullptr; // Es buena práctica limpiar punteros después de usarlos si ya no son necesarios.
+	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Red, FString("DIE"));
+	if (APlayerMain* Player = Cast<APlayerMain>(DamageCauser))
+	{
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Orange, FString("VALID PLAYER"));
+		if (IsValid(Player) && Player->GetAttributes())
+		{
+			Player->GetAttributes()->IncreaseEnergy(FMath::RandRange(MinEnergy, MaxEnergy));
+			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Green, FString("INCREASE ENERGY"));
+		}
+	}
 
 	SetLifeSpan(5.f);
 }
@@ -270,7 +270,7 @@ void AEnemy::GetFinished_Implementation()
 		Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->UnregisterEnemy(this);
 		StopAnimMontage();
 		PlayAnimMontage(FinisherDeathMontage, 1.f);
-		Die();
+		Die(DamageCauserOf);
 	}
 }
 
@@ -330,7 +330,10 @@ float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AC
 					PromptWidgetComponent->LoadAndApplyPrompt();
 				}
 			}
-			else Die();
+			else
+			{
+				Die(DamageCauser);
+			}
 		}
 	}
 	return DamageAmount;
@@ -452,11 +455,13 @@ USpringArmComponent* AEnemy::GetSpringArm()
 	return SpringArm;
 }
 
-void AEnemy::OnPossessed(APlayerMain* NewOwner)
+void AEnemy::OnPossessed(APlayerMain* NewOwner, float OwnerEnergy)
 {
 	if (!IsValid(NewOwner)) return;
 
 	PossessionOwner = NewOwner;
+
+	Attributes->SetEnergy(OwnerEnergy);
 
 	bUseControllerRotationYaw = false;
 	if (GetCharacterMovement())
@@ -538,7 +543,7 @@ void AEnemy::UnPossessAndKill()
 		}
 
 		PlayAnimMontage(DeathMontage, 1.f, FName("UnpossessDeath"));
-		Die(); 
+		Die(DamageCauserOf); 
 
 		if (IsValid(PlayerToToggleForm))
 		{

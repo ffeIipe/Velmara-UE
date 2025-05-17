@@ -28,7 +28,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Health | Setters")
 	FORCEINLINE void SetHealth(float Amount) { Health = Amount; };
 
-	UFUNCTION(BlueprintCallable, Category = "Health")
+	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Health")
 	bool IsAlive();
 
 	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Energy | Getters")
@@ -40,7 +40,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Energy | Setters")
 	void IncreaseEnergy(float Amount);
 	
-	UFUNCTION(BlueprintCallable, Category = "Energy | Setters")
+	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Energy | Setters")
 	FORCEINLINE void SetEnergy(float Amount) { Energy = Amount; };
 
 	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Energy")
@@ -57,6 +57,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Energy")
 	void RegenerateTick();
+	
+	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Energy")
+	void StopRegenerateTick();
 
 	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Energy")
 	bool RequiresEnergy(float EnergyRequired);
@@ -67,9 +70,6 @@ public:
 	TFunction<void()> OnDepletedCallback;
 
 	void ReceiveShieldDamage(float Damage);
-
-	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Shield")
-	FORCEINLINE UStaticMesh* GetShieldMesh() { return ShieldMeshComponent->GetStaticMesh(); };
 	
 	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Shield")
 	FORCEINLINE UStaticMeshComponent* GetShieldMeshComponent() { return ShieldMeshComponent; };

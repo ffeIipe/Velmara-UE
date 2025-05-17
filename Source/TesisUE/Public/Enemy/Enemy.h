@@ -87,7 +87,7 @@ public:
 	USpringArmComponent* GetSpringArm();
 	
 	UFUNCTION()
-	void OnPossessed(APlayerMain* NewOwner);
+	void OnPossessed(APlayerMain* NewOwner, float OwnerEnergy);
 	
 	UFUNCTION()
 	virtual void UnPossessBase();
@@ -104,7 +104,7 @@ protected:
 	virtual void BeginPlay() override;
 
 	UFUNCTION()
-	virtual void Die();
+	virtual void Die(AActor* DamageCauser);
 
 	UFUNCTION()
 	virtual void DirectionalHitReact(const FVector& ImpactPoint);
@@ -188,6 +188,9 @@ protected:
 
 	FName SelectRandomDieAnim();
 
+	UPROPERTY()
+	AActor* DamageCauserOf;
+
 private:
 	UPROPERTY(EditDefaultsOnly)
 	class UBehaviorTree* BTAsset;
@@ -205,9 +208,6 @@ private:
 
 	UFUNCTION()
 	void ResetColor();
-
-	UPROPERTY()
-	AActor* DamageCauserOf;
 
 	UFUNCTION(BlueprintCallable)
 	void DeactivateEnemyCollision();

@@ -356,11 +356,6 @@ void UCombatComponent::Execute()
 
 				APlayerMain* Player = Cast<APlayerMain>(GetOwner());
 
-				//Player->FollowCamera->AttachToComponent(
-				//	CameraFinisherLocation,
-				//	FAttachmentTransformRules::SnapToTargetIncludingScale
-				//);
-
 				Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->SetEnemiesAIEnabled(false);
 			}
 			else return;
@@ -429,7 +424,7 @@ void UCombatComponent::Crasher()
 	OwningCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
 	CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
 
-	FVector Start = OwningCharacter->GetMesh()->GetBoneLocation(FName("root"));
+	FVector Start = GetOwner()->GetActorLocation();
 	FVector End = Start + FVector(0.f, 0.f, -100000.f);
 
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
@@ -457,7 +452,7 @@ void UCombatComponent::Crasher()
 	{
 		OwningCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
 
-		FVector NewLocation = FVector(Hit.ImpactPoint.X, Hit.ImpactPoint.Y, Hit.ImpactPoint.Z - OwningCharacter->GetActorLocation().Z);
+		FVector NewLocation = FVector(Hit.ImpactPoint.X, Hit.ImpactPoint.Y, Hit.ImpactPoint.Z + 50.f);
 		GetOwner()->SetActorLocation(NewLocation);
 	}
 }

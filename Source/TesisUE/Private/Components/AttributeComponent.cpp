@@ -59,7 +59,7 @@ void UAttributeComponent::StopDecreaseEnergy()
 
 bool UAttributeComponent::ItHasEnergy()
 {
-	return Energy > 0.f;
+	return Energy > 1.f;
 }
 
 bool UAttributeComponent::ItHasFullEnergy()
@@ -112,14 +112,16 @@ void UAttributeComponent::DrainTick()
 
 void UAttributeComponent::RegenerateTick()
 {
-	if (ItHasFullEnergy() || !bIsDraining)
+	if (!ItHasFullEnergy())
 	{
 		GetWorld()->GetTimerManager().SetTimer(EnergyRegenerateTimerHandle, this, &UAttributeComponent::RegenerateEnergy, 1.0f, true); //linea 94
 	}
-	else
-	{
-		GetWorld()->GetTimerManager().ClearTimer(EnergyRegenerateTimerHandle);
-	}
+	else StopRegenerateTick();
+}
+
+void UAttributeComponent::StopRegenerateTick()
+{
+	GetWorld()->GetTimerManager().ClearTimer(EnergyRegenerateTimerHandle);
 }
 
 bool UAttributeComponent::RequiresEnergy(float EnergyRequired)
@@ -139,5 +141,8 @@ void UAttributeComponent::ReceiveShieldDamage(float Damage)
 
 void UAttributeComponent::RegenerateEnergy()
 {
-	Energy = FMath::Clamp(Energy + RegenerateTickValue, 1.f, 100.f);
+	if (!ItHasFullEnergy())
+	{
+		Energy = FMath::Clamp(Energy + RegenerateTickValue, 1.f, 100.f);
+	}
 }

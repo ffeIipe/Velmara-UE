@@ -18,7 +18,7 @@ float ASpectre::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 			{
 				Attributes->ReceiveDamage(DamageAmount);
 			}
-			else Die();
+			else Die(DamageCauser);
 		}
 	}
 	return DamageAmount;
@@ -32,13 +32,13 @@ void ASpectre::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDa
 	}
 	else
 	{
-		Die();
+		Die(DamageCauserOf);
 	}
 
 	Super::GetHit_Implementation(ImpactPoint, UDamageType::StaticClass());
 }
 
-void ASpectre::Die()
+void ASpectre::Die(AActor* DamageCauser)
 {
 	Destroy();
 }

@@ -21,5 +21,5 @@ protected:
 
 	void GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType) override;
 
-	void Die() override;
+	void Die(AActor* DamageCauser) override;
 };
