@@ -22,4 +22,7 @@ public:
 
 	UPROPERTY(EditAnywhere)
 	USoundBase* OpenDoorSFX;
+
+private:
+	bool bIsDoorOpen = false;
 };

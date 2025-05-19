@@ -18,9 +18,12 @@ void ASpectralObjectInteractable::BeginPlay()
 
 void ASpectralObjectInteractable::SpectralInteract_Implementation()
 {
+	if (bIsDoorOpen) return;
+
 	if (OpenDoorSFX)
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), OpenDoorSFX, DoorMesh->GetComponentLocation());
 	}
 	DoorMesh->DestroyComponent();
+	bIsDoorOpen = true;
 }

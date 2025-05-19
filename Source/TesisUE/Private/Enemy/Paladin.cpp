@@ -144,6 +144,7 @@ void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 			);
 
 			Entity->Execute_GetHit(BoxHit.GetActor(), BoxHit.ImpactPoint, UDamageType::StaticClass());
+			UGameplayStatics::PlayWorldCameraShake(this, CameraShake, SwordMesh->GetComponentLocation(), 0.f, 500.f);
 		}
 
 		if (PossessionOwner)
@@ -230,6 +231,7 @@ void APaladin::ShieldHit()
 void APaladin::Attack(const FInputActionValue& Value)
 {
 	CombatComponent->Input_Attack(Value);
+
 }
 
 void APaladin::LaunchUp_Implementation(const FVector& InstigatorLocation)

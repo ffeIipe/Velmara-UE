@@ -96,6 +96,9 @@ protected:
 
 	void UnPossessBase() override;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CameraShake")
+	TSubclassOf<UCameraShakeBase> CameraShake;
+
 private:
 	UPROPERTY(EditAnywhere, Category = "SFX")
 	USoundBase* ShieldImpactSFX;

@@ -19,8 +19,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	
-private:	
-
+private:
 	UPROPERTY()
 	UBoxComponent* BoxCollider;
 
