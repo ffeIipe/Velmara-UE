@@ -225,9 +225,10 @@ void APaladin::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 void APaladin::ShieldHit()
 {
-	
-	PlayAnimMontage(HitReactMontage, 1.f, FName("ShieldHit"));
-	
+	if (HitReactMontage)
+	{
+		PlayAnimMontage(HitReactMontage, 1.f, FName("ShieldHit"));
+	}
 }
 
 void APaladin::Attack(const FInputActionValue& Value)
@@ -286,9 +287,8 @@ float APaladin::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 			{
 				Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 			}
-			else
+			else if (APlayerMain* TempPlayerRef = Cast<APlayerMain>(DamageCauser))
 			{
-				APlayerMain* TempPlayerRef = Cast<APlayerMain>(DamageCauser);
 				TempPlayerRef->CombatComponent->HitReactJumpToSection(FName("ReactToShield"));
 				
 				if (ShieldImpactSFX)
