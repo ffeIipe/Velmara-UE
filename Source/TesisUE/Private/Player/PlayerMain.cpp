@@ -426,7 +426,7 @@ void APlayerMain::ReleasePossession(AEnemy* EnemyBeingUnpossessed)
 
 void APlayerMain::Move(const FInputActionValue& Value)
 {
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Block, ECharacterActions::ECA_Finish }))
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Block, ECharacterActions::ECA_Finish, ECharacterActions::ECA_Dead, ECharacterActions::ECA_Stun }))
 	{
 		const FVector2D MoveVector = Value.Get<FVector2D>();
 
@@ -451,7 +451,7 @@ void APlayerMain::Look(const FInputActionValue& Value)
 
 void APlayerMain::Jump()
 {
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Block, ECharacterActions::ECA_Finish, ECharacterActions::ECA_Stun }))
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Block, ECharacterActions::ECA_Finish, ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }))
 	{
 		PlayAnimMontage(JumpMontage, 1.f);
 
@@ -466,7 +466,7 @@ void APlayerMain::Jump()
 
 void APlayerMain::DoubleJump()
 {
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Block, ECharacterActions::ECA_Finish }))
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Block, ECharacterActions::ECA_Finish, ECharacterActions::ECA_Dead }))
 	{
 		PlayAnimMontage(DoubleJumpMontage);
 		LaunchCharacter(FVector(0.f, 0.f, 800.f), false, true);
@@ -553,7 +553,7 @@ void APlayerMain::Interact(const FInputActionValue& Value)
 
 void APlayerMain::Attack(const FInputActionValue& Value)
 {
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun }))
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }))
 	{
 		CombatComponent->Input_Attack(Value);
 	}
@@ -561,7 +561,7 @@ void APlayerMain::Attack(const FInputActionValue& Value)
 
 void APlayerMain::HeavyAttack(const FInputActionValue& Value)
 {
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun }))
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }))
 	{
 		CombatComponent->Input_HeavyAttack(Value);
 	}
@@ -569,7 +569,7 @@ void APlayerMain::HeavyAttack(const FInputActionValue& Value)
 
 void APlayerMain::LaunchAttack(const FInputActionValue& Value)
 {
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun }))
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }))
 	{
 		CombatComponent->Input_Launch(Value);
 	}
@@ -577,7 +577,7 @@ void APlayerMain::LaunchAttack(const FInputActionValue& Value)
 
 void APlayerMain::Block(const FInputActionValue& Value)
 {
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun }))
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }))
 	{
 		CombatComponent->Input_Block(Value);
 	}
@@ -585,7 +585,7 @@ void APlayerMain::Block(const FInputActionValue& Value)
 
 void APlayerMain::ReleaseBlock(const FInputActionValue& Value)
 {
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun })) 
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }))
 	{
 		CombatComponent->Input_ReleaseBlock(Value);
 	}
@@ -593,7 +593,7 @@ void APlayerMain::ReleaseBlock(const FInputActionValue& Value)
 
 void APlayerMain::Execute(const FInputActionValue& Value)
 {
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun }))
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }))
 	{
 		CombatComponent->Input_Execute(Value);
 	}
@@ -694,6 +694,9 @@ void APlayerMain::Die()
 	{
 		bIsDead = true;
 
+		GetCharacterMovement()->DisableMovement();
+		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Dead);
+
 		if (DeathMontage)
 		{
 			StopAnimMontage();
@@ -706,9 +709,6 @@ void APlayerMain::Die()
 			DisableInput(PlayerController);
 		}
 		
-		GetCharacterMovement()->DisableMovement();
-		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Dead);
-
 		FTimerHandle TimerHandle_LoadCheckpoint;
 		GetWorldTimerManager().SetTimer(TimerHandle_LoadCheckpoint, this, &APlayerMain::LoadLastCheckpoint, 2.0f, false);
 	}
