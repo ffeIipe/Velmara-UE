@@ -409,7 +409,10 @@ void UCombatComponent::GetDirectionalReact(const FVector& ImpactPoint)
 
 void UCombatComponent::HitReactJumpToSection(FName Section)
 {
-	OwningCharacter->PlayAnimMontage(HitReactMontage, 1.f, Section);
+	if (HitReactMontage)
+	{
+		OwningCharacter->PlayAnimMontage(HitReactMontage, 1.f, Section);
+	}
 }
 
 void UCombatComponent::LaunchCharacterUp()
