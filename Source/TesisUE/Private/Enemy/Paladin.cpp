@@ -225,10 +225,9 @@ void APaladin::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 void APaladin::ShieldHit()
 {
-	if (ShieldHit)
-	{
-		PlayAnimMontage(HitReactMontage, 1.f, FName("ShieldHit"));
-	}
+	
+	PlayAnimMontage(HitReactMontage, 1.f, FName("ShieldHit"));
+	
 }
 
 void APaladin::Attack(const FInputActionValue& Value)
