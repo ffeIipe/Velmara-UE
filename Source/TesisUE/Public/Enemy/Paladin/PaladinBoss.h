@@ -23,9 +23,12 @@ protected:
 
 private:
 	TArray<APaladin*> Minions;
+	FTimerHandle InvokeTimer;
 
 	UFUNCTION(BlueprintCallable)
 	void Attack();
+
+	void TryToInvoke();
 
 	void Invoke();
 

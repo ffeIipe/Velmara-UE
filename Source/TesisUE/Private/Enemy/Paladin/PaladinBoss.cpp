@@ -1,5 +1,3 @@
-
-
 #include "Enemy/Paladin/PaladinBoss.h"
 
 APaladinBoss::APaladinBoss()
@@ -31,6 +29,24 @@ void APaladinBoss::BeginPlay()
 
 void APaladinBoss::Attack()
 {
+	TryToInvoke();
+}
+
+
+void APaladinBoss::RemoveMinion(AActor* ActorToRemove)
+{
+	if (APaladin* PaladinToRemove = Cast<APaladin>(ActorToRemove))
+	{
+		Minions.Remove(PaladinToRemove);
+	}
+}
+
+void APaladinBoss::TryToInvoke()
+{
+	if (Minions.Num() <= 0)
+	{
+		Invoke();
+	}
 }
 
 void APaladinBoss::Invoke()
@@ -52,13 +68,5 @@ void APaladinBoss::Invoke()
 			NewPaladin->OnDestroyed.AddDynamic(this, &APaladinBoss::RemoveMinion);
 			Minions.Add(NewPaladin);
 		}
-	}
-}
-
-void APaladinBoss::RemoveMinion(AActor* ActorToRemove)
-{
-	if (APaladin* PaladinToRemove = Cast<APaladin>(ActorToRemove))
-	{
-		Minions.Remove(PaladinToRemove);
 	}
 }
