@@ -29,6 +29,10 @@ void APaladinBoss::BeginPlay()
 
 }
 
+void APaladinBoss::Attack()
+{
+}
+
 void APaladinBoss::Invoke()
 {
 	for (USceneComponent* SpawnPoint : SpawnPoints)
@@ -45,13 +49,16 @@ void APaladinBoss::Invoke()
 
 			APaladin* NewPaladin = GetWorld()->SpawnActor<APaladin>(APaladin::StaticClass(), SpawnLocation, SpawnRotation, SpawnParams);
 
-			NewPaladin->OnDestroyed.AddDynamic(this, &APaladinBoss::RemoveMinion(NewPaladin));
+			NewPaladin->OnDestroyed.AddDynamic(this, &APaladinBoss::RemoveMinion);
 			Minions.Add(NewPaladin);
 		}
 	}
 }
 
-void APaladinBoss::RemoveMinion(APaladin* PaladinToRemove)
+void APaladinBoss::RemoveMinion(AActor* ActorToRemove)
 {
-
+	if (APaladin* PaladinToRemove = Cast<APaladin>(ActorToRemove))
+	{
+		Minions.Remove(PaladinToRemove);
+	}
 }

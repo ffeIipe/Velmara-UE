@@ -29,5 +29,5 @@ private:
 
 	void Invoke();
 
-	void RemoveMinion(APaladin* PaladinToRemove);
+	void RemoveMinion(AActor* ActorToRemove);
 };
