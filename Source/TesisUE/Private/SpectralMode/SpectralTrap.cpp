@@ -11,7 +11,7 @@ void ASpectralTrap::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponen
 	if (Player)
 	{
 		OverlappingPlayer = Player;
-		ApplyTrapDamage();
+		ApplyTrapDamage(SweepResult.ImpactPoint);
 	}
 }
 
@@ -25,15 +25,21 @@ void ASpectralTrap::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent,
 	}
 }
 
-void ASpectralTrap::ApplyTrapDamage()
+void ASpectralTrap::ApplyTrapDamage(FVector ImpactPoint)
 {
-	AController* InstigatorController = OverlappingPlayer ? OverlappingPlayer->GetController() : nullptr;
-
 	UGameplayStatics::ApplyDamage(
 		OverlappingPlayer,
 		Damage,
-		InstigatorController,
+		OverlappingPlayer->GetController(),
 		this,
 		USpectralTrapDamageType::StaticClass()
 	);
+
+	if (OverlappingPlayer)
+	{
+		if (IHitInterface* Entity = Cast<IHitInterface>(OverlappingPlayer))
+		{
+			Entity->Execute_GetHit(OverlappingPlayer, ImpactPoint, USpectralTrapDamageType::StaticClass());
+;		}
+	}
 }

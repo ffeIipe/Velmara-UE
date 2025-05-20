@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -7,39 +5,60 @@
 #include "Player/CharacterStates.h"
 #include "CharacterStateComponent.generated.h"
 
+USTRUCT(BlueprintType)
+struct TESISUE_API FCharacterStates
+{
+	GENERATED_BODY();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character States | Character State")
+	ECharacterStates State;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character States | Character Action")
+	ECharacterActions Action;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character States | Character Form")
+	ECharacterForm Form;
+
+	FCharacterStates()
+		: State(ECharacterStates::ECS_Unequipped)
+		, Action(ECharacterActions::ECA_Nothing)
+		, Form(ECharacterForm::ECF_Human)
+	{
+	}
+};
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class TESISUE_API UCharacterStateComponent : public UActorComponent
 {
 	GENERATED_BODY()	
 
-private:
-	struct FCharacterStates
-	{
-		ECharacterStates State;
-		ECharacterActions Action;
-		ECharacterForm Form;
-	};
-
-	FCharacterStates CharacterStates;
-
 public:
 	UCharacterStateComponent();
 
+	UFUNCTION(BlueprintCallable, Category = "States")
 	FCharacterStates GetCurrentCharacterState();
 
+	UFUNCTION(BlueprintCallable, Category = "Character States | Character State")
 	ECharacterStates SetCharacterState(ECharacterStates NewState);
 
+	UFUNCTION(BlueprintCallable, Category = "Character States | Character Action")
 	ECharacterActions SetCharacterAction(ECharacterActions NewAction);
 
+	UFUNCTION(BlueprintCallable, Category = "Character States | Character Form")
 	ECharacterForm SetCharacterForm(ECharacterForm NewForm);
 
-	bool IsActionEqualToAny(const TArray<ECharacterActions>& FormsToCheck);
-
+	UFUNCTION(BlueprintCallable, Category = "Character States | Character Action")
 	bool IsStateEqualToAny(const TArray<ECharacterStates>& StatesToCheck);
 
-	bool IsFormEqualToAny(const TArray<ECharacterForm>& StatesToCheck);
+	UFUNCTION(BlueprintCallable, Category = "Character States | Character Action")
+	bool IsActionEqualToAny(const TArray<ECharacterActions>& ActionsToCheck);
+
+	UFUNCTION(BlueprintCallable, Category = "Character States | Character Form")
+	bool IsFormEqualToAny(const TArray<ECharacterForm>& FormsToCheck);
 
 protected:
 	virtual void BeginPlay() override;
+
+private:
+	FCharacterStates CharacterStates;
 };

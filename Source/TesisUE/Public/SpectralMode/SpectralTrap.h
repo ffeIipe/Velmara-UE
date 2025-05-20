@@ -27,7 +27,7 @@ private:
 		UPrimitiveComponent* OtherComp,
 		int32 OtherBodyIndex) override;
 
-	void ApplyTrapDamage();
+	void ApplyTrapDamage(FVector ImpactPoint);
 
 	APlayerMain* OverlappingPlayer = nullptr;
 

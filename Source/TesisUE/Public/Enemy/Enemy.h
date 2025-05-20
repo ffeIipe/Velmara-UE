@@ -18,6 +18,7 @@ class AAIController;
 class UPromptWidgetComponent;
 class UMementoComponent;
 class UCombatComponent;
+class UCharacterStateComponent;
 
 class UNiagaraSystem;
 class UNiagaraComponent;
@@ -117,7 +118,10 @@ protected:
 
 	UPROPERTY(EditInstanceOnly)
 	UPromptWidgetComponent* PromptWidgetComponent;
-	
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components | CharacterStateComponent")
+	UCharacterStateComponent* CharacterStateComponent;
+
 	UPROPERTY(EditAnywhere, Category = "Energy | Energy Drop");
 	float MinEnergy = 1.f;
 	
@@ -141,6 +145,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Sounds");
 	USoundBase* HitSound;
+	
+	UPROPERTY(EditAnywhere, Category = "Sounds");
+	USoundBase* ErrorSFX;
 
 	UPROPERTY(EditAnywhere, Category = "Visual Effects");
 	UNiagaraSystem* NiagaraSystem;

@@ -49,8 +49,6 @@ APaladin::APaladin()
 	BoxTraceStart->SetRelativeLocation(FVector(0.f, 0.f, 82.f));
 
 	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("Combat Component"));
-
-	CharacterStateComponent = CreateDefaultSubobject<UCharacterStateComponent>(TEXT("CharacterStateComponent"));
 }
 
 bool APaladin::IsLaunchable_Implementation(ACharacter* DamageCauser)

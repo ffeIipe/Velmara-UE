@@ -64,6 +64,8 @@ AEnemy::AEnemy()
 	GetCharacterMovement()->BrakingDecelerationWalking = 1000.f;
 	GetCharacterMovement()->GravityScale = 3.f;
 	GetCharacterMovement()->JumpZVelocity = 1000.f;
+
+	CharacterStateComponent = CreateDefaultSubobject<UCharacterStateComponent>(TEXT("CharacterStateComponent"));
 }
 
 void AEnemy::BeginPlay()
@@ -103,6 +105,7 @@ void AEnemy::BeginPlay()
 void AEnemy::Die(AActor* DamageCauser)
 {
 	SetEnemyState(EEnemyState::EES_Died);
+	CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Dead);
 
 	if (AGameStateBase* GameState = UGameplayStatics::GetGameState(GetWorld()))
 	{
@@ -258,6 +261,7 @@ void AEnemy::GetFinished_Implementation()
 	if (GetEnemyState() != EEnemyState::EES_Died)
 	{
 		SetEnemyState(EEnemyState::EES_Died);
+		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Dead);
 
 		PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
 
@@ -436,6 +440,15 @@ void AEnemy::DisableAI()
 		AIOriginalController->StopMovement();
 		AIOriginalController->UnPossess();
 	}
+	else
+	{
+		AAIController* AIController = Cast<AAIController>(GetController());
+		if (AIController)
+		{
+			AIController->StopMovement();
+			AIController->UnPossess();
+		}
+	}
 }
 
 void AEnemy::EnableAI()
@@ -557,5 +570,9 @@ void AEnemy::UnPossessAndKill()
 		}
 
 		PossessionOwner = nullptr;
+	}
+	else if (!Attributes->RequiresEnergy(UnpossesAndKillEnergyTax) && ErrorSFX)
+	{
+		UGameplayStatics::PlaySound2D(GetWorld(), ErrorSFX);
 	}
 }

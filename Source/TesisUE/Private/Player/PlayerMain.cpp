@@ -96,10 +96,14 @@ void APlayerMain::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<
 	{
 		CombatComponent->HitReactJumpToSection(FName("KnockDown"));
 	}
-	else
+	else if(DamageType != USpectralTrapDamageType::StaticClass() && Attributes->IsAlive())
 	{
 		CombatComponent->GetDirectionalReact(ImpactPoint);
 		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Stun);
+	}
+	else if (!Attributes->IsAlive())
+	{
+		Die();
 	}
 }
 
@@ -377,6 +381,10 @@ void APlayerMain::PossessEnemy()
 			SetActorHiddenInGame(true);
 			SetActorEnableCollision(false);
 			GetMesh()->bPauseAnims = true;
+		}
+		else if (!Attributes->RequiresEnergy(10.f) && ErrorSFX)
+		{
+			UGameplayStatics::PlaySound2D(GetWorld(), ErrorSFX);
 		}
 	}
 	else CombatComponent->Execute();

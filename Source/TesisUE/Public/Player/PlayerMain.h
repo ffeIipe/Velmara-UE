@@ -94,19 +94,19 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interact")
 	float InteractTraceLenght;
 
-	UPROPERTY(BlueprintReadWrite, Category = "Montages | Dodge")
+	UPROPERTY(EditAnywhere, Category = "Montages | Dodge")
 	UAnimMontage* DodgeMontage;
 
-	UPROPERTY(BlueprintReadWrite, Category = "Montages | Dodge")
+	UPROPERTY(EditAnywhere, Category = "Montages | Dodge")
 	UAnimMontage* SpectralDodgeMontage;
 	
-	UPROPERTY(BlueprintReadWrite, Category = "Montages | DoubleJump")
+	UPROPERTY(EditAnywhere, Category = "Montages | DoubleJump")
 	UAnimMontage* DoubleJumpMontage;
 	
-	UPROPERTY(BlueprintReadWrite, Category = "Montages | Death")
+	UPROPERTY(EditAnywhere, Category = "Montages | Death")
 	UAnimMontage* DeathMontage;
 	
-	UPROPERTY(BlueprintReadWrite, Category = "Montages | Jump")
+	UPROPERTY(EditAnywhere, Category = "Montages | Jump")
 	UAnimMontage* JumpMontage;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Dodge")
@@ -231,6 +231,9 @@ protected:
 	void OnWallCollision(const FHitResult& HitResult);
 
 private:
+	UPROPERTY(EditDefaultsOnly, Category = "SFX")
+	USoundBase* ErrorSFX;
+	
 	UPROPERTY(EditDefaultsOnly, Category = "BloodSense | Cooldown")
 	float TransformationCooldown;
 

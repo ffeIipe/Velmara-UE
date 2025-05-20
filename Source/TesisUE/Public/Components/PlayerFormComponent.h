@@ -29,6 +29,12 @@ protected:
     virtual void BeginPlay() override;
 
 private:
+    UPROPERTY(EditDefaultsOnly, Category = "SFX")
+    USoundBase* EnableSpectralModeSFX;
+
+    UPROPERTY(EditDefaultsOnly, Category = "SFX")
+    USoundBase* DisableSpectralModeSFX;
+
     ICharacterState* CharacterStateInterface;
 
     UCharacterStateComponent* CharacterStateComponent;

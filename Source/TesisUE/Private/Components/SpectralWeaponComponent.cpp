@@ -76,12 +76,16 @@ void USpectralWeaponComponent::PrimaryFire()
             CurrentAmmo--;
             SetTimer(TimerHandle_BetweenPrimaryShots, .2f, &USpectralWeaponComponent::EnableFire);
         }
-        else Reload();
-        //TODO: else out of ammo sound  
+        else if (CurrentAmmo <= 0)
+        {
+            //out of ammo sfx
+            Reload();
+        }
+        
     }
-    else
+    else if (ErrorSFX)
     {
-        //TODO: out of energy
+        UGameplayStatics::PlaySound2D(GetWorld(), ErrorSFX);
     }
 }
 
@@ -100,9 +104,10 @@ void USpectralWeaponComponent::SecondaryFire()
         else Reload();
         //TODO: else out of ammo sound   
     }
-    else
+    else if (ErrorSFX)
     {
-        //TODO: out of energy
+        UGameplayStatics::PlaySound2D(GetWorld(), ErrorSFX);
+        //animation waving the controller head
     }
 }
 
@@ -201,6 +206,8 @@ void USpectralWeaponComponent::Reload()
     if (!OwnerCharacter) return;
     OwnerCharacter->PlayAnimMontage(SpectralReloadAnimation);
     SetTimer(TimerHandle_Reload, ReloadTime, &USpectralWeaponComponent::FinishReload);
+
+    //reload sfx
 }
 
 void USpectralWeaponComponent::FinishReload()

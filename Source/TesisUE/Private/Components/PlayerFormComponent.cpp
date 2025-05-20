@@ -63,6 +63,7 @@ void UPlayerFormComponent::ApplySpectralEffects()
 {
     CharacterStateComponent->SetCharacterForm(ECharacterForm::ECF_Spectral);
     SpectralEffectTimeline->PlayFromStart();
+    UGameplayStatics::PlaySound2D(GetWorld(), EnableSpectralModeSFX);
 
     //TODO: improve it with a subscription to an a static class
     for (TActorIterator<ASpectralObject> It(GetWorld()); It; ++It)
@@ -75,6 +76,7 @@ void UPlayerFormComponent::ApplyHumanEffects()
 {
     CharacterStateComponent->SetCharacterForm(ECharacterForm::ECF_Human);
     SpectralEffectTimeline->Reverse();
+    UGameplayStatics::PlaySound2D(GetWorld(), DisableSpectralModeSFX);
 
     //TODO: improve it with a subscription to an a static class
     for (TActorIterator<ASpectralObject> It(GetWorld()); It; ++It)

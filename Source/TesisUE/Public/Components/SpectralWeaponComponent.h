@@ -90,6 +90,9 @@ protected:
     virtual void BeginPlay() override;
 
 private:
+    UPROPERTY(EditAnywhere, Category = "SFX");
+    USoundBase* ErrorSFX;
+
     bool bIsReloading = false;
     
     FTimerHandle TimerHandle_Reload;
