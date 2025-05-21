@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Interfaces/HitInterface.h"
+#include "Subsystems/EnemyPoolManager.h"
 #include "Enemy.generated.h"
 
 class UAttributeComponent;
@@ -19,6 +20,7 @@ class UPromptWidgetComponent;
 class UMementoComponent;
 class UCombatComponent;
 class UCharacterStateComponent;
+class UBehaviorTree;
 
 class UNiagaraSystem;
 class UNiagaraComponent;
@@ -39,6 +41,8 @@ enum class EEnemyState : uint8
 	EES_None UMETA(DisplayName = "None")
 };
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEnemyDeactivated, AEnemy*, DeactivatedEnemy);
+
 UCLASS()
 class TESISUE_API AEnemy : public ACharacter, public IHitInterface
 {
@@ -46,6 +50,31 @@ class TESISUE_API AEnemy : public ACharacter, public IHitInterface
 
 public:
 	AEnemy();
+
+	// Called when an enemy is retrieved from the pool or freshly spawned for use
+	UFUNCTION(BlueprintCallable, Category = "Pooling")
+	virtual void ActivateEnemy(const FVector& Location, const FRotator& Rotation);
+
+	// Called when an enemy is to be returned to the pool
+	UFUNCTION(BlueprintCallable, Category = "Pooling")
+	virtual void DeactivateEnemy();
+
+	// New Die function for poolable enemies
+	virtual void PoolableDie(AActor* DamageCauser);
+
+	// Delegate broadcasted when this enemy is deactivated
+	UPROPERTY(BlueprintAssignable, Category = "Pooling")
+	FOnEnemyDeactivated OnDeactivated;
+
+	// Existing TakeDamage - we'll modify its call to Die
+	virtual float TakeDamage(
+		float DamageAmount,
+		struct FDamageEvent const& DamageEvent,
+		class AController* EventInstigator,
+		AActor* DamageCauser) override;
+
+	// Existing Die - will be refactored or become the core of PoolableDie's immediate actions
+	virtual void Die(AActor* DamageCauser);
 
 	bool bWasPossessed = false;
 
@@ -62,12 +91,6 @@ public:
 	virtual void LaunchUp_Implementation(const FVector& InstigatorLocation);
 
 	virtual void ShieldHit_Implementation();
-
-	virtual float TakeDamage(
-		float DamageAmount,
-		struct FDamageEvent const& DamageEvent,
-		class AController* EventInstigator,
-		AActor* DamageCauser) override;
 
 	FORCEINLINE EEnemyType GetEnemyType() const { return EnemyType; }
 
@@ -101,26 +124,47 @@ public:
 
 	void NotifyThreat(AActor* ThreatActor);
 
-protected:
-	virtual void BeginPlay() override;
-
-	UFUNCTION()
-	virtual void Die(AActor* DamageCauser);
-
-	UFUNCTION()
-	virtual void DirectionalHitReact(const FVector& ImpactPoint);
-
-	UPROPERTY(VisibleAnywhere);
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components | AttributesComponent");
 	UAttributeComponent* Attributes;
-	
-	UPROPERTY(VisibleAnywhere);
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components | MementoComponent");
 	UMementoComponent* Memento;
 
-	UPROPERTY(EditInstanceOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components | PromptWidgetComponent")
 	UPromptWidgetComponent* PromptWidgetComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components | CharacterStateComponent")
 	UCharacterStateComponent* CharacterStateComponent;
+
+protected:
+	virtual void BeginPlay() override;
+
+	FTimerHandle ReturnToPoolTimerHandle;
+
+	// Function to handle the actual return to pool process
+	void RequestReturnToPool();
+
+	// Initial collision settings (to restore on activation)
+	ECollisionEnabled::Type InitialMeshCollisionEnabled;
+	ECollisionEnabled::Type InitialCapsuleCollisionEnabled;
+	TMap<TEnumAsByte<ECollisionChannel>, ECollisionResponse> InitialMeshCollisionResponses;
+	TMap<TEnumAsByte<ECollisionChannel>, ECollisionResponse> InitialCapsuleCollisionResponses;
+	bool bInitialMeshGenerateOverlapEvents;
+	bool bInitialCapsuleGenerateOverlapEvents;
+
+	// Store initial values for quick reset
+	float DefaultMaxWalkSpeed;
+	float DefaultGravityScale;
+	float DefaultJumpZVelocity;
+	bool bDefaultOrientRotationToMovement;
+	bool bDefaultUseControllerDesiredRotation; // from AEnemy constructor
+	bool bOriginalUseControllerRotationYaw; // from AEnemy constructor
+
+	//UFUNCTION()
+	//virtual void Die(AActor* DamageCauser);
+
+	UFUNCTION()
+	virtual void DirectionalHitReact(const FVector& ImpactPoint);
 
 	UPROPERTY(EditAnywhere, Category = "Energy | Energy Drop");
 	float MinEnergy = 1.f;
@@ -198,10 +242,9 @@ protected:
 	UPROPERTY()
 	AActor* DamageCauserOf;
 
+	UPROPERTY(EditAnywhere)
+	UBehaviorTree* BTAsset;
 private:
-	UPROPERTY(EditDefaultsOnly)
-	class UBehaviorTree* BTAsset;
-
 	AAIController* AIOriginalController;
 
 	UPROPERTY()

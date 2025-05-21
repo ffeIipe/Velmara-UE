@@ -33,12 +33,18 @@ APaladin::APaladin()
 	SwordMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SwordMesh"));
 	SwordMesh->SetupAttachment(GetMesh(), TEXT("RightHandSocket"));
 	SwordMesh->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
+	SwordMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	SwordCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("SwordBoxCollider"));
 	SwordCollider->SetupAttachment(SwordMesh);
 	SwordCollider->SetRelativeLocation(FVector(0.f, 0.f, 48.f));
 	SwordCollider->SetBoxExtent(FVector(3.f, 2.f, 36.f));
 	SwordCollider->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
+	if (SwordCollider) // It's created after this line in the original code
+	{
+		SwordCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision); // Ensure it's off initially
+	}
+	SwordCollider->SetCollisionResponseToChannel(ECC_Camera, ECR_Overlap);
 
 	BoxTraceStart = CreateDefaultSubobject<USceneComponent>(TEXT("Box Trace Start"));
 	BoxTraceStart->SetupAttachment(SwordMesh);
@@ -76,6 +82,25 @@ void APaladin::BeginPlay()
 	CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_EquippedSword);
 }
 
+void APaladin::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
+{
+	Super::ActivateEnemy(Location, Rotation);
+
+	if (CharacterStateComponent)
+	{
+		CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_EquippedSword); // Set Paladin's default active state
+	}
+
+	SetWeaponCollisionEnabled(ECollisionEnabled::NoCollision);
+}
+
+void APaladin::DeactivateEnemy()
+{
+	SetWeaponCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	Super::DeactivateEnemy();
+}
+
 void APaladin::Die(AActor* DamageCauser)
 {
 	Super::Die(DamageCauser);
@@ -86,10 +111,13 @@ void APaladin::Die(AActor* DamageCauser)
 		if (IsValid(NearbyEnemy))
 		{
 			AAIController* AIController = Cast<AAIController>(NearbyEnemy->GetController());
-			if (AIController)
+			if (AIController && AIController->GetBlackboardComponent())
 			{
 				AIController->GetBlackboardComponent()->ClearValue(FName("TargetActor"));
-				Cast<AEnemyAIController>(AIController)->bPauseEnemyPerceptionUpdate = false;
+				if (AEnemyAIController* EnemyAICont = Cast<AEnemyAIController>(AIController))
+				{
+					EnemyAICont->bPauseEnemyPerceptionUpdate = false;
+				}
 			}
 		}
 	}
@@ -348,18 +376,4 @@ void APaladin::ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactP
 		DirectionalHitReact(ImpactPoint);
 		break;
 	}
-}
-
-void APaladin::UnPossessBase()
-{
-	Super::UnPossessBase();
-
-	//TArray<AEnemy*> NearbyEnemies = GenerateSphereOverlapToDetectOtherEnemies(GetActorLocation(), this);
-	//for (AEnemy* EnemyToAlert : NearbyEnemies)
-	//{
-	//	if (IsValid(EnemyToAlert))
-	//	{
-	//		EnemyToAlert->NotifyThreat(this);
-	//	}
-	//}
 }

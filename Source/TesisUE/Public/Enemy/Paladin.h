@@ -17,6 +17,9 @@ class TESISUE_API APaladin : public AEnemy, public ICharacterState
 public:
 	APaladin();
 
+	virtual void ActivateEnemy(const FVector& Location, const FRotator& Rotation) override;
+	virtual void DeactivateEnemy() override;
+	
 	virtual bool IsLaunchable_Implementation(ACharacter* DamageCauser) override;
 
 	virtual void LaunchUp_Implementation(const FVector& InstigatorLocation) override;
@@ -31,9 +34,12 @@ public:
 		class AController* EventInstigator,
 		AActor* DamageCauser) override;
 
+	UFUNCTION(BlueprintCallable)
+	virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
+
 protected:
 	void BeginPlay();
-	
+
 	void Die(AActor* DamageCauser) override;
 	
 	TArray<AActor*> IgnoreActors;
@@ -55,9 +61,6 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components | Combat")
 	UCombatComponent* CombatComponent;
-	
-	UFUNCTION(BlueprintCallable)
-	virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
 
 	UFUNCTION()
 	virtual void OnSwordOverlap(
@@ -90,8 +93,6 @@ protected:
 	void HitInAir();
 
 	void ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoint) override;
-
-	void UnPossessBase() override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CameraShake")
 	TSubclassOf<UCameraShakeBase> CameraShake;

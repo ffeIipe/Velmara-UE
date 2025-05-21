@@ -24,21 +24,25 @@ APaladinBoss::APaladinBoss()
 
 void APaladinBoss::BeginPlay()
 {
+	Super::BeginPlay();
 
+	if (MinionToSpawnClass && InitialMinionPoolSize > 0)
+	{
+		UWorld* World = GetWorld();
+		if (World)
+		{
+			UEnemyPoolManager* PoolManager = World->GetSubsystem<UEnemyPoolManager>();
+			if (PoolManager)
+			{
+				PoolManager->EnsurePoolInitialized(MinionToSpawnClass, InitialMinionPoolSize);
+			}
+		}
+	}
 }
 
 void APaladinBoss::Attack()
 {
 	TryToInvoke();
-}
-
-
-void APaladinBoss::RemoveMinion(AActor* ActorToRemove)
-{
-	if (APaladin* PaladinToRemove = Cast<APaladin>(ActorToRemove))
-	{
-		Minions.Remove(PaladinToRemove);
-	}
 }
 
 void APaladinBoss::TryToInvoke()
@@ -51,22 +55,47 @@ void APaladinBoss::TryToInvoke()
 
 void APaladinBoss::Invoke()
 {
+	UWorld* World = GetWorld();
+	if (!World || !MinionToSpawnClass) return;
+
+	UEnemyPoolManager* PoolManager = World->GetSubsystem<UEnemyPoolManager>();
+	if (!PoolManager) return;
+	
+
 	for (USceneComponent* SpawnPoint : SpawnPoints)
 	{
 		if (SpawnPoint)
 		{
-			FActorSpawnParameters SpawnParams;
-			SpawnParams.Owner = this;
-			SpawnParams.Instigator = GetInstigator();
-			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-
 			FVector SpawnLocation = SpawnPoint->GetComponentLocation();
 			FRotator SpawnRotation = SpawnPoint->GetComponentRotation();
 
-			APaladin* NewPaladin = GetWorld()->SpawnActor<APaladin>(APaladin::StaticClass(), SpawnLocation, SpawnRotation, SpawnParams);
+			AEnemy* EnemyFromPool = PoolManager->SpawnEnemyFromPool(MinionToSpawnClass, SpawnLocation, SpawnRotation, this, this);
 
-			NewPaladin->OnDestroyed.AddDynamic(this, &APaladinBoss::RemoveMinion);
-			Minions.Add(NewPaladin);
+			if (APaladin* NewPaladin = Cast<APaladin>(EnemyFromPool))
+			{
+				NewPaladin->OnDeactivated.AddDynamic(this, &APaladinBoss::HandleMinionDeactivated);
+
+				Minions.Add(NewPaladin);
+			}
+			else if (EnemyFromPool)
+			{
+				PoolManager->ReturnEnemyToPool(EnemyFromPool);
+			}
 		}
+	}
+}
+
+void APaladinBoss::HandleMinionDeactivated(AEnemy* DeactivatedMinion)
+{
+	if (APaladin* PaladinToRemove = Cast<APaladin>(DeactivatedMinion))
+	{
+		Minions.Remove(PaladinToRemove);
+
+		if (DeactivatedMinion->OnDeactivated.IsBound())
+		{
+			DeactivatedMinion->OnDeactivated.RemoveDynamic(this, &APaladinBoss::HandleMinionDeactivated);
+		}
+		
+		TryToInvoke();
 	}
 }

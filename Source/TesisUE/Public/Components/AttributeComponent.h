@@ -86,6 +86,8 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Actor Properties | Shield")
 	bool bIsDisarmed = false;
 
+	void ResetAttributes();
+
 protected:
 	virtual void BeginPlay() override;
 

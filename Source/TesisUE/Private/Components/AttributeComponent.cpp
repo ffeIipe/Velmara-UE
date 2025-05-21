@@ -97,6 +97,13 @@ bool UAttributeComponent::IsShielded()
 	}
 }
 
+void UAttributeComponent::ResetAttributes()
+{
+	Health = MaxHealth;
+	CurrentShieldHealth = MaxShieldHealth;
+	Energy = 5.f;
+}
+
 void UAttributeComponent::BeginPlay()
 {
 	Super::BeginPlay();
