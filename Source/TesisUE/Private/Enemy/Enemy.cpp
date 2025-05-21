@@ -595,22 +595,6 @@ FName AEnemy::SelectRandomDieAnim()
 	}
 }
 
-void AEnemy::NotifyDamageTakenToBlackboard()
-{
-	if (!Attributes || !Attributes->IsAlive()) return; // No hacer nada si está muerto
-
-	AAIController* AICon = Cast<AAIController>(GetController());
-	if (AICon)
-	{
-		UBlackboardComponent* BlackboardComp = AICon->GetBlackboardComponent();
-		if (BlackboardComp)
-		{
-			// Solo marcamos que recibió daño. El BT decidirá si esquiva basado en 'IsAttacking' y cooldowns.
-			BlackboardComp->SetValueAsBool(FName("DamageTakenRecently"), true);
-		}
-	}
-}
-
 void AEnemy::SetEnemyState(EEnemyState NewState)
 {
 	EnemyState = NewState;
