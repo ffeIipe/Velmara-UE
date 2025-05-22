@@ -1,4 +1,7 @@
 #include "Enemy/Paladin/PaladinBoss.h"
+#include <AI/EnemyAIController.h>
+#include "BehaviorTree/BlackboardComponent.h"
+
 
 APaladinBoss::APaladinBoss()
 {
@@ -40,6 +43,18 @@ void APaladinBoss::BeginPlay()
 	}
 }
 
+float APaladinBoss::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	DamageCauserOf = DamageCauser;
+	NotifyDamageTakenToBlackboard();
+	return 0.0f;
+}
+
+void APaladinBoss::DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage* HitReactAnimMontage)
+{
+	Super::DirectionalHitReact(ImpactPoint, HitReactAnimMontage);
+}
+
 void APaladinBoss::Attack()
 {
 	TryToInvoke();
@@ -60,7 +75,6 @@ void APaladinBoss::Invoke()
 
 	UEnemyPoolManager* PoolManager = World->GetSubsystem<UEnemyPoolManager>();
 	if (!PoolManager) return;
-	
 
 	for (USceneComponent* SpawnPoint : SpawnPoints)
 	{
@@ -97,5 +111,13 @@ void APaladinBoss::HandleMinionDeactivated(AEnemy* DeactivatedMinion)
 		}
 		
 		TryToInvoke();
+	}
+}
+
+void APaladinBoss::NotifyDamageTakenToBlackboard()
+{
+	if (AAIController* AIController = Cast<AAIController>(GetController()))
+	{
+		AIController->GetBlackboardComponent()->SetValueAsBool(FName("DamageTakenRecently"), true);
 	}
 }

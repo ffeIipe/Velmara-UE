@@ -16,16 +16,26 @@ protected:
 
 	void BeginPlay() override;
 
+	float TakeDamage(
+		float DamageAmount,
+		struct FDamageEvent const& DamageEvent,
+		class AController* EventInstigator,
+		AActor* DamageCauser) override;
+
 	UPROPERTY(EditAnywhere, Category = "Spawning", meta = (DisplayName = "Initial Minion Pool Size Per Boss"))
 	int32 InitialMinionPoolSize = 6;
-
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawning")
 	TArray<USceneComponent*> SpawnPoints;
 
+	void DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage* HitReactAnimMontage) override;
+
 private:
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<APaladin> MinionToSpawnClass;
+	
+	UPROPERTY(EditDefaultsOnly)
+	UAnimMontage* InvokeMontage;
 
 	TArray<APaladin*> Minions;
 	FTimerHandle InvokeTimer;
@@ -40,4 +50,7 @@ private:
 
 	UFUNCTION()
 	void HandleMinionDeactivated(AEnemy* DeactivatedMinion);	
+
+	UFUNCTION()
+	void NotifyDamageTakenToBlackboard();
 };
