@@ -510,7 +510,7 @@ float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AC
 	return ActualDamage;
 }
 
-void AEnemy::DirectionalHitReact(const FVector& ImpactPoint)
+void AEnemy::DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage* HitReactAnimMontage)
 {
 	const FVector Forward = GetActorForwardVector();
 	const FVector ToHit = (ImpactPoint - GetActorLocation()).GetSafeNormal();
@@ -544,7 +544,7 @@ void AEnemy::DirectionalHitReact(const FVector& ImpactPoint)
 		Section = FName("FromRight");
 	}
 
-	PlayAnimMontage(HitReactMontage, 1.f, Section);
+	PlayAnimMontage(HitReactAnimMontage, 1.f, Section);
 }
 
 void AEnemy::HitFlash()

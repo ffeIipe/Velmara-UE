@@ -373,7 +373,7 @@ void APaladin::ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactP
 		return;
 		break;
 	default:
-		DirectionalHitReact(ImpactPoint);
+		DirectionalHitReact(ImpactPoint, HitReactMontage);
 		break;
 	}
 }

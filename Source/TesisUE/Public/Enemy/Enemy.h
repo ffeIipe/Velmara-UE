@@ -96,6 +96,10 @@ public:
 
 	FORCEINLINE EEnemyState GetEnemyState() const { return EnemyState; }
 
+	UFUNCTION(BlueprintCallable, Category = "Enemy|Combat")
+	FORCEINLINE AActor* GetDamageCauserActor() const { return DamageCauserOf; }
+
+
 	void SetEnemyState(EEnemyState NewState);
 
 	UPROPERTY(VisibleAnywhere);
@@ -163,8 +167,8 @@ protected:
 	//UFUNCTION()
 	//virtual void Die(AActor* DamageCauser);
 
-	UFUNCTION()
-	virtual void DirectionalHitReact(const FVector& ImpactPoint);
+	UFUNCTION(BlueprintCallable)
+	virtual void DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage* HitReactAnimMontage);
 
 	UPROPERTY(EditAnywhere, Category = "Energy | Energy Drop");
 	float MinEnergy = 1.f;
@@ -244,6 +248,7 @@ protected:
 
 	UPROPERTY(EditAnywhere)
 	UBehaviorTree* BTAsset;
+
 private:
 	AAIController* AIOriginalController;
 

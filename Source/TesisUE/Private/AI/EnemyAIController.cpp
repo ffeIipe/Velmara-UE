@@ -72,5 +72,7 @@ void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Sti
 	{
 		BlackboardComponent->SetValueAsObject(FName("TargetActor"), Actor);
 		BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), true);
+
+		if (GEngine) GEngine->AddOnScreenDebugMessage(1, 1.f, FColor::Green, FString("CanSeePlayer = true"));
 	}
 }	
