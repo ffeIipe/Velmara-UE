@@ -231,7 +231,7 @@ void APlayerMain::PerformDodge()
 		}
 		else
 		{
-			//directional animation based on last movement input vector
+			GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = false;
 			PlayAnimMontage(SpectralDodgeMontage);
 		}
 	}
