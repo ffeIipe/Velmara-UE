@@ -161,7 +161,7 @@ void USpectralWeaponComponent::Fire(bool bIsPrimary)
             Hit,
             TraceStart,
             CurrentTraceEnd,
-            ECC_Visibility,
+            ECC_GameTraceChannel2,
             QueryParams
         );
 

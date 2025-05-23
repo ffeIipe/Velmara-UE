@@ -6,7 +6,8 @@ UAttributeComponent::UAttributeComponent()
 	bIsDraining = false;
 
 	ShieldMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ShieldMeshComponent"));
-
+	ShieldMeshComponent->SetCollisionProfileName(FName("Custom"));
+	ShieldMeshComponent->SetCollisionResponseToChannel(ECC_GameTraceChannel2, ECR_Block);
 	CurrentShieldHealth = MaxShieldHealth;
 }
 

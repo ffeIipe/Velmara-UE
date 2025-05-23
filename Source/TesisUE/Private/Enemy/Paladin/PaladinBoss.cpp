@@ -2,6 +2,11 @@
 #include <AI/EnemyAIController.h>
 #include "BehaviorTree/BlackboardComponent.h"
 
+#include "Components/AttributeComponent.h"
+#include "Engine/DamageEvents.h"
+#include "DamageTypes/SpectralTrapDamageType.h"
+#include <Kismet/KismetMathLibrary.h>
+
 
 APaladinBoss::APaladinBoss()
 {
@@ -45,27 +50,54 @@ void APaladinBoss::BeginPlay()
 
 float APaladinBoss::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
-	DamageCauserOf = DamageCauser;
-	NotifyDamageTakenToBlackboard();
-	return 0.0f;
+	if (Attributes->IsAlive())
+	{
+		if (Attributes->IsShielded() && DamageEvent.DamageTypeClass == USpectralTrapDamageType::StaticClass())
+		{
+			DamageCauserOf = DamageCauser;
+			NotifyDamageTakenToBlackboard();
+			Attributes->ReceiveShieldDamage(DamageAmount);
+			if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Purple, FString("RECEIVING SHIELD DAMAGE"));
+		}
+		else
+		{
+			DamageCauserOf = DamageCauser;
+			NotifyDamageTakenToBlackboard();
+			Attributes->ReceiveDamage(DamageAmount);
+			if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Red, FString("RECEIVING DAMAGE"));
+		}
+	}
+	else
+	{
+		Die(DamageCauser);
+	}
+
+	return DamageAmount;
 }
 
 void APaladinBoss::DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage* HitReactAnimMontage)
 {
-	Super::DirectionalHitReact(ImpactPoint, HitReactAnimMontage);
-}
-
-void APaladinBoss::Attack()
-{
-	TryToInvoke();
+	if (UKismetMathLibrary::RandomBool())
+	{
+		PlayAnimMontage(HitReactAnimMontage, 1.f, FName("FromRight"));
+	}
+	else
+	{
+		PlayAnimMontage(HitReactAnimMontage, 1.f, FName("FromLeft"));
+	}
 }
 
 void APaladinBoss::TryToInvoke()
 {
-	if (Minions.Num() <= 0)
+	if (CanInvoke())
 	{
 		Invoke();
 	}
+}
+
+bool APaladinBoss::CanInvoke()
+{
+	return Minions.Num() <= 0;
 }
 
 void APaladinBoss::Invoke()

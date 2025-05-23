@@ -11,6 +11,7 @@
 #include "Components/AttributeComponent.h"
 #include "Components/CombatComponent.h"
 #include "Components/CharacterStateComponent.h"
+#include "Components/CapsuleComponent.h"
 
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -28,6 +29,9 @@
 
 APaladin::APaladin()
 {
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_GameTraceChannel2, ECR_Ignore);
+	GetMesh()->SetCollisionResponseToChannel(ECC_GameTraceChannel2, ECR_Ignore);
+
 	Attributes->AttachShield(GetMesh(), FName("LeftHandSocket"));
 
 	SwordMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SwordMesh"));
@@ -137,12 +141,13 @@ void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 	const FVector Start = BoxTraceStart->GetComponentLocation();
 	const FVector End = BoxTraceEnd->GetComponentLocation();
 
-	FHitResult BoxHit;
+	TArray<FHitResult> HitResults;
+	//FHitResult BoxHit;
 	
 	IgnoreActors;
 	IgnoreActors.Add(this);
 
-	bool bHitOccurred = UKismetSystemLibrary::BoxTraceSingle(
+	bool bHitOccurred = UKismetSystemLibrary::BoxTraceMulti(
 		this,
 		Start,
 		End,
@@ -152,35 +157,39 @@ void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 		false,
 		IgnoreActors,
 		EDrawDebugTrace::ForDuration,
-		BoxHit,
+		HitResults,
 		true
 	);
 
-	if (bHitOccurred && BoxHit.GetActor())
+	for (const FHitResult& Hit : HitResults)
 	{
-		IHitInterface* Entity = Cast<IHitInterface>(BoxHit.GetActor());
-		if (Entity)
+		if (bHitOccurred && Hit.GetActor())
 		{
-			UGameplayStatics::ApplyDamage(
-				BoxHit.GetActor(),
-				Damage,
-				GetInstigatorController(),
-				this,
-				UDamageType::StaticClass()
-			);
-
-			Entity->Execute_GetHit(BoxHit.GetActor(), BoxHit.ImpactPoint, UDamageType::StaticClass());
-			UGameplayStatics::PlayWorldCameraShake(this, CameraShake, SwordMesh->GetComponentLocation(), 0.f, 500.f);
-		}
-
-		if (PossessionOwner)
-		{
-			TArray<AEnemy*> NearbyEnemies = GenerateSphereOverlapToDetectOtherEnemies(BoxHit.ImpactPoint, BoxHit.GetActor());
-			for (AEnemy* EnemyToAlert : NearbyEnemies)
+			IHitInterface* Entity = Cast<IHitInterface>(Hit.GetActor());
+			if (Entity)
 			{
-				if (IsValid(EnemyToAlert))
+				UGameplayStatics::ApplyDamage(
+					Hit.GetActor(),
+					Damage,
+					GetInstigatorController(),
+					this,
+					UDamageType::StaticClass()
+				);
+
+				Entity->Execute_GetHit(Hit.GetActor(), Hit.ImpactPoint, UDamageType::StaticClass());
+				UGameplayStatics::PlayWorldCameraShake(this, CameraShake, SwordMesh->GetComponentLocation(), 0.f, 500.f);
+				IgnoreActors.Add(Hit.GetActor());
+			}
+
+			if (PossessionOwner)
+			{
+				TArray<AEnemy*> NearbyEnemies = GenerateSphereOverlapToDetectOtherEnemies(Hit.ImpactPoint, Hit.GetActor());
+				for (AEnemy* EnemyToAlert : NearbyEnemies)
 				{
-					EnemyToAlert->NotifyThreat(this);
+					if (IsValid(EnemyToAlert))
+					{
+						EnemyToAlert->NotifyThreat(this);
+					}
 				}
 			}
 		}
