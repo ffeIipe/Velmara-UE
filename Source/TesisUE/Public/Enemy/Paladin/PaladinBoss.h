@@ -37,15 +37,16 @@ private:
 	UPROPERTY(EditDefaultsOnly)
 	UAnimMontage* InvokeMontage;
 
-	TArray<APaladin*> Minions;
+	TArray<AEnemy*> Minions;
 	FTimerHandle InvokeTimer;
 
 	UFUNCTION(BlueprintCallable)
-	void Attack();
-
-	UFUNCTION(BlueprintCallable)
 	void TryToInvoke();
+	
+	UFUNCTION(BlueprintCallable)
+	bool CanInvoke();
 
+	UFUNCTION()
 	void Invoke();
 
 	UFUNCTION()

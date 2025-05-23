@@ -110,7 +110,7 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 	IgnoreActors.Add(this);
 	IgnoreActors.Add(GetOwner());
 
-	TArray<FHitResult> HitResults;;
+	TArray<FHitResult> HitResults;
 
 	UKismetSystemLibrary::BoxTraceMulti(
 		this,
