@@ -26,6 +26,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "Subsystems/EnemyPoolManager.h"
+#include <Enemy/Paladin/PaladinBoss.h>
 
 AEnemy::AEnemy()
 {
@@ -472,6 +473,8 @@ float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AC
 	{
 		if (AEnemy* EnemyDamageCauser = Cast<AEnemy>(DamageCauser)) 
 		{
+			if (APaladinBoss* PaladinBoss = Cast<APaladinBoss>(EnemyDamageCauser)) return 0.0f;
+
 			AAIController* AIController = Cast<AAIController>(GetController());
 			if (AIController && AIController->GetBlackboardComponent())
 			{

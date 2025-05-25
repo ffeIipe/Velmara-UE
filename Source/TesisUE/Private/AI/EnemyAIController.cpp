@@ -11,7 +11,6 @@
 AEnemyAIController::AEnemyAIController(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.SetDefaultSubobjectClass<UCrowdFollowingComponent>("PathFollowingComponent"))
 {
-
 	AISenseConfig_Sight = CreateDefaultSubobject<UAISenseConfig_Sight>("EnemySenseConfig_Sight");
 	AISenseConfig_Sight->DetectionByAffiliation.bDetectEnemies = true;
 	AISenseConfig_Sight->DetectionByAffiliation.bDetectFriendlies = false;
@@ -72,7 +71,5 @@ void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Sti
 	{
 		BlackboardComponent->SetValueAsObject(FName("TargetActor"), Actor);
 		BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), true);
-
-		if (GEngine) GEngine->AddOnScreenDebugMessage(1, 1.f, FColor::Green, FString("CanSeePlayer = true"));
 	}
 }	

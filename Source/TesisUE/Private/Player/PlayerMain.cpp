@@ -461,6 +461,9 @@ void APlayerMain::Jump()
 {
 	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Block, ECharacterActions::ECA_Finish, ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }))
 	{
+		if (CharacterStateComponent->IsFormEqualToAny({ ECharacterForm::ECF_Spectral }) && 
+			CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Dodge })) return;
+
 		PlayAnimMontage(JumpMontage, 1.f);
 
 		Super::Jump();
@@ -764,7 +767,7 @@ void APlayerMain::RestartLevel()
 
 void APlayerMain::GoToMainMenu()
 {
-	UGameplayStatics::OpenLevel(this, FName("MainMenu"));
+	UGameplayStatics::OpenLevel(this, FName("Felipe"));
 }
 
 void APlayerMain::OnWallCollision(const FHitResult& HitResult)

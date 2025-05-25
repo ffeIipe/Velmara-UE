@@ -87,6 +87,11 @@ void APaladinBoss::DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage*
 	}
 }
 
+bool APaladinBoss::IsLaunchable_Implementation(ACharacter* DamageCauser)
+{
+	return false;
+}
+
 void APaladinBoss::TryToInvoke()
 {
 	if (CanInvoke())

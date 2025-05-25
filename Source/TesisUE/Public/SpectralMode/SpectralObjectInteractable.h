@@ -18,7 +18,7 @@ public:
 	void SpectralInteract_Implementation() override;
 
 	UPROPERTY(EditAnywhere)
-	UStaticMeshComponent* DoorMesh;
+	TArray<UStaticMeshComponent*> DoorMeshArray;
 
 	UPROPERTY(EditAnywhere)
 	USoundBase* OpenDoorSFX;

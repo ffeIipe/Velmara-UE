@@ -37,8 +37,3 @@ void ASpectre::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDa
 
 	Super::GetHit_Implementation(ImpactPoint, UDamageType::StaticClass());
 }
-
-void ASpectre::Die(AActor* DamageCauser)
-{
-	Destroy();
-}

@@ -6,7 +6,7 @@
 
 ASpectralObjectInteractable::ASpectralObjectInteractable()
 {
-	DoorMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DoorMesh"));
+	//DoorMeshArray = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DoorMesh"));
 
 	VisibleTo = ECharacterForm::ECF_Spectral;
 }
@@ -20,10 +20,20 @@ void ASpectralObjectInteractable::SpectralInteract_Implementation()
 {
 	if (bIsDoorOpen) return;
 
-	if (OpenDoorSFX)
+	for (UStaticMeshComponent* Door : DoorMeshArray)
 	{
-		UGameplayStatics::PlaySoundAtLocation(GetWorld(), OpenDoorSFX, DoorMesh->GetComponentLocation());
+		if (!IsValid(Door) || !Door->GetStaticMesh()) break;
+
+		else
+		{
+			Door->DestroyComponent();
+
+			if (OpenDoorSFX)
+			{
+				UGameplayStatics::PlaySoundAtLocation(GetWorld(), OpenDoorSFX, Door->GetComponentLocation());
+			}
+		}	
 	}
-	DoorMesh->DestroyComponent();
 	bIsDoorOpen = true;
+	//DoorMesh->DestroyComponent();
 }

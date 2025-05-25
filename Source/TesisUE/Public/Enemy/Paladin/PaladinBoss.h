@@ -30,9 +30,11 @@ protected:
 
 	void DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage* HitReactAnimMontage) override;
 
+	bool IsLaunchable_Implementation(ACharacter* DamageCauser) override;
+
 private:
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<APaladin> MinionToSpawnClass;
+	TSubclassOf<AEnemy> MinionToSpawnClass;
 	
 	UPROPERTY(EditDefaultsOnly)
 	UAnimMontage* InvokeMontage;
