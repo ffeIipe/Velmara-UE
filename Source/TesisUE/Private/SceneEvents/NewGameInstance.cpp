@@ -166,10 +166,10 @@ void UNewGameInstance::SetShadowQuality(int32 NewQuality)
             GEngine->Exec(nullptr, TEXT("r.ShadowQuality 1"));
             GEngine->Exec(nullptr, TEXT("r.Shadow.CSM.MaxCascades 1"));
             GEngine->Exec(nullptr, TEXT("r.Shadow.MaxResolution 512"));
-            GEngine->Exec(nullptr, TEXT("r.Shadow.RadiusThreshold 0.05"));
-            GEngine->Exec(nullptr, TEXT("r.Shadow.DistanceScale 0.5"));
+            GEngine->Exec(nullptr, TEXT("r.Shadow.RadiusThreshold 0.08"));
+            GEngine->Exec(nullptr, TEXT("r.Shadow.DistanceScale 0.6"));
+ 
         }
-
         SaveGameSettings();
     }
 }
