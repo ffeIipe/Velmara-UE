@@ -20,7 +20,7 @@ protected:
 	virtual void BeginPlay() override;
 	
 private:
-	UPROPERTY()
+	UPROPERTY(EditAnywhere)
 	UBoxComponent* BoxCollider;
 
 	UFUNCTION()

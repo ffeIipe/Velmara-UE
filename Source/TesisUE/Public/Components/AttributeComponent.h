@@ -88,6 +88,9 @@ public:
 
 	void ResetAttributes();
 
+	UFUNCTION(BlueprintImplementableEvent)
+	void DissolveShield();
+
 protected:
 	virtual void BeginPlay() override;
 

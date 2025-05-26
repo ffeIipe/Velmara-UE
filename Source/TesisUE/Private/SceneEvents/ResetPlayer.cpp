@@ -26,26 +26,19 @@ void AResetPlayer::BeginPlay()
 void AResetPlayer::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
     UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-    if (!OtherActor) return;
-
     APlayerController* PlayerController = UGameplayStatics::GetPlayerController(this, 0);
-    if (!PlayerController) return;
 
-    APawn* ControlledPawn = PlayerController->GetPawn();
-
-    APlayerMain* Player = Cast<APlayerMain>(OtherActor);
-
-    if (OtherActor == ControlledPawn)
+    if (PlayerController)
     {
-        FTransform Transform;
+        GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Black, FString("VALID CONTROLLER"));
+        APawn* ControlledPawn = PlayerController->GetPawn();
 
-        if (Player)
+        if (OtherActor == ControlledPawn)
         {
-            ControlledPawn->SetActorTransform(Player->MementoComponent->GetLastSavedTransform());
-        }
-        else
-        {
-            ControlledPawn->SetActorTransform(PlayerStart->GetActorTransform());
+            
+            FTransform LastTransform = ControlledPawn->GetComponentByClass<UMementoComponent>()->GetLastSavedTransform();
+
+            ControlledPawn->SetActorTransform(LastTransform);
         }
     }
 }
