@@ -6,6 +6,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Engine/World.h"
 #include "GameFramework/WorldSettings.h"
+#include "HUD/Inventory.h"
 
 UInventoryComponent::UInventoryComponent()
 {
@@ -34,7 +35,7 @@ void UInventoryComponent::InitializeInventoryWidget()
 {
     if (InventoryWidgetClass && PlayerControllerRef && PlayerControllerRef->IsLocalController() && !InventoryWidgetInstance)
     {
-        InventoryWidgetInstance = CreateWidget<UUserWidget>(PlayerControllerRef, InventoryWidgetClass);
+        InventoryWidgetInstance = CreateWidget<UInventory>(PlayerControllerRef, InventoryWidgetClass);
         if (InventoryWidgetInstance)
         {
             InventoryWidgetInstance->AddToViewport();
@@ -68,7 +69,12 @@ bool UInventoryComponent::TryAddItem(AItem* ItemToAdd)
 
 void UInventoryComponent::EquipItemFromSlot(int32 SlotIndex)
 {
-    if (!InventorySlots.IsValidIndex(SlotIndex) || InventorySlots[SlotIndex] == nullptr) return; 
+    if (!InventorySlots.IsValidIndex(SlotIndex) || InventorySlots[SlotIndex] == nullptr)
+    {
+        GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Black, FString("INVALID ITEM"));
+
+        return;
+    }
 
     AItem* ItemToEquip = InventorySlots[SlotIndex];
 
@@ -189,6 +195,6 @@ void UInventoryComponent::UpdateInventoryUI()
 {
     if (InventoryWidgetInstance)
     {
-        K2_RefreshInventoryUI(InventorySlots);
+        InventoryWidgetInstance->RefreshInventoryUI(InventorySlots);
     }
 }
