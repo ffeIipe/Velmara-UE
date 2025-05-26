@@ -160,6 +160,16 @@ void UNewGameInstance::SetShadowQuality(int32 NewQuality)
         NewQuality = FMath::Clamp(NewQuality, 0, 3);
         CurrentSettings->ShadowQuality = NewQuality;
         ApplyGraphicsSettings();
+
+        if (NewQuality == 0)
+        {
+            GEngine->Exec(nullptr, TEXT("r.ShadowQuality 1"));
+            GEngine->Exec(nullptr, TEXT("r.Shadow.CSM.MaxCascades 1"));
+            GEngine->Exec(nullptr, TEXT("r.Shadow.MaxResolution 512"));
+            GEngine->Exec(nullptr, TEXT("r.Shadow.RadiusThreshold 0.08"));
+            GEngine->Exec(nullptr, TEXT("r.Shadow.DistanceScale 0.6"));
+ 
+        }
         SaveGameSettings();
     }
 }
