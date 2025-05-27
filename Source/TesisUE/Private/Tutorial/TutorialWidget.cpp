@@ -5,15 +5,21 @@
 #include "MediaPlayer.h"
 #include "Kismet/GameplayStatics.h"
 
-void UTutorialWidget::InitializeTutorial(UMediaSource* VideoSource, FText InText, AActor* OwningTrigger)
+void UTutorialWidget::InitializeTutorial(UMediaSource* VideoSource, FText TitleText, FText ParragraphText, AActor* OwningTrigger)
 {
-    if (TutorialTextBlock)
-        TutorialTextBlock->SetText(InText);
+    if (TutorialTitleTextBlock)
+        TutorialTitleTextBlock->SetText(TitleText);
+    
+    if (TutorialParragraphTextBlock)
+        TutorialParragraphTextBlock->SetText(ParragraphText);
 
     if (MediaPlayer && VideoSource)
     {
-        MediaPlayer->OpenSource(VideoSource);
-        MediaPlayer->Play();
+        MediaPlayer->SetLooping(true);
+        if (MediaPlayer->OpenSource(VideoSource))
+        {
+            MediaPlayer->Play();
+        }
     }
 
     TriggerOwner = OwningTrigger;

@@ -27,7 +27,10 @@ protected:
     class UMediaSource* TutorialVideo;
 
     UPROPERTY(EditAnywhere, Category = "Tutorial")
-    FText TutorialText;
+    FText TutorialTitleText;
+    
+    UPROPERTY(EditAnywhere, Category = "Tutorial")
+    FText TutorialParragraphText;
 
     UPROPERTY(EditAnywhere, Category = "Tutorial")
     TSubclassOf<class UUserWidget> TutorialWidgetClass;

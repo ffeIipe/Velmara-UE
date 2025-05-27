@@ -44,7 +44,7 @@ void ATutorialTrigger::OnPlayerEnter(UPrimitiveComponent* OverlappedComp, AActor
             UTutorialWidget* Widget = CreateWidget<UTutorialWidget>(PC, TutorialWidgetClass);
             if (Widget)
             {
-                Widget->InitializeTutorial(TutorialVideo, TutorialText, this);
+                Widget->InitializeTutorial(TutorialVideo, TutorialTitleText, TutorialParragraphText, this);
                 Widget->AddToViewport();
                 Widget->PlayFadeIn();
             }

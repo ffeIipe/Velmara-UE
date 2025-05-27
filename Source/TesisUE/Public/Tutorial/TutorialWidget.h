@@ -16,7 +16,7 @@ class TESISUE_API UTutorialWidget : public UUserWidget
 	
 public:
     UFUNCTION(BlueprintCallable)
-    void InitializeTutorial(UMediaSource* VideoSource, FText TutorialText, AActor* OwningTrigger);
+    void InitializeTutorial(UMediaSource* VideoSource, FText TitleText , FText ParragraphText, AActor* OwningTrigger);
 
     void PlayFadeIn();
 
@@ -26,7 +26,10 @@ protected:
     virtual void NativeConstruct() override;
 
     UPROPERTY(meta = (BindWidget))
-    class UTextBlock* TutorialTextBlock;
+    class UTextBlock* TutorialTitleTextBlock;
+    
+    UPROPERTY(meta = (BindWidget))
+    class UTextBlock* TutorialParragraphTextBlock;
 
     UPROPERTY(meta = (BindWidget))
     class UButton* CloseButton;
