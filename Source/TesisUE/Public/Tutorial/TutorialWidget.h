@@ -16,7 +16,7 @@ class TESISUE_API UTutorialWidget : public UUserWidget
 	
 public:
     UFUNCTION(BlueprintCallable)
-    void InitializeTutorial(UMediaSource* VideoSource, FText TitleText , FText ParragraphText, AActor* OwningTrigger);
+    void InitializeTutorial(UMediaSource* VideoSource, FText TitleText, FText ParragraphText, AActor* OwningTrigger);
 
     void PlayFadeIn();
 

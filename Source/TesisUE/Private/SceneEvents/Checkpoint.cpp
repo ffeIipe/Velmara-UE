@@ -19,8 +19,26 @@ void ACheckpoint::OnSphereBeginOverlap(
     Super::OnSphereBeginOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
 
     APlayerMain* OverlappingPlayer = Cast<APlayerMain>(OtherActor);
+    APawn* OverlappingPawn = Cast<APawn>(OtherActor);
+
+    APlayerController* PlayerController = UGameplayStatics::GetPlayerController(this, 0);
 
     if (OverlappingPlayer)
+    {
+        DisableCollision();
+
+        UNewGameInstance* GameInst = Cast<UNewGameInstance>(GetGameInstance());
+        if (GameInst)
+        {
+            if (GameInst->SavePlayerProgress(GameInst->ActiveSaveSlotIndex))
+            {
+                UE_LOG(LogTemp, Log, TEXT("ACheckpoint: Player progress saved via GameInstance. Slot: %d"), GameInst->ActiveSaveSlotIndex);
+            }
+        }
+
+        SetLifeSpan(1.f);
+    }
+    else if (OverlappingPawn->GetController() == PlayerController)
     {
         DisableCollision();
 
