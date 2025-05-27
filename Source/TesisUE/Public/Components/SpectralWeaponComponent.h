@@ -70,7 +70,7 @@ protected:
     virtual void Fire(bool bIsPrimary);
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Weapon FX")
-    class USoundBase* FireSound;
+    USoundBase* FireSound;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Weapon FX")
     class UNiagaraSystem* MuzzleFlash;

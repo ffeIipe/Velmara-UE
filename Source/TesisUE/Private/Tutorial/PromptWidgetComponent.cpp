@@ -48,9 +48,4 @@ void UPromptWidgetComponent::EnablePromptWidget(bool bIsEnable)
         GetWidget()->SetVisibility(NewWidgetVisibility);
     }
     SetVisibility(bNewComponentVisibility);
-
-    if (GEngine)
-    {
-        GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, FString("UPromptWidgetComponent::EnablePromptWidget"));
-    }
 }

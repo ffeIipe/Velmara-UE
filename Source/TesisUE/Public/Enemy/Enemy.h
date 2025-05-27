@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Interfaces/HitInterface.h"
+#include "Interfaces/MementoEntity.h"
 #include "Subsystems/EnemyPoolManager.h"
 #include "Enemy.generated.h"
 
@@ -44,7 +45,7 @@ enum class EEnemyState : uint8
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEnemyDeactivated, AEnemy*, DeactivatedEnemy);
 
 UCLASS()
-class TESISUE_API AEnemy : public ACharacter, public IHitInterface
+class TESISUE_API AEnemy : public ACharacter, public IHitInterface, public IMementoEntity
 {
 	GENERATED_BODY()
 
@@ -91,6 +92,8 @@ public:
 	virtual void LaunchUp_Implementation(const FVector& InstigatorLocation);
 
 	virtual void ShieldHit_Implementation();
+
+	virtual UMementoComponent* GetMementoComponent_Implementation() override;
 
 	FORCEINLINE EEnemyType GetEnemyType() const { return EnemyType; }
 

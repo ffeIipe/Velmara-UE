@@ -5,6 +5,7 @@
 #include "GameFramework/GameUserSettings.h"
 #include "GameFramework/Character.h"
 #include "Components/MementoComponent.h"
+#include "Components/AttributeComponent.h"
 #include "EngineUtils.h" 
 #include "Enemy/Enemy.h"
 #include "Blueprint/UserWidget.h"
@@ -12,6 +13,8 @@
 #include "Components/InventoryComponent.h"
 #include "Items/Item.h"
 #include "Items/Weapons/Sword.h"
+#include <SceneEvents/NewGameModeBase.h>
+#include <SceneEvents/NewGameStateBase.h>
 
 UNewGameInstance::UNewGameInstance()
 {
@@ -223,12 +226,7 @@ bool UNewGameInstance::SavePlayerProgress(int32 SlotIndex)
             PlayerMemento->SaveState();
             SaveGameInstance->PlayerState = PlayerMemento->GetCurrentSavedState();
         }
-    }
 
-
-
-    if (IsValid(PlayerCharacter))
-    {
         UInventoryComponent* PlayerInventory = PlayerCharacter->FindComponentByClass<UInventoryComponent>();
         if (PlayerInventory)
         {
@@ -252,15 +250,14 @@ bool UNewGameInstance::SavePlayerProgress(int32 SlotIndex)
                 SaveGameInstance->InventorySlotsData.Add(ItemData);
             }
 
-
             int32 CalculatedEquippedSlotForSave = -1;
             if (IsValid(CurrentlyEquippedItemByGetter))
-            {                              
+            {
                 if (EquippedSlotIndexFromGetter != -1 &&
                     CurrentInventoryItems.IsValidIndex(EquippedSlotIndexFromGetter) &&
                     CurrentInventoryItems[EquippedSlotIndexFromGetter] == CurrentlyEquippedItemByGetter)
                 {
-                    CalculatedEquippedSlotForSave = EquippedSlotIndexFromGetter;                
+                    CalculatedEquippedSlotForSave = EquippedSlotIndexFromGetter;
                 }
                 else
                 {
@@ -270,22 +267,58 @@ bool UNewGameInstance::SavePlayerProgress(int32 SlotIndex)
                         if (CurrentInventoryItems[i] == CurrentlyEquippedItemByGetter)
                         {
                             CalculatedEquippedSlotForSave = i;
-                            bFoundByIteration = true;                           
+                            bFoundByIteration = true;
                             break;
                         }
                     }
                     if (!bFoundByIteration)
-                    {                       
+                    {
                         CalculatedEquippedSlotForSave = -1; // Asegurarse que sea -1 si no se encuentra
                     }
                 }
             }
             else
-            {             
+            {
                 CalculatedEquippedSlotForSave = -1; // Asegurarse que sea -1 si no hay nada equipado
             }
 
             SaveGameInstance->EquippedSlotIndexInSave = CalculatedEquippedSlotForSave;
+        }
+    }
+
+    SaveGameInstance->EnemiesData.Empty();
+
+    ANewGameModeBase* GameMode = Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(this));
+    if (GameMode)
+    {
+        for (AEnemy* EnemyInWorld : GameMode->GetRegisteredEnemies())
+        {
+            if (!IsValid(EnemyInWorld)) continue;
+
+            FEnemySaveData EnemyData;
+
+            UAttributeComponent* AttrComp = EnemyInWorld->FindComponentByClass<UAttributeComponent>();
+            EnemyData.bIsAlive = (AttrComp && AttrComp->IsAlive());
+            EnemyData.EnemyID = EnemyInWorld->GetFName();
+            EnemyData.EnemyClass = EnemyInWorld->GetClass();
+
+            UMementoComponent* MementoComp = EnemyInWorld->FindComponentByClass<UMementoComponent>();
+            if (MementoComp)
+            {
+                MementoComp->SaveState();
+                EnemyData.EnemyState = MementoComp->GetCurrentSavedState();
+            }
+
+           /* if (EnemyData.bIsAlive)
+            {
+                
+            }*/
+
+            //else
+            //{
+            //    if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Orange, FString("Enemy not saved because it's dead"));
+            //}
+            SaveGameInstance->EnemiesData.Add(EnemyData);
         }
     }
 
@@ -326,8 +359,21 @@ bool UNewGameInstance::LoadPlayerProgress(int32 SlotIndex)
 
 void UNewGameInstance::ApplyPendingLoadedDataToWorld()
 {
+    if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Cyan, FString("APPLY PENDING LOADED DATA TO WORLD"));
+
     if (!PendingGameDataToLoad)
     {
+        if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, FString(" INVALID PENDING DATA"));
+        bIsLoadingPlayerProgress = false;
+        HideLoadingScreen();
+        return;
+    }
+
+    UWorld* World = GetWorld();
+    if (!World)
+    {
+        if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Magenta, FString(" INVALID WORLD"));
+        PendingGameDataToLoad = nullptr;
         bIsLoadingPlayerProgress = false;
         HideLoadingScreen();
         return;
@@ -389,9 +435,7 @@ void UNewGameInstance::ApplyPendingLoadedDataToWorld()
             }
             PlayerInventory->UpdateInventoryUI();
 
-            if (PendingGameDataToLoad->EquippedSlotIndexInSave != -1 &&
-                PlayerInventory->InventorySlots.IsValidIndex(PendingGameDataToLoad->EquippedSlotIndexInSave) &&
-                PlayerInventory->InventorySlots[PendingGameDataToLoad->EquippedSlotIndexInSave] != nullptr)
+            if (PendingGameDataToLoad->EquippedSlotIndexInSave != -1 && PlayerInventory->InventorySlots.IsValidIndex(PendingGameDataToLoad->EquippedSlotIndexInSave) && PlayerInventory->InventorySlots[PendingGameDataToLoad->EquippedSlotIndexInSave] != nullptr)
             {
                 PlayerInventory->EquipItemFromSlot(PendingGameDataToLoad->EquippedSlotIndexInSave);
             }
@@ -411,77 +455,18 @@ void UNewGameInstance::ApplyPendingLoadedDataToWorld()
                 }
             }
         }
+    }
 
-        UWorld* CurrentWorld = GetWorld();
-        if (CurrentWorld && PendingGameDataToLoad->EnemiesData.Num() > 0)
-        {
-            for (TActorIterator<AEnemy> It(CurrentWorld); It; ++It)
-            {
-                AEnemy* EnemyInWorld = *It;
-                if (!EnemyInWorld) continue;
-
-                bool bFoundInData = false;
-                for (const FEnemySaveData& SavedEnemyData : PendingGameDataToLoad->EnemiesData)
-                {
-                    if (EnemyInWorld->GetFName() == SavedEnemyData.EnemyID)
-                    {
-                        bFoundInData = true;
-                        if (SavedEnemyData.bIsAlive)
-                        {
-                            UMementoComponent* EnemyMemento = EnemyInWorld->FindComponentByClass<UMementoComponent>();
-                            if (EnemyMemento)
-                            {
-                                EnemyMemento->ApplyExternalState(SavedEnemyData.EnemyState);
-                            }
-                        }
-                        else
-                        {
-                            EnemyInWorld->Destroy();
-                        }
-                        break;
-                    }
-                }
-                if (!bFoundInData) { EnemyInWorld->Destroy(); }
-            }
-
-            for (const FEnemySaveData& SavedEnemyData : PendingGameDataToLoad->EnemiesData)
-            {
-                AActor* FoundEnemy = nullptr;
-                for (TActorIterator<AActor> It(CurrentWorld); It; ++It)
-                {
-                    AActor* PotentialEnemy = *It;
-                    if (PotentialEnemy && PotentialEnemy != PlayerCharacter && PotentialEnemy->GetFName() == SavedEnemyData.EnemyID)
-                    {
-                        UMementoComponent* EnemyMementoTest = PotentialEnemy->FindComponentByClass<UMementoComponent>();
-                        if (EnemyMementoTest)
-                        {
-                            FoundEnemy = PotentialEnemy;
-                            break;
-                        }
-                    }
-                }
-
-                if (FoundEnemy)
-                {
-                    if (SavedEnemyData.bIsAlive)
-                    {
-                        UMementoComponent* EnemyMemento = FoundEnemy->FindComponentByClass<UMementoComponent>();
-                        if (EnemyMemento)
-                        {
-                            EnemyMemento->ApplyExternalState(SavedEnemyData.EnemyState);
-                        }
-                    }
-                    else
-                    {
-                        FoundEnemy->Destroy();
-                    }
-                }
-            }
-        }
+    ANewGameStateBase* GameState = World->GetGameState<ANewGameStateBase>();
+    if (GameState)
+    {
+        if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Green, FString("Pasando datos de enemigos al GameState."));
+        GameState->SetPendingEnemyLoadData(PendingGameDataToLoad->EnemiesData);
     }
 
     PendingGameDataToLoad = nullptr;
     bIsLoadingPlayerProgress = false;
+    HideLoadingScreen();
 }
 
 bool UNewGameInstance::DoesProgressSaveExist(int32 SlotIndex) const

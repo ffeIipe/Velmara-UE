@@ -5,6 +5,11 @@
 #include "SceneEvents/NewGameInstance.h"
 #include "Enemy/Enemy.h"
 
+TArray<AEnemy*> ANewGameModeBase::GetRegisteredEnemies()
+{
+	return RegisteredEnemies;
+}
+
 void ANewGameModeBase::RegisterEnemy(AEnemy* Enemy)
 {
 	RegisteredEnemies.AddUnique(Enemy);

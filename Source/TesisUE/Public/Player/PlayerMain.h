@@ -8,6 +8,7 @@
 #include "Interfaces/FormInterface.h"
 #include "Interfaces/HitInterface.h"
 #include "Interfaces/CharacterState.h"
+#include "Interfaces/MementoEntity.h"
 #include "PlayerMain.generated.h"
 
 class UInputMappingContext;
@@ -29,7 +30,7 @@ class USpringArmComponent;
 class USpectralWeaponComponent;
 
 UCLASS()
-class TESISUE_API APlayerMain : public ACharacter, public IHitInterface, public ICharacterState, public IFormInterface
+class TESISUE_API APlayerMain : public ACharacter, public IHitInterface, public ICharacterState, public IFormInterface, public IMementoEntity
 {
 	GENERATED_BODY()
 
@@ -45,6 +46,8 @@ public:
 	virtual void GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType) override;
 
 	virtual UCharacterStateComponent* GetCharacterStateComponent_Implementation() override;
+
+	virtual UMementoComponent* GetMementoComponent_Implementation() override;
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 

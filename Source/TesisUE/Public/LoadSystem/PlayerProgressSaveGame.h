@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/SaveGame.h"
 #include "Components/MementoComponent.h"
+#include "Enemy/Enemy.h"
 #include "PlayerProgressSaveGame.generated.h"
 
 class AItem;
@@ -27,6 +28,9 @@ struct FEnemySaveData
     FName EnemyID;
 
     UPROPERTY(VisibleAnywhere, Category = "SaveGameData")
+    TSubclassOf<AEnemy> EnemyClass;
+
+    UPROPERTY(VisibleAnywhere, Category = "SaveGameData")
     FEntityMementoState EnemyState;
 
     UPROPERTY(VisibleAnywhere, Category = "SaveGameData")
@@ -34,6 +38,7 @@ struct FEnemySaveData
 
     FEnemySaveData()
         : EnemyID(NAME_None)
+        , EnemyClass(nullptr)
         , bIsAlive(true)
     {}
 };

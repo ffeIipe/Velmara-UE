@@ -167,24 +167,6 @@ void AEnemy::DeactivateEnemy()
 
 	StopAnimMontage();
 
-	if (AGameStateBase* GameState = UGameplayStatics::GetGameState(GetWorld()))
-	{
-		if (ANewGameStateBase* NewGameStateBase = Cast<ANewGameStateBase>(GameState))
-		{
-			if (Memento)
-			{
-				NewGameStateBase->UnregisterMementoEntity(this);
-			}
-		}
-	}
-	if (AGameModeBase* GameMode = UGameplayStatics::GetGameMode(GetWorld()))
-	{
-		if (ANewGameModeBase* NewGameMode = Cast<ANewGameModeBase>(GameMode))
-		{
-			NewGameMode->UnregisterEnemy(this);
-		}
-	}
-
 	if (PromptWidgetComponent && PromptWidgetComponent->GetWidget())
 	{
 		PromptWidgetComponent->SetVisibility(false);
@@ -242,7 +224,7 @@ void AEnemy::Die(AActor* DamageCauser)
 			Player->GetAttributes()->IncreaseEnergy(FMath::RandRange(MinEnergy, MaxEnergy)); 
 		}
 	}
-
+	
 	DisableAI();
 
 	GetWorldTimerManager().SetTimer(ReturnToPoolTimerHandle, this, &AEnemy::RequestReturnToPool, 5.0f, false);
@@ -267,6 +249,7 @@ void AEnemy::RequestReturnToPool()
 		}
 		else
 		{
+			if (GEngine)GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::White, FString("Not valid Pool Subsystem"));
 			Destroy();
 		}
 	}
@@ -290,6 +273,16 @@ void AEnemy::BeginPlay()
 			{
 				NewGameStateBase->RegisterMementoEntity(this);
 			}
+		}
+	}
+
+	if (UWorld* World = GetWorld())
+	{
+		ANewGameStateBase* GameState = World->GetGameState<ANewGameStateBase>();
+		if (GameState)
+		{
+			// Esta llamada decidirá si este enemigo debe estar activo, inactivo o con un estado específico.
+			GameState->RequestEnemyStateReconciliation(this);
 		}
 	}
 	
@@ -448,6 +441,11 @@ void AEnemy::LaunchUp_Implementation(const FVector& InstigatorLocation)
 
 void AEnemy::ShieldHit_Implementation()
 {
+}
+
+UMementoComponent* AEnemy::GetMementoComponent_Implementation()
+{
+	return Memento;
 }
 
 float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)

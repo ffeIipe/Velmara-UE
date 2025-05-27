@@ -37,6 +37,7 @@
 
 #include "Engine/DamageEvents.h"
 #include "DamageTypes/SpectralTrapDamageType.h"
+#include <SceneEvents/NewGameInstance.h>
 
 APlayerMain::APlayerMain()
 {
@@ -110,6 +111,11 @@ void APlayerMain::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<
 UCharacterStateComponent* APlayerMain::GetCharacterStateComponent_Implementation()
 {
 	return CharacterStateComponent;
+}
+
+UMementoComponent* APlayerMain::GetMementoComponent_Implementation()
+{
+	return MementoComponent;
 }
 
 void APlayerMain::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled)
@@ -778,18 +784,13 @@ void APlayerMain::OnWallCollision(const FHitResult& HitResult)
 
 void APlayerMain::LoadLastCheckpoint()
 {
-	if (ANewGameModeBase* NewGameMode = Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
+	UNewGameInstance* GameInst = GetGameInstance<UNewGameInstance>();
+	if (GameInst)
 	{
-		if (ANewGameStateBase* NewGameStateBase = Cast<ANewGameStateBase>(NewGameMode->GameState))
-		{
-			if (MementoComponent)
-			{
-				NewGameStateBase->LoadAllMementoStates();
-				Revive();
-			}
-		}
+		GameInst->LoadPlayerProgress(GameInst->ActiveSaveSlotIndex);
 	}
 }
+
 
 void APlayerMain::ChangePrimaryWeapon()
 {

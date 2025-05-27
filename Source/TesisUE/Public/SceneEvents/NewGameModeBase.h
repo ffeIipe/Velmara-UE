@@ -12,11 +12,10 @@ UCLASS()
 class TESISUE_API ANewGameModeBase : public AGameModeBase
 {
 	GENERATED_BODY()
-	
-	UPROPERTY()
-	TArray<AEnemy*> RegisteredEnemies;
 
 public:
+	TArray<AEnemy*> GetRegisteredEnemies();
+
 	void RegisterEnemy(AEnemy* Enemy);
 
 	void UnregisterEnemy(AEnemy* Enemy);
@@ -25,4 +24,7 @@ public:
 
 private:
 	virtual void BeginPlay();
+	
+	UPROPERTY()
+	TArray<AEnemy*> RegisteredEnemies;
 };

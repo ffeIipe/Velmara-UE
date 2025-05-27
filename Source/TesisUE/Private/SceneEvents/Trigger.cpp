@@ -24,8 +24,6 @@ void ATrigger::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AA
 	{
 		Player = PlayerTemp;
 	}
-
-	if (GEngine && Player) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Green, FString("ATrigger::OnSphereBeginOverlap"));
 }
 
 void ATrigger::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
@@ -39,12 +37,10 @@ void ATrigger::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AAct
     {
         Player->SetOverlappingItem(nullptr);
         Player = nullptr;
-		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Red, FString("ATrigger::OnSphereEndOverlap"));
     }
     else if (LeavingPlayer)
     {
         LeavingPlayer->SetOverlappingItem(nullptr);
-		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Red, FString("ATrigger::OnSphereEndOverlap"));
     }
 }
 
