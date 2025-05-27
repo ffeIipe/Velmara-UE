@@ -213,12 +213,15 @@ bool UNewGameInstance::SavePlayerProgress(int32 SlotIndex)
     FString CurrentSlotName = FString::Printf(TEXT("%s%d"), *ProgressSaveSlotPrefix, ActiveSaveSlotIndex);
 
     UPlayerProgressSaveGame* SaveGameInstance = Cast<UPlayerProgressSaveGame>(UGameplayStatics::CreateSaveGameObject(UPlayerProgressSaveGame::StaticClass()));
-    if (!SaveGameInstance) return false;
- 
+    if (!SaveGameInstance)
+    {
+        return false;
+    }
+
     SaveGameInstance->CurrentLevelName = UGameplayStatics::GetCurrentLevelName(this);
 
     ACharacter* PlayerCharacter = UGameplayStatics::GetPlayerCharacter(this, 0);
-    if (IsValid(PlayerCharacter)) // Usar IsValid
+    if (IsValid(PlayerCharacter))
     {
         UMementoComponent* PlayerMemento = PlayerCharacter->FindComponentByClass<UMementoComponent>();
         if (PlayerMemento)
@@ -230,16 +233,14 @@ bool UNewGameInstance::SavePlayerProgress(int32 SlotIndex)
         UInventoryComponent* PlayerInventory = PlayerCharacter->FindComponentByClass<UInventoryComponent>();
         if (PlayerInventory)
         {
-            SaveGameInstance->InventorySlotsData.Empty(); // Limpiar antes de llenar
+            SaveGameInstance->InventorySlotsData.Empty();
             const TArray<AItem*>& CurrentInventoryItems = PlayerInventory->GetInventoryItems();
-            AItem* CurrentlyEquippedItemByGetter = PlayerInventory->GetEquippedItem();
-            int32 EquippedSlotIndexFromGetter = PlayerInventory->EquippedSlotIndex; // Leer el índice directamente
+            AItem* CurrentlyEquippedItem = PlayerInventory->GetEquippedItem();
 
-            for (int32 i = 0; i < CurrentInventoryItems.Num(); ++i) // Usar índice para loguear mejor
+            for (AItem* ItemInSlot : CurrentInventoryItems)
             {
-                AItem* ItemInSlot = CurrentInventoryItems[i];
                 FInventoryItemSaveData ItemData;
-                if (IsValid(ItemInSlot)) // Usar IsValid
+                if (IsValid(ItemInSlot))
                 {
                     ItemData.ItemClass = ItemInSlot->GetClass();
                 }
@@ -250,85 +251,20 @@ bool UNewGameInstance::SavePlayerProgress(int32 SlotIndex)
                 SaveGameInstance->InventorySlotsData.Add(ItemData);
             }
 
-            int32 CalculatedEquippedSlotForSave = -1;
-            if (IsValid(CurrentlyEquippedItemByGetter))
-            {
-                if (EquippedSlotIndexFromGetter != -1 &&
-                    CurrentInventoryItems.IsValidIndex(EquippedSlotIndexFromGetter) &&
-                    CurrentInventoryItems[EquippedSlotIndexFromGetter] == CurrentlyEquippedItemByGetter)
-                {
-                    CalculatedEquippedSlotForSave = EquippedSlotIndexFromGetter;
-                }
-                else
-                {
-                    bool bFoundByIteration = false;
-                    for (int32 i = 0; i < CurrentInventoryItems.Num(); ++i)
-                    {
-                        if (CurrentInventoryItems[i] == CurrentlyEquippedItemByGetter)
-                        {
-                            CalculatedEquippedSlotForSave = i;
-                            bFoundByIteration = true;
-                            break;
-                        }
-                    }
-                    if (!bFoundByIteration)
-                    {
-                        CalculatedEquippedSlotForSave = -1; // Asegurarse que sea -1 si no se encuentra
-                    }
-                }
-            }
-            else
-            {
-                CalculatedEquippedSlotForSave = -1; // Asegurarse que sea -1 si no hay nada equipado
-            }
-
-            SaveGameInstance->EquippedSlotIndexInSave = CalculatedEquippedSlotForSave;
+            SaveGameInstance->EquippedSlotIndexInSave = CurrentInventoryItems.Find(CurrentlyEquippedItem);
         }
     }
 
-    SaveGameInstance->EnemiesData.Empty();
-
-    ANewGameModeBase* GameMode = Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(this));
-    if (GameMode)
+    ANewGameStateBase* GameState = GetWorld() ? GetWorld()->GetGameState<ANewGameStateBase>() : nullptr;
+    if (GameState)
     {
-        for (AEnemy* EnemyInWorld : GameMode->GetRegisteredEnemies())
-        {
-            if (!IsValid(EnemyInWorld)) continue;
-
-            FEnemySaveData EnemyData;
-
-            UAttributeComponent* AttrComp = EnemyInWorld->FindComponentByClass<UAttributeComponent>();
-            EnemyData.bIsAlive = (AttrComp && AttrComp->IsAlive());
-            EnemyData.EnemyID = EnemyInWorld->GetFName();
-            EnemyData.EnemyClass = EnemyInWorld->GetClass();
-
-            UMementoComponent* MementoComp = EnemyInWorld->FindComponentByClass<UMementoComponent>();
-            if (MementoComp)
-            {
-                MementoComp->SaveState();
-                EnemyData.EnemyState = MementoComp->GetCurrentSavedState();
-            }
-
-           /* if (EnemyData.bIsAlive)
-            {
-                
-            }*/
-
-            //else
-            //{
-            //    if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Orange, FString("Enemy not saved because it's dead"));
-            //}
-            SaveGameInstance->EnemiesData.Add(EnemyData);
-        }
+        GameState->GetAllEnemyStates(SaveGameInstance->EnemiesData);
     }
 
     SaveGameInstance->Timestamp = FDateTime::UtcNow();
     SaveGameInstance->SaveSlotIndex = ActiveSaveSlotIndex;
-   
-    if (UGameplayStatics::SaveGameToSlot(SaveGameInstance, CurrentSlotName, DefaultUserIndex)) return true;
-    
-    else return false;
-    
+
+    return UGameplayStatics::SaveGameToSlot(SaveGameInstance, CurrentSlotName, DefaultUserIndex);
 }
 
 bool UNewGameInstance::LoadPlayerProgress(int32 SlotIndex)
@@ -458,10 +394,9 @@ void UNewGameInstance::ApplyPendingLoadedDataToWorld()
     }
 
     ANewGameStateBase* GameState = World->GetGameState<ANewGameStateBase>();
-    if (GameState)
+    if (GameState && PendingGameDataToLoad)
     {
-        if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Green, FString("Pasando datos de enemigos al GameState."));
-        GameState->SetPendingEnemyLoadData(PendingGameDataToLoad->EnemiesData);
+        GameState->InitializeWorldState(PendingGameDataToLoad->EnemiesData);
     }
 
     PendingGameDataToLoad = nullptr;

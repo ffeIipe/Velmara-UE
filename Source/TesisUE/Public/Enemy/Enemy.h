@@ -143,6 +143,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components | CharacterStateComponent")
 	UCharacterStateComponent* CharacterStateComponent;
 
+	UFUNCTION(BlueprintCallable, Category = "Save System")
+	FName GetUniqueSaveID() const { return UniqueSaveID; }
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -251,6 +254,9 @@ protected:
 
 	UPROPERTY(EditAnywhere)
 	UBehaviorTree* BTAsset;
+
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Save System", meta = (DisplayName = "Unique Save ID"))
+	FName UniqueSaveID;
 
 private:
 	AAIController* AIOriginalController;

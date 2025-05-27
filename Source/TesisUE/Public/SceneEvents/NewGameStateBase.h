@@ -28,17 +28,22 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Memento")
 	void LoadAllMementoStates();
 
-	// Función para recibir los datos de carga desde el GameInstance
 	void SetPendingEnemyLoadData(const TArray<FEnemySaveData>& EnemyData);
 
-	// Función que cada enemigo llamará para obtener su estado
 	void RequestEnemyStateReconciliation(AEnemy* EnemyToReconcile);
 
+	void InitializeWorldState(const TArray<FEnemySaveData>& EnemyData);
+
+	void UpdateEnemyState(const FEnemySaveData& UpdatedEnemyData);
+
+	void GetAllEnemyStates(TArray<FEnemySaveData>& OutEnemyStates);
+
 protected:
-	// "Pizarrón" con los datos de enemigos pendientes de cargar
 	TMap<FName, FEnemySaveData> PendingEnemyLoadData;
 
-	// Flag para saber si estamos en proceso de carga
+	UPROPERTY()
+	TMap<FName, FEnemySaveData> WorldEnemyStates;
+
 	bool bIsLoadingFromSave = false;
 
 private:

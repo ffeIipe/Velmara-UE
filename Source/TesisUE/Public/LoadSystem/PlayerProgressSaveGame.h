@@ -24,8 +24,8 @@ struct FEnemySaveData
 {
     GENERATED_BODY()
 
-    UPROPERTY(VisibleAnywhere, Category = "SaveGameData")
-    FName EnemyID;
+    UPROPERTY(SaveGame)
+    FName UniqueSaveID;
 
     UPROPERTY(VisibleAnywhere, Category = "SaveGameData")
     TSubclassOf<AEnemy> EnemyClass;
@@ -37,7 +37,7 @@ struct FEnemySaveData
     bool bIsAlive;
 
     FEnemySaveData()
-        : EnemyID(NAME_None)
+        : UniqueSaveID(NAME_None)
         , EnemyClass(nullptr)
         , bIsAlive(true)
     {}

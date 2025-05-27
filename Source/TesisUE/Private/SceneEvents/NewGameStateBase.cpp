@@ -12,7 +12,6 @@ void ANewGameStateBase::RegisterMementoEntity(AActor* Entity)
 			if (IsValid(MementoComponent))
 			{
 				MementoEntities.Add(Entity);
-				//Entity->OnDestroyed.AddDynamic(this, &ANewGameStateBase::OnMementoEntityDestroyed);
 			}
 		}	
 	}
@@ -80,7 +79,7 @@ void ANewGameStateBase::SetPendingEnemyLoadData(const TArray<FEnemySaveData>& En
 	PendingEnemyLoadData.Empty();
 	for (const FEnemySaveData& Data : EnemyData)
 	{
-		PendingEnemyLoadData.Add(Data.EnemyID, Data);
+		PendingEnemyLoadData.Add(Data.UniqueSaveID, Data);
 	}
 	bIsLoadingFromSave = !PendingEnemyLoadData.IsEmpty();
 
@@ -89,26 +88,34 @@ void ANewGameStateBase::SetPendingEnemyLoadData(const TArray<FEnemySaveData>& En
 	// GetWorld()->GetTimerManager().SetTimer(TempHandle, this, &ANewGameStateBase::ClearPendingLoadData, 10.f, false);
 }
 
+
+
+void ANewGameStateBase::InitializeWorldState(const TArray<FEnemySaveData>& EnemyData)
+{
+	WorldEnemyStates.Empty();
+	for (const FEnemySaveData& Data : EnemyData)
+	{
+		WorldEnemyStates.Add(Data.UniqueSaveID, Data);
+	}
+}
+
+void ANewGameStateBase::UpdateEnemyState(const FEnemySaveData& UpdatedEnemyData)
+{
+	WorldEnemyStates.FindOrAdd(UpdatedEnemyData.UniqueSaveID) = UpdatedEnemyData;
+}
+
 void ANewGameStateBase::RequestEnemyStateReconciliation(AEnemy* EnemyToReconcile)
 {
-	if (!bIsLoadingFromSave || !IsValid(EnemyToReconcile))
-	{
-		return;
-	}
+	if (!IsValid(EnemyToReconcile)) return;
 
-	FName EnemyID = EnemyToReconcile->GetFName();
-	FEnemySaveData* SavedData = PendingEnemyLoadData.Find(EnemyID);
+	FName EnemyID = EnemyToReconcile->GetUniqueSaveID();
+	FEnemySaveData* SavedData = WorldEnemyStates.Find(EnemyID);
 
 	if (SavedData)
 	{
-		// El enemigo existe en los datos guardados, aplicamos su estado.
 		if (SavedData->bIsAlive)
 		{
-			if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("Reconciliando %s: VIVO"), *EnemyID.ToString()));
-
-			// Re-activamos y aplicamos estado. Es importante llamar a ActivateEnemy primero para resetearlo.
 			EnemyToReconcile->ActivateEnemy(SavedData->EnemyState.Transform.GetLocation(), SavedData->EnemyState.Transform.GetRotation().Rotator());
-
 			UMementoComponent* MementoComp = EnemyToReconcile->FindComponentByClass<UMementoComponent>();
 			if (MementoComp)
 			{
@@ -117,17 +124,26 @@ void ANewGameStateBase::RequestEnemyStateReconciliation(AEnemy* EnemyToReconcile
 		}
 		else
 		{
-			// Debe estar muerto.
-			if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Reconciliando %s: MUERTO"), *EnemyID.ToString()));
 			EnemyToReconcile->DeactivateEnemy();
 		}
 	}
 	else
 	{
-		// El enemigo existe en el nivel pero no en el guardado. Lo desactivamos.
-		if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Reconciliando %s: NO ENCONTRADO. Desactivando."), *EnemyID.ToString()));
-		EnemyToReconcile->DeactivateEnemy();
+		FEnemySaveData InitialData;
+		InitialData.UniqueSaveID = EnemyID;
+		InitialData.bIsAlive = true;
+		InitialData.EnemyClass = EnemyToReconcile->GetClass();
+		if (UMementoComponent* Memento = EnemyToReconcile->FindComponentByClass<UMementoComponent>())
+		{
+			InitialData.EnemyState = Memento->CaptureOwnerState();
+		}
+		UpdateEnemyState(InitialData);
 	}
+}
+
+void ANewGameStateBase::GetAllEnemyStates(TArray<FEnemySaveData>& OutEnemyStates)
+{
+	WorldEnemyStates.GenerateValueArray(OutEnemyStates);
 }
 
 // void ANewGameStateBase::ClearPendingLoadData()

@@ -27,10 +27,16 @@
 #include "BehaviorTree/BehaviorTree.h"
 #include "Subsystems/EnemyPoolManager.h"
 #include <Enemy/Paladin/PaladinBoss.h>
+#include "Misc/Guid.h"
 
 AEnemy::AEnemy()
 {
 	PrimaryActorTick.bCanEverTick = false;
+
+	if (UniqueSaveID == NAME_None)
+	{
+		UniqueSaveID = FName(*FGuid::NewGuid().ToString());
+	}
 
 	GetMesh()->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
@@ -204,6 +210,24 @@ void AEnemy::Die(AActor* DamageCauser)
 
 	DamageCauserOf = DamageCauser;
 
+	if (UWorld* World = GetWorld())
+	{
+		if (ANewGameStateBase* GameState = World->GetGameState<ANewGameStateBase>())
+		{
+			FEnemySaveData CurrentStateData;
+			CurrentStateData.UniqueSaveID = GetUniqueSaveID();
+			CurrentStateData.bIsAlive = false;
+			CurrentStateData.EnemyClass = GetClass();
+
+			if (Memento)
+			{
+				CurrentStateData.EnemyState = Memento->CaptureOwnerState();
+			}
+
+			GameState->UpdateEnemyState(CurrentStateData);
+		}
+	}
+
 	APlayerMain* PlayerCharacter = Cast<APlayerMain>(PossessionOwner);
 	if (PlayerCharacter && IsValid(PlayerCharacter))
 	{
@@ -281,7 +305,6 @@ void AEnemy::BeginPlay()
 		ANewGameStateBase* GameState = World->GetGameState<ANewGameStateBase>();
 		if (GameState)
 		{
-			// Esta llamada decidirá si este enemigo debe estar activo, inactivo o con un estado específico.
 			GameState->RequestEnemyStateReconciliation(this);
 		}
 	}
@@ -291,16 +314,10 @@ void AEnemy::BeginPlay()
 		PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
 	}
 
-	// In AEnemy::BeginPlay()
 	AAIController* AIControllerInstance = Cast<AAIController>(GetController());
 	if (AIControllerInstance)
 	{
 		AIOriginalController = AIControllerInstance;
-		UE_LOG(LogTemp, Log, TEXT("Enemy %s: Cached AIOriginalController %s in BeginPlay."), *GetName(), *AIOriginalController->GetName());
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("Enemy %s: GetController() returned NULL in BeginPlay. AIOriginalController not cached! AutoPossessAI may need to be set or controller spawned manually."), *GetName());
 	}
 
 	if (GetMesh())

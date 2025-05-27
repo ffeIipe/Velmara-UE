@@ -49,11 +49,10 @@ public:
 
     FORCEINLINE FTransform GetLastSavedTransform() { return InternalMementoState.Transform; }
 
+    FEntityMementoState CaptureOwnerState() const;
+
 protected:
     virtual void BeginPlay() override;
 
     FEntityMementoState InternalMementoState;
-
-private:
-    FEntityMementoState CaptureOwnerState() const;
 };
