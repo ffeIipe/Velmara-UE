@@ -73,7 +73,7 @@ protected:
     class USoundBase* FireSound;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Weapon FX")
-    class UParticleSystem* MuzzleFlash;
+    class UNiagaraSystem* MuzzleFlash;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Weapon FX")
     UAnimMontage* SpectralFireAnimation;

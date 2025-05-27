@@ -17,6 +17,7 @@
 #include "DrawDebugHelpers.h"
 
 #include "DamageTypes/SpectralTrapDamageType.h"
+#include <NiagaraFunctionLibrary.h>
 
 
 USpectralWeaponComponent::USpectralWeaponComponent()
@@ -130,10 +131,10 @@ void USpectralWeaponComponent::Fire(bool bIsPrimary)
     QueryParams.bTraceComplex = true;
     QueryParams.bReturnPhysicalMaterial = false;
 
-    if (MuzzleFlash)
-    {
-        UGameplayStatics::SpawnEmitterAttached(MuzzleFlash, GetSpectralWeaponMeshComponent(), FName("MuzzleSocket"));
-    }
+    //if (MuzzleFlash)
+    //{
+    //    UGameplayStatics::SpawnEmitterAttached(MuzzleFlash, GetSpectralWeaponMeshComponent(), FName("MuzzleSocket"));
+    //}
 
     OwnerCharacter->PlayAnimMontage(SpectralFireAnimation);
     UGameplayStatics::PlayWorldCameraShake(this, CameraShake, GetOwner()->GetActorLocation(), 0.f, 500.f);
@@ -142,12 +143,23 @@ void USpectralWeaponComponent::Fire(bool bIsPrimary)
     int32 NumTraces = bIsPrimary ? 1 : Shells;
     float CurrentSpreadAngle = bIsPrimary ? 0.f : SpreadAngle;
 
+    if (FireSound)
+    {
+        UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetOwner()->GetActorLocation());
+    }
+
+    if (MuzzleFlash)
+    {
+        UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+            GetWorld(),
+            MuzzleFlash,
+            SpectralWeaponMeshComponent->GetSocketLocation(FName("MuzzleSocket")),
+            SpectralWeaponMeshComponent->GetSocketRotation(FName("MuzzleSocket"))
+        );
+    }
+
     for (int32 i = 0; i < NumTraces; ++i)
     {
-        if (FireSound)
-        {
-            UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetOwner()->GetActorLocation());
-        }
 
         FVector CurrentTraceEnd = TraceEnd;
         if (!bIsPrimary)
