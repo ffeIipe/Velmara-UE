@@ -5,16 +5,16 @@
 
 void ASpectralWeaponItem::Use(ACharacter* Character)
 {
-	Super::Use(Character);
+    Super::Use(Character);
 
-	Player = Cast<APlayerMain>(Character);
+    APlayerMain* PlayerCasted = Cast<APlayerMain>(Character);
 
-	if (Player && Player->CharacterStateComponent)
-	{
-		Player->CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Human ?
-			Player->SpectralWeaponComponent->InitializeSpectralWeaponComponent(false) :
-			Player->SpectralWeaponComponent->InitializeSpectralWeaponComponent(true);
-		
-		Destroy();
-	}
+    if (PlayerCasted && PlayerCasted->SpectralWeaponComponent)
+    {
+        PlayerCasted->CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Human ?
+            PlayerCasted->SpectralWeaponComponent->InitializeSpectralWeaponComponent(false) :
+            PlayerCasted->SpectralWeaponComponent->InitializeSpectralWeaponComponent(true);
+
+        Destroy(); 
+    }
 }

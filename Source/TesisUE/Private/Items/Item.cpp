@@ -27,6 +27,9 @@ AItem::AItem()
 void AItem::BeginPlay()
 {
 	Super::BeginPlay();
+
+	UE_LOG(LogTemp, Log, TEXT("Item '%s' (ID: %s): BeginPlay called."), *GetName(), *GetUniqueSaveID().ToString());
+
 	if (PromptWidget)
 		PromptWidget->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
 
@@ -34,18 +37,26 @@ void AItem::BeginPlay()
 	{
 		if (ANewGameStateBase* GameState = World->GetGameState<ANewGameStateBase>())
 		{
+			UE_LOG(LogTemp, Log, TEXT("Item '%s' (ID: %s): Requesting State Reconciliation from GameState."), *GetName(), *GetUniqueSaveID().ToString());
 			GameState->RequestInteractedItemStateReconciliation(this);
 		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("Item '%s' (ID: %s): Could not get ANewGameStateBase!"), *GetName(), *GetUniqueSaveID().ToString());
+		}
 	}
-
 }
+
 
 void AItem::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwner, APawn* NewInstigator)
 {
+	UE_LOG(LogTemp, Log, TEXT("Item '%s' (ID: %s): Equip called. Current bWasOpened state is: %s"), *GetName(), *GetUniqueSaveID().ToString(), bWasOpened ? TEXT("true") : TEXT("false"));
+
 	DisableCollision();
 	PromptWidget->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
 	if (!bWasOpened)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("Item '%s' (ID: %s): Condition '!bWasOpened' is TRUE. Updating state to opened."), *GetName(), *GetUniqueSaveID().ToString());
 		bWasOpened = true;
 		if (UWorld* World = GetWorld())
 		{
@@ -54,11 +65,17 @@ void AItem::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwne
 				FInteractedItemSaveData SaveData;
 				SaveData.UniqueSaveID = GetUniqueSaveID();
 				SaveData.bWasOpened = bWasOpened;
+				UE_LOG(LogTemp, Warning, TEXT("Item '%s' (ID: %s): Calling GameState->UpdateInteractedItemState."), *GetName(), *GetUniqueSaveID().ToString());
 				GameState->UpdateInteractedItemState(SaveData);
 			}
 		}
 	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Item '%s' (ID: %s): Condition '!bWasOpened' is FALSE. No state update needed."), *GetName(), *GetUniqueSaveID().ToString());
+	}
 }
+
 
 void AItem::Unequip()
 {
@@ -80,7 +97,7 @@ void AItem::Use(ACharacter* TargetCharacter)
 				GameState->UpdateInteractedItemState(SaveData);
 			}
 		}
-		Destroy();
+		// NO llamamos a Destroy() aquí, dejamos que la clase hija decida cuándo hacerlo.
 	}
 }
 
@@ -98,13 +115,18 @@ UPrimitiveComponent* AItem::GetCollisionComponent()
 
 void AItem::ApplySavedState(const FInteractedItemSaveData* SavedData)
 {
+	UE_LOG(LogTemp, Log, TEXT("Item '%s' (ID: %s): ApplySavedState called."), *GetName(), *GetUniqueSaveID().ToString());
 	if (SavedData && SavedData->bWasOpened)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("Item '%s' (ID: %s): SavedData indicates bWasOpened is TRUE. Destroying actor."), *GetName(), *GetUniqueSaveID().ToString());
 		bWasOpened = true;
 		Destroy();
 	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Item '%s' (ID: %s): SavedData is null or bWasOpened is FALSE. Actor will NOT be destroyed."), *GetName(), *GetUniqueSaveID().ToString());
+	}
 }
-
 void AItem::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	Super::OnSphereBeginOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);

@@ -25,6 +25,9 @@ public:
 	AItem();
 
 public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	bool bWasOpened = false;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Properties")
 	FText ItemDisplayName = FText::FromString("Item");
 
@@ -34,7 +37,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Properties")
 	UTexture2D* ItemIcon = nullptr;
 
-	virtual void BeginPlay();
+	virtual void BeginPlay() override;
 
 	virtual void Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwner, APawn* NewInstigator);
 	
@@ -45,9 +48,6 @@ public:
 	virtual void EnableVisuals(bool bEnable);
 	
 	virtual UPrimitiveComponent* GetCollisionComponent();
-
-	UPROPERTY(VisibleAnywhere)
-	bool bWasOpened = false;
 
 	void ApplySavedState(const struct FInteractedItemSaveData* SavedData);
 
