@@ -4,6 +4,16 @@
 #include "Kismet/GameplayStatics.h"
 #include "DamageTypes/SpectralTrapDamageType.h"
 
+void ASpectralTrap::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (TrapSFX)
+	{
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), TrapSFX, BoxCollider->GetComponentLocation());
+	}
+}
+
 void ASpectralTrap::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	Super::OnSphereBeginOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);

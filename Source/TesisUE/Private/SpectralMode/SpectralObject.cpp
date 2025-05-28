@@ -29,8 +29,14 @@ void ASpectralObject::SetSpectralVisibility(bool bIsPlayerInHumanForm)
     float AlphaValue = bShouldBeVisible ? 1.0f : 0.3f;
     SpectralMaterial->SetScalarParameterValue(FName("Alpha"), AlphaValue);
 
-    ItemMesh->SetVisibility(bShouldBeVisible);
-    ItemMesh->SetCollisionEnabled(bShouldBeVisible ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
-
-    BoxCollider->SetCollisionEnabled(bShouldBeVisible ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
+    if (ItemMesh)
+    {
+        ItemMesh->SetVisibility(bShouldBeVisible);
+        ItemMesh->SetCollisionEnabled(bShouldBeVisible ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
+    }
+    
+    if (BoxCollider)
+    {
+        BoxCollider->SetCollisionEnabled(bShouldBeVisible ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
+    }
 }

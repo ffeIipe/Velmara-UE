@@ -14,6 +14,8 @@ class TESISUE_API ASpectralTrap : public ATrigger
 	GENERATED_BODY()
 
 private:
+	void BeginPlay() override;
+
 	void OnSphereBeginOverlap(
 		UPrimitiveComponent* OverlappedComponent,
 		AActor* OtherActor,
@@ -33,4 +35,7 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Trap")
 	float Damage = 10.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Trap | SFX")
+	USoundBase* TrapSFX;
 };

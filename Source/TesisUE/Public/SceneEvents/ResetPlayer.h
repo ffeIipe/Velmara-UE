@@ -3,33 +3,32 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
+#include "SceneEvents/Trigger.h"
 #include "ResetPlayer.generated.h"
 
 class UBoxComponent;
 
 UCLASS()
-class TESISUE_API AResetPlayer : public AActor
+class TESISUE_API AResetPlayer : public ATrigger
 {
 	GENERATED_BODY()
-	
-public:	
-	AResetPlayer();
 
 protected:
 	virtual void BeginPlay() override;
 	
 private:
-	UPROPERTY(EditAnywhere)
-	UBoxComponent* BoxCollider;
-
-	UFUNCTION()
-	void OnBoxOverlap(UPrimitiveComponent* OverlappedComponent,
+	 void OnSphereBeginOverlap(
+		UPrimitiveComponent* OverlappedComponent,
 		AActor* OtherActor,
 		UPrimitiveComponent* OtherComp,
-		int32 OtherBodyIndex,
-		bool bFromSweep,
+		int32 OtherBodyIndex, bool bFromSweep,
 		const FHitResult& SweepResult);
+
+	 void OnSphereEndOverlap(
+		UPrimitiveComponent* OverlappedComponent,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex);
 
 	class APlayerStart* PlayerStart;
 };

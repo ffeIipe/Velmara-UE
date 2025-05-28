@@ -3,39 +3,38 @@
 
 #include "SceneEvents/ResetPlayer.h"
 #include "Components/BoxComponent.h"
-#include <Kismet/GameplayStatics.h>
+#include "Kismet/GameplayStatics.h"
 #include "GameFramework/GameModeBase.h"
-#include <Player/PlayerMain.h>
+#include "Player/PlayerMain.h"
 #include "GameFramework/PlayerStart.h"
 #include "Components/MementoComponent.h"
-
-AResetPlayer::AResetPlayer()
-{
-    BoxCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxCollider"));
-    BoxCollider->SetupAttachment(GetRootComponent());
-}
+#include "Interfaces/MementoEntity.h"
 
 void AResetPlayer::BeginPlay()
 {
     Super::BeginPlay();
 
-    BoxCollider->OnComponentBeginOverlap.AddDynamic(this, &AResetPlayer::OnBoxOverlap);
     PlayerStart = Cast<APlayerStart>(UGameplayStatics::GetActorOfClass(GetWorld(), APlayerStart::StaticClass())); 
 }
 
-void AResetPlayer::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-    UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void AResetPlayer::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-    if (APawn* OverlappingActor = Cast<APawn>(OtherActor))
+    if (APawn* OverlappingActor = Cast<APawn>(OtherActor)) // cuando ponés AActor acá como filtro explota, por favor dejar en APawn :)
     {
-        //APlayerController* PlayerController = UGameplayStatics::GetPlayerController(this, 0);
+        APlayerController* PlayerController = UGameplayStatics::GetPlayerController(this, 0);
 
-        //if (OverlappingActor->GetController() == PlayerController)
-
-        if (UMementoComponent* MementoComp = OverlappingActor->GetComponentByClass<UMementoComponent>())
+        if (IMementoEntity* MementoEntity = Cast<IMementoEntity>(PlayerController->GetPawn()))
         {
-            FTransform LastTransform = MementoComp->GetLastSavedTransform();
-            OverlappingActor->SetActorTransform(LastTransform);
+            if (UMementoComponent* MementoComp = MementoEntity->Execute_GetMementoComponent(OtherActor))
+            {
+                FTransform LastTransform = MementoComp->GetLastSavedTransform();
+                OverlappingActor->SetActorTransform(LastTransform);
+            }
         }
     }
+}
+
+void AResetPlayer::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+    
 }

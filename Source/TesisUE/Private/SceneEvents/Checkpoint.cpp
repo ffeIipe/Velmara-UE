@@ -16,41 +16,31 @@ void ACheckpoint::OnSphereBeginOverlap(
     bool bFromSweep,
     const FHitResult& SweepResult)
 {
-    Super::OnSphereBeginOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
+    //Super::OnSphereBeginOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
 
-    APlayerMain* OverlappingPlayer = Cast<APlayerMain>(OtherActor);
-    APawn* OverlappingPawn = Cast<APawn>(OtherActor);
-
-    APlayerController* PlayerController = UGameplayStatics::GetPlayerController(this, 0);
-
-    if (OverlappingPlayer)
+    if (APawn* OverlappingPawn = Cast<APawn>(OtherActor))
     {
-        DisableCollision();
+        AController* TempController = OverlappingPawn->GetController();
 
-        UNewGameInstance* GameInst = Cast<UNewGameInstance>(GetGameInstance());
-        if (GameInst)
+        if (TempController == UGameplayStatics::GetPlayerController(this, 0))
         {
-            if (GameInst->SavePlayerProgress(GameInst->ActiveSaveSlotIndex))
+            DisableCollision();
+
+            UNewGameInstance* GameInst = Cast<UNewGameInstance>(GetGameInstance());
+            if (GameInst)
             {
-                UE_LOG(LogTemp, Log, TEXT("ACheckpoint: Player progress saved via GameInstance. Slot: %d"), GameInst->ActiveSaveSlotIndex);
+                if (GameInst->SavePlayerProgress(GameInst->ActiveSaveSlotIndex))
+                {
+                    if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Emerald, FString("Player progress saved via GameInstance."));
+                    UE_LOG(LogTemp, Log, TEXT("ACheckpoint: Player progress saved via GameInstance. Slot: %d"), GameInst->ActiveSaveSlotIndex);
+                }
             }
+
+            Destroy();
         }
-
-        SetLifeSpan(1.f);
-    }
-    else if (OverlappingPawn->GetController() == PlayerController)
-    {
-        DisableCollision();
-
-        UNewGameInstance* GameInst = Cast<UNewGameInstance>(GetGameInstance());
-        if (GameInst)
+        else
         {
-            if (GameInst->SavePlayerProgress(GameInst->ActiveSaveSlotIndex))
-            {
-                UE_LOG(LogTemp, Log, TEXT("ACheckpoint: Player progress saved via GameInstance. Slot: %d"), GameInst->ActiveSaveSlotIndex);
-            }
+            if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, FString("Not controller found. Failed to save."));
         }
-
-        SetLifeSpan(1.f);
     }
 }

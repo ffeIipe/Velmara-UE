@@ -1,6 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "Components/PlayerFormComponent.h"
 #include "Interfaces/CharacterState.h"
 #include "GameFramework/Actor.h"
@@ -13,8 +10,7 @@
 #include "SpectralMode/SpectralObject.h"
 #include "EngineUtils.h"
 
-//TODO: optimize the iterator that search for spectral objects, 
-//that in a future may cause an fps drop
+//TODO: optimize the iterator that search for spectral objects, that in a future may cause an fps drop
 
 UPlayerFormComponent::UPlayerFormComponent()
 {
@@ -81,7 +77,10 @@ void UPlayerFormComponent::ApplyHumanEffects()
     //TODO: improve it with a subscription to an a static class
     for (TActorIterator<ASpectralObject> It(GetWorld()); It; ++It)
     {
-        It->SetSpectralVisibility(false);
+        if (It)
+        {
+            It->SetSpectralVisibility(false);
+        }
     }
 }
 
