@@ -6,8 +6,6 @@
 
 ASpectralObjectInteractable::ASpectralObjectInteractable()
 {
-	//DoorMeshArray = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DoorMesh"));
-
 	VisibleTo = ECharacterForm::ECF_Spectral;
 }
 
@@ -18,7 +16,7 @@ void ASpectralObjectInteractable::BeginPlay()
 
 void ASpectralObjectInteractable::SpectralInteract_Implementation()
 {
-	if (bIsDoorOpen) return;
+	if (bWasOpened) return;
 
 	for (UStaticMeshComponent* Door : DoorMeshArray)
 	{
@@ -34,6 +32,5 @@ void ASpectralObjectInteractable::SpectralInteract_Implementation()
 			}
 		}	
 	}
-	bIsDoorOpen = true;
-	//DoorMesh->DestroyComponent();
+	bWasOpened = true;
 }

@@ -7,6 +7,8 @@
 #include "GameFramework/GameStateBase.h"
 #include "NewGameStateBase.generated.h"
 
+class AItem;
+
 UCLASS()
 class TESISUE_API ANewGameStateBase : public AGameStateBase
 {
@@ -28,21 +30,25 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Memento")
 	void LoadAllMementoStates();
 
-	void SetPendingEnemyLoadData(const TArray<FEnemySaveData>& EnemyData);
-
-	void RequestEnemyStateReconciliation(AEnemy* EnemyToReconcile);
-
 	void InitializeWorldState(const TArray<FEnemySaveData>& EnemyData);
-
+	void RequestEnemyStateReconciliation(AEnemy* EnemyToReconcile);
+	void GetAllEnemyStates(TArray<FEnemySaveData>& OutEnemyStates);
 	void UpdateEnemyState(const FEnemySaveData& UpdatedEnemyData);
 
-	void GetAllEnemyStates(TArray<FEnemySaveData>& OutEnemyStates);
+	void InitializeWorldInteractedItemsState(const TArray<FInteractedItemSaveData>& InteractedItemData);
+	void RequestInteractedItemStateReconciliation(AItem* ItemToReconcile);
+	void UpdateInteractedItemState(const FInteractedItemSaveData& UpdatedInteractedItemData);
+	void GetAllInteractedItemStates(TArray<FInteractedItemSaveData>& OutItemStates);
 
 protected:
+	UPROPERTY()
 	TMap<FName, FEnemySaveData> PendingEnemyLoadData;
 
 	UPROPERTY()
 	TMap<FName, FEnemySaveData> WorldEnemyStates;
+
+	UPROPERTY()
+	TMap<FName, FInteractedItemSaveData> WorldInteractedItemsStates;
 
 	bool bIsLoadingFromSave = false;
 

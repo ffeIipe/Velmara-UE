@@ -6,6 +6,9 @@
 #include "Enemy/Enemy.h"
 #include "PlayerProgressSaveGame.generated.h"
 
+// Workflow para meter nuevas cosas al sistema de guardado, primero se hace el struct con los params a guardar, segundo francia, tercero se crea un array del tipo struct que hiciste.
+// Luego se guarda en el SaveInstance del NewGameInstance en UNewGameInstance::SavePlayerProgress
+
 class AItem;
 
 USTRUCT(BlueprintType)
@@ -43,6 +46,23 @@ struct FEnemySaveData
     {}
 };
 
+USTRUCT(BlueprintType)
+struct FInteractedItemSaveData
+{
+    GENERATED_BODY()
+
+    UPROPERTY(VisibleAnywhere, Category = "SaveGameData")
+    FName UniqueSaveID;
+
+    UPROPERTY(VisibleAnywhere, Category = "SaveGameData")
+    bool bWasOpened;
+
+    FInteractedItemSaveData() 
+        : UniqueSaveID(NAME_None)
+        , bWasOpened(false)
+    {}
+};
+
 UCLASS()
 class TESISUE_API UPlayerProgressSaveGame : public USaveGame
 {
@@ -65,6 +85,9 @@ public:
 
     UPROPERTY(VisibleAnywhere, Category = "SaveGameData|Enemies")
     TArray<FEnemySaveData> EnemiesData;
+    
+    UPROPERTY(VisibleAnywhere, Category = "SaveGameData|InteractedItems")
+    TArray<FInteractedItemSaveData> InteractedItemsData;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SaveGameData|Metadata")
     FDateTime Timestamp;

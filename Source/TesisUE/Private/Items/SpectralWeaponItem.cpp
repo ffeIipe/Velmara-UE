@@ -5,6 +5,8 @@
 
 void ASpectralWeaponItem::Use(ACharacter* Character)
 {
+	Super::Use(Character);
+
 	Player = Cast<APlayerMain>(Character);
 
 	if (Player && Player->CharacterStateComponent)

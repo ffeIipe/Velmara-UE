@@ -46,7 +46,18 @@ public:
 	
 	virtual UPrimitiveComponent* GetCollisionComponent();
 
+	UPROPERTY(VisibleAnywhere)
+	bool bWasOpened = false;
+
+	void ApplySavedState(const struct FInteractedItemSaveData* SavedData);
+
+	FName GetUniqueSaveID() const { return UniqueSaveID; }
+
 protected:
+
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Save System")
+	FName UniqueSaveID;
+
 	struct FItemStats
 	{
 		FName Name;

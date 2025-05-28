@@ -2,11 +2,17 @@
 #include "Player/PlayerMain.h"
 #include "Components/BoxComponent.h"
 #include "Tutorial/PromptWidgetComponent.h"
+#include <SceneEvents/NewGameStateBase.h>
 
 
 AItem::AItem()
 {
 	PrimaryActorTick.bCanEverTick = false;
+
+	if (UniqueSaveID == NAME_None)
+	{
+		UniqueSaveID = FName(*FGuid::NewGuid().ToString());
+	}
 
 	ItemMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Item Mesh"));
 	RootComponent = ItemMesh;
@@ -23,12 +29,35 @@ void AItem::BeginPlay()
 	Super::BeginPlay();
 	if (PromptWidget)
 		PromptWidget->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
+
+	if (UWorld* World = GetWorld())
+	{
+		if (ANewGameStateBase* GameState = World->GetGameState<ANewGameStateBase>())
+		{
+			GameState->RequestInteractedItemStateReconciliation(this);
+		}
+	}
+
 }
 
 void AItem::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwner, APawn* NewInstigator)
 {
 	DisableCollision();
 	PromptWidget->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
+	if (!bWasOpened)
+	{
+		bWasOpened = true;
+		if (UWorld* World = GetWorld())
+		{
+			if (ANewGameStateBase* GameState = World->GetGameState<ANewGameStateBase>())
+			{
+				FInteractedItemSaveData SaveData;
+				SaveData.UniqueSaveID = GetUniqueSaveID();
+				SaveData.bWasOpened = bWasOpened;
+				GameState->UpdateInteractedItemState(SaveData);
+			}
+		}
+	}
 }
 
 void AItem::Unequip()
@@ -38,6 +67,21 @@ void AItem::Unequip()
 
 void AItem::Use(ACharacter* TargetCharacter)
 {
+	if (!bWasOpened)
+	{
+		bWasOpened = true;
+		if (UWorld* World = GetWorld())
+		{
+			if (ANewGameStateBase* GameState = World->GetGameState<ANewGameStateBase>())
+			{
+				FInteractedItemSaveData SaveData;
+				SaveData.UniqueSaveID = GetUniqueSaveID();
+				SaveData.bWasOpened = bWasOpened;
+				GameState->UpdateInteractedItemState(SaveData);
+			}
+		}
+		Destroy();
+	}
 }
 
 void AItem::EnableVisuals(bool bEnable)
@@ -50,6 +94,15 @@ void AItem::EnableVisuals(bool bEnable)
 UPrimitiveComponent* AItem::GetCollisionComponent()
 {
 	return nullptr;
+}
+
+void AItem::ApplySavedState(const FInteractedItemSaveData* SavedData)
+{
+	if (SavedData && SavedData->bWasOpened)
+	{
+		bWasOpened = true;
+		Destroy();
+	}
 }
 
 void AItem::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)

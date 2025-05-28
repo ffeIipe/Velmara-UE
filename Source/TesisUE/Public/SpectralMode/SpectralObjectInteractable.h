@@ -14,7 +14,7 @@ public:
 	ASpectralObjectInteractable();
 
 	void BeginPlay() override;
-	
+
 	void SpectralInteract_Implementation() override;
 
 	UPROPERTY(EditAnywhere)
@@ -23,6 +23,4 @@ public:
 	UPROPERTY(EditAnywhere)
 	USoundBase* OpenDoorSFX;
 
-private:
-	bool bIsDoorOpen = false;
 };

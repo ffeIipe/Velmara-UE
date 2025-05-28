@@ -250,7 +250,6 @@ bool UNewGameInstance::SavePlayerProgress(int32 SlotIndex)
                 }
                 SaveGameInstance->InventorySlotsData.Add(ItemData);
             }
-
             SaveGameInstance->EquippedSlotIndexInSave = CurrentInventoryItems.Find(CurrentlyEquippedItem);
         }
     }
@@ -259,6 +258,7 @@ bool UNewGameInstance::SavePlayerProgress(int32 SlotIndex)
     if (GameState)
     {
         GameState->GetAllEnemyStates(SaveGameInstance->EnemiesData);
+        GameState->GetAllInteractedItemStates(SaveGameInstance->InteractedItemsData);
     }
 
     SaveGameInstance->Timestamp = FDateTime::UtcNow();
@@ -295,11 +295,8 @@ bool UNewGameInstance::LoadPlayerProgress(int32 SlotIndex)
 
 void UNewGameInstance::ApplyPendingLoadedDataToWorld()
 {
-    if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Cyan, FString("APPLY PENDING LOADED DATA TO WORLD"));
-
     if (!PendingGameDataToLoad)
     {
-        if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, FString(" INVALID PENDING DATA"));
         bIsLoadingPlayerProgress = false;
         HideLoadingScreen();
         return;
@@ -308,7 +305,6 @@ void UNewGameInstance::ApplyPendingLoadedDataToWorld()
     UWorld* World = GetWorld();
     if (!World)
     {
-        if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Magenta, FString(" INVALID WORLD"));
         PendingGameDataToLoad = nullptr;
         bIsLoadingPlayerProgress = false;
         HideLoadingScreen();
@@ -327,10 +323,7 @@ void UNewGameInstance::ApplyPendingLoadedDataToWorld()
         UInventoryComponent* PlayerInventory = PlayerCharacter->FindComponentByClass<UInventoryComponent>();
         if (PlayerInventory)
         {
-            if (PlayerInventory->InventorySlots.Num() != PlayerInventory->MaxSlots)
-            {
-                PlayerInventory->InventorySlots.Init(nullptr, PlayerInventory->MaxSlots);
-            }
+            PlayerInventory->InventorySlots.Init(nullptr, PlayerInventory->MaxSlots);
 
             FActorSpawnParameters SpawnParams;
             SpawnParams.Owner = PlayerCharacter;
@@ -350,7 +343,6 @@ void UNewGameInstance::ApplyPendingLoadedDataToWorld()
                         NewItem->EnableVisuals(false);
                         NewItem->SetOwner(PlayerCharacter);
                         PlayerInventory->InventorySlots[i] = NewItem;
-
                         if (ASword* Sword = Cast<ASword>(NewItem))
                         {
                             if (APlayerMain* Player = Cast<APlayerMain>(PlayerCharacter))
@@ -359,14 +351,6 @@ void UNewGameInstance::ApplyPendingLoadedDataToWorld()
                             }
                         }
                     }
-                    else
-                    {
-                        PlayerInventory->InventorySlots[i] = nullptr;
-                    }
-                }
-                else
-                {
-                    PlayerInventory->InventorySlots[i] = nullptr;
                 }
             }
             PlayerInventory->UpdateInventoryUI();
@@ -375,28 +359,14 @@ void UNewGameInstance::ApplyPendingLoadedDataToWorld()
             {
                 PlayerInventory->EquipItemFromSlot(PendingGameDataToLoad->EquippedSlotIndexInSave);
             }
-            else
-            {
-                PlayerInventory->UnequipCurrentItem();
-                if (APlayerMain* Player = Cast<APlayerMain>(PlayerCharacter))
-                {
-                    if (ICharacterState* CSInterface = Cast<ICharacterState>(Player))
-                    {
-                        UCharacterStateComponent* CharStateComp = CSInterface->Execute_GetCharacterStateComponent(Player);
-                        if (CharStateComp)
-                        {
-                            CharStateComp->SetCharacterState(ECharacterStates::ECS_Unequipped);
-                        }
-                    }
-                }
-            }
         }
     }
 
     ANewGameStateBase* GameState = World->GetGameState<ANewGameStateBase>();
-    if (GameState && PendingGameDataToLoad)
+    if (GameState)
     {
         GameState->InitializeWorldState(PendingGameDataToLoad->EnemiesData);
+        GameState->InitializeWorldInteractedItemsState(PendingGameDataToLoad->InteractedItemsData);
     }
 
     PendingGameDataToLoad = nullptr;
