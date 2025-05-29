@@ -12,6 +12,7 @@
 #include "Components/CombatComponent.h"
 #include "Components/CharacterStateComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/TimelineComponent.h"
 
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -290,6 +291,7 @@ void APaladin::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDa
 	else
 	{
 		PlayAnimMontage(DeathMontage, 1.f, SelectRandomDieAnim());
+		DissolveTimeline->Play();
 		Die(DamageCauserOf);
 	}
 }

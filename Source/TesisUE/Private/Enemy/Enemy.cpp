@@ -5,6 +5,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
 #include "Components/MementoComponent.h"
+#include "Components/TimelineComponent.h"
 #include "HUD/HealthBarComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "AIController.h"
@@ -28,6 +29,7 @@
 #include "Subsystems/EnemyPoolManager.h"
 #include <Enemy/Paladin/PaladinBoss.h>
 #include "Misc/Guid.h"
+#include "Materials/MaterialParameterCollectionInstance.h"
 
 AEnemy::AEnemy()
 {
@@ -87,6 +89,11 @@ AEnemy::AEnemy()
 	bDefaultOrientRotationToMovement = GetCharacterMovement()->bOrientRotationToMovement;
 	bDefaultUseControllerDesiredRotation = GetCharacterMovement()->bUseControllerDesiredRotation;
 	bOriginalUseControllerRotationYaw = bUseControllerRotationYaw;
+
+	DissolveTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("DissolveTimelineComponent"));
+
+	DissolveParticleComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("Dissolve"));
+	DissolveParticleComponent->SetupAttachment(GetMesh());
 }
 
 void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
@@ -149,7 +156,7 @@ void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 	}
 
 	EnableAI();
-
+	
 	ResetColor();
 }
 
@@ -287,6 +294,13 @@ void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (DissolveCurve)
+	{
+		FOnTimelineFloat ProgressFunction;
+		ProgressFunction.BindUFunction(this, FName("UpdateDissolveEffect"));
+		DissolveTimeline->AddInterpFloat(DissolveCurve, ProgressFunction);
+	}
+
 	if (ANewGameModeBase* NewGameMode = Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
 	{
 		NewGameMode->RegisterEnemy(this);
@@ -349,6 +363,19 @@ void AEnemy::NotifyThreat(AActor* ThreatActor)
 void AEnemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+}
+
+void AEnemy::UpdateDissolveEffect(float Value)
+{
+	if (DynamicMaterial && DissolveParticleComponent)
+	{
+		float ClampedValue = FMath::Clamp(Value, 0.f, 1.f);
+		DynamicMaterial->SetScalarParameterValue(FName("Animation"), ClampedValue);
+
+		DissolveParticleComponent->SetNiagaraVariableFloat(FString("User_Animation"), ClampedValue);
+
+		GEngine->AddOnScreenDebugMessage(1, -1.f, FColor::Cyan, FString::SanitizeFloat(ClampedValue));
+	}
 }
 
 void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -569,7 +596,7 @@ void AEnemy::HitFlash()
 {
 	if (DynamicMaterial)
 	{
-		DynamicMaterial->SetScalarParameterValue(FName("HitFlashAmount"), 0.0f);
+		DynamicMaterial->SetScalarParameterValue(FName("Animation"), 0.0f);
 		GetWorldTimerManager().SetTimer(HitFlashTimerHandle, this, &AEnemy::ResetColor, 0.2f, false);
 	}
 }
@@ -578,7 +605,7 @@ void AEnemy::ResetColor()
 {
 	if (DynamicMaterial)
 	{
-		DynamicMaterial->SetScalarParameterValue(FName("HitFlashAmount"), 1.0f);
+		DynamicMaterial->SetScalarParameterValue(FName("Animation"), 1.0f);
 	}
 }
 
@@ -638,60 +665,30 @@ void AEnemy::DisableAI()
 
 void AEnemy::EnableAI()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Enemy %s: Attempting to EnableAI."), *GetName());
 	if (!AIOriginalController)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Enemy %s: AIOriginalController is NULL in EnableAI! Attempting to re-cache..."), *GetName());
-		// Try to get controller again if it was missed. This is a fallback.
 		AAIController* CurrentController = Cast<AAIController>(GetController());
 		if (CurrentController)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Enemy %s: Re-cached controller %s"), *GetName(), *CurrentController->GetName());
 			AIOriginalController = CurrentController;
 		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("Enemy %s: Still no valid controller in EnableAI after re-cache attempt."), *GetName());
-			return; // Can't proceed
-		}
+		else return;
+		
 	}
 
 	if (AIOriginalController)
 	{
 		if (!PossessionOwner)
 		{
-			UE_LOG(LogTemp, Log, TEXT("Enemy %s: AIOriginalController is %s. Attempting to Possess."), *GetName(), *AIOriginalController->GetName());
-			AIOriginalController->Possess(this); // Make sure 'this' (the AEnemy instance) is valid.
+			AIOriginalController->Possess(this);
 
 			if (AIOriginalController->GetPawn() == this)
 			{
-				UE_LOG(LogTemp, Log, TEXT("Enemy %s: Possess successful."), *GetName());
 				if (BTAsset)
 				{
-					UE_LOG(LogTemp, Log, TEXT("Enemy %s: BTAsset %s is valid. Running Behavior Tree."), *GetName(), *BTAsset->GetName());
 					bool bRunResult = AIOriginalController->RunBehaviorTree(BTAsset);
-					if (bRunResult)
-					{
-						UE_LOG(LogTemp, Log, TEXT("Enemy %s: RunBehaviorTree SUCCEEDED."), *GetName());
-					}
-					else
-					{
-						UE_LOG(LogTemp, Error, TEXT("Enemy %s: RunBehaviorTree FAILED."), *GetName());
-					}
-				}
-				else
-				{
-					UE_LOG(LogTemp, Error, TEXT("Enemy %s: BTAsset is NULL."), *GetName());
 				}
 			}
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("Enemy %s: Possess FAILED. Current pawn of controller: %s"), *GetName(), *GetNameSafe(AIOriginalController->GetPawn()));
-			}
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Enemy %s: Is currently possessed by player %s. AI not enabled."), *GetName(), *PossessionOwner->GetName());
 		}
 	}
 }

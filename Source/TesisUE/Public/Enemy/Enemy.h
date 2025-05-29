@@ -206,6 +206,21 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Visual Effects");
 	UNiagaraSystem* NiagaraSystem;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Visual Effects | Dissolve")
+	UMaterialParameterCollection* DissolveMaterialCollection;
+
+	UPROPERTY(VisibleAnywhere)
+	class UTimelineComponent* DissolveTimeline;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Visual Effects | Dissolve")
+	class UCurveFloat* DissolveCurve;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Visual Effects | Dissolve")
+	UNiagaraComponent* DissolveParticleComponent;
+
+	UFUNCTION()
+	void UpdateDissolveEffect(float Value);
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "EnemyType")
 	EEnemyType EnemyType;
 
