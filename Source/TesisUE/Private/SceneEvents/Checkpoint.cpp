@@ -40,7 +40,7 @@ void ACheckpoint::OnSphereBeginOverlap(
         }
         else
         {
-            if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, FString("Not controller found. Failed to save."));
+            if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, FString("Not controller found. Failed to save." + OverlappingPawn->GetController()->GetName()));
         }
     }
 }

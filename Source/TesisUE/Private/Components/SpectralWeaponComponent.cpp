@@ -18,6 +18,7 @@
 
 #include "DamageTypes/SpectralTrapDamageType.h"
 #include <NiagaraFunctionLibrary.h>
+#include <Player/PlayerMain.h>
 
 
 USpectralWeaponComponent::USpectralWeaponComponent()
@@ -29,13 +30,16 @@ USpectralWeaponComponent::USpectralWeaponComponent()
     CurrentAmmo = MaxAmmo;
 }
 
-void USpectralWeaponComponent::InitializeSpectralWeaponComponent(bool bShouldBeVisible)
+void USpectralWeaponComponent::InitializeSpectralWeaponComponent()
 {
     bWasInitialized = true;
 
     if (GetSpectralWeaponMeshComponent())
     {
-        GetSpectralWeaponMeshComponent()->SetVisibility(bShouldBeVisible);
+        APlayerMain* PlayerReference = Cast<APlayerMain>(GetOwner());  //temporal
+        PlayerReference->CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Human ?
+            GetSpectralWeaponMeshComponent()->SetVisibility(false) : 
+            GetSpectralWeaponMeshComponent()->SetVisibility(true);
     }
 }
 

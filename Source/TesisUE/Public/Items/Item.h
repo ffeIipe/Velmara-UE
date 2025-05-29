@@ -49,7 +49,7 @@ public:
 	
 	virtual UPrimitiveComponent* GetCollisionComponent();
 
-	void ApplySavedState(const struct FInteractedItemSaveData* SavedData);
+	virtual void ApplySavedState(const struct FInteractedItemSaveData* SavedData);
 
 	FName GetUniqueSaveID() const { return UniqueSaveID; }
 

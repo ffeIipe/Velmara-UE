@@ -2,18 +2,18 @@
 #include "Player/PlayerMain.h"
 #include "Components/SpectralWeaponComponent.h"
 #include "Components/CharacterStateComponent.h"
+#include <SceneEvents/NewGameStateBase.h>
+#include <Kismet/GameplayStatics.h>
 
 void ASpectralWeaponItem::Use(ACharacter* Character)
 {
     Super::Use(Character);
 
-    APlayerMain* PlayerCasted = Cast<APlayerMain>(Character);
+    APlayerMain* PlayerReference = Cast<APlayerMain>(Character);
 
-    if (PlayerCasted && PlayerCasted->SpectralWeaponComponent)
+    if (PlayerReference && PlayerReference->SpectralWeaponComponent)
     {
-        PlayerCasted->CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Human ?
-            PlayerCasted->SpectralWeaponComponent->InitializeSpectralWeaponComponent(false) :
-            PlayerCasted->SpectralWeaponComponent->InitializeSpectralWeaponComponent(true);
+        PlayerReference->SpectralWeaponComponent->InitializeSpectralWeaponComponent();
 
         Destroy(); 
     }

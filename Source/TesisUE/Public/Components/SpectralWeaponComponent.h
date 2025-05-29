@@ -17,7 +17,7 @@ class TESISUE_API USpectralWeaponComponent : public UActorComponent
 public:	
 	USpectralWeaponComponent();
 
-    void InitializeSpectralWeaponComponent(bool bShouldBeVisible);
+    void InitializeSpectralWeaponComponent();
 
     bool bWasInitialized = false;
 

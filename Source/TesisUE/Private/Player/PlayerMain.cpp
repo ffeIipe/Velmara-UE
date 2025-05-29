@@ -337,21 +337,38 @@ AEnemy* APlayerMain::GetTargetEnemy()
 
 	if (FollowCamera)
 	{
-		Start = FollowCamera->GetActorLocation() + FollowCamera->GetActorForwardVector() * 100.0f;
+		Start = FollowCamera->GetActorLocation() + FollowCamera->GetActorForwardVector();
 		End = Start + FollowCamera->GetActorForwardVector() * PossessDistance;
 	}
 
-	FHitResult HitResult;
-	FCollisionQueryParams QueryParams;
-	QueryParams.AddIgnoredActor(this);
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_GameTraceChannel3));
 
-	if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_GameTraceChannel3, QueryParams))
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.Add(GetOwner());
+
+	FHitResult ResultHit;
+
+	bool bHit = UKismetSystemLibrary::SphereTraceSingleForObjects(
+		GetWorld(),
+		Start,
+		End,
+		InteractTargetRadius,
+		ObjectTypes,
+		false,
+		ActorsToIgnore,
+		EDrawDebugTrace::ForDuration,
+		ResultHit,
+		true
+	);
+
+	if (bHit)
 	{
-		if (IHitInterface* Entity = Cast<IHitInterface>(HitResult.GetActor()))
+		if (IHitInterface* Entity = Cast<IHitInterface>(ResultHit.GetActor()))
 		{
-			if (Entity->Execute_IsLaunchable(HitResult.GetActor(), this))
+			if (Entity->Execute_IsLaunchable(ResultHit.GetActor(), this))
 			{
-				return Cast<AEnemy>(HitResult.GetActor());
+				return Cast<AEnemy>(ResultHit.GetActor());
 			}
 			else return nullptr;
 		}
@@ -486,7 +503,7 @@ void APlayerMain::DoubleJump()
 	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Block, ECharacterActions::ECA_Finish, ECharacterActions::ECA_Dead }))
 	{
 		PlayAnimMontage(DoubleJumpMontage);
-		LaunchCharacter(FVector(0.f, 0.f, 800.f), false, true);
+		LaunchCharacter(FVector(0.f, 0.f, LaunchStrenght), false, true);
 		CanDoubleJump = false;
 	}
 }
@@ -511,12 +528,6 @@ void APlayerMain::Interact(const FInputActionValue& Value)
 
 	FVector TraceDirection = CameraRotation.Vector();
 	FVector TraceEnd = TraceStart + (TraceDirection * InteractTraceLenght);
-
-	//FCollisionQueryParams QueryParams;
-	//QueryParams.AddIgnoredActor(GetOwner());
-	//QueryParams.AddIgnoredActor(this);
-	//QueryParams.bTraceComplex = true;
-	//QueryParams.bReturnPhysicalMaterial = false;
 
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
 	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Visibility));
@@ -557,7 +568,7 @@ void APlayerMain::Interact(const FInputActionValue& Value)
 		{
 			if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
 			{
-				SpectralObjectInteractable->Execute_SpectralInteract(ResultHit.GetActor());
+				SpectralObjectInteractable->Execute_SpectralInteract(ResultHit.GetActor(), this);
 			}
 		}
 		else if (AItem* HitItem = Cast<AItem>(ResultHit.GetActor()))
@@ -794,11 +805,15 @@ void APlayerMain::LoadLastCheckpoint()
 
 void APlayerMain::ChangePrimaryWeapon()
 {
+	if (CharacterStateComponent->IsFormEqualToAny({ ECharacterForm::ECF_Spectral })) return;
+
 	InventoryComponent->ChangeWeapon(0);
 }
 
 void APlayerMain::ChangeSecondaryWeapon()
 {
+	if (CharacterStateComponent->IsFormEqualToAny({ ECharacterForm::ECF_Spectral })) return;
+
 	InventoryComponent->ChangeWeapon(1);
 }
 
@@ -823,7 +838,6 @@ void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		EnhancedInputComponent->BindAction(ChangeFormAction, ETriggerEvent::Started, this, &APlayerMain::ToggleForm);
 		EnhancedInputComponent->BindAction(PossessAction, ETriggerEvent::Completed, this, &APlayerMain::PossessEnemy);
 
-		//EnhancedInputComponent->BindAction(RestartAction, ETriggerEvent::Completed, this, &APlayerMain::RestartLevel);
 		EnhancedInputComponent->BindAction(GoToMenuAction, ETriggerEvent::Completed, this, &APlayerMain::GoToMainMenu);
 		
 		EnhancedInputComponent->BindAction(InventoryComponent->Slot1_InventoryAction, ETriggerEvent::Started, this, &APlayerMain::ChangePrimaryWeapon);

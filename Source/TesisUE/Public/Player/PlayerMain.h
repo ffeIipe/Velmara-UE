@@ -134,10 +134,10 @@ protected:
 	UPROPERTY()
 	UTimelineComponent* BufferDodgeTimeline;
 
-	UPROPERTY(EditAnywhere, Category = "Buffer")
+	UPROPERTY(EditAnywhere, Category = "Stats | Buffer")
 	class UCurveFloat* BufferCurve;
 
-	UPROPERTY(EditAnywhere, Category = "Buffer")
+	UPROPERTY(EditAnywhere, Category = "Stats | Buffer")
 	float BufferDodgeDistance;
 
 	UFUNCTION(BlueprintCallable)
@@ -237,14 +237,17 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "SFX")
 	USoundBase* ErrorSFX;
 	
-	UPROPERTY(EditDefaultsOnly, Category = "BloodSense | Cooldown")
+	UPROPERTY(EditDefaultsOnly, Category = "Stats | BloodSense | Cooldown")
 	float TransformationCooldown;
 
-	UPROPERTY(EditAnywhere, Category = "BloodSense | Cooldown")
+	UPROPERTY(EditAnywhere, Category = "Stats | BloodSense | Cooldown")
 	float LastTransformationTime;
 	
-	UPROPERTY(EditAnywhere, Category = "Possess")
+	UPROPERTY(EditAnywhere, Category = "Stats | Possess")
 	float PossessDistance;
+	
+	UPROPERTY(EditAnywhere, Category = "Stats | DoubleJump")
+	float LaunchStrenght = 800.f;
 
 	class APlayerController* PlayerControllerRef = nullptr;
 

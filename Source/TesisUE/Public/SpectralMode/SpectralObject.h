@@ -20,7 +20,7 @@ public:
     virtual void SetSpectralVisibility(bool bIsVisible);
 
 protected:
-    virtual void BeginPlay() override;
+    void BeginPlay() override;
 
     UMaterialInstanceDynamic* SpectralMaterial;
 

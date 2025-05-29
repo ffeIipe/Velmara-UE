@@ -9,14 +9,9 @@ ASpectralObjectInteractable::ASpectralObjectInteractable()
 	VisibleTo = ECharacterForm::ECF_Spectral;
 }
 
-void ASpectralObjectInteractable::BeginPlay()
+void ASpectralObjectInteractable::Use(ACharacter* Character)
 {
-	Super::BeginPlay();
-}
-
-void ASpectralObjectInteractable::SpectralInteract_Implementation()
-{
-	if (bWasOpened) return;
+	Super::Use(Character);
 
 	for (UStaticMeshComponent* Door : DoorMeshArray)
 	{
@@ -30,7 +25,11 @@ void ASpectralObjectInteractable::SpectralInteract_Implementation()
 			{
 				UGameplayStatics::PlaySoundAtLocation(GetWorld(), OpenDoorSFX, Door->GetComponentLocation());
 			}
-		}	
+		}
 	}
-	bWasOpened = true;
+}
+
+void ASpectralObjectInteractable::SpectralInteract_Implementation(ACharacter* Character)
+{
+	Use(Character);
 }

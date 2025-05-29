@@ -39,7 +39,6 @@ void ASword::BeginPlay()
 
 void ASword::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwner, APawn* NewInstigator)
 {
-	UE_LOG(LogTemp, Log, TEXT("Sword '%s': Equip BEGINS."), *GetName());
 	Super::Equip(InParent, InSocketName, NewOwner, NewInstigator);
 
 	AttachMeshToSocket(InParent, InSocketName);
@@ -52,7 +51,6 @@ void ASword::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwn
 	{
 		CharacterStateComponent = CharacterStateInterface->Execute_GetCharacterStateComponent(NewOwner);
 	}
-	UE_LOG(LogTemp, Log, TEXT("Sword '%s': Equip ENDS."), *GetName());
 }
 
 void ASword::AttachMeshToSocket(USceneComponent* InParent, const FName& InSocketName)

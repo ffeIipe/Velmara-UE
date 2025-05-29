@@ -42,9 +42,6 @@ public:
 
 protected:
 	UPROPERTY()
-	TMap<FName, FEnemySaveData> PendingEnemyLoadData;
-
-	UPROPERTY()
 	TMap<FName, FEnemySaveData> WorldEnemyStates;
 
 	UPROPERTY()

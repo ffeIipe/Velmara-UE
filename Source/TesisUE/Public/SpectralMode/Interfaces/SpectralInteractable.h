@@ -22,5 +22,5 @@ class TESISUE_API ISpectralInteractable
 
 public:
 	UFUNCTION(BlueprintNativeEvent)
-	void SpectralInteract();
+	void SpectralInteract(ACharacter* Character);
 };

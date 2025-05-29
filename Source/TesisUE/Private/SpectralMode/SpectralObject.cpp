@@ -18,6 +18,8 @@ void ASpectralObject::BeginPlay()
    }
    
    SetSpectralVisibility(false);
+
+   Super::BeginPlay();
 }
 
 void ASpectralObject::SetSpectralVisibility(bool bIsPlayerInHumanForm)

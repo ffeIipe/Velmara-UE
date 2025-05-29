@@ -203,20 +203,17 @@ void UNewGameInstance::CreateNewGame(int32 SlotIndex, FString StartLevelName)
     //     UGameplayStatics::DeleteGameInSlot(SlotNameToDelete, DefaultUserIndex);
     // }
 
-    UE_LOG(LogTemp, Log, TEXT("NewGameInstance: Creating new game in Slot %d, starting level %s"), ActiveSaveSlotIndex, *StartLevelName);
     UGameplayStatics::OpenLevel(this, FName(*StartLevelName));
 }
 
 bool UNewGameInstance::SavePlayerProgress(int32 SlotIndex)
 {
-    UE_LOG(LogTemp, Error, TEXT("GAME INSTANCE: ================== SAVE PLAYER PROGRESS BEGIN =================="));
     ActiveSaveSlotIndex = FMath::Clamp(SlotIndex, 0, 2);
     FString CurrentSlotName = FString::Printf(TEXT("%s%d"), *ProgressSaveSlotPrefix, ActiveSaveSlotIndex);
 
     UPlayerProgressSaveGame* SaveGameInstance = Cast<UPlayerProgressSaveGame>(UGameplayStatics::CreateSaveGameObject(UPlayerProgressSaveGame::StaticClass()));
     if (!SaveGameInstance)
     {
-        UE_LOG(LogTemp, Error, TEXT("GAME INSTANCE: FAILED to create SaveGameObject. Aborting save."));
         return false;
     }
 
@@ -246,7 +243,6 @@ bool UNewGameInstance::SavePlayerProgress(int32 SlotIndex)
                 if (IsValid(ItemInSlot))
                 {
                     ItemData.ItemClass = ItemInSlot->GetClass();
-                    UE_LOG(LogTemp, Log, TEXT("GAME INSTANCE: Saving inventory item: %s"), *ItemInSlot->GetClass()->GetName());
                 }
                 else
                 {
@@ -265,8 +261,7 @@ bool UNewGameInstance::SavePlayerProgress(int32 SlotIndex)
 
         TArray<FInteractedItemSaveData> AllWorldItemStates;
         GameState->GetAllInteractedItemStates(AllWorldItemStates);
-        UE_LOG(LogTemp, Warning, TEXT("GAME INSTANCE: Fetched %d interacted item states from GameState."), AllWorldItemStates.Num());
-
+        
         TSet<FName> InventoryItemIDs;
         if (PlayerInventory)
         {
@@ -277,20 +272,12 @@ bool UNewGameInstance::SavePlayerProgress(int32 SlotIndex)
                     InventoryItemIDs.Add(ItemInInventory->GetUniqueSaveID());
                 }
             }
-            UE_LOG(LogTemp, Warning, TEXT("GAME INSTANCE: Found %d items in player inventory."), InventoryItemIDs.Num());
         }
 
         SaveGameInstance->InteractedItemsData.Empty();
-        UE_LOG(LogTemp, Warning, TEXT("GAME INSTANCE: Now iterating world items to decide what to save..."));
+
         for (const FInteractedItemSaveData& ItemState : AllWorldItemStates)
         {
-            // ESTA ES LA SECCIÓN MODIFICADA:
-            // El UE_LOG original para "Considering item" está bien.
-            UE_LOG(LogTemp, Log, TEXT("GAME INSTANCE: --- Considering item ID: %s, bWasOpened: %s"), *ItemState.UniqueSaveID.ToString(), ItemState.bWasOpened ? TEXT("true") : TEXT("false"));
-
-            // HEMOS ELIMINADO EL IF QUE FILTRABA POR 'InventoryItemIDs.Contains()'
-            // Ahora simplemente guardamos todos los estados de los ítems interactuados del mundo.
-            UE_LOG(LogTemp, Log, TEXT("GAME INSTANCE: ---> SAVING its state (bWasOpened: %s). (No longer checking if in inventory for this save point)"), ItemState.bWasOpened ? TEXT("true") : TEXT("false"));
             SaveGameInstance->InteractedItemsData.Add(ItemState);
         }
     }
@@ -299,7 +286,7 @@ bool UNewGameInstance::SavePlayerProgress(int32 SlotIndex)
     SaveGameInstance->SaveSlotIndex = ActiveSaveSlotIndex;
 
     bool bSaveSuccess = UGameplayStatics::SaveGameToSlot(SaveGameInstance, CurrentSlotName, DefaultUserIndex);
-    UE_LOG(LogTemp, Error, TEXT("GAME INSTANCE: ================== SAVE PLAYER PROGRESS END (Success: %s) =================="), bSaveSuccess ? TEXT("TRUE") : TEXT("FALSE"));
+
     return bSaveSuccess;
 }
 
@@ -331,10 +318,8 @@ bool UNewGameInstance::LoadPlayerProgress(int32 SlotIndex)
 
 void UNewGameInstance::ApplyPendingLoadedDataToWorld()
 {
-    UE_LOG(LogTemp, Error, TEXT("GAME INSTANCE: ================== APPLY PENDING LOADED DATA BEGIN =================="));
     if (!PendingGameDataToLoad)
     {
-        UE_LOG(LogTemp, Error, TEXT("GAME INSTANCE: PendingGameDataToLoad is NULL. Aborting apply load data."));
         bIsLoadingPlayerProgress = false;
         HideLoadingScreen();
         return;
@@ -343,7 +328,6 @@ void UNewGameInstance::ApplyPendingLoadedDataToWorld()
     UWorld* World = GetWorld();
     if (!World)
     {
-        UE_LOG(LogTemp, Error, TEXT("GAME INSTANCE: GetWorld() is NULL. Aborting apply load data."));
         PendingGameDataToLoad = nullptr;
         bIsLoadingPlayerProgress = false;
         HideLoadingScreen();
@@ -401,23 +385,16 @@ void UNewGameInstance::ApplyPendingLoadedDataToWorld()
         }
     }
 
-
     ANewGameStateBase* GameState = World->GetGameState<ANewGameStateBase>();
     if (GameState)
     {
-        UE_LOG(LogTemp, Warning, TEXT("GAME INSTANCE: Found GameState. Initializing with loaded data..."));
         GameState->InitializeWorldState(PendingGameDataToLoad->EnemiesData);
         GameState->InitializeWorldInteractedItemsState(PendingGameDataToLoad->InteractedItemsData);
-    }
-    else
-    {
-        UE_LOG(LogTemp, Error, TEXT("GAME INSTANCE: FAILED to get GameState during apply load data."));
     }
 
     PendingGameDataToLoad = nullptr;
     bIsLoadingPlayerProgress = false;
     HideLoadingScreen();
-    UE_LOG(LogTemp, Error, TEXT("GAME INSTANCE: ================== APPLY PENDING LOADED DATA END =================="));
 }
 
 bool UNewGameInstance::DoesProgressSaveExist(int32 SlotIndex) const
@@ -447,7 +424,6 @@ void UNewGameInstance::ShowLoadingScreen()
             if (CurrentLoadingScreenInstance)
             {
                 CurrentLoadingScreenInstance->AddToViewport(100);
-                UE_LOG(LogTemp, Log, TEXT("NewGameInstance: Showing Loading Screen."));
             }
         }
     }
@@ -459,6 +435,5 @@ void UNewGameInstance::HideLoadingScreen()
     {
         CurrentLoadingScreenInstance->RemoveFromParent();
         CurrentLoadingScreenInstance = nullptr;
-        UE_LOG(LogTemp, Log, TEXT("NewGameInstance: Hiding Loading Screen."));
     }
 }
