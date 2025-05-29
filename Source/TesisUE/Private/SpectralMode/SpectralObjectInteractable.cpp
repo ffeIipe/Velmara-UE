@@ -13,17 +13,17 @@ void ASpectralObjectInteractable::Use(ACharacter* Character)
 {
 	Super::Use(Character);
 
-	for (UStaticMeshComponent* Door : DoorMeshArray)
+	for (AActor* Door : DoorArray)
 	{
-		if (!IsValid(Door) || !Door->GetStaticMesh()) break;
+		if (!IsValid(Door)) break;
 
 		else
 		{
-			Door->DestroyComponent();
+			Door->Destroy();
 
 			if (OpenDoorSFX)
 			{
-				UGameplayStatics::PlaySoundAtLocation(GetWorld(), OpenDoorSFX, Door->GetComponentLocation());
+				UGameplayStatics::PlaySoundAtLocation(GetWorld(), OpenDoorSFX, Door->GetActorLocation());
 			}
 		}
 	}

@@ -337,11 +337,12 @@ AEnemy* APlayerMain::GetTargetEnemy()
 
 	if (FollowCamera)
 	{
-		Start = FollowCamera->GetActorLocation() + FollowCamera->GetActorForwardVector();
+		Start = FollowCamera->GetActorLocation() + FollowCamera->GetActorForwardVector() * 100.f;
 		End = Start + FollowCamera->GetActorForwardVector() * PossessDistance;
 	}
 
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Empty();
 	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_GameTraceChannel3));
 
 	TArray<AActor*> ActorsToIgnore;
@@ -349,12 +350,12 @@ AEnemy* APlayerMain::GetTargetEnemy()
 
 	FHitResult ResultHit;
 
-	bool bHit = UKismetSystemLibrary::SphereTraceSingleForObjects(
+	bool bHit = UKismetSystemLibrary::SphereTraceSingle(
 		GetWorld(),
 		Start,
 		End,
 		InteractTargetRadius,
-		ObjectTypes,
+		ETraceTypeQuery::TraceTypeQuery4,
 		false,
 		ActorsToIgnore,
 		EDrawDebugTrace::ForDuration,
@@ -364,6 +365,8 @@ AEnemy* APlayerMain::GetTargetEnemy()
 
 	if (bHit)
 	{
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Emerald, FString(ResultHit.GetActor()->GetName()));
+
 		if (IHitInterface* Entity = Cast<IHitInterface>(ResultHit.GetActor()))
 		{
 			if (Entity->Execute_IsLaunchable(ResultHit.GetActor(), this))
