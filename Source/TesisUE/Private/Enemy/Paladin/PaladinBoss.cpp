@@ -34,6 +34,23 @@ void APaladinBoss::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (Attributes)
+	{
+		Attributes->OnDettachShield.AddLambda(
+			[this] 
+			{
+				if (AAIController* AIController = Cast<AAIController>(GetController()))
+				{
+					if (UBlackboardComponent* BBComponent = AIController->GetBlackboardComponent())
+					{
+						BBComponent->SetValueAsBool(FName("IsShielded"), false);
+						GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::White, FString("IS NOT SHIELDED ANYMORE"));
+					}
+				}
+			}
+		);
+	}
+
 	if (MinionToSpawnClass && InitialMinionPoolSize > 0)
 	{
 		UWorld* World = GetWorld();
