@@ -155,6 +155,8 @@ void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 		PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
 	}
 
+	GetMesh()->SetSimulatePhysics(false);
+
 	EnableAI();
 	
 	ResetColor();
@@ -546,9 +548,6 @@ float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AC
 						PromptWidgetComponent->LoadAndApplyPrompt();
 					}
 				}
-				// Potentially play hit react animations, sounds, VFX here as in GetHit_Implementation
-				// GetHit_Implementation is often called *after* TakeDamage by ApplyDamage.
-				// So, the logic for GetHit_Implementation can largely remain.
 			}
 		}
 	}

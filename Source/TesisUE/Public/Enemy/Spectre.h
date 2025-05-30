@@ -13,6 +13,8 @@ class TESISUE_API ASpectre : public AEnemy
 	GENERATED_BODY()
 	
 protected:
+	ASpectre();
+
 	float TakeDamage(
 		float DamageAmount,
 		struct FDamageEvent const& DamageEvent,
@@ -20,6 +22,4 @@ protected:
 		AActor* DamageCauser) override;
 
 	void GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType) override;
-
-	//void Die(AActor* DamageCauser) override;
 };

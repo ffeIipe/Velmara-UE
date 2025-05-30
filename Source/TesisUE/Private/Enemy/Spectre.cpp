@@ -8,18 +8,16 @@
 #include "DamageTypes/SpectralTrapDamageType.h"
 
 
+ASpectre::ASpectre()
+{
+	GetMesh()->SetCollisionResponseToChannel(ECC_GameTraceChannel2, ECR_Block);
+}
+
 float ASpectre::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	if (DamageEvent.DamageTypeClass == USpectralTrapDamageType::StaticClass())
 	{
-		if (Attributes)
-		{
-			if (Attributes->IsAlive())
-			{
-				Attributes->ReceiveDamage(DamageAmount);
-			}
-			else Die(DamageCauser);
-		}
+		Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 	}
 	return DamageAmount;
 }
@@ -32,6 +30,7 @@ void ASpectre::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDa
 	}
 	else
 	{
+		GetMesh()->SetSimulatePhysics(true);
 		Die(DamageCauserOf);
 	}
 
