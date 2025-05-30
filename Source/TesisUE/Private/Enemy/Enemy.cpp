@@ -159,7 +159,9 @@ void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 
 	EnableAI();
 	
-	ResetColor();
+	//ResetColor();
+
+	DissolveTimeline->Reverse();
 }
 
 void AEnemy::DeactivateEnemy()
@@ -533,12 +535,12 @@ float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AC
 		{
 			Attributes->ReceiveDamage(ActualDamage);
 
-			if (!Attributes->IsAlive())
+			/*if (!Attributes->IsAlive())
 			{
 				PoolableDie(DamageCauser);
-			}
-			else 
-			{
+			}*/
+			//else 
+			//{
 				if (Execute_CanBeFinished(this))
 				{
 					if (PromptWidgetComponent && PromptWidgetComponent->GetWidget())
@@ -547,7 +549,7 @@ float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AC
 						PromptWidgetComponent->LoadAndApplyPrompt();
 					}
 				}
-			}
+			//}
 		}
 	}
 	return ActualDamage;
@@ -601,10 +603,12 @@ void AEnemy::HitFlash()
 
 void AEnemy::ResetColor()
 {
-	if (DynamicMaterial)
-	{
-		DynamicMaterial->SetScalarParameterValue(FName("Animation"), 0.f);
-	}
+	//if (DynamicMaterial)
+	//{
+	//	DynamicMaterial->SetScalarParameterValue(FName("Animation"), 0.f);
+	//
+	//	// 0.f in Animation var means no dissolve. Otherwise, 1.f means full dissolved material
+	//}
 }
 
 void AEnemy::DeactivateEnemyCollision()

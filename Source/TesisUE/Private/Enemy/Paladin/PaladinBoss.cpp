@@ -55,14 +55,14 @@ float APaladinBoss::TakeDamage(float DamageAmount, FDamageEvent const& DamageEve
 		if (Attributes->IsShielded() && DamageEvent.DamageTypeClass == USpectralTrapDamageType::StaticClass())
 		{
 			DamageCauserOf = DamageCauser;
-			NotifyDamageTakenToBlackboard();
+			NotifyDamageTakenToBlackboard(DamageCauser);
 			Attributes->ReceiveShieldDamage(DamageAmount);
 			if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Purple, FString("RECEIVING SHIELD DAMAGE"));
 		}
 		else
 		{
 			DamageCauserOf = DamageCauser;
-			NotifyDamageTakenToBlackboard();
+			NotifyDamageTakenToBlackboard(DamageCauser);
 			Attributes->ReceiveDamage(DamageAmount);
 			if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Red, FString("RECEIVING DAMAGE"));
 		}
@@ -151,10 +151,12 @@ void APaladinBoss::HandleMinionDeactivated(AEnemy* DeactivatedMinion)
 	}
 }
 
-void APaladinBoss::NotifyDamageTakenToBlackboard()
+void APaladinBoss::NotifyDamageTakenToBlackboard(AActor* DamageCauser)
 {
 	if (AAIController* AIController = Cast<AAIController>(GetController()))
 	{
 		AIController->GetBlackboardComponent()->SetValueAsBool(FName("DamageTakenRecently"), true);
+		AIController->GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), DamageCauser);
+		AIController->GetBlackboardComponent()->SetValueAsBool(FName("CanSeePlayer"), true);
 	}
 }
