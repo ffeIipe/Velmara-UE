@@ -6,6 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "AttributeComponent.generated.h"
 
+DECLARE_MULTICAST_DELEGATE(FOnDettachShieldSignature);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class TESISUE_API UAttributeComponent : public UActorComponent
@@ -14,6 +15,8 @@ class TESISUE_API UAttributeComponent : public UActorComponent
 
 public:
 	UAttributeComponent();
+
+	FOnDettachShieldSignature OnDettachShield;
 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 

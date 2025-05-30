@@ -77,6 +77,11 @@ void UAttributeComponent::DettachShield()
 {
 	if (ShieldMeshComponent)
 	{
+		if (OnDettachShield.IsBound())
+		{
+			OnDettachShield.Broadcast();
+		}
+
 		ShieldMeshComponent->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
 		ShieldMeshComponent->SetSimulatePhysics(true);
 		ShieldMeshComponent->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
