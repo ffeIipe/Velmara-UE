@@ -250,12 +250,11 @@ void AEnemy::Die(AActor* DamageCauser)
 		PossessionOwner = nullptr;
 	}
 
-	if (APlayerMain* Player = Cast<APlayerMain>(DamageCauser))
+	if (DamageCauser && DamageCauser->GetComponentByClass<UAttributeComponent>())
 	{
-		if (IsValid(Player) && Player->GetAttributes())
-		{
-			Player->GetAttributes()->IncreaseEnergy(FMath::RandRange(MinEnergy, MaxEnergy)); 
-		}
+		DamageCauser->GetComponentByClass<UAttributeComponent>()->IncreaseEnergy(FMath::RandRange(MinEnergy, MaxEnergy));
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, FString("Increasing energy..."));
+
 	}
 	
 	DisableAI();
@@ -604,7 +603,7 @@ void AEnemy::ResetColor()
 {
 	if (DynamicMaterial)
 	{
-		DynamicMaterial->SetScalarParameterValue(FName("Animation"), 1.0f);
+		DynamicMaterial->SetScalarParameterValue(FName("Animation"), 0.f);
 	}
 }
 
@@ -764,6 +763,7 @@ void AEnemy::UnPossess()
 		{
 			UnPossessBase();
 			PlayerOwner->GetAttributes()->DecreaseEnergyBy(UnpossesEnergyTax);
+			PlayerOwner->GetAttributes()->SetEnergy(Attributes->GetEnergy());
 			PossessionOwner = nullptr;
 			EnableAI();
 		}
