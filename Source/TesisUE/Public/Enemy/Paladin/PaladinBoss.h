@@ -55,5 +55,5 @@ private:
 	void HandleMinionDeactivated(AEnemy* DeactivatedMinion);	
 
 	UFUNCTION()
-	void NotifyDamageTakenToBlackboard();
+	void NotifyDamageTakenToBlackboard(AActor* DamageCauser);
 };
