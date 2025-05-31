@@ -152,13 +152,38 @@ void USpectralWeaponComponent::Fire(bool bIsPrimary)
         UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetOwner()->GetActorLocation());
     }
 
-    if (MuzzleFlash)
+    /*if (MuzzleFlash)
     {
         UNiagaraFunctionLibrary::SpawnSystemAtLocation(
             GetWorld(),
             MuzzleFlash,
             SpectralWeaponMeshComponent->GetSocketLocation(FName("MuzzleSocket")),
             SpectralWeaponMeshComponent->GetSocketRotation(FName("MuzzleSocket"))
+        );
+    }*/
+
+    if (MuzzleFlash)
+    {
+        FRotator SocketRotation = SpectralWeaponMeshComponent->GetSocketRotation(FName("MuzzleSocket"));
+        FVector SocketLocation = SpectralWeaponMeshComponent->GetSocketLocation(FName("MuzzleSocket"));
+
+        // Ejemplo: Si tu efecto Niagara apunta naturalmente a lo largo de su propio eje Y
+        // en lugar de su eje X (que es lo que el SocketRotation intenta alinear como "adelante"),
+        // necesitarías rotar el sistema -90 grados en su eje Z local (Yaw) para corregirlo.
+        // FRotator es Pitch (Y), Yaw (Z), Roll (X).
+        FRotator RotationAdjustment = FRotator(0.0f, -90.0f, 0.0f); // Ajuste de Yaw
+
+        // Combinar las rotaciones: aplica RotationAdjustment localmente al SocketRotation
+        FQuat AdjustedQuat = SocketRotation.Quaternion() * RotationAdjustment.Quaternion();
+        FRotator FinalRotation = AdjustedQuat.Rotator();
+
+        UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+            GetWorld(),
+            MuzzleFlash,
+            SocketLocation,
+            FinalRotation, // Usar la rotación ajustada
+            FVector(1.f),  // Scale (Escala) - puedes ajustarla si es necesario
+            true         // AutoDestroy (Autodestruir) - asegúrate de que sea true para fogonazos       // Auto Activate (Autoactivar)
         );
     }
 
