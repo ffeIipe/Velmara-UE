@@ -42,6 +42,15 @@ public:
 	
 	virtual UPrimitiveComponent* GetCollisionComponent() override;
 
+	UPROPERTY(EditDefaultsOnly, Category = "LightAttackAnims")
+	TArray<UAnimMontage*> LightAttackCombo;
+
+	UPROPERTY(EditDefaultsOnly, Category = "HeavyAttackAnims")
+	TArray<UAnimMontage*> HeavyAttackCombo;
+
+	UPROPERTY(EditDefaultsOnly, Category = "JumpAttackAnims")
+	TArray<UAnimMontage*> JumpAttackCombo;
+
 protected:
 	virtual void OnSphereBeginOverlap(
 		UPrimitiveComponent* OverlappedComponent,

@@ -5,6 +5,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
 #include "Components/MementoComponent.h"
+#include "Components/ExtraMovementComponent.h"
 #include "Components/TimelineComponent.h"
 #include "HUD/HealthBarComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -94,6 +95,8 @@ AEnemy::AEnemy()
 
 	DissolveParticleComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("Dissolve"));
 	DissolveParticleComponent->SetupAttachment(GetMesh());
+
+	ExtraMovementComponent = CreateDefaultSubobject<UExtraMovementComponent>(TEXT("ExtraMovementComponent"));
 }
 
 void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
@@ -157,9 +160,7 @@ void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 
 	GetMesh()->SetSimulatePhysics(false);
 
-	EnableAI();
-	
-	//ResetColor();
+	EnableAI(); 
 
 	DissolveTimeline->Reverse();
 }
@@ -343,6 +344,24 @@ void AEnemy::BeginPlay()
 	}
 }
 
+void AEnemy::Jump()
+{
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Block, ECharacterActions::ECA_Finish, ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }))
+	{
+		if (CharacterStateComponent->IsFormEqualToAny({ ECharacterForm::ECF_Spectral }) &&
+			CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Dodge })) return;
+
+		PlayAnimMontage(ExtraMovementComponent->JumpMontage, 1.f);
+
+		Super::Jump();
+
+		if (GetCharacterMovement()->IsFalling() && ExtraMovementComponent->CanDoubleJump)
+		{
+			ExtraMovementComponent->Input_DoubleJump();
+		}
+	}
+}
+
 void AEnemy::NotifyThreat(AActor* ThreatActor)
 {
 	if (!ThreatActor)
@@ -381,21 +400,6 @@ void AEnemy::UpdateDissolveEffect(float Value)
 	}
 }
 
-void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-	
-	UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent);
-	
-	if (!EnhancedInputComponent) return;
-	
-	EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AEnemy::Move);
-	EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AEnemy::Look);
-	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &AEnemy::Jump);
-	EnhancedInputComponent->BindAction(UnPossessAction, ETriggerEvent::Completed, this, &AEnemy::UnPossess);
-	EnhancedInputComponent->BindAction(UnPossessAndKillAction, ETriggerEvent::Completed, this, &AEnemy::UnPossessAndKill);
-}
-
 void AEnemy::Move(const FInputActionValue& Value)
 {
 	const FVector2D MoveVector = Value.Get<FVector2D>();
@@ -416,6 +420,16 @@ void AEnemy::Look(const FInputActionValue& Value)
 
 	AddControllerPitchInput(LookingVector.Y);
 	AddControllerYawInput(LookingVector.X);
+}
+
+void AEnemy::DoubleJump(const FInputActionValue& Value)
+{
+	ExtraMovementComponent->Input_DoubleJump();
+}
+
+void AEnemy::Dodge(const FInputActionValue& Value)
+{
+	ExtraMovementComponent->Input_Dodge();
 }
 
 void AEnemy::ResetEnemy()
@@ -535,21 +549,14 @@ float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AC
 		{
 			Attributes->ReceiveDamage(ActualDamage);
 
-			/*if (!Attributes->IsAlive())
+			if (Execute_CanBeFinished(this))
 			{
-				PoolableDie(DamageCauser);
-			}*/
-			//else 
-			//{
-				if (Execute_CanBeFinished(this))
+				if (PromptWidgetComponent && PromptWidgetComponent->GetWidget())
 				{
-					if (PromptWidgetComponent && PromptWidgetComponent->GetWidget())
-					{
-						PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Visible);
-						PromptWidgetComponent->LoadAndApplyPrompt();
-					}
+					PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Visible);
+					PromptWidgetComponent->LoadAndApplyPrompt();
 				}
-			//}
+			}
 		}
 	}
 	return ActualDamage;
@@ -590,25 +597,6 @@ void AEnemy::DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage* HitRe
 	}
 
 	PlayAnimMontage(HitReactAnimMontage, 1.f, Section);
-}
-
-void AEnemy::HitFlash()
-{
-	if (DynamicMaterial)
-	{
-		DynamicMaterial->SetScalarParameterValue(FName("Animation"), 0.0f);
-		GetWorldTimerManager().SetTimer(HitFlashTimerHandle, this, &AEnemy::ResetColor, 0.2f, false);
-	}
-}
-
-void AEnemy::ResetColor()
-{
-	//if (DynamicMaterial)
-	//{
-	//	DynamicMaterial->SetScalarParameterValue(FName("Animation"), 0.f);
-	//
-	//	// 0.f in Animation var means no dissolve. Otherwise, 1.f means full dissolved material
-	//}
 }
 
 void AEnemy::DeactivateEnemyCollision()
@@ -675,7 +663,6 @@ void AEnemy::EnableAI()
 			AIOriginalController = CurrentController;
 		}
 		else return;
-		
 	}
 
 	if (AIOriginalController)
@@ -807,4 +794,21 @@ void AEnemy::UnPossessAndKill()
 	{
 		UGameplayStatics::PlaySound2D(GetWorld(), ErrorSFX);
 	}
+}
+
+void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+	UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent);
+
+	if (!EnhancedInputComponent) return;
+
+	EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AEnemy::Move);
+	EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AEnemy::Look);
+	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &AEnemy::Jump);
+	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &AEnemy::DoubleJump);
+	EnhancedInputComponent->BindAction(ExtraMovementComponent->DodgeAction, ETriggerEvent::Triggered, this, &AEnemy::Dodge);
+	EnhancedInputComponent->BindAction(UnPossessAction, ETriggerEvent::Completed, this, &AEnemy::UnPossess);
+	EnhancedInputComponent->BindAction(UnPossessAndKillAction, ETriggerEvent::Completed, this, &AEnemy::UnPossessAndKill);
 }

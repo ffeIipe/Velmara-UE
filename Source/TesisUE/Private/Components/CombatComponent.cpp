@@ -1,5 +1,7 @@
 #include "Components/CombatComponent.h"
 #include "Components/TimelineComponent.h"
+#include "Components/InventoryComponent.h"
+#include "Components/ExtraMovementComponent.h"
 #include "Curves/CurveFloat.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -16,6 +18,7 @@
 #include "Player/PlayerMain.h"
 #include "Camera/CameraActor.h"
 #include "Enemy/Paladin/ShieldedPaladin.h"
+#include "Items/Weapons/Sword.h"
 
 UCombatComponent::UCombatComponent()
 {
@@ -44,7 +47,8 @@ void UCombatComponent::ResetState()
 	ResetHeavyAttackStats();
 
 	if (SpectralAttacks) SpectralAttacks->Execute_ResetSpectralAttack(GetOwner());
-	//save dodge = false;
+
+	ExtraMovementComponent->bIsSaveDodge = false;
 }
 
 
@@ -59,6 +63,8 @@ void UCombatComponent::BeginPlay()
 	SpectralAttacks = Cast<IFormInterface>(GetOwner());
 
 	CharacterStateComponent = CharacterStateInterface->Execute_GetCharacterStateComponent(GetOwner());
+
+	ExtraMovementComponent = GetOwner()->GetComponentByClass<UExtraMovementComponent>();
 
 	if (BufferCurve)
 	{
@@ -83,11 +89,12 @@ void UCombatComponent::LightAttack(int AttackIndex)
 		StartAttackBufferEvent(BufferAttackDistance);
 		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
 		SoftLockOn();
-		OwningCharacter->PlayAnimMontage(LightAttackCombo[AttackIndex]);
+
+		OwningCharacter->PlayAnimMontage(GetCurrentSword()->LightAttackCombo[AttackIndex]);
 
 		LightAttackIndex++;
 
-		if (LightAttackIndex >= LightAttackCombo.Num())
+		if (LightAttackIndex >= GetCurrentSword()->LightAttackCombo.Num())
 		{
 			LightAttackIndex = 0;
 		}
@@ -101,11 +108,11 @@ void UCombatComponent::JumpAttack(int AttackIndex)
 		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
 		SoftLockOn();
 
-		OwningCharacter->PlayAnimMontage(JumpAttackCombo[AttackIndex]);
+		OwningCharacter->PlayAnimMontage(GetCurrentSword()->JumpAttackCombo[AttackIndex]);
 
 		JumpAttackIndex++;
 
-		if (JumpAttackIndex >= JumpAttackCombo.Num())
+		if (JumpAttackIndex >= GetCurrentSword()->JumpAttackCombo.Num())
 		{
 			JumpAttackIndex = 0;
 			OwningCharacter->PlayAnimMontage(CrasherMontage, 1.f);
@@ -156,13 +163,13 @@ void UCombatComponent::HeavyAttack(int AttackIndex)
 		StartAttackBufferEvent(BufferAttackDistance);
 		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
 
-		OwningCharacter->PlayAnimMontage(HeavyAttackCombo[AttackIndex]);
+		OwningCharacter->PlayAnimMontage(GetCurrentSword()->HeavyAttackCombo[AttackIndex]);
 
 		SoftLockOn();
 
 		HeavyAttackIndex++;
 
-		if (HeavyAttackIndex >= HeavyAttackCombo.Num())
+		if (HeavyAttackIndex >= GetCurrentSword()->HeavyAttackCombo.Num())
 		{
 			HeavyAttackIndex = 0;
 		}
@@ -502,7 +509,8 @@ bool UCombatComponent::CanAttack()
 
 void UCombatComponent::Input_Attack(const FInputActionValue& Value)
 {
-	//save dodge = false
+	ExtraMovementComponent->bIsSaveDodge = false;
+
 	bIsSaveHeavyAttack = false;
 
 	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Attack, ECharacterActions::ECA_Dodge }))
@@ -517,7 +525,8 @@ void UCombatComponent::Input_Attack(const FInputActionValue& Value)
 
 void UCombatComponent::Input_HeavyAttack(const FInputActionValue& Value)
 {
-	//save dodge = false;
+	ExtraMovementComponent->bIsSaveDodge = false;
+
 	bIsSaveLightAttack = false;
 
 	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Attack, ECharacterActions::ECA_Dodge }))
@@ -569,7 +578,9 @@ void UCombatComponent::LightAttackEvent()
 	{
 		SpectralAttacks->Execute_PerformSpectralAttack(GetOwner());
 	}
-	else if (bIsLaunched)
+	else if (bIsLaunched 
+		|| OwningCharacter->GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Flying 
+		|| OwningCharacter->GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling)
 	{
 		JumpAttack(JumpAttackIndex);
 		ValidateWall();
@@ -651,4 +662,17 @@ void UCombatComponent::ResetAttackSave()
 {
 	bIsSaveLightAttack = false;
 	bIsSaveHeavyAttack = false;
+}
+
+ASword* UCombatComponent::GetCurrentSword()
+{
+	if (APlayerMain* PlayerRef = Cast<APlayerMain>(GetOwner()))
+	{
+		if (UInventoryComponent* InventoryComp = PlayerRef->GetComponentByClass<UInventoryComponent>())
+		{
+			return Cast<ASword>(InventoryComp->EquippedItem);
+		}
+		else return nullptr;
+	}
+	else return nullptr;
 }
