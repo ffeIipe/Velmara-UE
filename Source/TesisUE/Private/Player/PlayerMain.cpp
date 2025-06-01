@@ -17,6 +17,7 @@
 #include "Components/InventoryComponent.h"
 #include "Components/CharacterStateComponent.h"
 #include "Components/SpectralWeaponComponent.h"
+#include "Components/ExtraMovementComponent.h"
 #include "Curves/CurveFloat.h"
 
 #include "Camera/CameraActor.h"
@@ -51,7 +52,6 @@ APlayerMain::APlayerMain()
 
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 
-	BufferDodgeTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("BufferDodgeTimeline"));
 	
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("Camera Boom"));
 	CameraBoom->SetupAttachment(GetRootComponent());
@@ -73,6 +73,8 @@ APlayerMain::APlayerMain()
 
 	SpectralWeaponComponent = CreateDefaultSubobject<USpectralWeaponComponent>(TEXT("SpectralWeapon"));
 	SpectralWeaponComponent->GetSpectralWeaponMeshComponent()->SetupAttachment(GetMesh(), FName("RightHandSocketWeapon"));
+
+	ExtraMovementComponent = CreateDefaultSubobject<UExtraMovementComponent>(TEXT("ExtraMovementComponent"));
 }
 
 void APlayerMain::PerformSpectralAttack_Implementation()
@@ -171,13 +173,6 @@ void APlayerMain::BeginPlay()
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 			Subsystem->AddMappingContext(CharacterContext, 0);
 
-	if (BufferCurve)
-	{
-		FOnTimelineFloat ProgressDodgeFunction;
-		ProgressDodgeFunction.BindUFunction(this, FName("UpdateDodgeBuffer"));
-		BufferDodgeTimeline->AddInterpFloat(BufferCurve, ProgressDodgeFunction);
-	}
-
 	if (ANewGameModeBase* NewGameMode = Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
 	{
 		if (ANewGameStateBase* NewGameStateBase = Cast<ANewGameStateBase>(NewGameMode->GameState))
@@ -188,90 +183,6 @@ void APlayerMain::BeginPlay()
 			}
 		}
 	}
-}
-
-void APlayerMain::Dodge()
-{
-	if (GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling || 
-		GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Flying) return;
-
-	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Dodge }))
-	{
-		bIsSaveDodge = true;
-	}
-	else
-	{
-		PerformDodge();
-	}
-}
-
-void APlayerMain::DodgeSaveEvent()
-{
-	if (bIsSaveDodge)
-	{
-		bIsSaveDodge = false;
-
-		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Nothing);
-		PerformDodge();
-	}
-}
-
-void APlayerMain::PerformDodge()
-{
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Finish, ECharacterActions::ECA_Stun }))
-	{
-		FVector MovementInput = GetLastMovementInputVector();
-		if (!MovementInput.IsNearlyZero())
-		{
-			FRotator LookRotation = MovementInput.Rotation();
-			SetActorRotation(FRotator(0.f, LookRotation.Yaw, 0.f));
-		}
-
-		StopDodgeBufferEvent();
-		DodgeBufferEvent(BufferDodgeDistance);
-		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Dodge);
-
-		if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Human)
-		{
-			PlayAnimMontage(DodgeMontage);
-		}
-		else
-		{
-			GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = false;
-			PlayAnimMontage(SpectralDodgeMontage);
-		}
-	}
-}
-
-void APlayerMain::DodgeBufferEvent(float BufferAmount)
-{
-	if (BufferDodgeTimeline)
-	{
-		BufferDodgeTimeline->PlayFromStart();
-	}
-}
-
-void APlayerMain::StopDodgeBufferEvent()
-{
-	if (BufferDodgeTimeline)
-	{
-		BufferDodgeTimeline->Stop();
-	}
-}
-
-void APlayerMain::UpdateDodgeBuffer(float Alpha)
-{
-	UpdateBuffer(Alpha, BufferDodgeDistance);
-}
-
-void APlayerMain::UpdateBuffer(float Alpha, float BufferDistance)
-{
-	FVector CurrentLocation = GetActorLocation();
-	FVector ForwardVector = GetActorForwardVector();
-
-	FVector TargetLocation = FMath::Lerp(CurrentLocation, CurrentLocation + (ForwardVector * BufferDistance), Alpha);
-
-	SetActorLocation(TargetLocation, true);
 }
 
 void APlayerMain::SearchTarget()
@@ -475,6 +386,11 @@ void APlayerMain::Move(const FInputActionValue& Value)
 	}
 }
 
+void APlayerMain::Dodge(const FInputActionValue& Value)
+{
+	ExtraMovementComponent->Input_Dodge();
+}
+
 void APlayerMain::Look(const FInputActionValue& Value)
 {
 	const FVector2D LookingVector = Value.Get<FVector2D>();
@@ -490,24 +406,14 @@ void APlayerMain::Jump()
 		if (CharacterStateComponent->IsFormEqualToAny({ ECharacterForm::ECF_Spectral }) && 
 			CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Dodge })) return;
 
-		PlayAnimMontage(JumpMontage, 1.f);
+		PlayAnimMontage(ExtraMovementComponent->JumpMontage, 1.f);
 
 		Super::Jump();
 
-		if (GetCharacterMovement()->IsFalling() && CanDoubleJump)
+		if (GetCharacterMovement()->IsFalling() && ExtraMovementComponent->CanDoubleJump)
 		{
-			DoubleJump();
+			ExtraMovementComponent->Input_DoubleJump();
 		}
-	}
-}
-
-void APlayerMain::DoubleJump()
-{
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Block, ECharacterActions::ECA_Finish, ECharacterActions::ECA_Dead }))
-	{
-		PlayAnimMontage(DoubleJumpMontage);
-		LaunchCharacter(FVector(0.f, 0.f, LaunchStrenght), false, true);
-		CanDoubleJump = false;
 	}
 }
 
@@ -515,7 +421,7 @@ void APlayerMain::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);
 	CombatComponent->bIsLaunched = false;
-	CanDoubleJump = true;
+	ExtraMovementComponent->CanDoubleJump = true;
 }
 
 void APlayerMain::Interact(const FInputActionValue& Value)
@@ -785,11 +691,6 @@ void APlayerMain::RestartLevel()
 	UGameplayStatics::OpenLevel(this, CurrentLevel);	
 }
 
-void APlayerMain::GoToMainMenu()
-{
-	UGameplayStatics::OpenLevel(this, FName("Felipe"));
-}
-
 void APlayerMain::OnWallCollision(const FHitResult& HitResult)
 {
 	StopAnimMontage();
@@ -828,8 +729,8 @@ void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	{
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APlayerMain::Move);
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlayerMain::Look);
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &APlayerMain::Jump);
-		EnhancedInputComponent->BindAction(DodgeAction, ETriggerEvent::Started, this, &APlayerMain::Dodge);
+		EnhancedInputComponent->BindAction(ExtraMovementComponent->JumpAction, ETriggerEvent::Triggered, this, &APlayerMain::Jump);
+		EnhancedInputComponent->BindAction(ExtraMovementComponent->DodgeAction, ETriggerEvent::Started, this, &APlayerMain::Dodge);
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &APlayerMain::Interact);
 
 		EnhancedInputComponent->BindAction(CombatComponent->AttackAction, ETriggerEvent::Triggered, this, &APlayerMain::Attack);
@@ -840,8 +741,6 @@ void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 		EnhancedInputComponent->BindAction(ChangeFormAction, ETriggerEvent::Started, this, &APlayerMain::ToggleForm);
 		EnhancedInputComponent->BindAction(PossessAction, ETriggerEvent::Completed, this, &APlayerMain::PossessEnemy);
-
-		EnhancedInputComponent->BindAction(GoToMenuAction, ETriggerEvent::Completed, this, &APlayerMain::GoToMainMenu);
 		
 		EnhancedInputComponent->BindAction(InventoryComponent->Slot1_InventoryAction, ETriggerEvent::Started, this, &APlayerMain::ChangePrimaryWeapon);
 		EnhancedInputComponent->BindAction(InventoryComponent->Slot2_InventoryAction, ETriggerEvent::Started, this, &APlayerMain::ChangeSecondaryWeapon);

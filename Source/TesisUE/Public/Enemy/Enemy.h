@@ -102,7 +102,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Enemy|Combat")
 	FORCEINLINE AActor* GetDamageCauserActor() const { return DamageCauserOf; }
 
-
 	void SetEnemyState(EEnemyState NewState);
 
 	UPROPERTY(VisibleAnywhere);
@@ -142,12 +141,17 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components | CharacterStateComponent")
 	UCharacterStateComponent* CharacterStateComponent;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components | ExtraMovementComponent")
+	class UExtraMovementComponent* ExtraMovementComponent;
 
 	UFUNCTION(BlueprintCallable, Category = "Save System")
 	FName GetUniqueSaveID() const { return UniqueSaveID; }
 
 protected:
 	virtual void BeginPlay() override;
+
+	virtual void Jump() override;
 
 	FTimerHandle ReturnToPoolTimerHandle;
 
@@ -248,6 +252,10 @@ protected:
 	
 	virtual void Look(const FInputActionValue& Value);
 
+	virtual void DoubleJump(const FInputActionValue& Value);
+
+	virtual void Dodge(const FInputActionValue& Value);
+
 	APlayerMain* PossessionOwner;
 	
 	UPROPERTY(VisibleAnywhere)
@@ -281,12 +289,6 @@ private:
 
 	UPROPERTY()
 	FTimerHandle HitFlashTimerHandle;
-
-	UFUNCTION()
-	void HitFlash();
-
-	UFUNCTION()
-	void ResetColor();
 
 	UFUNCTION(BlueprintCallable)
 	void DeactivateEnemyCollision();

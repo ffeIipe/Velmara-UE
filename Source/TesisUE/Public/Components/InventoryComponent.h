@@ -27,14 +27,14 @@ public:
     UFUNCTION(BlueprintImplementableEvent, Category = "Inventory UI", meta = (DisplayName = "RefreshInventoryUI"))
     void K2_RefreshInventoryUI(const TArray<AItem*>& Items);
 
+    UPROPERTY(VisibleAnywhere, Category = "Inventory", Transient)
+    AItem* EquippedItem = nullptr;
+
 protected:
     virtual void BeginPlay() override;
 
     UPROPERTY(EditDefaultsOnly, Category = "Inventory UI")
     TSubclassOf<UUserWidget> InventoryWidgetClass;
-
-    UPROPERTY(VisibleAnywhere, Category = "Inventory", Transient)
-    AItem* EquippedItem = nullptr;
 
     UPROPERTY(Transient)
     UInventory* InventoryWidgetInstance = nullptr;

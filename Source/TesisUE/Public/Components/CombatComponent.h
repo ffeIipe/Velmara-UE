@@ -37,6 +37,8 @@ public:
 
 	UCharacterStateComponent* CharacterStateComponent;
 
+	class UExtraMovementComponent* ExtraMovementComponent;
+
 	UPROPERTY(EditAnywhere, Category = "Attack | Finisher")
 	USceneComponent* FinisherLocation;
 
@@ -190,14 +192,6 @@ private:
 	/*
 	] Animation Montages Section
 	*/
-	UPROPERTY(EditDefaultsOnly, Category = "Montages | LightAttack")
-	TArray<UAnimMontage*> LightAttackCombo;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Montages | HeavyAttack")
-	TArray<UAnimMontage*> HeavyAttackCombo;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Montages | JumpAttack")
-	TArray<UAnimMontage*> JumpAttackCombo;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Montages | ComboAttack")
 	TArray<UAnimMontage*> ComboStarterAttack;
@@ -220,9 +214,6 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Montages | HitReact")
 	UAnimMontage* HitReactMontage;
 
-	/*
-	] Input Actions Section
-	*/
 public:
 	UPROPERTY(EditAnywhere, Category = "Input | Actions")
 	UInputAction* AttackAction;
@@ -269,4 +260,6 @@ private:
 	
 	UFUNCTION(BlueprintCallable, Category = "Attack | SaveAttack", meta = (AllowPrivateAccess = "true"))
 	void ResetAttackSave();
+
+	class ASword* GetCurrentSword();
 };
