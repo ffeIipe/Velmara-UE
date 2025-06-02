@@ -60,7 +60,7 @@ public:
     void CreateNewGame(int32 SlotIndex, FString StartLevelName);
 
     UFUNCTION(BlueprintCallable, Category = "SaveLoad|Progress")
-    bool SavePlayerProgress(int32 SlotIndex);
+    bool SavePlayerProgress(int32 SlotIndex, APawn* Entity);
 
     UFUNCTION(BlueprintCallable, Category = "SaveLoad|Progress")
     bool LoadPlayerProgress(int32 SlotIndex);

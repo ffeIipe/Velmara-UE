@@ -206,7 +206,7 @@ void UNewGameInstance::CreateNewGame(int32 SlotIndex, FString StartLevelName)
     UGameplayStatics::OpenLevel(this, FName(*StartLevelName));
 }
 
-bool UNewGameInstance::SavePlayerProgress(int32 SlotIndex)
+bool UNewGameInstance::SavePlayerProgress(int32 SlotIndex, APawn* Entity)
 {
     ActiveSaveSlotIndex = FMath::Clamp(SlotIndex, 0, 2);
     FString CurrentSlotName = FString::Printf(TEXT("%s%d"), *ProgressSaveSlotPrefix, ActiveSaveSlotIndex);
@@ -219,7 +219,25 @@ bool UNewGameInstance::SavePlayerProgress(int32 SlotIndex)
 
     SaveGameInstance->CurrentLevelName = UGameplayStatics::GetCurrentLevelName(this);
 
-    ACharacter* PlayerCharacter = UGameplayStatics::GetPlayerCharacter(this, 0);
+    APlayerMain* PlayerCharacter = Cast<APlayerMain>(Entity);
+
+    if (PlayerCharacter)
+    {
+        if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Cyan, FString("Player reference obtained from Player."));
+    }
+    else
+    {
+        if (AEnemy* EnemyRef = Cast<AEnemy>(Entity))
+        {
+            PlayerCharacter = EnemyRef->GetPossessionOwner();
+            if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Magenta, FString("Player reference obtained from Enemy possessed."));
+        }
+        else
+        {
+            if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Player reference not obtained."));
+        }
+    }
+
     UInventoryComponent* PlayerInventory = IsValid(PlayerCharacter) ? PlayerCharacter->FindComponentByClass<UInventoryComponent>() : nullptr;
 
     if (IsValid(PlayerCharacter))
@@ -261,7 +279,7 @@ bool UNewGameInstance::SavePlayerProgress(int32 SlotIndex)
 
         TArray<FInteractedItemSaveData> AllWorldItemStates;
         GameState->GetAllInteractedItemStates(AllWorldItemStates);
-        
+
         TSet<FName> InventoryItemIDs;
         if (PlayerInventory)
         {

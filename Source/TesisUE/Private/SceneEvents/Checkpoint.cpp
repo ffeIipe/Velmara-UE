@@ -1,6 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "SceneEvents/Checkpoint.h"
 #include "Player/PlayerMain.h"
 #include "Components/MementoComponent.h"
@@ -29,7 +26,7 @@ void ACheckpoint::OnSphereBeginOverlap(
             UNewGameInstance* GameInst = Cast<UNewGameInstance>(GetGameInstance());
             if (GameInst)
             {
-                if (GameInst->SavePlayerProgress(GameInst->ActiveSaveSlotIndex))
+                if (GameInst->SavePlayerProgress(GameInst->ActiveSaveSlotIndex, OverlappingPawn))
                 {
                     if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Emerald, FString("Player progress saved via GameInstance."));
                     UE_LOG(LogTemp, Log, TEXT("ACheckpoint: Player progress saved via GameInstance. Slot: %d"), GameInst->ActiveSaveSlotIndex);

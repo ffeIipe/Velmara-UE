@@ -148,6 +148,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Save System")
 	FName GetUniqueSaveID() const { return UniqueSaveID; }
 
+	APlayerMain* GetPossessionOwner() { return PossessionOwner; }
+
 protected:
 	virtual void BeginPlay() override;
 
