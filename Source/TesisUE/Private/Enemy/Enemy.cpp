@@ -491,7 +491,7 @@ bool AEnemy::CanBeFinished_Implementation()
 	return Attributes->GetHealthPercent() <= .2f;
 }
 
-bool AEnemy::IsLaunchable_Implementation()
+bool AEnemy::IsLaunchable_Implementation(ACharacter* Character)
 {
 	return false;
 }

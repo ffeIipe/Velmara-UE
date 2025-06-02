@@ -55,8 +55,8 @@ struct FInteractedItemSaveData
     bool bWasOpened;
 
     FInteractedItemSaveData()
-        : bWasOpened(false)
-        , UniqueSaveID(NAME_None)
+        : UniqueSaveID(NAME_None)
+        , bWasOpened(false)
     {}
 };
 

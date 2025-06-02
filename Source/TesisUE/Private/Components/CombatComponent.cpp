@@ -90,13 +90,25 @@ void UCombatComponent::LightAttack(int AttackIndex)
 		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
 		SoftLockOn();
 
-		OwningCharacter->PlayAnimMontage(GetCurrentSword()->LightAttackCombo[AttackIndex]);
-
-		LightAttackIndex++;
-
-		if (LightAttackIndex >= GetCurrentSword()->LightAttackCombo.Num())
+		if (ASword* TempSword = GetCurrentSword())
 		{
-			LightAttackIndex = 0;
+			OwningCharacter->PlayAnimMontage(TempSword->LightAttackCombo[AttackIndex]);
+			LightAttackIndex++;
+
+			if (LightAttackIndex >= TempSword->LightAttackCombo.Num())
+			{
+				LightAttackIndex = 0;
+			}
+		}
+		else
+		{
+			OwningCharacter->PlayAnimMontage(LightAttackCombo[AttackIndex]);
+			LightAttackIndex++;
+
+			if (LightAttackIndex >= LightAttackCombo.Num())
+			{
+				LightAttackIndex = 0;
+			}
 		}
 	}
 }
@@ -105,18 +117,34 @@ void UCombatComponent::JumpAttack(int AttackIndex)
 {
 	if (CanAttack())
 	{
+		StopAttackBufferEvent();
+		StartAttackBufferEvent(BufferAttackDistance);
 		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
 		SoftLockOn();
 
-		OwningCharacter->PlayAnimMontage(GetCurrentSword()->JumpAttackCombo[AttackIndex]);
-
-		JumpAttackIndex++;
-
-		if (JumpAttackIndex >= GetCurrentSword()->JumpAttackCombo.Num())
+		if (ASword* TempSword = GetCurrentSword())
 		{
-			JumpAttackIndex = 0;
-			OwningCharacter->PlayAnimMontage(CrasherMontage, 1.f);
-			bIsLaunched = false;
+			OwningCharacter->PlayAnimMontage(TempSword->JumpAttackCombo[AttackIndex]);
+			JumpAttackIndex++;
+
+			if (JumpAttackIndex >= TempSword->JumpAttackCombo.Num())
+			{
+				JumpAttackIndex = 0;
+				OwningCharacter->PlayAnimMontage(CrasherMontage, 1.f);
+				bIsLaunched = false;
+			}
+		}
+		else
+		{
+			OwningCharacter->PlayAnimMontage(JumpAttackCombo[AttackIndex]);
+			JumpAttackIndex++;
+
+			if (LightAttackIndex >= JumpAttackCombo.Num())
+			{
+				JumpAttackIndex = 0;
+				OwningCharacter->PlayAnimMontage(CrasherMontage, 1.f);
+				bIsLaunched = false;
+			}
 		}
 	}
 }
@@ -162,16 +190,27 @@ void UCombatComponent::HeavyAttack(int AttackIndex)
 		StopAttackBufferEvent();
 		StartAttackBufferEvent(BufferAttackDistance);
 		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
-
-		OwningCharacter->PlayAnimMontage(GetCurrentSword()->HeavyAttackCombo[AttackIndex]);
-
 		SoftLockOn();
 
-		HeavyAttackIndex++;
-
-		if (HeavyAttackIndex >= GetCurrentSword()->HeavyAttackCombo.Num())
+		if (ASword* TempSword = GetCurrentSword())
 		{
-			HeavyAttackIndex = 0;
+			OwningCharacter->PlayAnimMontage(TempSword->HeavyAttackCombo[AttackIndex]);
+			HeavyAttackIndex++;
+
+			if (HeavyAttackIndex >= TempSword->HeavyAttackCombo.Num())
+			{
+				HeavyAttackIndex = 0;
+			}
+		}
+		else
+		{
+			OwningCharacter->PlayAnimMontage(HeavyAttackCombo[AttackIndex]);
+			HeavyAttackIndex++;
+
+			if (HeavyAttackIndex >= HeavyAttackCombo.Num())
+			{
+				HeavyAttackIndex = 0;
+			}
 		}
 	}
 }
@@ -573,7 +612,6 @@ void UCombatComponent::Input_Execute(const FInputActionValue& Value)
 
 void UCombatComponent::LightAttackEvent()
 {
-
 	if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
 	{
 		SpectralAttacks->Execute_PerformSpectralAttack(GetOwner());

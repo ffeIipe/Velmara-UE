@@ -36,7 +36,7 @@ void AShieldedPaladin::BeginPlay()
     Super::BeginPlay();
 }
 
-bool AShieldedPaladin::IsLaunchable_Implementation()
+bool AShieldedPaladin::IsLaunchable_Implementation(ACharacter* Character)
 {
     return bIsDisarmed;
 }

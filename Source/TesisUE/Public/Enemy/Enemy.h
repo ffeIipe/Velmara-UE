@@ -87,7 +87,7 @@ public:
 
 	virtual bool CanBeFinished_Implementation() override;
 
-	virtual bool IsLaunchable_Implementation();
+	virtual bool IsLaunchable_Implementation(ACharacter* Character);
 
 	virtual void LaunchUp_Implementation(const FVector& InstigatorLocation);
 
@@ -251,6 +251,8 @@ protected:
 	virtual void Move(const FInputActionValue& Value);
 	
 	virtual void Look(const FInputActionValue& Value);
+
+
 
 	virtual void DoubleJump(const FInputActionValue& Value);
 

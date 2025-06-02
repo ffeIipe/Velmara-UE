@@ -109,5 +109,7 @@ private:
 
 	void Attack(const FInputActionValue& Value);
 
+	void HeavyAttack(const FInputActionValue& Value);
+
 	void Finisher(const FInputActionValue& Value);
 };

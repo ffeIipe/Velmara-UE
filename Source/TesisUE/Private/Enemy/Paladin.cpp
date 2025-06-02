@@ -257,6 +257,7 @@ void APaladin::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	if (!EnhancedInputComponent) return;
 
 	EnhancedInputComponent->BindAction(CombatComponent->AttackAction, ETriggerEvent::Triggered, this, &APaladin::Attack);
+	EnhancedInputComponent->BindAction(CombatComponent->HeavyAttackAction, ETriggerEvent::Triggered, this, &APaladin::HeavyAttack);
 }
 
 void APaladin::ShieldHit()
@@ -270,7 +271,11 @@ void APaladin::ShieldHit()
 void APaladin::Attack(const FInputActionValue& Value)
 {
 	CombatComponent->Input_Attack(Value);
+}
 
+void APaladin::HeavyAttack(const FInputActionValue& Value)
+{
+	CombatComponent->Input_HeavyAttack(Value);
 }
 
 void APaladin::LaunchUp_Implementation(const FVector& InstigatorLocation)

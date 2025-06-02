@@ -193,6 +193,15 @@ private:
 	] Animation Montages Section
 	*/
 
+	UPROPERTY(EditDefaultsOnly, Category = "Montages | LightAttack")
+	TArray<UAnimMontage*> LightAttackCombo;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Montages | JumpAttack")
+	TArray<UAnimMontage*> JumpAttackCombo;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Montages | HeavyAttack")
+	TArray<UAnimMontage*> HeavyAttackCombo;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Montages | ComboAttack")
 	TArray<UAnimMontage*> ComboStarterAttack;
 

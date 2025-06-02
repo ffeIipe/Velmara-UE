@@ -32,7 +32,7 @@ public:
 protected:
 	void BeginPlay() override;
 
-	bool IsLaunchable_Implementation() override;
+	bool IsLaunchable_Implementation(ACharacter* Character) override;
 
 	UCharacterStateComponent* GetCharacterStateComponent_Implementation() override;
 
