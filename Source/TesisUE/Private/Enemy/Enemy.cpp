@@ -326,7 +326,7 @@ void AEnemy::BeginPlay()
 			GameState->RequestEnemyStateReconciliation(this);
 		}
 	}
-	
+
 	if (IsValid(PromptWidgetComponent->GetWidget()))
 	{
 		PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
@@ -338,9 +338,16 @@ void AEnemy::BeginPlay()
 		AIOriginalController = AIControllerInstance;
 	}
 
-	if (GetMesh())
+	if (IsValid(GetMesh()))
 	{
-		DynamicMaterial = GetMesh()->CreateAndSetMaterialInstanceDynamic(0);
+		int32 MaterialCount = GetMesh()->GetNumMaterials();
+		DynamicMaterials.Empty(MaterialCount);
+		DynamicMaterials.SetNum(MaterialCount);
+
+		for (int32 i = 0; i < MaterialCount; ++i)
+		{
+			DynamicMaterials[i] = GetMesh()->CreateAndSetMaterialInstanceDynamic(i);
+		}
 	}
 }
 
@@ -389,14 +396,19 @@ void AEnemy::Tick(float DeltaTime)
 
 void AEnemy::UpdateDissolveEffect(float Value)
 {
-	if (DynamicMaterial && DissolveParticleComponent)
+	float ClampedValue = FMath::Clamp(Value, 0.f, 1.f);
+
+	for (UMaterialInstanceDynamic* DynamicMaterial : DynamicMaterials)
 	{
-		float ClampedValue = FMath::Clamp(Value, 0.f, 1.f);
-		DynamicMaterial->SetScalarParameterValue(FName("Animation"), ClampedValue);
+		if (IsValid(DynamicMaterial))
+		{
+			DynamicMaterial->SetScalarParameterValue(FName("Animation"), ClampedValue);
+		}
+	}
 
+	if (IsValid(DissolveParticleComponent))
+	{
 		DissolveParticleComponent->SetNiagaraVariableFloat(FString("User_Animation"), ClampedValue);
-
-		GEngine->AddOnScreenDebugMessage(1, -1.f, FColor::Cyan, FString::SanitizeFloat(ClampedValue));
 	}
 }
 

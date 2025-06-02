@@ -52,7 +52,6 @@ APlayerMain::APlayerMain()
 
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 
-	
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("Camera Boom"));
 	CameraBoom->SetupAttachment(GetRootComponent());
 

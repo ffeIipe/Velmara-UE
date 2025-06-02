@@ -289,7 +289,7 @@ private:
 	AAIController* AIOriginalController;
 
 	UPROPERTY()
-	UMaterialInstanceDynamic* DynamicMaterial;
+	TArray<UMaterialInstanceDynamic*> DynamicMaterials;
 
 	UPROPERTY()
 	FTimerHandle HitFlashTimerHandle;
