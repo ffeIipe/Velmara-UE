@@ -689,7 +689,7 @@ void APlayerMain::ResetFollowCamera()
 void APlayerMain::RestartLevel()
 {	
 	FName CurrentLevel = *UGameplayStatics::GetCurrentLevelName(this);
-	UGameplayStatics::OpenLevel(this, CurrentLevel);	
+	UGameplayStatics::OpenLevel(this, FName("Felipe"));
 }
 
 void APlayerMain::OnWallCollision(const FHitResult& HitResult)
@@ -742,6 +742,7 @@ void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 		EnhancedInputComponent->BindAction(ChangeFormAction, ETriggerEvent::Started, this, &APlayerMain::ToggleForm);
 		EnhancedInputComponent->BindAction(PossessAction, ETriggerEvent::Completed, this, &APlayerMain::PossessEnemy);
+		EnhancedInputComponent->BindAction(GoToMenuAction, ETriggerEvent::Completed, this, &APlayerMain::RestartLevel);
 		
 		EnhancedInputComponent->BindAction(InventoryComponent->Slot1_InventoryAction, ETriggerEvent::Started, this, &APlayerMain::ChangePrimaryWeapon);
 		EnhancedInputComponent->BindAction(InventoryComponent->Slot2_InventoryAction, ETriggerEvent::Started, this, &APlayerMain::ChangeSecondaryWeapon);
