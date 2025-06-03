@@ -47,7 +47,7 @@ public:
     float SecondaryEnergyCost = 5.f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Both")
-    int32 MaxAmmo = 3;
+    int32 MaxAmmo = 6;
     
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Both")
     float ReloadTime = .5f;
@@ -78,14 +78,23 @@ public:
 protected:
     virtual void Fire(bool bIsPrimary);
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Weapon FX")
-    USoundBase* FireSound;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Primary Shot | Weapon FX")
+    USoundBase* FirePrimaryShotSound;
+    
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Secondary Shot | Weapon FX")
+    USoundBase* FireSecondaryShotSound;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Weapon FX")
     class UNiagaraSystem* MuzzleFlash;
-
+    
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Weapon FX")
-    UAnimMontage* SpectralFireAnimation;
+    class UNiagaraSystem* BulletTrailEffect;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Primary Shot | Weapon FX")
+    UAnimMontage* SpectralPrimaryFireAnimation;
+    
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Secondary Shot | Weapon FX")
+    UAnimMontage* SpectralSecondaryFireAnimation;
     
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Weapon FX")
     UAnimMontage* SpectralReloadAnimation;

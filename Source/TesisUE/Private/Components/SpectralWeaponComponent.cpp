@@ -18,6 +18,8 @@
 
 #include "DamageTypes/SpectralTrapDamageType.h"
 #include <NiagaraFunctionLibrary.h>
+#include <NiagaraSystem.h>
+#include <NiagaraComponent.h>
 #include <Player/PlayerMain.h>
 
 
@@ -26,7 +28,7 @@ USpectralWeaponComponent::USpectralWeaponComponent()
     SpectralWeaponMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SpectralWeaponMesh"));
     GetSpectralWeaponMeshComponent()->SetVisibility(false);
 
-    MaxAmmo = 3;
+    MaxAmmo = 6;
     CurrentAmmo = MaxAmmo;
 
     CurrentSpectralWeaponState = ESpectralWeaponState::ESW_Unequipped;
@@ -104,7 +106,7 @@ void USpectralWeaponComponent::SecondaryFire()
 
     if (OwnerAttributeComponent->RequiresEnergy(SecondaryEnergyCost))
     {
-        if (CurrentAmmo == 3 && !bIsReloading && bIsFireEnable)
+        if (CurrentAmmo == MaxAmmo && !bIsReloading && bIsFireEnable)
         {
             Fire(false);
             CurrentAmmo = 0;
@@ -139,22 +141,22 @@ void USpectralWeaponComponent::Fire(bool bIsPrimary)
     QueryParams.bTraceComplex = true;
     QueryParams.bReturnPhysicalMaterial = false;
 
-    //if (MuzzleFlash)
-    //{
-    //    UGameplayStatics::SpawnEmitterAttached(MuzzleFlash, GetSpectralWeaponMeshComponent(), FName("MuzzleSocket"));
-    //}
-
-    OwnerCharacter->PlayAnimMontage(SpectralFireAnimation);
+    if (bIsPrimary)
+    {
+        OwnerCharacter->PlayAnimMontage(SpectralPrimaryFireAnimation);
+        UGameplayStatics::PlaySoundAtLocation(this, FirePrimaryShotSound, GetOwner()->GetActorLocation());
+    }
+    else
+    {
+        OwnerCharacter->PlayAnimMontage(SpectralSecondaryFireAnimation);
+        UGameplayStatics::PlaySoundAtLocation(this, FireSecondaryShotSound, GetOwner()->GetActorLocation());
+    }
+   
     UGameplayStatics::PlayWorldCameraShake(this, CameraShake, GetOwner()->GetActorLocation(), 0.f, 500.f);
     OwnerAttributeComponent->DecreaseEnergyBy(bIsPrimary ? PrimaryEnergyCost : SecondaryEnergyCost);
     
     int32 NumTraces = bIsPrimary ? 1 : Shells;
     float CurrentSpreadAngle = bIsPrimary ? 0.f : SpreadAngle;
-
-    if (FireSound)
-    {
-        UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetOwner()->GetActorLocation());
-    }
 
     if (MuzzleFlash)
     {
@@ -189,6 +191,27 @@ void USpectralWeaponComponent::Fire(bool bIsPrimary)
             ECC_GameTraceChannel2,
             QueryParams
         );
+
+        if (BulletTrailEffect)
+        {
+            FVector MuzzleLocation = SpectralWeaponMeshComponent->GetSocketLocation(FName("MuzzleSocket"));
+            FVector BeamEndPoint = bHit ? Hit.ImpactPoint : CurrentTraceEnd;
+
+            UNiagaraComponent* TrailComponent = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+                GetWorld(),
+                BulletTrailEffect,
+                MuzzleLocation,
+                (BeamEndPoint - MuzzleLocation).Rotation(),
+                FVector(1.f),
+                true,
+                true
+            );
+
+            if (TrailComponent)
+            {
+                TrailComponent->SetVectorParameter(FName("User.Position Offset"), BeamEndPoint);
+            }
+        }
 
         if (bHit)
         {
