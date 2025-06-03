@@ -1,6 +1,7 @@
 #include "Player/PlayerMainAnimInstance.h"
 #include "Player/PlayerMain.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Components/SpectralWeaponComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Components/CharacterStateComponent.h"
 
@@ -12,6 +13,7 @@ void UPlayerMainAnimInstance::NativeInitializeAnimation()
 	if (PlayerMain)
 	{
 		PlayerMainCharacterMovement = PlayerMain->GetCharacterMovement();
+		SpectralWeaponComponent = PlayerMain->GetComponentByClass<USpectralWeaponComponent>();
 	}
 }
 
@@ -25,5 +27,6 @@ void UPlayerMainAnimInstance::NativeUpdateAnimation(float DeltaTime)
 		IsFalling = PlayerMainCharacterMovement->IsFalling();
 		CharacterState = PlayerMain->CharacterStateComponent->GetCurrentCharacterState().State;
 		CharacterForm = PlayerMain->CharacterStateComponent->GetCurrentCharacterState().Form;
+		SpectralWeaponState = SpectralWeaponComponent->GetSpectralWeaponState();
 	}
 }

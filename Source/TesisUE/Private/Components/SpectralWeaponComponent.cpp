@@ -28,11 +28,15 @@ USpectralWeaponComponent::USpectralWeaponComponent()
 
     MaxAmmo = 3;
     CurrentAmmo = MaxAmmo;
+
+    CurrentSpectralWeaponState = ESpectralWeaponState::ESW_Unequipped;
 }
 
 void USpectralWeaponComponent::InitializeSpectralWeaponComponent()
 {
     bWasInitialized = true;
+
+    CurrentSpectralWeaponState = ESpectralWeaponState::ESW_Equipped;
 
     if (GetSpectralWeaponMeshComponent())
     {
@@ -152,16 +156,6 @@ void USpectralWeaponComponent::Fire(bool bIsPrimary)
         UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetOwner()->GetActorLocation());
     }
 
-    /*if (MuzzleFlash)
-    {
-        UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-            GetWorld(),
-            MuzzleFlash,
-            SpectralWeaponMeshComponent->GetSocketLocation(FName("MuzzleSocket")),
-            SpectralWeaponMeshComponent->GetSocketRotation(FName("MuzzleSocket"))
-        );
-    }*/
-
     if (MuzzleFlash)
     {
         FVector SocketLocation = SpectralWeaponMeshComponent->GetSocketLocation(FName("MuzzleSocket"));
@@ -206,9 +200,9 @@ void USpectralWeaponComponent::Fire(bool bIsPrimary)
                     BaseDamage,
                     TraceDirection,
                     Hit,
-                    OwnerController,             //who cause the dmg?
-                    GetOwner(),                  //what cause the dmg?
-                    USpectralTrapDamageType::StaticClass()   //type of dmg
+                    OwnerController,                            //who cause the dmg?
+                    GetOwner(),                                 //what cause the dmg?
+                    USpectralTrapDamageType::StaticClass()      //type of dmg
                 );
 
                 if (IHitInterface* Entity = Cast<IHitInterface>(HitActor))

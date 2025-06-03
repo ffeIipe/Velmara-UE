@@ -762,10 +762,9 @@ void AEnemy::UnPossess()
 
 	if (PlayerOwner && IsValid(PlayerOwner))
 	{
-		if (PlayerOwner->GetAttributes() && PlayerOwner->GetAttributes()->RequiresEnergy(UnpossesEnergyTax))
+		if (PlayerOwner->GetAttributes())
 		{
 			UnPossessBase();
-			PlayerOwner->GetAttributes()->DecreaseEnergyBy(UnpossesEnergyTax);
 			PlayerOwner->GetAttributes()->SetEnergy(Attributes->GetEnergy());
 			PossessionOwner = nullptr;
 			EnableAI();

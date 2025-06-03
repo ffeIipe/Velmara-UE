@@ -9,6 +9,13 @@ class APawn;
 class ACharacter;
 class APlayerController;
 
+UENUM(BlueprintType)
+enum class ESpectralWeaponState : uint8
+{
+    ESW_Unequipped UMETA(DisplayName = "Unequipped"),
+    ESW_Equipped UMETA(DisplayName = "Equipped")
+};
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class TESISUE_API USpectralWeaponComponent : public UActorComponent
 {
@@ -66,6 +73,8 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Weapon")
     UStaticMeshComponent* GetSpectralWeaponMeshComponent() const { return SpectralWeaponMeshComponent; }
 
+    ESpectralWeaponState GetSpectralWeaponState() { return CurrentSpectralWeaponState; };
+
 protected:
     virtual void Fire(bool bIsPrimary);
 
@@ -112,4 +121,6 @@ private:
     APlayerController* OwnerController;
 
     UAttributeComponent* OwnerAttributeComponent;
+
+    ESpectralWeaponState CurrentSpectralWeaponState;
 };

@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Animation/AnimInstance.h"
 #include "CharacterStates.h"
+#include "Components/SpectralWeaponComponent.h"
 #include "PlayerMainAnimInstance.generated.h"
 
 class APlayerMain;
@@ -39,4 +40,9 @@ public:
 	
 	UPROPERTY(BlueprintReadOnly, Category = "Movement | Character Form")
 	ECharacterForm CharacterForm;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Movement | Spectral Weapon State")
+	ESpectralWeaponState SpectralWeaponState;
+
+	USpectralWeaponComponent* SpectralWeaponComponent;
 };
