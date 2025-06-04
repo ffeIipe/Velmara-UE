@@ -17,6 +17,9 @@ public:
 
 	void SpectralInteract_Implementation(ACharacter* Character) override;
 	
+	UFUNCTION(BlueprintImplementableEvent)
+	void OpenDoors(AActor* DoorToOpen);
+
 	UPROPERTY(EditAnywhere)
 	TArray<AActor*> DoorArray;
 
