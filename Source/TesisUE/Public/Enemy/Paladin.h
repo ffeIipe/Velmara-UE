@@ -98,10 +98,13 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CameraShake")
 	TSubclassOf<UCameraShakeBase> CameraShake;
 
-private:
 	UPROPERTY(EditAnywhere, Category = "SFX")
 	USoundBase* ShieldImpactSFX;
-	
+
+	UFUNCTION()
+	void NotifyDamageTakenToBlackboard(AActor* DamageCauser);
+
+private:
 	UPROPERTY(EditAnywhere, Category = "SFX")
 	USoundBase* ShieldDettachSFX;
 

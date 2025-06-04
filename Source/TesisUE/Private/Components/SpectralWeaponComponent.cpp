@@ -192,27 +192,6 @@ void USpectralWeaponComponent::Fire(bool bIsPrimary)
             QueryParams
         );
 
-        if (BulletTrailEffect)
-        {
-            FVector MuzzleLocation = SpectralWeaponMeshComponent->GetSocketLocation(FName("MuzzleSocket"));
-            FVector BeamEndPoint = bHit ? Hit.ImpactPoint : CurrentTraceEnd;
-
-            UNiagaraComponent* TrailComponent = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-                GetWorld(),
-                BulletTrailEffect,
-                MuzzleLocation,
-                (BeamEndPoint - MuzzleLocation).Rotation(),
-                FVector(1.f),
-                true,
-                true
-            );
-
-            if (TrailComponent)
-            {
-                TrailComponent->SetVectorParameter(FName("User.Position Offset"), BeamEndPoint);
-            }
-        }
-
         if (bHit)
         {
             if (AActor* HitActor = Hit.GetActor())

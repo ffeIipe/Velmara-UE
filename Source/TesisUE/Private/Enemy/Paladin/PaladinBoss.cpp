@@ -3,9 +3,13 @@
 #include "BehaviorTree/BlackboardComponent.h"
 
 #include "Components/AttributeComponent.h"
+#include "Components/CombatComponent.h"
 #include "Engine/DamageEvents.h"
 #include "DamageTypes/SpectralTrapDamageType.h"
 #include <Kismet/KismetMathLibrary.h>
+
+#include "Player/PlayerMain.h"
+#include <Kismet/GameplayStatics.h>
 
 
 APaladinBoss::APaladinBoss()
@@ -75,6 +79,15 @@ float APaladinBoss::TakeDamage(float DamageAmount, FDamageEvent const& DamageEve
 			NotifyDamageTakenToBlackboard(DamageCauser);
 			Attributes->ReceiveShieldDamage(DamageAmount);
 			if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Purple, FString("RECEIVING SHIELD DAMAGE"));
+		}
+		else if (APlayerMain* TempPlayerRef = Cast<APlayerMain>(DamageCauser))
+		{
+			TempPlayerRef->CombatComponent->HitReactJumpToSection(FName("ReactToShield"));
+
+			if (ShieldImpactSFX)
+			{
+				UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShieldImpactSFX, Attributes->GetShieldMeshComponent()->GetComponentLocation());
+			}
 		}
 		else
 		{
@@ -165,15 +178,5 @@ void APaladinBoss::HandleMinionDeactivated(AEnemy* DeactivatedMinion)
 		}
 		
 		TryToInvoke();
-	}
-}
-
-void APaladinBoss::NotifyDamageTakenToBlackboard(AActor* DamageCauser)
-{
-	if (AAIController* AIController = Cast<AAIController>(GetController()))
-	{
-		AIController->GetBlackboardComponent()->SetValueAsBool(FName("DamageTakenRecently"), true);
-		AIController->GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), DamageCauser);
-		AIController->GetBlackboardComponent()->SetValueAsBool(FName("CanSeePlayer"), true);
 	}
 }

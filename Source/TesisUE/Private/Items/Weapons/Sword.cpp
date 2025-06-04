@@ -148,11 +148,32 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 					IgnoreActors.Add(HitActor);
 				}
 				CameraShake();
+
+				HitStop(.0005f, .01f);
 			}
 			//else
 			//{
 			//	OnWallHit.Broadcast(Hit);
 			//}
 		}
+	}
+}
+
+void ASword::HitStop(float Duration, float TimeScale)
+{
+	if (UWorld* World = GetWorld())
+	{
+		World->GetWorldSettings()->SetTimeDilation(TimeScale);
+
+		FTimerHandle TimerHandle;
+		World->GetTimerManager().SetTimer(TimerHandle, this, &ASword::ResetTimeDilation, Duration, false);
+	}
+}
+
+void ASword::ResetTimeDilation()
+{
+	if (UWorld* World = GetWorld())
+	{
+		World->GetWorldSettings()->SetTimeDilation(1.0f);
 	}
 }

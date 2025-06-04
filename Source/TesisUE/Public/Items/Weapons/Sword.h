@@ -96,4 +96,8 @@ private:
 	float Damage;
 
 	void OnWallCollision(const FHitResult& Hit);
+
+	void HitStop(float Duration, float TimeScale);
+
+	void ResetTimeDilation();
 };

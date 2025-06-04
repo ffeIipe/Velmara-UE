@@ -36,14 +36,15 @@ APaladin::APaladin()
 	Attributes->AttachShield(GetMesh(), FName("LeftHandSocket"));
 
 	SwordMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SwordMesh"));
+	
 	SwordMesh->SetupAttachment(GetMesh(), TEXT("RightHandSocket"));
 	SwordMesh->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
 	SwordMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	SwordCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("SwordBoxCollider"));
 	SwordCollider->SetupAttachment(SwordMesh);
-	SwordCollider->SetRelativeLocation(FVector(0.f, 0.f, 48.f));
-	SwordCollider->SetBoxExtent(FVector(3.f, 2.f, 36.f));
+	//SwordCollider->SetRelativeLocation(FVector(0.f, 0.f, 48.f));
+	//SwordCollider->SetBoxExtent(FVector(3.f, 2.f, 36.f));
 	SwordCollider->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
 	if (SwordCollider) // It's created after this line in the original code
 	{
@@ -53,11 +54,11 @@ APaladin::APaladin()
 
 	BoxTraceStart = CreateDefaultSubobject<USceneComponent>(TEXT("Box Trace Start"));
 	BoxTraceStart->SetupAttachment(SwordMesh);
-	BoxTraceStart->SetRelativeLocation(FVector(0.f, 0.f, 11.f));
+	//BoxTraceStart->SetRelativeLocation(FVector(0.f, 0.f, 11.f));
 
 	BoxTraceEnd = CreateDefaultSubobject<USceneComponent>(TEXT("Box Trace End"));
 	BoxTraceEnd->SetupAttachment(SwordMesh);
-	BoxTraceStart->SetRelativeLocation(FVector(0.f, 0.f, 82.f));
+	//BoxTraceStart->SetRelativeLocation(FVector(0.f, 0.f, 82.f));
 
 	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("Combat Component"));
 }
@@ -85,6 +86,23 @@ void APaladin::BeginPlay()
 	SwordCollider->OnComponentBeginOverlap.AddDynamic(this, &APaladin::OnSwordOverlap);
 
 	CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_EquippedSword);
+
+	if (Attributes)
+	{
+		Attributes->OnDettachShield.AddLambda(
+			[this]
+			{
+				if (AAIController* AIController = Cast<AAIController>(GetController()))
+				{
+					if (UBlackboardComponent* BBComponent = AIController->GetBlackboardComponent())
+					{
+						BBComponent->SetValueAsBool(FName("IsShielded"), false);
+						GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::White, FString("IS NOT SHIELDED ANYMORE"));
+					}
+				}
+			}
+		);
+	}
 }
 
 void APaladin::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
@@ -278,6 +296,16 @@ void APaladin::HeavyAttack(const FInputActionValue& Value)
 	CombatComponent->Input_HeavyAttack(Value);
 }
 
+void APaladin::NotifyDamageTakenToBlackboard(AActor* DamageCauser)
+{
+	if (AAIController* AIController = Cast<AAIController>(GetController()))
+	{
+		AIController->GetBlackboardComponent()->SetValueAsBool(FName("DamageTakenRecently"), true);
+		AIController->GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), DamageCauser);
+		AIController->GetBlackboardComponent()->SetValueAsBool(FName("CanSeePlayer"), true);
+	}
+}
+
 void APaladin::LaunchUp_Implementation(const FVector& InstigatorLocation)
 {
 	if (!Attributes->IsShielded()) LaunchEnemyUp(InstigatorLocation);
@@ -310,34 +338,25 @@ float APaladin::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 {
 	if (Attributes->IsAlive())
 	{
-		if (DamageEvent.DamageTypeClass == USpectralTrapDamageType::StaticClass())
+		if (Attributes->IsShielded() && DamageEvent.DamageTypeClass == USpectralTrapDamageType::StaticClass())
 		{
-			if (Attributes->IsShielded())
+			NotifyDamageTakenToBlackboard(DamageCauser);
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShieldImpactSFX, Attributes->GetShieldMeshComponent()->GetComponentLocation());
+			Attributes->ReceiveShieldDamage(DamageAmount);
+			ShieldHit();
+		}
+		/*else if (APlayerMain* TempPlayerRef = Cast<APlayerMain>(DamageCauser))
+		{
+			TempPlayerRef->CombatComponent->HitReactJumpToSection(FName("ReactToShield"));
+			
+			if (ShieldImpactSFX)
 			{
 				UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShieldImpactSFX, Attributes->GetShieldMeshComponent()->GetComponentLocation());
-				Attributes->ReceiveShieldDamage(DamageAmount);
-				ShieldHit();
 			}
-			else
-			{
-				UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShieldDettachSFX, Attributes->GetShieldMeshComponent()->GetComponentLocation());
-			}
-		}
+		}*/
 		else
 		{
-			if (!Attributes->IsShielded())
-			{
-				Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
-			}
-			else if (APlayerMain* TempPlayerRef = Cast<APlayerMain>(DamageCauser))
-			{
-				TempPlayerRef->CombatComponent->HitReactJumpToSection(FName("ReactToShield"));
-				
-				if (ShieldImpactSFX)
-				{
-					UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShieldImpactSFX, Attributes->GetShieldMeshComponent()->GetComponentLocation());
-				}
-			}
+			Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 		}
 	}
 	return DamageAmount;
