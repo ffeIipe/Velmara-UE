@@ -124,6 +124,12 @@ void APaladin::Die(AActor* DamageCauser)
 	
 	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("IM DEAD"));
 
+	if (GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Flying || GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling)
+	{
+		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+		LaunchCharacter(FVector(0.f, 0.f, -300.f), true, true);
+	}
+
 	PlayAnimMontage(DeathMontage, 1.f, SelectRandomDieAnim());
 	DissolveTimeline->Play();
 	

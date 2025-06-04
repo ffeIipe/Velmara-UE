@@ -439,20 +439,17 @@ void APlayerMain::Interact(const FInputActionValue& Value)
 	FVector TraceDirection = CameraRotation.Vector();
 	FVector TraceEnd = TraceStart + (TraceDirection * InteractTraceLenght);
 
-	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
-	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Visibility));
-
 	TArray<AActor*> ActorsToIgnore;
 	ActorsToIgnore.Add(GetOwner());
 
 	FHitResult ResultHit;
 
-	bool bHit = UKismetSystemLibrary::SphereTraceSingleForObjects(
+	bool bHit = UKismetSystemLibrary::SphereTraceSingle(
 		GetWorld(),
 		TraceStart,
 		TraceEnd,
 		InteractTargetRadius,
-		ObjectTypes,
+		ETraceTypeQuery::TraceTypeQuery1,
 		false,
 		ActorsToIgnore,
 		EDrawDebugTrace::ForDuration,
