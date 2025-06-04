@@ -43,40 +43,26 @@ APaladin::APaladin()
 
 	SwordCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("SwordBoxCollider"));
 	SwordCollider->SetupAttachment(SwordMesh);
-	//SwordCollider->SetRelativeLocation(FVector(0.f, 0.f, 48.f));
-	//SwordCollider->SetBoxExtent(FVector(3.f, 2.f, 36.f));
+	
 	SwordCollider->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
-	if (SwordCollider) // It's created after this line in the original code
+	if (SwordCollider)
 	{
-		SwordCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision); // Ensure it's off initially
+		SwordCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 	SwordCollider->SetCollisionResponseToChannel(ECC_Camera, ECR_Overlap);
 
 	BoxTraceStart = CreateDefaultSubobject<USceneComponent>(TEXT("Box Trace Start"));
 	BoxTraceStart->SetupAttachment(SwordMesh);
-	//BoxTraceStart->SetRelativeLocation(FVector(0.f, 0.f, 11.f));
-
+	
 	BoxTraceEnd = CreateDefaultSubobject<USceneComponent>(TEXT("Box Trace End"));
 	BoxTraceEnd->SetupAttachment(SwordMesh);
-	//BoxTraceStart->SetRelativeLocation(FVector(0.f, 0.f, 82.f));
 
 	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("Combat Component"));
 }
 
 bool APaladin::IsLaunchable_Implementation(ACharacter* DamageCauser)
 {
-	if (Attributes->IsShielded())
-	{
-		APlayerMain* TempPlayerRef = Cast<APlayerMain>(DamageCauser);
-		TempPlayerRef->CombatComponent->HitReactJumpToSection(FName("ReactToShield"));
-		UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShieldImpactSFX, Attributes->GetShieldMeshComponent()->GetComponentLocation());
-
-		return false; //its not launchable
-	}
-	else
-	{
-		return true; //now its launchable, because it has no longer the shield equipped
-	}
+	return !Attributes->IsShielded();
 }
 
 void APaladin::BeginPlay()
@@ -100,6 +86,14 @@ void APaladin::BeginPlay()
 						GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::White, FString("IS NOT SHIELDED ANYMORE"));
 					}
 				}
+			}
+		);
+
+		//pongo un lambda porque si pongo la funcion die me va a pedir el dmg causer jeje
+		Attributes->OnEntityDead.AddLambda(
+			[this]
+			{
+				Die(DamageCauserOf);
 			}
 		);
 	}
@@ -127,7 +121,12 @@ void APaladin::DeactivateEnemy()
 void APaladin::Die(AActor* DamageCauser)
 {
 	Super::Die(DamageCauser);
+	
+	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("IM DEAD"));
 
+	PlayAnimMontage(DeathMontage, 1.f, SelectRandomDieAnim());
+	DissolveTimeline->Play();
+	
 	TArray<AEnemy*> NearbyEnemies = GenerateSphereOverlapToDetectOtherEnemies(GetActorLocation(), this);
 	for (AEnemy* NearbyEnemy : NearbyEnemies)
 	{
@@ -313,19 +312,20 @@ void APaladin::LaunchUp_Implementation(const FVector& InstigatorLocation)
 
 void APaladin::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType)
 {
-	Super::GetHit_Implementation(ImpactPoint, DamageType);
+	if (!Attributes || GetEnemyState() == EEnemyState::EES_Died || DamageType == USpectralTrapDamageType::StaticClass()) return;
 
-	if (Attributes && Attributes->IsAlive() && GetEnemyState() != EEnemyState::EES_Died)
+	if (Attributes->IsShielded())
 	{
-		if (DamageType == USpectralTrapDamageType::StaticClass()) return;
+		StopAnimMontage();
+		PlayAnimMontage(HitReactMontage, 1.f, FName("ShieldHit"));
 
-		ReactToDamage(LastDamageType, ImpactPoint);
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, FString("SHIELDHIT"));
 	}
-	else
+	else if (Attributes->IsAlive())
 	{
-		PlayAnimMontage(DeathMontage, 1.f, SelectRandomDieAnim());
-		DissolveTimeline->Play();
-		Die(DamageCauserOf);
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Orange, FString("IS ALIVE"));
+		Super::GetHit_Implementation(ImpactPoint, DamageType);
+		ReactToDamage(LastDamageType, ImpactPoint);
 	}
 }
 
@@ -345,15 +345,6 @@ float APaladin::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 			Attributes->ReceiveShieldDamage(DamageAmount);
 			ShieldHit();
 		}
-		/*else if (APlayerMain* TempPlayerRef = Cast<APlayerMain>(DamageCauser))
-		{
-			TempPlayerRef->CombatComponent->HitReactJumpToSection(FName("ReactToShield"));
-			
-			if (ShieldImpactSFX)
-			{
-				UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShieldImpactSFX, Attributes->GetShieldMeshComponent()->GetComponentLocation());
-			}
-		}*/
 		else
 		{
 			Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);

@@ -11,6 +11,7 @@
 #include "Interfaces/CharacterState.h"
 #include "Components/CharacterStateComponent.h"
 #include "Components/CombatComponent.h"
+#include <NiagaraFunctionLibrary.h>
 
 ASword::ASword()
 {
@@ -76,10 +77,6 @@ void ASword::EnableVisuals(bool bEnable)
 
 	if (ItemMesh) ItemMesh->SetVisibility(bEnable);
 
-	// El WeaponBox se maneja en AItem::EnableVisuals si esa es la intención, o aquí:
-	// if (WeaponBox) WeaponBox->SetCollisionEnabled(bEnable ? ECollisionEnabled::QueryOnly : ECollisionEnabled::NoCollision);
-
-
 	if (CharacterStateComponent)
 	{
 		ECharacterStates NewState = bEnable ? ECharacterStates::ECS_EquippedSword : ECharacterStates::ECS_Unequipped;		
@@ -132,6 +129,8 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 		{
 			if (IHitInterface* HitInterface = Cast<IHitInterface>(HitActor))
 			{
+				HitInterface->Execute_GetHit(HitActor, Hit.ImpactPoint, UDamageType::StaticClass());
+
 				if (HitInterface->Execute_IsLaunchable(HitActor, Cast<ACharacter>(Owner)))
 				{
 					TSubclassOf<UDamageType> FinalDamageType = DamageTypeClass ? DamageTypeClass : TSubclassOf<UDamageType>(UDamageType::StaticClass());
@@ -144,12 +143,37 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 						FinalDamageType
 					);
 
-					HitInterface->Execute_GetHit(HitActor, Hit.ImpactPoint, UDamageType::StaticClass());
+					//fx when the hit is true
+					CameraShake();
+					HitStop(.0005f, .01f);
+
 					IgnoreActors.Add(HitActor);
 				}
-				CameraShake();
+				else //no es hitteable, tengo que cambiar nombre de la funcion
+				{
+					if (SparksEffect)
+					{
+						UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+							GetWorld(),
+							SparksEffect,
+							Hit.ImpactPoint,
+							Hit.ImpactNormal.Rotation(),
+							FVector(1.f),
+							true
+						);
+					}
 
-				HitStop(.0005f, .01f);
+					APlayerMain* PlayerRef = Cast<APlayerMain>(GetOwner());
+
+					PlayerRef->CombatComponent->HitReactJumpToSection(FName("ReactToShield"));
+
+					if (ShieldImpactSFX)
+					{
+						UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShieldImpactSFX, Hit.ImpactPoint);
+					}
+				}
+				
+				
 			}
 			//else
 			//{

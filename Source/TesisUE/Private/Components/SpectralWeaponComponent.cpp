@@ -210,7 +210,18 @@ void USpectralWeaponComponent::Fire(bool bIsPrimary)
                 if (IHitInterface* Entity = Cast<IHitInterface>(HitActor))
                 {
                     Entity->Execute_GetHit(Hit.GetActor(), Hit.ImpactPoint, USpectralTrapDamageType::StaticClass());
-                    //decals in Hit.ImpactPoint
+
+                    if (SparksEffect)
+                    {
+                        UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+                            GetWorld(),
+                            SparksEffect,
+                            Hit.ImpactPoint,
+                            Hit.ImpactNormal.Rotation(),
+                            FVector(1.f),
+                            true
+                        );
+                    }
                 }
                 else
                 {

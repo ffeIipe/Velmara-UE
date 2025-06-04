@@ -8,6 +8,8 @@
 
 DECLARE_MULTICAST_DELEGATE(FOnDettachShieldSignature);
 
+DECLARE_MULTICAST_DELEGATE(FOnEntityDeadSignature);
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class TESISUE_API UAttributeComponent : public UActorComponent
 {
@@ -17,6 +19,8 @@ public:
 	UAttributeComponent();
 
 	FOnDettachShieldSignature OnDettachShield;
+
+	FOnEntityDeadSignature OnEntityDead;
 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 

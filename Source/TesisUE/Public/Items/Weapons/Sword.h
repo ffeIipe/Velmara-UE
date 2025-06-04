@@ -31,7 +31,7 @@ public:
 
 	TArray<AActor*> IgnoreActors;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Damage")
 	TSubclassOf<UDamageType> DamageTypeClass;
 
 	virtual void Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwner, APawn* NewInstigator) override;
@@ -42,13 +42,13 @@ public:
 	
 	virtual UPrimitiveComponent* GetCollisionComponent() override;
 
-	UPROPERTY(EditDefaultsOnly, Category = "LightAttackAnims")
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon Properties | LightAttackAnims")
 	TArray<UAnimMontage*> LightAttackCombo;
 
-	UPROPERTY(EditDefaultsOnly, Category = "HeavyAttackAnims")
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon Properties | HeavyAttackAnims")
 	TArray<UAnimMontage*> HeavyAttackCombo;
 
-	UPROPERTY(EditDefaultsOnly, Category = "JumpAttackAnims")
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon Properties | JumpAttackAnims")
 	TArray<UAnimMontage*> JumpAttackCombo;
 
 protected:
@@ -78,6 +78,12 @@ protected:
 	void CameraShake();
 
 private:
+	UPROPERTY(EditAnywhere, Category = "Weapon Properties | FX | SFX")
+	USoundBase* ShieldImpactSFX;
+	
+	UPROPERTY(EditAnywhere, Category = "Weapon Properties | FX | VFX")
+	class UNiagaraSystem* SparksEffect;
+
 	ICharacterState* CharacterStateInterface = nullptr;
 	
 	UPROPERTY()
