@@ -26,6 +26,7 @@
 #include "AI/EnemyAIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIController.h"
+#include <Player/PlayerHeroController.h>
 
 
 APaladin::APaladin()
@@ -83,7 +84,6 @@ void APaladin::BeginPlay()
 					if (UBlackboardComponent* BBComponent = AIController->GetBlackboardComponent())
 					{
 						BBComponent->SetValueAsBool(FName("IsShielded"), false);
-						GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::White, FString("IS NOT SHIELDED ANYMORE"));
 					}
 				}
 			}
@@ -121,8 +121,6 @@ void APaladin::DeactivateEnemy()
 void APaladin::Die(AActor* DamageCauser)
 {
 	Super::Die(DamageCauser);
-	
-	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("IM DEAD"));
 
 	if (GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Flying || GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling)
 	{
@@ -148,6 +146,11 @@ void APaladin::Die(AActor* DamageCauser)
 				}
 			}
 		}
+	}
+
+	if (PossessionOwner)
+	{
+		UnPossess();
 	}
 }
 
@@ -301,14 +304,39 @@ void APaladin::HeavyAttack(const FInputActionValue& Value)
 	CombatComponent->Input_HeavyAttack(Value);
 }
 
-void APaladin::NotifyDamageTakenToBlackboard(AActor* DamageCauser)
+bool APaladin::NotifyDamageTakenToBlackboard(AActor* DamageCauser)
 {
-	if (AAIController* AIController = Cast<AAIController>(GetController()))
+	if (AEnemy* EnemyRef = Cast<AEnemy>(DamageCauser))
 	{
-		AIController->GetBlackboardComponent()->SetValueAsBool(FName("DamageTakenRecently"), true);
-		AIController->GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), DamageCauser);
-		AIController->GetBlackboardComponent()->SetValueAsBool(FName("CanSeePlayer"), true);
+		if (EnemyRef->GetPossessionOwner())
+		{
+			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, FString("Hitted by Enemy possessed"));
+			if (AAIController* AIController = Cast<AAIController>(GetController()))
+			{
+				AIController->GetBlackboardComponent()->SetValueAsBool(FName("DamageTakenRecently"), true);
+				AIController->GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), DamageCauser);
+				AIController->GetBlackboardComponent()->SetValueAsBool(FName("CanSeePlayer"), true);
+				return true;
+			}
+			else return false;
+		}
+		else return false;
 	}
+	else if (APlayerMain* PlayerRef = Cast<APlayerMain>(DamageCauser))
+	{
+		if (AAIController* AIController = Cast<AAIController>(GetController()))
+		{
+			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Hitted by Player"));
+
+			AIController->GetBlackboardComponent()->SetValueAsBool(FName("DamageTakenRecently"), true);
+			AIController->GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), DamageCauser);
+			AIController->GetBlackboardComponent()->SetValueAsBool(FName("CanSeePlayer"), true);
+
+			return true;
+		}
+		else return false;
+	}
+	else return false;
 }
 
 void APaladin::LaunchUp_Implementation(const FVector& InstigatorLocation)
@@ -324,12 +352,9 @@ void APaladin::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDa
 	{
 		StopAnimMontage();
 		PlayAnimMontage(HitReactMontage, 1.f, FName("ShieldHit"));
-
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, FString("SHIELDHIT"));
 	}
 	else if (Attributes->IsAlive())
 	{
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Orange, FString("IS ALIVE"));
 		Super::GetHit_Implementation(ImpactPoint, DamageType);
 		ReactToDamage(LastDamageType, ImpactPoint);
 	}
@@ -353,6 +378,7 @@ float APaladin::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 		}
 		else
 		{
+			NotifyDamageTakenToBlackboard(DamageCauser);
 			Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 		}
 	}

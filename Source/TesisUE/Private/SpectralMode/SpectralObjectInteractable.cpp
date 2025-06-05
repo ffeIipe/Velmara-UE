@@ -19,8 +19,6 @@ void ASpectralObjectInteractable::Use(ACharacter* Character)
 
 		else
 		{
-			//Door->Destroy();
-
 			OpenDoors(Door);
 
 			if (OpenDoorSFX)

@@ -15,9 +15,6 @@ AEnemyAIController::AEnemyAIController(const FObjectInitializer& ObjectInitializ
 	AISenseConfig_Sight->DetectionByAffiliation.bDetectEnemies = true;
 	AISenseConfig_Sight->DetectionByAffiliation.bDetectFriendlies = false;
 	AISenseConfig_Sight->DetectionByAffiliation.bDetectNeutrals = false;
-	AISenseConfig_Sight->SightRadius = 5000.f;
-	AISenseConfig_Sight->LoseSightRadius = 0.f;
-	AISenseConfig_Sight->PeripheralVisionAngleDegrees = 100.f;
 
 	EnemyPerceptionComponent = CreateDefaultSubobject<UAIPerceptionComponent>("EnemyPerceptionComponent");
 	EnemyPerceptionComponent->ConfigureSense(*AISenseConfig_Sight);
@@ -41,35 +38,94 @@ ETeamAttitude::Type AEnemyAIController::GetTeamAttitudeTowards(const AActor& Oth
 	return ETeamAttitude::Friendly;
 }
 
+//void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
+//{
+//	if (bPauseEnemyPerceptionUpdate) return;
+//
+//	if (!Actor) return;
+//
+//	UBlackboardComponent* BlackboardComponent = GetBlackboardComponent();
+//	if (!BlackboardComponent) return;
+//
+//	APawn* PlayerPawn = Cast<APawn>(Actor);
+//	if (!PlayerPawn) return;
+//
+//	UCharacterStateComponent* CharacterStateComponent = PlayerPawn->FindComponentByClass<UCharacterStateComponent>();
+//
+//	AEnemy* Enemy = Cast<AEnemy>(GetPawn());
+//
+//	if (!Enemy) return;
+//
+//	if (Enemy->GetEnemyType() == EEnemyType::Paladin && CharacterStateComponent && CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
+//	{
+//		BlackboardComponent->ClearValue(FName("TargetActor"));
+//		BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), false);
+//		StopMovement();
+//		return;
+//	}
+//
+//	if (Stimulus.WasSuccessfullySensed() && CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Human)
+//	{
+//		BlackboardComponent->SetValueAsObject(FName("TargetActor"), Actor);
+//		BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), true);
+//	}
+//}
+
 void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
-	if (bPauseEnemyPerceptionUpdate) return;
+    AEnemy* Enemy = Cast<AEnemy>(GetPawn());
+    APawn* PlayerPawn = Cast<APawn>(Actor);
+    UCharacterStateComponent* CharacterStateComponent = PlayerPawn ? PlayerPawn->FindComponentByClass<UCharacterStateComponent>() : nullptr; // Añadir null check
+    UBlackboardComponent* BlackboardComponent = GetBlackboardComponent();
 
-	if (!Actor) return;
+    if (!BlackboardComponent || !PlayerPawn || !Enemy || bPauseEnemyPerceptionUpdate)
+    {
+        GEngine->AddOnScreenDebugMessage(5, 3.f, FColor::Red, FString("Invalid objects to continue..."));
+        return;
+    }
 
-	UBlackboardComponent* BlackboardComponent = GetBlackboardComponent();
-	if (!BlackboardComponent) return;
+    if (!CharacterStateComponent)
+    {
+        BlackboardComponent->ClearValue(FName("TargetActor"));
+        BlackboardComponent->ClearValue(FName("DistToTarget"));
+        BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), false);
+        
+        GEngine->AddOnScreenDebugMessage(4, 3.f, FColor::Red, FString("CharacterStateComponent invalid..."));
+        
+        return;
+    }
 
-	APawn* PlayerPawn = Cast<APawn>(Actor);
-	if (!PlayerPawn) return;
 
-	UCharacterStateComponent* CharacterStateComponent = PlayerPawn->FindComponentByClass<UCharacterStateComponent>();
+    if (Enemy->GetEnemyType() == EEnemyType::Paladin)
+    {
+        GEngine->AddOnScreenDebugMessage(6, 3.f, FColor::Orange, FString("Updating..."));
 
-	AEnemy* Enemy = Cast<AEnemy>(GetPawn());
+        if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
+        {
+            GEngine->AddOnScreenDebugMessage(2, 3.f, FColor::Blue, FString("Can't see player, it's in spectral mode (vampire mode)!"));
 
-	if (!Enemy) return;
+            EnemyPerceptionComponent->ForgetActor(Actor);
+            BlackboardComponent->ClearValue(FName("TargetActor"));
+            BlackboardComponent->ClearValue(FName("DistToTarget"));
+            BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), false);
+            return;
+        }
 
-	if (Enemy->GetEnemyType() == EEnemyType::Paladin && CharacterStateComponent && CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
-	{
-		BlackboardComponent->ClearValue(FName("TargetActor"));
-		BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), false);
-		StopMovement();
-		return;
-	}
-	
-	if (Stimulus.WasSuccessfullySensed() && CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Human)
-	{
-		BlackboardComponent->SetValueAsObject(FName("TargetActor"), Actor);
-		BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), true);
-	}
-}	
+        if (Stimulus.WasSuccessfullySensed())
+        {
+            GEngine->AddOnScreenDebugMessage(1, 3.f, FColor::Green, FString("Can see player!"));
+
+            BlackboardComponent->SetValueAsObject(FName("TargetActor"), Actor);
+            BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), true);
+        }
+        else if (BlackboardComponent->GetValueAsFloat(FName("DistToTarget")) >= 2000.f)
+        {
+            GEngine->AddOnScreenDebugMessage(3, 3.f, FColor::Cyan, FString("Can't see player, it's too far or obscured!"));
+            EnemyPerceptionComponent->ForgetActor(Actor);
+        
+            BlackboardComponent->ClearValue(FName("TargetActor"));
+            BlackboardComponent->ClearValue(FName("DistToTarget"));
+            BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), false);
+        }
+    }
+}

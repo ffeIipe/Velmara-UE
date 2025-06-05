@@ -405,8 +405,6 @@ void APlayerMain::Jump()
 		if (CharacterStateComponent->IsFormEqualToAny({ ECharacterForm::ECF_Spectral }) && 
 			CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Dodge })) return;
 
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Cyan, FString("APlayerMain::Jump"));
-
 		PlayAnimMontage(ExtraMovementComponent->JumpMontage, 1.f);
 
 		Super::Jump();

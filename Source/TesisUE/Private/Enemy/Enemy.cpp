@@ -256,10 +256,13 @@ void AEnemy::Die(AActor* DamageCauser)
 	if (DamageCauser && DamageCauser->GetComponentByClass<UAttributeComponent>())
 	{
 		DamageCauser->GetComponentByClass<UAttributeComponent>()->IncreaseEnergy(FMath::RandRange(MinEnergy, MaxEnergy));
-		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, FString("Increasing energy..."));
-
 	}
 	
+	if (PromptWidgetComponent && PromptWidgetComponent->GetWidget())
+	{
+		PromptWidgetComponent->GetPromptWidgetComponent()->EnablePromptWidget(false); 
+	}
+
 	DisableAI();
 	DeactivateEnemyCollision();
 
@@ -540,21 +543,6 @@ float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AC
 		: EMainDamageTypes::EMDT_None;
 
 	DamageCauserOf = DamageCauser;
-
-	if (DamageCauser)
-	{
-		if (AEnemy* EnemyDamageCauser = Cast<AEnemy>(DamageCauser)) 
-		{
-			if (APaladinBoss* PaladinBoss = Cast<APaladinBoss>(EnemyDamageCauser)) return 0.0f;
-
-			AAIController* AIController = Cast<AAIController>(GetController());
-			if (AIController && AIController->GetBlackboardComponent())
-			{
-				AIController->GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), DamageCauser);
-				if (AEnemyAIController* EnemyAICont = Cast<AEnemyAIController>(AIController)) EnemyAICont->bPauseEnemyPerceptionUpdate = true;
-			}
-		}
-	}
 
 	if (Attributes)
 	{

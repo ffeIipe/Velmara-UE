@@ -19,6 +19,8 @@ public:
 
     void EnablePromptWidget(bool bIsEnable);
 
+    UPromptWidgetComponent* GetPromptWidgetComponent() { return this; };
+
 protected:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Prompt")
     UDataTable* PromptDataTable;

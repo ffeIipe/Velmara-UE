@@ -102,7 +102,7 @@ protected:
 	USoundBase* ShieldImpactSFX;
 
 	UFUNCTION()
-	void NotifyDamageTakenToBlackboard(AActor* DamageCauser);
+	bool NotifyDamageTakenToBlackboard(AActor* DamageCauser);
 
 private:
 	UPROPERTY(EditAnywhere, Category = "SFX")
