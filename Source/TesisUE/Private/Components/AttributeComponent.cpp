@@ -23,7 +23,19 @@ float UAttributeComponent::GetHealthPercent()
 
 bool UAttributeComponent::IsAlive()
 {
-	return Health > 0.01f;
+	if (Health <= 0)
+	{
+		if (OnEntityDead.IsBound())
+		{
+			OnEntityDead.Broadcast();
+		}
+
+		return false;
+	}
+	else
+	{
+		return true;
+	}
 }
 
 float UAttributeComponent::GetEnergyPercent()

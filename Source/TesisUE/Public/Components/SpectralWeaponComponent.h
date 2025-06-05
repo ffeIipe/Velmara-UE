@@ -86,6 +86,9 @@ protected:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Weapon FX")
     class UNiagaraSystem* MuzzleFlash;
+    
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Weapon FX")
+    UNiagaraSystem* SparksEffect;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Primary Shot | Weapon FX")
     UAnimMontage* SpectralPrimaryFireAnimation;
