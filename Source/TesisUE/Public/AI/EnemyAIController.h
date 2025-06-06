@@ -20,9 +20,7 @@ class TESISUE_API AEnemyAIController : public AAIController
 public:
 	AEnemyAIController(const FObjectInitializer& ObjectInitializer);
 
-	//~ Begin IGenericTeamAgentInterface Interface.
 	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
-	//~ End IGenericTeamAgentInterface Interface
 
 	bool bPauseEnemyPerceptionUpdate = false;
 

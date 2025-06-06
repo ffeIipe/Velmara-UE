@@ -71,55 +71,34 @@ void APaladinBoss::BeginPlay()
 
 float APaladinBoss::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
-	if (Attributes->IsAlive())
-	{
-		if (Attributes->IsShielded() && DamageEvent.DamageTypeClass == USpectralTrapDamageType::StaticClass())
-		{
-			DamageCauserOf = DamageCauser;
-			NotifyDamageTakenToBlackboard(DamageCauser);
-			Attributes->ReceiveShieldDamage(DamageAmount);
-			if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Purple, FString("RECEIVING SHIELD DAMAGE"));
-		}
-		else if (APlayerMain* TempPlayerRef = Cast<APlayerMain>(DamageCauser))
-		{
-			TempPlayerRef->CombatComponent->HitReactJumpToSection(FName("ReactToShield"));
-
-			if (ShieldImpactSFX)
-			{
-				UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShieldImpactSFX, Attributes->GetShieldMeshComponent()->GetComponentLocation());
-			}
-		}
-		else
-		{
-			DamageCauserOf = DamageCauser;
-			NotifyDamageTakenToBlackboard(DamageCauser);
-			Attributes->ReceiveDamage(DamageAmount);
-			if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Red, FString("RECEIVING DAMAGE"));
-		}
-	}
-	else
-	{
-		Die(DamageCauser);
-	}
+	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
 	return DamageAmount;
+
 }
 
 void APaladinBoss::DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage* HitReactAnimMontage)
 {
 	if (UKismetMathLibrary::RandomBool())
 	{
+		StopAnimMontage();
 		PlayAnimMontage(HitReactAnimMontage, 1.f, FName("FromRight"));
 	}
 	else
 	{
+		StopAnimMontage();
 		PlayAnimMontage(HitReactAnimMontage, 1.f, FName("FromLeft"));
 	}
 }
 
 bool APaladinBoss::IsLaunchable_Implementation(ACharacter* DamageCauser)
 {
-	return false;
+	return Super::IsLaunchable_Implementation(DamageCauser);
+}
+
+void APaladinBoss::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType)
+{
+	
 }
 
 void APaladinBoss::TryToInvoke()

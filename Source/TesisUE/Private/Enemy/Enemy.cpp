@@ -113,6 +113,8 @@ void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	GetCapsuleComponent()->SetGenerateOverlapEvents(true);
 
+	HandleEnemyCollision(ECR_Block);
+
 	EnemyState = EEnemyState::EES_None;
 	isLaunched = false;
 	DamageCauserOf = nullptr;
@@ -181,7 +183,7 @@ void AEnemy::DeactivateEnemy()
 
 	SetActorHiddenInGame(true);
 	SetActorTickEnabled(false);
-	DeactivateEnemyCollision();
+	HandleEnemyCollision(ECR_Ignore);
 
 	StopAnimMontage();
 
@@ -264,7 +266,7 @@ void AEnemy::Die(AActor* DamageCauser)
 	}
 
 	DisableAI();
-	DeactivateEnemyCollision();
+	HandleEnemyCollision(ECR_Ignore);
 
 	GetWorldTimerManager().SetTimer(ReturnToPoolTimerHandle, this, &AEnemy::RequestReturnToPool, 5.0f, false);
 }
@@ -550,6 +552,8 @@ float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AC
 		{
 			Attributes->ReceiveDamage(ActualDamage);
 
+			GEngine->AddOnScreenDebugMessage(17, 3.f, FColor::Red, FString("Receiving Final Damage"));
+
 			if (Execute_CanBeFinished(this))
 			{
 				if (PromptWidgetComponent && PromptWidgetComponent->GetWidget())
@@ -600,12 +604,12 @@ void AEnemy::DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage* HitRe
 	PlayAnimMontage(HitReactAnimMontage, 1.f, Section);
 }
 
-void AEnemy::DeactivateEnemyCollision()
+void AEnemy::HandleEnemyCollision(ECollisionResponse CollisionResponse)
 {
-	GetMesh()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
-	GetMesh()->SetCollisionResponseToChannel(ECC_GameTraceChannel3, ECR_Ignore);
-	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
-	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_GameTraceChannel3, ECR_Ignore);
+	GetMesh()->SetCollisionResponseToChannel(ECC_Pawn, CollisionResponse);
+	GetMesh()->SetCollisionResponseToChannel(ECC_GameTraceChannel3, CollisionResponse);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, CollisionResponse);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_GameTraceChannel3, CollisionResponse);
 }
 
 FName AEnemy::SelectRandomDieAnim()

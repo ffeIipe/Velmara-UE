@@ -347,15 +347,15 @@ void APaladin::LaunchUp_Implementation(const FVector& InstigatorLocation)
 void APaladin::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType)
 {
 	if (!Attributes || GetEnemyState() == EEnemyState::EES_Died || DamageType == USpectralTrapDamageType::StaticClass()) return;
-
+	
 	if (Attributes->IsShielded())
 	{
 		StopAnimMontage();
-		PlayAnimMontage(HitReactMontage, 1.f, FName("ShieldHit"));
+		ShieldHit();
 	}
 	else if (Attributes->IsAlive())
 	{
-		Super::GetHit_Implementation(ImpactPoint, DamageType);
+		Super::GetHit_Implementation(ImpactPoint, DamageType); //sfx and fx
 		ReactToDamage(LastDamageType, ImpactPoint);
 	}
 }
@@ -367,17 +367,24 @@ UCharacterStateComponent* APaladin::GetCharacterStateComponent_Implementation()
 
 float APaladin::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
+	GEngine->AddOnScreenDebugMessage(13, 3.f, FColor::White, FString("Take Damage"));
+	
 	if (Attributes->IsAlive())
 	{
+		GEngine->AddOnScreenDebugMessage(14, 3.f, FColor::Green, FString("Is Alive"));
+
 		if (Attributes->IsShielded() && DamageEvent.DamageTypeClass == USpectralTrapDamageType::StaticClass())
 		{
+			GEngine->AddOnScreenDebugMessage(15, 3.f, FColor::Yellow, FString("Is Shielded"));
+
 			NotifyDamageTakenToBlackboard(DamageCauser);
 			UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShieldImpactSFX, Attributes->GetShieldMeshComponent()->GetComponentLocation());
 			Attributes->ReceiveShieldDamage(DamageAmount);
-			ShieldHit();
 		}
 		else
 		{
+			GEngine->AddOnScreenDebugMessage(16, 3.f, FColor::Orange, FString("Receiving Damage"));
+
 			NotifyDamageTakenToBlackboard(DamageCauser);
 			Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 		}

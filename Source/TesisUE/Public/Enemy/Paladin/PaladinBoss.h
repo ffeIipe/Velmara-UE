@@ -32,6 +32,8 @@ protected:
 
 	bool IsLaunchable_Implementation(ACharacter* DamageCauser) override;
 
+	void GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType) override;
+
 private:
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<AEnemy> MinionToSpawnClass;
