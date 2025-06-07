@@ -64,7 +64,7 @@ protected:
 		FImage Image;
 	};
 
-	UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Weapon Properties")
 	UStaticMeshComponent* ItemMesh;
 
 	void OnSphereBeginOverlap(

@@ -11,34 +11,5 @@ ASpectralObject::ASpectralObject()
 
 void ASpectralObject::BeginPlay()
 {
-   if (ItemMesh->GetMaterial(0))
-   {
-       SpectralMaterial = UMaterialInstanceDynamic::Create(ItemMesh->GetMaterial(0), this);
-       ItemMesh->SetMaterial(0, SpectralMaterial);
-   }
-   
-   SetSpectralVisibility(false);
-
-   Super::BeginPlay();
-}
-
-void ASpectralObject::SetSpectralVisibility(bool bIsPlayerInHumanForm)
-{
-    if (!SpectralMaterial) return;
-    
-    bool bShouldBeVisible = (VisibleTo == ECharacterForm::ECF_Spectral) ? bIsPlayerInHumanForm : !bIsPlayerInHumanForm;
-
-    float AlphaValue = bShouldBeVisible ? 1.0f : 0.3f;
-    SpectralMaterial->SetScalarParameterValue(FName("Alpha"), AlphaValue);
-
-    if (ItemMesh)
-    {
-        ItemMesh->SetVisibility(bShouldBeVisible);
-        ItemMesh->SetCollisionEnabled(bShouldBeVisible ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
-    }
-    
-    if (BoxCollider)
-    {
-        BoxCollider->SetCollisionEnabled(bShouldBeVisible ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
-    }
+    Super::BeginPlay();
 }

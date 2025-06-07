@@ -1,12 +1,11 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "SpectralMode/SpectralObjectInteractable.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/SpectralObjectComponent.h"
 
 ASpectralObjectInteractable::ASpectralObjectInteractable()
 {
-	VisibleTo = ECharacterForm::ECF_Spectral;
+	SpectralObjectComponent = CreateDefaultSubobject<USpectralObjectComponent>(TEXT("SpectralObjectComponent"));
+	SpectralObjectComponent->VisibleTo = ECharacterForm::ECF_Spectral;
 }
 
 void ASpectralObjectInteractable::Use(ACharacter* Character)
@@ -15,7 +14,7 @@ void ASpectralObjectInteractable::Use(ACharacter* Character)
 
 	for (AActor* Door : DoorArray)
 	{
-		if (!IsValid(Door)) break;
+		if (!IsValid(Door)) return;
 
 		else
 		{

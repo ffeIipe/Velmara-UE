@@ -16,14 +16,19 @@ class TESISUE_API ASpectralObject : public AItem
 public:
     ASpectralObject();
 
-    UFUNCTION()
-    virtual void SetSpectralVisibility(bool bIsVisible);
+   /* UFUNCTION()
+    virtual void SetSpectralVisibility(bool bIsVisible);*/
+
+    class USpectralObjectComponent* GetSpectralObjectComponent() { return SpectralObjectComponent; };
 
 protected:
     void BeginPlay() override;
 
-    UMaterialInstanceDynamic* SpectralMaterial;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visibility")
+    USpectralObjectComponent* SpectralObjectComponent;
+
+    /*UMaterialInstanceDynamic* SpectralMaterial;
 
     UPROPERTY(EditInstanceOnly, Category = "Visibility")
-    ECharacterForm VisibleTo;
+    ECharacterForm VisibleTo;*/
 };

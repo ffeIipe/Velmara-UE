@@ -1,4 +1,5 @@
 #include "Components/PlayerFormComponent.h"
+#include "Components/SpectralObjectComponent.h"
 #include "Interfaces/CharacterState.h"
 #include "GameFramework/Actor.h"
 #include "Engine/World.h"
@@ -64,7 +65,9 @@ void UPlayerFormComponent::ApplySpectralEffects()
     //TODO: improve it with a subscription to an a static class
     for (TActorIterator<ASpectralObject> It(GetWorld()); It; ++It)
     {
-        It->SetSpectralVisibility(true);
+        if (!It->GetSpectralObjectComponent())return;
+
+        It->GetSpectralObjectComponent()->SetSpectralVisibility(true);
     }
 }
 
@@ -77,10 +80,9 @@ void UPlayerFormComponent::ApplyHumanEffects()
     //TODO: improve it with a subscription to an a static class
     for (TActorIterator<ASpectralObject> It(GetWorld()); It; ++It)
     {
-        if (It)
-        {
-            It->SetSpectralVisibility(false);
-        }
+        if (!It || !It->GetSpectralObjectComponent()) return;
+        
+        It->GetSpectralObjectComponent()->SetSpectralVisibility(false);
     }
 }
 
