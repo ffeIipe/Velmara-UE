@@ -113,6 +113,8 @@ void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	GetCapsuleComponent()->SetGenerateOverlapEvents(true);
 
+	GetMesh()->bPauseAnims = false;
+
 	HandleEnemyCollision(ECR_Block);
 
 	EnemyState = EEnemyState::EES_None;
@@ -186,6 +188,7 @@ void AEnemy::DeactivateEnemy()
 	HandleEnemyCollision(ECR_Ignore);
 
 	StopAnimMontage();
+	GetMesh()->bPauseAnims = true;
 
 	if (PromptWidgetComponent && PromptWidgetComponent->GetWidget())
 	{
@@ -207,7 +210,6 @@ void AEnemy::DeactivateEnemy()
 		}
 	}
 
-	EnemyState = EEnemyState::EES_None;
 	isLaunched = false;
 	DamageCauserOf = nullptr;
 
@@ -219,7 +221,13 @@ void AEnemy::DeactivateEnemy()
 
 void AEnemy::Die(AActor* DamageCauser)
 {
+	if (EnemyState == EEnemyState::EES_Died) return;
+
 	SetEnemyState(EEnemyState::EES_Died);
+
+	StopAnimMontage();
+	PlayAnimMontage(DeathMontage, 1.f, SelectRandomDieAnim());
+
 	if (CharacterStateComponent) CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Dead);
 
 	DamageCauserOf = DamageCauser;
@@ -242,15 +250,7 @@ void AEnemy::Die(AActor* DamageCauser)
 		}
 	}
 
-	APlayerMain* PlayerCharacter = Cast<APlayerMain>(PossessionOwner);
-	if (PlayerCharacter && IsValid(PlayerCharacter))
-	{
-		// UnPossess() handles the logic for player unpossessing this enemy.
-		// UnPossessAndKill calls UnPossessBase. If Die() is called by something else while possessed,
-		// we might need to ensure a clean unpossession.
-		// The DeactivateEnemy() has a robust check now.
-	}
-	else if (PossessionOwner != nullptr)
+	if (PossessionOwner != nullptr)
 	{
 		PossessionOwner = nullptr;
 	}
@@ -420,16 +420,19 @@ void AEnemy::UpdateDissolveEffect(float Value)
 
 void AEnemy::Move(const FInputActionValue& Value)
 {
-	const FVector2D MoveVector = Value.Get<FVector2D>();
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Dead, ECharacterActions::ECA_Stun }))
+	{
+		const FVector2D MoveVector = Value.Get<FVector2D>();
 
-	const FRotator ControlRotation = GetControlRotation();
-	const FRotator YawRotation(0.f, ControlRotation.Yaw, 0.f);
+		const FRotator ControlRotation = GetControlRotation();
+		const FRotator YawRotation(0.f, ControlRotation.Yaw, 0.f);
 
-	const FVector DirectionForward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-	const FVector DirectionSideward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+		const FVector DirectionForward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+		const FVector DirectionSideward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
-	AddMovementInput(DirectionForward, MoveVector.Y);
-	AddMovementInput(DirectionSideward, MoveVector.X);
+		AddMovementInput(DirectionForward, MoveVector.Y);
+		AddMovementInput(DirectionSideward, MoveVector.X);
+	}
 }
 
 void AEnemy::Look(const FInputActionValue& Value)
@@ -459,26 +462,31 @@ void AEnemy::ResetEnemy()
 
 void AEnemy::ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoint)
 {
-	//future reactions for diff enemies
+	DirectionalHitReact(ImpactPoint, HitReactMontage);
 }
 
 void AEnemy::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType)
 {
-	if (HitSound)
+	if (Attributes->IsAlive())
 	{
-		UGameplayStatics::PlaySoundAtLocation(
-			this,
-			HitSound,
-			ImpactPoint
-		);
-	}
-	if (NiagaraSystem)
-	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-			GetWorld(),
-			NiagaraSystem,
-			ImpactPoint
-		);
+		ReactToDamage(LastDamageType, ImpactPoint);
+
+		if (HitSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(
+				this,
+				HitSound,
+				ImpactPoint
+			);
+		}
+		if (NiagaraSystem)
+		{
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+				GetWorld(),
+				NiagaraSystem,
+				ImpactPoint
+			);
+		}
 	}
 }
 
@@ -534,6 +542,7 @@ float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AC
 		return 0.f;
 	}
 
+	//limpiar esta garompa
 	const float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
 	const UDamageTypeMain* MainDamageType = DamageEvent.DamageTypeClass
@@ -607,7 +616,8 @@ void AEnemy::DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage* HitRe
 void AEnemy::HandleEnemyCollision(ECollisionResponse CollisionResponse)
 {
 	GetMesh()->SetCollisionResponseToChannel(ECC_Pawn, CollisionResponse);
-	GetMesh()->SetCollisionResponseToChannel(ECC_GameTraceChannel3, CollisionResponse);
+	GetMesh()->SetCollisionResponseToChannel(ECC_GameTraceChannel3, CollisionResponse); //sword trace
+	GetMesh()->SetCollisionResponseToChannel(ECC_GameTraceChannel2, CollisionResponse); //spectral weapon trace
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, CollisionResponse);
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_GameTraceChannel3, CollisionResponse);
 }

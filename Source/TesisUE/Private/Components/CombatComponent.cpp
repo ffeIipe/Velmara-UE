@@ -271,10 +271,14 @@ void UCombatComponent::SoftLockOn()
 		FVector Start = GetOwner()->GetActorLocation();
 		FVector End = (OwningCharacter->GetLastMovementInputVector() * SoftLockDistance) + GetOwner()->GetActorLocation();
 
-		if (AActor* Enemy = Cast<APaladin>(SphereTraceForEnemies(Start, End)))
+		if (APaladin* Enemy = Cast<APaladin>(SphereTraceForEnemies(Start, End)))
 		{
-			SoftLockTarget = Enemy;
-			RotationToTarget();
+			if (Enemy->GetEnemyState() != EEnemyState::EES_Died)
+			{
+				SoftLockTarget = Enemy;
+				RotationToTarget();
+			}
+			else SoftLockTarget = nullptr;
 		}
 		else SoftLockTarget = nullptr;
 	}
@@ -589,9 +593,12 @@ void UCombatComponent::Input_Launch(const FInputActionValue& Value)
 {
 	if (CanAttack())
 	{
-		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
 		SoftLockOn();
-		OwningCharacter->PlayAnimMontage(LaunchMontage);
+		if (SoftLockTarget)
+		{
+			CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
+			OwningCharacter->PlayAnimMontage(LaunchMontage);
+		}
 	}
 }
 

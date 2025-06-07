@@ -128,7 +128,6 @@ void APaladin::Die(AActor* DamageCauser)
 		LaunchCharacter(FVector(0.f, 0.f, -300.f), true, true);
 	}
 
-	PlayAnimMontage(DeathMontage, 1.f, SelectRandomDieAnim());
 	DissolveTimeline->Play();
 	
 	TArray<AEnemy*> NearbyEnemies = GenerateSphereOverlapToDetectOtherEnemies(GetActorLocation(), this);
@@ -353,11 +352,14 @@ void APaladin::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDa
 		StopAnimMontage();
 		ShieldHit();
 	}
-	else if (Attributes->IsAlive())
-	{
-		Super::GetHit_Implementation(ImpactPoint, DamageType); //sfx and fx
-		ReactToDamage(LastDamageType, ImpactPoint);
-	}
+
+	Super::GetHit_Implementation(ImpactPoint, DamageType); //sfx and fx
+
+	//else if (Attributes->IsAlive())
+	//{
+	//	Super::GetHit_Implementation(ImpactPoint, DamageType); //sfx and fx
+	//	ReactToDamage(LastDamageType, ImpactPoint);
+	//}
 }
 
 UCharacterStateComponent* APaladin::GetCharacterStateComponent_Implementation()
@@ -421,8 +423,6 @@ void APaladin::HitInAir()
 
 void APaladin::ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoint)
 {
-	Super::ReactToDamage(DamageType, ImpactPoint);
-
 	switch (DamageType)
 	{
 	case EMainDamageTypes::EMDT_CrashDown:
@@ -438,7 +438,7 @@ void APaladin::ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactP
 		return;
 		break;
 	default:
-		DirectionalHitReact(ImpactPoint, HitReactMontage);
+		Super::ReactToDamage(DamageType, ImpactPoint);
 		break;
 	}
 }

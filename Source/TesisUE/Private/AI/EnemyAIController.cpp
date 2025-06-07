@@ -8,8 +8,7 @@
 #include "Components/CharacterStateComponent.h"
 #include "Enemy/Enemy.h"
 
-AEnemyAIController::AEnemyAIController(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer.SetDefaultSubobjectClass<UCrowdFollowingComponent>("PathFollowingComponent"))
+AEnemyAIController::AEnemyAIController(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer.SetDefaultSubobjectClass<UCrowdFollowingComponent>("PathFollowingComponent"))
 {
 	AISenseConfig_Sight = CreateDefaultSubobject<UAISenseConfig_Sight>("EnemySenseConfig_Sight");
 	AISenseConfig_Sight->DetectionByAffiliation.bDetectEnemies = true;
@@ -40,8 +39,6 @@ ETeamAttitude::Type AEnemyAIController::GetTeamAttitudeTowards(const AActor& Oth
 
 void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
-    GEngine->AddOnScreenDebugMessage(7, -1.f, FColor::Emerald, FString("Started updating..."));
-
     AEnemy* Enemy = Cast<AEnemy>(GetPawn());
     APawn* PlayerPawn = Cast<APawn>(Actor);
     UCharacterStateComponent* CharacterStateComponent = PlayerPawn ? PlayerPawn->FindComponentByClass<UCharacterStateComponent>() : nullptr; // Añadir null check
@@ -49,7 +46,6 @@ void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Sti
 
     if (!BlackboardComponent || !PlayerPawn || !Enemy || bPauseEnemyPerceptionUpdate)
     {
-        GEngine->AddOnScreenDebugMessage(5, -1.f, FColor::Red, FString("Invalid objects to continue..."));
         return;
     }
 
@@ -59,20 +55,13 @@ void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Sti
         BlackboardComponent->ClearValue(FName("DistToTarget"));
         BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), false);
         
-        GEngine->AddOnScreenDebugMessage(4, -1.f, FColor::Red, FString("CharacterStateComponent invalid..."));
-        
         return;
     }
 
-
     if (Enemy->GetEnemyType() == EEnemyType::Paladin)
     {
-        GEngine->AddOnScreenDebugMessage(6, -1.f, FColor::Orange, FString("Updating..."));
-
         if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
         {
-            GEngine->AddOnScreenDebugMessage(2, -1.f, FColor::Blue, FString("Can't see player, it's in spectral mode (vampire mode)!"));
-
             EnemyPerceptionComponent->ForgetActor(Actor);
             BlackboardComponent->ClearValue(FName("TargetActor"));
             BlackboardComponent->ClearValue(FName("DistToTarget"));
@@ -87,7 +76,7 @@ void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Sti
             BlackboardComponent->SetValueAsObject(FName("TargetActor"), Actor);
             BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), true);
         }
-        else if (BlackboardComponent->GetValueAsFloat(FName("DistToTarget")) >= 2000.f)
+        /*else if (BlackboardComponent->GetValueAsFloat(FName("DistToTarget")) >= 2000.f)
         {
             GEngine->AddOnScreenDebugMessage(3, -1.f, FColor::Cyan, FString("Can't see player, it's too far or obscured!"));
             EnemyPerceptionComponent->ForgetActor(Actor);
@@ -95,6 +84,6 @@ void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Sti
             BlackboardComponent->ClearValue(FName("TargetActor"));
             BlackboardComponent->ClearValue(FName("DistToTarget"));
             BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), false);
-        }
+        }*/
     }
 }
