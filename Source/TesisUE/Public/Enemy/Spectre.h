@@ -26,6 +26,8 @@ protected:
 		class AController* EventInstigator,
 		AActor* DamageCauser) override;
 
+	bool IsLaunchable_Implementation(ACharacter* Character) override;
+
 	bool CanBeFinished_Implementation() override;
 
 	void GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType) override;
@@ -34,4 +36,5 @@ private:
 	UPROPERTY(EditDefaultsOnly)
 	TArray<UAnimMontage*> SpectralAttackMontages;
 
+	void Attack(const FInputActionValue& Value) override;
 };

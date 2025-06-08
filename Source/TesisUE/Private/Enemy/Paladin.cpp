@@ -57,8 +57,6 @@ APaladin::APaladin()
 	
 	BoxTraceEnd = CreateDefaultSubobject<USceneComponent>(TEXT("Box Trace End"));
 	BoxTraceEnd->SetupAttachment(SwordMesh);
-
-	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("Combat Component"));
 }
 
 bool APaladin::IsLaunchable_Implementation(ACharacter* DamageCauser)
@@ -145,11 +143,6 @@ void APaladin::Die(AActor* DamageCauser)
 				}
 			}
 		}
-	}
-
-	if (PossessionOwner)
-	{
-		UnPossess();
 	}
 }
 
@@ -281,7 +274,6 @@ void APaladin::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 	if (!EnhancedInputComponent) return;
 
-	EnhancedInputComponent->BindAction(CombatComponent->AttackAction, ETriggerEvent::Triggered, this, &APaladin::Attack);
 	EnhancedInputComponent->BindAction(CombatComponent->HeavyAttackAction, ETriggerEvent::Triggered, this, &APaladin::HeavyAttack);
 }
 
@@ -295,6 +287,8 @@ void APaladin::ShieldHit()
 
 void APaladin::Attack(const FInputActionValue& Value)
 {
+	Super::Attack(Value);
+
 	CombatComponent->Input_Attack(Value);
 }
 
@@ -360,11 +354,6 @@ void APaladin::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDa
 	//	Super::GetHit_Implementation(ImpactPoint, DamageType); //sfx and fx
 	//	ReactToDamage(LastDamageType, ImpactPoint);
 	//}
-}
-
-UCharacterStateComponent* APaladin::GetCharacterStateComponent_Implementation()
-{
-	return CharacterStateComponent;
 }
 
 float APaladin::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)

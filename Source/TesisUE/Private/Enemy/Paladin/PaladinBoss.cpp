@@ -79,16 +79,16 @@ float APaladinBoss::TakeDamage(float DamageAmount, FDamageEvent const& DamageEve
 
 void APaladinBoss::DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage* HitReactAnimMontage)
 {
-	if (UKismetMathLibrary::RandomBool())
-	{
-		StopAnimMontage();
-		PlayAnimMontage(HitReactAnimMontage, 1.f, FName("FromRight"));
-	}
-	else
-	{
-		StopAnimMontage();
-		PlayAnimMontage(HitReactAnimMontage, 1.f, FName("FromLeft"));
-	}
+	//if (UKismetMathLibrary::RandomBool())
+	//{
+	//	StopAnimMontage();
+	//	PlayAnimMontage(HitReactAnimMontage, 1.f, FName("FromRight"));
+	//}
+	//else
+	//{
+	//	StopAnimMontage();
+	//	PlayAnimMontage(HitReactAnimMontage, 1.f, FName("FromLeft"));
+	//}
 }
 
 bool APaladinBoss::IsLaunchable_Implementation(ACharacter* DamageCauser)
@@ -98,7 +98,7 @@ bool APaladinBoss::IsLaunchable_Implementation(ACharacter* DamageCauser)
 
 void APaladinBoss::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType)
 {
-	
+	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Emerald, FString("GET HIT PALADIN BOSS"));
 }
 
 void APaladinBoss::TryToInvoke()
@@ -156,6 +156,6 @@ void APaladinBoss::HandleMinionDeactivated(AEnemy* DeactivatedMinion)
 			DeactivatedMinion->OnDeactivated.RemoveDynamic(this, &APaladinBoss::HandleMinionDeactivated);
 		}
 		
-		TryToInvoke();
+		//TryToInvoke();
 	}
 }

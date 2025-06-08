@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "Interfaces/HitInterface.h"
 #include "Interfaces/MementoEntity.h"
+#include "Interfaces/CharacterState.h"
 #include "Subsystems/EnemyPoolManager.h"
 #include "Enemy.generated.h"
 
@@ -47,7 +48,7 @@ enum class EEnemyState : uint8
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEnemyDeactivated, AEnemy*, DeactivatedEnemy);
 
 UCLASS()
-class TESISUE_API AEnemy : public ACharacter, public IHitInterface, public IMementoEntity
+class TESISUE_API AEnemy : public ACharacter, public IHitInterface, public IMementoEntity, public ICharacterState
 {
 	GENERATED_BODY()
 
@@ -83,13 +84,15 @@ public:
 
 	virtual bool CanBeFinished_Implementation() override;
 
-	virtual bool IsLaunchable_Implementation(ACharacter* Character);
+	virtual bool IsLaunchable_Implementation(ACharacter* Character) override;
 
-	virtual void LaunchUp_Implementation(const FVector& InstigatorLocation);
+	virtual void LaunchUp_Implementation(const FVector& InstigatorLocation) override;
 
 	virtual void ShieldHit_Implementation();
 
 	virtual UMementoComponent* GetMementoComponent_Implementation() override;
+
+	virtual UCharacterStateComponent* GetCharacterStateComponent_Implementation() override;
 
 	FORCEINLINE EEnemyType GetEnemyType() const { return EnemyType; }
 
@@ -147,6 +150,9 @@ public:
 	APlayerMain* GetPossessionOwner() { return PossessionOwner; }
 
 protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components | Combat")
+	UCombatComponent* CombatComponent;
+
 	virtual void BeginPlay() override;
 
 	virtual void Jump() override;
@@ -202,8 +208,8 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Visual Effects");
 	UNiagaraSystem* NiagaraSystem;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Visual Effects | Dissolve")
-	UMaterialParameterCollection* DissolveMaterialCollection;
+	UPROPERTY(EditAnywhere, Category = "Visual Effects | Dissolve")
+	TArray<UMaterialInstanceDynamic*> DissolveMaterials;
 
 	UPROPERTY(VisibleAnywhere)
 	class UTimelineComponent* DissolveTimeline;
@@ -244,7 +250,7 @@ protected:
 	
 	virtual void Look(const FInputActionValue& Value);
 
-
+	virtual void Attack(const FInputActionValue& Value);
 
 	virtual void DoubleJump(const FInputActionValue& Value);
 
@@ -277,9 +283,6 @@ protected:
 
 private:
 	AAIController* AIOriginalController;
-
-	UPROPERTY()
-	TArray<UMaterialInstanceDynamic*> DynamicMaterials;
 
 	UPROPERTY()
 	FTimerHandle HitFlashTimerHandle;

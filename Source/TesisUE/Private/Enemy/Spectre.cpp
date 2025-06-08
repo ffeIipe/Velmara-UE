@@ -1,6 +1,7 @@
 #include "Enemy/Spectre.h"
 #include "Components/AttributeComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/CombatComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 #include "Engine/DamageEvents.h"
@@ -46,6 +47,11 @@ float ASpectre::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 	return DamageAmount;
 }
 
+bool ASpectre::IsLaunchable_Implementation(ACharacter* Character)
+{
+	return true;
+}
+
 bool ASpectre::CanBeFinished_Implementation()
 {
 	return false; //no puede ser finisheada esta entidad
@@ -54,4 +60,11 @@ bool ASpectre::CanBeFinished_Implementation()
 void ASpectre::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType)
 {
 	Super::GetHit_Implementation(ImpactPoint, DamageType);
+}
+
+void ASpectre::Attack(const FInputActionValue& Value)
+{
+	Super::Attack(Value);
+
+	CombatComponent->Input_Attack(Value);
 }

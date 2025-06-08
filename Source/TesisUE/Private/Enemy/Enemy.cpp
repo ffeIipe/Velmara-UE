@@ -5,6 +5,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
 #include "Components/MementoComponent.h"
+#include "Components/CombatComponent.h"
 #include "Components/ExtraMovementComponent.h"
 #include "Components/TimelineComponent.h"
 #include "HUD/HealthBarComponent.h"
@@ -78,6 +79,8 @@ AEnemy::AEnemy()
 	GetCharacterMovement()->BrakingDecelerationWalking = 1000.f;
 	GetCharacterMovement()->GravityScale = 3.f;
 	GetCharacterMovement()->JumpZVelocity = 1000.f;
+
+	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("Combat Component"));
 
 	CharacterStateComponent = CreateDefaultSubobject<UCharacterStateComponent>(TEXT("CharacterStateComponent"));
 
@@ -250,11 +253,6 @@ void AEnemy::Die(AActor* DamageCauser)
 		}
 	}
 
-	if (PossessionOwner != nullptr)
-	{
-		PossessionOwner = nullptr;
-	}
-
 	if (DamageCauser && DamageCauser->GetComponentByClass<UAttributeComponent>())
 	{
 		DamageCauser->GetComponentByClass<UAttributeComponent>()->IncreaseEnergy(FMath::RandRange(MinEnergy, MaxEnergy));
@@ -267,6 +265,11 @@ void AEnemy::Die(AActor* DamageCauser)
 
 	DisableAI();
 	HandleEnemyCollision(ECR_Ignore);
+
+	if (PossessionOwner)
+	{
+		UnPossess();
+	}
 
 	GetWorldTimerManager().SetTimer(ReturnToPoolTimerHandle, this, &AEnemy::RequestReturnToPool, 5.0f, false);
 }
@@ -347,12 +350,15 @@ void AEnemy::BeginPlay()
 	if (IsValid(GetMesh()))
 	{
 		int32 MaterialCount = GetMesh()->GetNumMaterials();
-		DynamicMaterials.Empty(MaterialCount);
-		DynamicMaterials.SetNum(MaterialCount);
+		DissolveMaterials.Empty(MaterialCount);
+		DissolveMaterials.SetNum(MaterialCount);
 
 		for (int32 i = 0; i < MaterialCount; ++i)
 		{
-			DynamicMaterials[i] = GetMesh()->CreateAndSetMaterialInstanceDynamic(i);
+			//DissolveMaterial[i] = GetMesh()->CreateAndSetMaterialInstanceDynamic(i);
+
+			DissolveMaterials.Add(UMaterialInstanceDynamic::Create(GetMesh()->GetMaterial(i), this));
+			GetMesh()->SetMaterial(i, DissolveMaterials[i]);
 		}
 	}
 }
@@ -404,11 +410,14 @@ void AEnemy::UpdateDissolveEffect(float Value)
 {
 	float ClampedValue = FMath::Clamp(Value, 0.f, 1.f);
 
-	for (UMaterialInstanceDynamic* DynamicMaterial : DynamicMaterials)
+	GEngine->AddOnScreenDebugMessage(INDEX_NONE, -1.f, FColor::Green, FString::SanitizeFloat(ClampedValue));
+
+	for (UMaterialInstanceDynamic* DissolveMaterial : DissolveMaterials)
 	{
-		if (IsValid(DynamicMaterial))
+		if (IsValid(DissolveMaterial))
 		{
-			DynamicMaterial->SetScalarParameterValue(FName("Animation"), ClampedValue);
+			GEngine->AddOnScreenDebugMessage(INDEX_NONE, -1.f, FColor::Blue, FString::SanitizeFloat(ClampedValue));
+			DissolveMaterial->SetScalarParameterValue(FName("Animation"), ClampedValue);
 		}
 	}
 
@@ -441,6 +450,11 @@ void AEnemy::Look(const FInputActionValue& Value)
 
 	AddControllerPitchInput(LookingVector.Y);
 	AddControllerYawInput(LookingVector.X);
+}
+
+void AEnemy::Attack(const FInputActionValue& Value)
+{
+	//sus children se encargan de overridear esta funcion
 }
 
 void AEnemy::DoubleJump(const FInputActionValue& Value)
@@ -533,6 +547,11 @@ void AEnemy::ShieldHit_Implementation()
 UMementoComponent* AEnemy::GetMementoComponent_Implementation()
 {
 	return Memento;
+}
+
+UCharacterStateComponent* AEnemy::GetCharacterStateComponent_Implementation()
+{
+	return CharacterStateComponent;
 }
 
 float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
@@ -734,6 +753,7 @@ void AEnemy::OnPossessed(APlayerMain* NewOwner, float OwnerEnergy)
 			{
 				if (PossessionOwner == WeakOwningPlayer.Get(true))
 				{
+					UnPossess();
 					PossessionOwner = nullptr;
 				}
 			}
@@ -763,9 +783,7 @@ void AEnemy::UnPossessBase()
 
 void AEnemy::UnPossess()
 {
-	APlayerMain* PlayerOwner = Cast<APlayerMain>(PossessionOwner);
-
-	if (PlayerOwner && IsValid(PlayerOwner))
+	if (APlayerMain* PlayerOwner = Cast<APlayerMain>(PossessionOwner))
 	{
 		if (PlayerOwner->GetAttributes())
 		{
@@ -825,6 +843,9 @@ void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &AEnemy::Jump);
 	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &AEnemy::DoubleJump);
 	EnhancedInputComponent->BindAction(ExtraMovementComponent->DodgeAction, ETriggerEvent::Triggered, this, &AEnemy::Dodge);
+
+	EnhancedInputComponent->BindAction(CombatComponent->AttackAction, ETriggerEvent::Triggered, this, &AEnemy::Attack);
+
 	EnhancedInputComponent->BindAction(UnPossessAction, ETriggerEvent::Completed, this, &AEnemy::UnPossess);
 	EnhancedInputComponent->BindAction(UnPossessAndKillAction, ETriggerEvent::Completed, this, &AEnemy::UnPossessAndKill);
 }

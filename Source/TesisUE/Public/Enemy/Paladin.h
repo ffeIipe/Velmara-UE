@@ -10,7 +10,7 @@
 class UBoxComponent;
 
 UCLASS()
-class TESISUE_API APaladin : public AEnemy, public ICharacterState
+class TESISUE_API APaladin : public AEnemy
 {
 	GENERATED_BODY()
 
@@ -26,8 +26,6 @@ public:
 	virtual void LaunchUp_Implementation(const FVector& InstigatorLocation) override;
 
 	void GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType) override;
-
-	virtual UCharacterStateComponent* GetCharacterStateComponent_Implementation() override;
 
 	float TakeDamage(
 		float DamageAmount,
@@ -59,9 +57,6 @@ protected:
 	
 	UPROPERTY(EditDefaultsOnly)
 	USceneComponent* BoxTraceEnd;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components | Combat")
-	UCombatComponent* CombatComponent;
 
 	UFUNCTION()
 	virtual void OnSwordOverlap(
@@ -110,7 +105,7 @@ private:
 
 	void ShieldHit();
 
-	void Attack(const FInputActionValue& Value);
+	void Attack(const FInputActionValue& Value) override;
 
 	void HeavyAttack(const FInputActionValue& Value);
 

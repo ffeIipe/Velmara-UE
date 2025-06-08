@@ -21,7 +21,7 @@ public:
 	AEnemyAIController(const FObjectInitializer& ObjectInitializer);
 
 	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
-
+	
 	bool bPauseEnemyPerceptionUpdate = false;
 
 protected:
