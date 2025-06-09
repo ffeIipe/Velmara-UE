@@ -24,10 +24,10 @@ void USpectralObjectComponent::SetSpectralVisibility(bool bIsVisible)
 
 		Doors[i]->SetVisibility(bShouldBeVisible);
 
-		//if (UBoxComponent* DoorColl = Doors[i]->GetComponentByClass<UBoxComponent>())
-		//{
-		//	DoorColl->SetCollisionEnabled(bShouldBeVisible ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
-		//}
+		if (UBoxComponent* DoorColl = Doors[i]->GetOwner()->GetComponentByClass<UBoxComponent>())
+		{
+			DoorColl->SetCollisionEnabled(bShouldBeVisible ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
+		}
 	}
 }
 
@@ -39,6 +39,8 @@ void USpectralObjectComponent::BeginPlay()
 	{
 		if (Doors.IsValidIndex(i))
 		{
+			if (!Doors[i]->GetMaterial(0)) return;
+
 			SpectralMaterial.Add(UMaterialInstanceDynamic::Create(Doors[i]->GetMaterial(0), this));
 			Doors[i]->SetMaterial(0, SpectralMaterial[i]);
 		}

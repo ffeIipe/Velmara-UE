@@ -4,7 +4,6 @@
 
 ASpectralObjectInteractable::ASpectralObjectInteractable()
 {
-	SpectralObjectComponent = CreateDefaultSubobject<USpectralObjectComponent>(TEXT("SpectralObjectComponent"));
 	SpectralObjectComponent->VisibleTo = ECharacterForm::ECF_Spectral;
 }
 
