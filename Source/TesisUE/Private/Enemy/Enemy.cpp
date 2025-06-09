@@ -231,6 +231,8 @@ void AEnemy::Die(AActor* DamageCauser)
 	StopAnimMontage();
 	PlayAnimMontage(DeathMontage, 1.f, SelectRandomDieAnim());
 
+	DissolveTimeline->PlayFromStart();
+
 	if (CharacterStateComponent) CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Dead);
 
 	DamageCauserOf = DamageCauser;
@@ -307,6 +309,8 @@ void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
 
+	CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_EquippedSword);
+
 	if (DissolveCurve)
 	{
 		FOnTimelineFloat ProgressFunction;
@@ -347,13 +351,9 @@ void AEnemy::BeginPlay()
 		AIOriginalController = AIControllerInstance;
 	}
 
-	if (IsValid(GetMesh()))
+	if (GetMesh())
 	{
-		int32 MaterialCount = GetMesh()->GetNumMaterials();
-		DissolveMaterials.Empty(MaterialCount);
-		DissolveMaterials.SetNum(MaterialCount);
-
-		for (int32 i = 0; i < MaterialCount; ++i)
+		for (int32 i = 0; i < GetMesh()->GetMaterials().Num(); ++i)
 		{
 			//DissolveMaterial[i] = GetMesh()->CreateAndSetMaterialInstanceDynamic(i);
 
@@ -410,7 +410,7 @@ void AEnemy::UpdateDissolveEffect(float Value)
 {
 	float ClampedValue = FMath::Clamp(Value, 0.f, 1.f);
 
-	GEngine->AddOnScreenDebugMessage(INDEX_NONE, -1.f, FColor::Green, FString::SanitizeFloat(ClampedValue));
+	//GEngine->AddOnScreenDebugMessage(INDEX_NONE, -1.f, FColor::Green, FString::SanitizeFloat(ClampedValue));
 
 	for (UMaterialInstanceDynamic* DissolveMaterial : DissolveMaterials)
 	{

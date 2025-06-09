@@ -70,8 +70,6 @@ void APaladin::BeginPlay()
 	
 	SwordCollider->OnComponentBeginOverlap.AddDynamic(this, &APaladin::OnSwordOverlap);
 
-	CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_EquippedSword);
-
 	if (Attributes)
 	{
 		Attributes->OnDettachShield.AddLambda(
@@ -125,8 +123,6 @@ void APaladin::Die(AActor* DamageCauser)
 		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
 		LaunchCharacter(FVector(0.f, 0.f, -300.f), true, true);
 	}
-
-	DissolveTimeline->Play();
 	
 	TArray<AEnemy*> NearbyEnemies = GenerateSphereOverlapToDetectOtherEnemies(GetActorLocation(), this);
 	for (AEnemy* NearbyEnemy : NearbyEnemies)

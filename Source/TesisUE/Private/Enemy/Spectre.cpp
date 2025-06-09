@@ -62,6 +62,13 @@ void ASpectre::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDa
 	Super::GetHit_Implementation(ImpactPoint, DamageType);
 }
 
+void ASpectre::OnPossessed(APlayerMain* NewOwner, float OwnerEnergy)
+{
+	Super::OnPossessed(NewOwner, OwnerEnergy);
+
+	bUseControllerRotationYaw = true;
+}
+
 void ASpectre::Attack(const FInputActionValue& Value)
 {
 	Super::Attack(Value);
