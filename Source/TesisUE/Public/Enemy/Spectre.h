@@ -32,6 +32,8 @@ protected:
 
 	void GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType) override;
 
+	virtual void OnPossessed(APlayerMain* NewOwner, float OwnerEnergy) override;
+
 private:
 	UPROPERTY(EditDefaultsOnly)
 	TArray<UAnimMontage*> SpectralAttackMontages;

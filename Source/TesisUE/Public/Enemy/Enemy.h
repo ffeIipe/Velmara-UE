@@ -116,7 +116,7 @@ public:
 	USpringArmComponent* GetSpringArm();
 	
 	UFUNCTION()
-	void OnPossessed(APlayerMain* NewOwner, float OwnerEnergy);
+	virtual void OnPossessed(APlayerMain* NewOwner, float OwnerEnergy);
 	
 	UFUNCTION()
 	virtual void UnPossessBase();
