@@ -357,10 +357,13 @@ void AEnemy::BeginPlay()
 		{
 			//DissolveMaterial[i] = GetMesh()->CreateAndSetMaterialInstanceDynamic(i);
 
+			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString::SanitizeFloat(i));
+
 			DissolveMaterials.Add(UMaterialInstanceDynamic::Create(GetMesh()->GetMaterial(i), this));
 			GetMesh()->SetMaterial(i, DissolveMaterials[i]);
 		}
 	}
+	else GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Not valid Mesh..."));
 }
 
 void AEnemy::Jump()
