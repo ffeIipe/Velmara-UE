@@ -17,13 +17,13 @@ public:
 	UFUNCTION(BlueprintCallable)
 	virtual void SetSpectralVisibility(bool bIsVisible);
 
-	UPROPERTY(EditDefaultsOnly, Category = "Visibility")
+	UPROPERTY(EditAnywhere, Category = "Visibility")
 	ECharacterForm VisibleTo;
 
 protected:
 	virtual void BeginPlay() override;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Visibility")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visibility")
 	TArray<UStaticMeshComponent*> Doors;
 
 private:
