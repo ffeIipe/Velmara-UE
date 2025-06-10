@@ -85,7 +85,7 @@ void USpectralWeaponComponent::PrimaryFire()
         {
             Fire(true);
             CurrentAmmo--;
-            SetTimer(TimerHandle_BetweenPrimaryShots, .2f, &USpectralWeaponComponent::EnableFire);
+            SetTimer(TimerHandle_BetweenPrimaryShots, .15f, &USpectralWeaponComponent::EnableFire);
         }
         else if (CurrentAmmo <= 0)
         {
