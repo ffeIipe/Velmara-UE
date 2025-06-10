@@ -76,8 +76,6 @@ public:
 
 	bool bWasPossessed = false;
 
-	virtual void Tick(float DeltaTime) override;
-
 	virtual void GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType) override;
 
 	virtual void GetFinished_Implementation() override;
@@ -112,8 +110,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void EnableAI();
 	
-	UFUNCTION()
-	USpringArmComponent* GetSpringArm();
+	USpringArmComponent* GetSpringArm() { return SpringArm; };
 	
 	UFUNCTION()
 	virtual void OnPossessed(APlayerMain* NewOwner, float OwnerEnergy);
@@ -150,6 +147,13 @@ public:
 	APlayerMain* GetPossessionOwner() { return PossessionOwner; }
 
 protected:
+	UPROPERTY(EditAnywhere)
+	float RadiusToNotifyAllies = 2500.f;
+
+	TArray<AEnemy*> GenerateSphereOverlapToDetectOtherEnemies(const FVector& Origin, AActor* HitEnemyToExclude);
+
+	void NotifyDamageTakenToBlackboard(AActor* DamageCauser);
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components | Combat")
 	UCombatComponent* CombatComponent;
 
@@ -281,9 +285,11 @@ protected:
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Save System", meta = (DisplayName = "Unique Save ID"))
 	FName UniqueSaveID;
 
-private:
-	AAIController* AIOriginalController;
+	AAIController* AIController;
+	
+	class AEnemyAIController* EnemyAIController;
 
+private:
 	UPROPERTY()
 	FTimerHandle HitFlashTimerHandle;
 

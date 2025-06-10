@@ -129,13 +129,13 @@ void APaladin::Die(AActor* DamageCauser)
 	{
 		if (IsValid(NearbyEnemy))
 		{
-			AAIController* AIController = Cast<AAIController>(NearbyEnemy->GetController());
 			if (AIController && AIController->GetBlackboardComponent())
 			{
 				AIController->GetBlackboardComponent()->ClearValue(FName("TargetActor"));
-				if (AEnemyAIController* EnemyAICont = Cast<AEnemyAIController>(AIController))
+
+				if (EnemyAIController)
 				{
-					EnemyAICont->bPauseEnemyPerceptionUpdate = false;
+					EnemyAIController->bPauseEnemyPerceptionUpdate = false;
 				}
 			}
 		}
@@ -196,70 +196,19 @@ void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 				IgnoreActors.Add(Hit.GetActor());
 			}
 
-			if (PossessionOwner)
-			{
-				TArray<AEnemy*> NearbyEnemies = GenerateSphereOverlapToDetectOtherEnemies(Hit.ImpactPoint, Hit.GetActor());
-				for (AEnemy* EnemyToAlert : NearbyEnemies)
-				{
-					if (IsValid(EnemyToAlert))
-					{
-						EnemyToAlert->NotifyThreat(this);
-					}
-				}
-			}
+			//if (PossessionOwner)
+			//{
+			//	TArray<AEnemy*> NearbyEnemies = GenerateSphereOverlapToDetectOtherEnemies(Hit.ImpactPoint, Hit.GetActor());
+			//	for (AEnemy* EnemyToAlert : NearbyEnemies)
+			//	{
+			//		if (IsValid(EnemyToAlert))
+			//		{
+			//			EnemyToAlert->NotifyThreat(this);
+			//		}
+			//	}
+			//}
 		}
 	}
-}
-
-TArray<AEnemy*> APaladin::GenerateSphereOverlapToDetectOtherEnemies(const FVector& Origin, AActor* HitEnemyToExclude)
-{
-	TArray<AActor*> ActorsToIgnoreForSphere;
-	ActorsToIgnoreForSphere.Add(this);
-	if (HitEnemyToExclude)
-	{
-		ActorsToIgnoreForSphere.Add(HitEnemyToExclude);
-	}
-
-	TArray<AActor*> OverlappedActors;
-
-	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
-	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
-
-	bool bOverlapOccurred = UKismetSystemLibrary::SphereOverlapActors(
-		GetWorld(),
-		Origin,
-		RadiusToNotifyAllies,
-		ObjectTypes,
-		AEnemy::StaticClass(),
-		ActorsToIgnoreForSphere,
-		OverlappedActors
-	);
-
-	DrawDebugSphere(
-		GetWorld(),
-		Origin,
-		RadiusToNotifyAllies,
-		24,
-		FColor::Yellow,
-		false,
-		5.0f
-	);
-
-	TArray<AEnemy*> EnemiesFound;
-	if (bOverlapOccurred)
-	{
-		for (AActor* Actor : OverlappedActors)
-		{
-			AEnemy* EnemyActor = Cast<AEnemy>(Actor);
-
-			if (EnemyActor)
-			{
-				EnemiesFound.Add(EnemyActor);
-			}
-		}
-	}
-
-	return EnemiesFound;
 }
 
 void APaladin::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -293,40 +242,7 @@ void APaladin::HeavyAttack(const FInputActionValue& Value)
 	CombatComponent->Input_HeavyAttack(Value);
 }
 
-bool APaladin::NotifyDamageTakenToBlackboard(AActor* DamageCauser)
-{
-	if (AEnemy* EnemyRef = Cast<AEnemy>(DamageCauser))
-	{
-		if (EnemyRef->GetPossessionOwner())
-		{
-			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, FString("Hitted by Enemy possessed"));
-			if (AAIController* AIController = Cast<AAIController>(GetController()))
-			{
-				AIController->GetBlackboardComponent()->SetValueAsBool(FName("DamageTakenRecently"), true);
-				AIController->GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), DamageCauser);
-				AIController->GetBlackboardComponent()->SetValueAsBool(FName("CanSeePlayer"), true);
-				return true;
-			}
-			else return false;
-		}
-		else return false;
-	}
-	else if (APlayerMain* PlayerRef = Cast<APlayerMain>(DamageCauser))
-	{
-		if (AAIController* AIController = Cast<AAIController>(GetController()))
-		{
-			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Hitted by Player"));
 
-			AIController->GetBlackboardComponent()->SetValueAsBool(FName("DamageTakenRecently"), true);
-			AIController->GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), DamageCauser);
-			AIController->GetBlackboardComponent()->SetValueAsBool(FName("CanSeePlayer"), true);
-
-			return true;
-		}
-		else return false;
-	}
-	else return false;
-}
 
 void APaladin::LaunchUp_Implementation(const FVector& InstigatorLocation)
 {

@@ -67,11 +67,6 @@ protected:
 		bool bFromSweep,
 		const FHitResult& SweepResult);
 
-	TArray<AEnemy*> GenerateSphereOverlapToDetectOtherEnemies(const FVector& Origin, AActor* HitEnemyToExclude);
-
-	UPROPERTY(EditAnywhere)
-	float RadiusToNotifyAllies = 2500.f;
-
 	void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
 	UFUNCTION(BlueprintImplementableEvent)
@@ -95,9 +90,6 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "SFX")
 	USoundBase* ShieldImpactSFX;
-
-	UFUNCTION()
-	bool NotifyDamageTakenToBlackboard(AActor* DamageCauser);
 
 private:
 	UPROPERTY(EditAnywhere, Category = "SFX")

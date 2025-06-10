@@ -200,9 +200,9 @@ void AEnemy::DeactivateEnemy()
 	}
 
 	AAIController* AIControllerInstance = Cast<AAIController>(GetController());
-	if (!AIControllerInstance && AIOriginalController)
+	if (!AIControllerInstance && AIController)
 	{
-		AIControllerInstance = AIOriginalController;
+		AIControllerInstance = AIController;
 	}
 	if (AIControllerInstance && AIControllerInstance->GetBlackboardComponent())
 	{
@@ -348,17 +348,14 @@ void AEnemy::BeginPlay()
 	AAIController* AIControllerInstance = Cast<AAIController>(GetController());
 	if (AIControllerInstance)
 	{
-		AIOriginalController = AIControllerInstance;
+		AIController = AIControllerInstance;
+		EnemyAIController = Cast<AEnemyAIController>(AIController);
 	}
 
 	if (GetMesh())
 	{
 		for (int32 i = 0; i < GetMesh()->GetMaterials().Num(); ++i)
 		{
-			//DissolveMaterial[i] = GetMesh()->CreateAndSetMaterialInstanceDynamic(i);
-
-			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString::SanitizeFloat(i));
-
 			DissolveMaterials.Add(UMaterialInstanceDynamic::Create(GetMesh()->GetMaterial(i), this));
 			GetMesh()->SetMaterial(i, DissolveMaterials[i]);
 		}
@@ -391,12 +388,10 @@ void AEnemy::NotifyThreat(AActor* ThreatActor)
 		return;
 	}
 
-	AAIController* AIController = Cast<AAIController>(GetController());
 	if (AIController && AIController->GetBlackboardComponent())
 	{
 		AIController->GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), ThreatActor);
-
-		AEnemyAIController* EnemyAIController = Cast<AEnemyAIController>(AIController);
+		
 		if (EnemyAIController)
 		{
 			EnemyAIController->bPauseEnemyPerceptionUpdate = true;
@@ -404,16 +399,9 @@ void AEnemy::NotifyThreat(AActor* ThreatActor)
 	}
 }
 
-void AEnemy::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-}
-
 void AEnemy::UpdateDissolveEffect(float Value)
 {
 	float ClampedValue = FMath::Clamp(Value, 0.f, 1.f);
-
-	//GEngine->AddOnScreenDebugMessage(INDEX_NONE, -1.f, FColor::Green, FString::SanitizeFloat(ClampedValue));
 
 	for (UMaterialInstanceDynamic* DissolveMaterial : DissolveMaterials)
 	{
@@ -676,54 +664,49 @@ void AEnemy::SetEnemyState(EEnemyState NewState)
 
 void AEnemy::DisableAI()
 {
-	if (AIOriginalController)
+	if (AIController)
 	{
-		AIOriginalController->StopMovement();
-		AIOriginalController->UnPossess();
+		AIController->StopMovement();
+		AIController->UnPossess();
 	}
-	else
-	{
-		AAIController* AIController = Cast<AAIController>(GetController());
-		if (AIController)
-		{
-			AIController->StopMovement();
-			AIController->UnPossess();
-		}
-	}
+	//else
+	//{
+	//	AAIController* AIController = Cast<AAIController>(GetController());
+	//	if (AIController)
+	//	{
+	//		AIController->StopMovement();
+	//		AIController->UnPossess();
+	//	}
+	//}
 }
 
 void AEnemy::EnableAI()
 {
-	if (!AIOriginalController)
+	if (!AIController)
 	{
 		AAIController* CurrentController = Cast<AAIController>(GetController());
 		if (CurrentController)
 		{
-			AIOriginalController = CurrentController;
+			AIController = CurrentController;
 		}
 		else return;
 	}
 
-	if (AIOriginalController)
+	if (AIController)
 	{
 		if (!PossessionOwner)
 		{
-			AIOriginalController->Possess(this);
+			AIController->Possess(this);
 
-			if (AIOriginalController->GetPawn() == this)
+			if (AIController->GetPawn() == this)
 			{
 				if (BTAsset)
 				{
-					bool bRunResult = AIOriginalController->RunBehaviorTree(BTAsset);
+					bool bRunResult = AIController->RunBehaviorTree(BTAsset);
 				}
 			}
 		}
 	}
-}
-
-USpringArmComponent* AEnemy::GetSpringArm()
-{
-	return SpringArm;
 }
 
 void AEnemy::OnPossessed(APlayerMain* NewOwner, float OwnerEnergy)
@@ -776,7 +759,6 @@ void AEnemy::UnPossessBase()
 		}
 	}
 
-	AAIController* AIController = Cast<AAIController>(GetController());
 	if (AIController)
 	{
 		AIController->GetBlackboardComponent()->ClearValue(FName("TargetActor"));
@@ -833,6 +815,78 @@ void AEnemy::UnPossessAndKill()
 	}
 }
 
+TArray<AEnemy*> AEnemy::GenerateSphereOverlapToDetectOtherEnemies(const FVector& Origin, AActor* HitEnemyToExclude)
+{
+	TArray<AActor*> ActorsToIgnoreForSphere;
+	ActorsToIgnoreForSphere.Add(this);
+	if (HitEnemyToExclude)
+	{
+		ActorsToIgnoreForSphere.Add(HitEnemyToExclude);
+	}
+
+	TArray<AActor*> OverlappedActors;
+
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
+
+	bool bOverlapOccurred = UKismetSystemLibrary::SphereOverlapActors(
+		GetWorld(),
+		Origin,
+		RadiusToNotifyAllies,
+		ObjectTypes,
+		AEnemy::StaticClass(),
+		ActorsToIgnoreForSphere,
+		OverlappedActors
+	);
+
+	DrawDebugSphere(
+		GetWorld(),
+		Origin,
+		RadiusToNotifyAllies,
+		24,
+		FColor::Yellow,
+		false,
+		5.0f
+	);
+
+	TArray<AEnemy*> EnemiesFound;
+	if (bOverlapOccurred)
+	{
+		for (AActor* Actor : OverlappedActors)
+		{
+			AEnemy* EnemyActor = Cast<AEnemy>(Actor);
+
+			if (EnemyActor)
+			{
+				EnemiesFound.Add(EnemyActor);
+			}
+		}
+	}
+
+	return EnemiesFound;
+}
+
+void AEnemy::NotifyDamageTakenToBlackboard(AActor* DamageCauser)
+{
+	AEnemy* EnemyRef = Cast<AEnemy>(DamageCauser);
+	APlayerMain* PlayerRef = Cast<APlayerMain>(DamageCauser);
+	
+	if (EnemyRef && EnemyRef->GetPossessionOwner() || PlayerRef)
+	{
+		if (AIController)
+		{
+			AIController->GetBlackboardComponent()->SetValueAsBool(FName("DamageTakenRecently"), true);
+			AIController->GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), DamageCauser);
+			AIController->GetBlackboardComponent()->SetValueAsBool(FName("CanSeePlayer"), true);
+
+			for (AEnemy* Enemy : GenerateSphereOverlapToDetectOtherEnemies(GetActorLocation(), this))
+			{
+				Enemy->NotifyThreat(DamageCauser);
+			}
+		}
+	}
+}
+	
 void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
