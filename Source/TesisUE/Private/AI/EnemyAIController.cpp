@@ -46,10 +46,7 @@ void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Sti
     UCharacterStateComponent* CharacterStateComponent = PlayerPawn ? PlayerPawn->FindComponentByClass<UCharacterStateComponent>() : nullptr; // Añadir null check
     UBlackboardComponent* BlackboardComponent = GetBlackboardComponent();
 
-    if (!BlackboardComponent || !PlayerPawn || !Enemy)
-    {
-        return;
-    }
+    if (!BlackboardComponent || !PlayerPawn || !Enemy) return;
 
     if (!CharacterStateComponent)
     {
@@ -68,27 +65,37 @@ void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Sti
 
             BlackboardComponent->SetValueAsObject(FName("TargetActor"), Actor);
             BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), true);
+            
+            return;
         }
         else if (DamageCauser)
         {
             if (UCharacterStateComponent* CharStateComp = DamageCauser->GetComponentByClass<UCharacterStateComponent>())
             {
-                if (CharStateComp->IsActionEqualToAny({ ECharacterActions::ECA_Dead }))
+                if (CharStateComp->IsActionEqualToAny({ ECharacterActions::ECA_Dead })
+                    || CharStateComp->IsFormEqualToAny({ ECharacterForm::ECF_Spectral }))
                 {
                     BlackboardComponent->SetValueAsObject(FName("TargetActor"), nullptr);
                     BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), true);
                     DamageCauser = nullptr;
+
                     return;
                 }
                 else
                 {
+                    GEngine->AddOnScreenDebugMessage(1, -1.f, FColor::Green, FString("Can see Damage Causer!"));
+
                     BlackboardComponent->SetValueAsObject(FName("TargetActor"), DamageCauser);
                     BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), true);
+
+                    return;
                 }
             }
         }
         else
         {
+            GEngine->AddOnScreenDebugMessage(1, -1.f, FColor::Green, FString("Clearing values..."));
+
             EnemyPerceptionComponent->ForgetActor(Actor);
             BlackboardComponent->ClearValue(FName("TargetActor"));
             BlackboardComponent->ClearValue(FName("DistToTarget"));

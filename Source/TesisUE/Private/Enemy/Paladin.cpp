@@ -274,7 +274,7 @@ float APaladin::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 			UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShieldImpactSFX, Attributes->GetShieldMeshComponent()->GetComponentLocation());
 			Attributes->ReceiveShieldDamage(DamageAmount);
 		}
-		else
+		else if (!Attributes->IsShielded() && DamageEvent.DamageTypeClass != USpectralTrapDamageType::StaticClass())
 		{
 			Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 		}

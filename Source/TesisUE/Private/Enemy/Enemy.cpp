@@ -395,6 +395,8 @@ void AEnemy::NotifyThreat(AActor* ThreatActor)
 		AIController->GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), ThreatActor);
 		AIController->GetBlackboardComponent()->SetValueAsBool(FName("CanSeePlayer"), true);
 	}
+
+	// una func con un forget?
 }
 
 void AEnemy::UpdateDissolveEffect(float Value)
@@ -569,7 +571,6 @@ float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AC
 		{
 			Attributes->ReceiveDamage(ActualDamage);
 			NotifyDamageTakenToBlackboard(DamageCauser);
-			GEngine->AddOnScreenDebugMessage(17, 3.f, FColor::Red, FString("Receiving Final Damage"));
 
 			if (Execute_CanBeFinished(this))
 			{
@@ -749,11 +750,12 @@ void AEnemy::UnPossessBase()
 {
 	bUseControllerRotationYaw = true;
 
-	if (APlayerMain* PlayerOwner = Cast<APlayerMain>(PossessionOwner))
+	if (PossessionOwner)
 	{
-		if (IsValid(PlayerOwner))
+		if (IsValid(PossessionOwner))
 		{
-			PlayerOwner->ReleasePossession(this);
+			PossessionOwner->CharacterStateComponent->SetCharacterForm(ECharacterForm::ECF_Spectral);
+			PossessionOwner->ReleasePossession(this);
 		}
 	}
 
@@ -766,18 +768,12 @@ void AEnemy::UnPossessBase()
 
 void AEnemy::UnPossess()
 {
-	if (APlayerMain* PlayerOwner = Cast<APlayerMain>(PossessionOwner))
+	if (PossessionOwner)
 	{
-		if (PlayerOwner->GetAttributes())
+		if (PossessionOwner->GetAttributes())
 		{
 			UnPossessBase();
-			PlayerOwner->GetAttributes()->SetEnergy(Attributes->GetEnergy());
-
-			if (IsValid(PlayerOwner->CharacterStateComponent))
-			{
-				PlayerOwner->CharacterStateComponent->SetCharacterForm(ECharacterForm::ECF_Spectral);
-			}
-
+			PossessionOwner->GetAttributes()->SetEnergy(Attributes->GetEnergy());
 			PossessionOwner = nullptr;
 			EnableAI();
 		}
@@ -787,15 +783,13 @@ void AEnemy::UnPossess()
 
 void AEnemy::UnPossessAndKill()
 {
-	APlayerMain* PlayerToToggleForm = PossessionOwner;
-
-	if (IsValid(PlayerToToggleForm) && PlayerToToggleForm->GetAttributes() && PlayerToToggleForm->GetAttributes()->RequiresEnergy(UnpossesAndKillEnergyTax))
+	if (IsValid(PossessionOwner) && PossessionOwner->GetAttributes() && PossessionOwner->GetAttributes()->RequiresEnergy(UnpossesAndKillEnergyTax))
 	{
 		UnPossessBase();
 
-		if (IsValid(PlayerToToggleForm) && PlayerToToggleForm->GetAttributes())
+		if (IsValid(PossessionOwner) && PossessionOwner->GetAttributes())
 		{
-			PlayerToToggleForm->GetAttributes()->DecreaseEnergyBy(UnpossesAndKillEnergyTax);
+			PossessionOwner->GetAttributes()->DecreaseEnergyBy(UnpossesAndKillEnergyTax);
 		}
 
 		DisableAI();
@@ -804,12 +798,11 @@ void AEnemy::UnPossessAndKill()
 
 		Die(DamageCauserOf);
 
-		if (IsValid(PlayerToToggleForm))
+		if (IsValid(PossessionOwner))
 		{
-			if (IsValid(PlayerToToggleForm->CharacterStateComponent))
+			if (IsValid(PossessionOwner->CharacterStateComponent))
 			{
-				PlayerToToggleForm->CharacterStateComponent->SetCharacterForm(ECharacterForm::ECF_Spectral);
-				PlayerToToggleForm->ToggleForm();
+				PossessionOwner->ToggleForm();
 			}
 		}
 		PossessionOwner = nullptr;
@@ -881,6 +874,13 @@ void AEnemy::NotifyDamageTakenToBlackboard(AActor* DamageCauser)
 		if (AIController)
 		{
 			AIController->GetBlackboardComponent()->SetValueAsBool(FName("DamageTakenRecently"), true);
+			AIController->GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), DamageCauser);
+			AIController->GetBlackboardComponent()->SetValueAsBool(FName("CanSeePlayer"), true);
+		}
+
+		if (EnemyAIController)
+		{
+			EnemyAIController->DamageCauser = DamageCauser;
 		}
 
 		for (AEnemy* Enemy : GenerateSphereOverlapToDetectOtherEnemies(GetActorLocation(), this))

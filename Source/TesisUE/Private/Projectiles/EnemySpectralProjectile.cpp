@@ -4,6 +4,7 @@
 #include "Projectiles/EnemySpectralProjectile.h"
 #include "Player/PlayerMain.h"
 #include <Kismet/GameplayStatics.h>
+#include "DamageTypes/SpectralTrapDamageType.h"
 
 void AEnemySpectralProjectile::BeginPlay()
 {
@@ -22,7 +23,7 @@ void AEnemySpectralProjectile::OnBoxOverlap(UPrimitiveComponent* OverlappedCompo
 			Damage,
 			GetInstigator()->GetController(),
 			this,
-			UDamageType::StaticClass()
+			USpectralTrapDamageType::StaticClass()
 		);
 		ActorsToIgnore.AddUnique(OtherActor);
 	}
