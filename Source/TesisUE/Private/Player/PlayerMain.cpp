@@ -402,11 +402,8 @@ void APlayerMain::Look(const FInputActionValue& Value)
 
 void APlayerMain::Jump()
 {
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Block, ECharacterActions::ECA_Finish, ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }))
+	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Nothing, ECharacterActions::ECA_Attack }) && ExtraMovementComponent->CanDoubleJump)
 	{
-		if (CharacterStateComponent->IsFormEqualToAny({ ECharacterForm::ECF_Spectral }) && 
-			CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Dodge })) return;
-
 		PlayAnimMontage(ExtraMovementComponent->JumpMontage, 1.f);
 
 		Super::Jump();

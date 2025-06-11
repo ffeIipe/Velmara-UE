@@ -13,8 +13,6 @@ void ACheckpoint::OnSphereBeginOverlap(
     bool bFromSweep,
     const FHitResult& SweepResult)
 {
-    //Super::OnSphereBeginOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
-
     if (APawn* OverlappingPawn = Cast<APawn>(OtherActor))
     {
         AController* TempController = OverlappingPawn->GetController();
@@ -34,10 +32,6 @@ void ACheckpoint::OnSphereBeginOverlap(
             }
 
             Destroy();
-        }
-        else
-        {
-            if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, FString("Not controller found. Failed to save." + OverlappingPawn->GetController()->GetName()));
         }
     }
 }

@@ -159,8 +159,6 @@ protected:
 
 	virtual void BeginPlay() override;
 
-	virtual void Jump() override;
-
 	FTimerHandle ReturnToPoolTimerHandle;
 
 	void RequestReturnToPool();
@@ -256,7 +254,9 @@ protected:
 
 	virtual void Attack(const FInputActionValue& Value);
 
-	virtual void DoubleJump(const FInputActionValue& Value);
+	virtual void Jump() override;
+
+	virtual void Landed(const FHitResult& Hit) override;
 
 	virtual void Dodge(const FInputActionValue& Value);
 

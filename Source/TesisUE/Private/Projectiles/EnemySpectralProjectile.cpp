@@ -23,7 +23,7 @@ void AEnemySpectralProjectile::OnBoxOverlap(UPrimitiveComponent* OverlappedCompo
 			Damage,
 			GetInstigator()->GetController(),
 			this,
-			USpectralTrapDamageType::StaticClass()
+			UDamageType::StaticClass()
 		);
 		ActorsToIgnore.AddUnique(OtherActor);
 	}

@@ -360,24 +360,6 @@ void AEnemy::BeginPlay()
 	else GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Not valid Mesh..."));
 }
 
-void AEnemy::Jump()
-{
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Block, ECharacterActions::ECA_Finish, ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }))
-	{
-		if (CharacterStateComponent->IsFormEqualToAny({ ECharacterForm::ECF_Spectral }) &&
-			CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Dodge })) return;
-
-		PlayAnimMontage(ExtraMovementComponent->JumpMontage, 1.f);
-
-		Super::Jump();
-
-		if (GetCharacterMovement()->IsFalling() && ExtraMovementComponent->CanDoubleJump)
-		{
-			ExtraMovementComponent->Input_DoubleJump();
-		}
-	}
-}
-
 void AEnemy::NotifyThreat(AActor* ThreatActor)
 {
 	if (!ThreatActor)
@@ -448,9 +430,26 @@ void AEnemy::Attack(const FInputActionValue& Value)
 	//sus children se encargan de overridear esta funcion
 }
 
-void AEnemy::DoubleJump(const FInputActionValue& Value)
+void AEnemy::Jump()
 {
-	ExtraMovementComponent->Input_DoubleJump();
+	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Nothing, ECharacterActions::ECA_Attack }) && ExtraMovementComponent->CanDoubleJump)
+	{
+		PlayAnimMontage(ExtraMovementComponent->JumpMontage, 1.f);
+
+		Super::Jump();
+
+		if (GetCharacterMovement()->IsFalling() && ExtraMovementComponent->CanDoubleJump)
+		{
+			ExtraMovementComponent->Input_DoubleJump();
+		}
+	}
+}
+
+void AEnemy::Landed(const FHitResult& Hit)
+{
+	Super::Landed(Hit);
+	CombatComponent->bIsLaunched = false;
+	ExtraMovementComponent->CanDoubleJump = true;
 }
 
 void AEnemy::Dodge(const FInputActionValue& Value)
@@ -901,7 +900,6 @@ void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AEnemy::Move);
 	EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AEnemy::Look);
 	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &AEnemy::Jump);
-	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &AEnemy::DoubleJump);
 	EnhancedInputComponent->BindAction(ExtraMovementComponent->DodgeAction, ETriggerEvent::Triggered, this, &AEnemy::Dodge);
 
 	EnhancedInputComponent->BindAction(CombatComponent->AttackAction, ETriggerEvent::Triggered, this, &AEnemy::Attack);
