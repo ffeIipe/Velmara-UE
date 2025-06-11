@@ -14,11 +14,13 @@ AEnemyAIController::AEnemyAIController(const FObjectInitializer& ObjectInitializ
 	AISenseConfig_Sight->DetectionByAffiliation.bDetectEnemies = true;
 	AISenseConfig_Sight->DetectionByAffiliation.bDetectFriendlies = false;
 	AISenseConfig_Sight->DetectionByAffiliation.bDetectNeutrals = false;
+    AISenseConfig_Sight->AutoSuccessRangeFromLastSeenLocation = 2000.f;
+    AISenseConfig_Sight->SetMaxAge(.1f);
 
 	EnemyPerceptionComponent = CreateDefaultSubobject<UAIPerceptionComponent>("EnemyPerceptionComponent");
 	EnemyPerceptionComponent->ConfigureSense(*AISenseConfig_Sight);
 	EnemyPerceptionComponent->SetDominantSense(UAISenseConfig_Sight::StaticClass());
-	EnemyPerceptionComponent->OnTargetPerceptionUpdated.AddUniqueDynamic(this, &ThisClass::OnEnemyPerceptionUpdated);
+	EnemyPerceptionComponent->OnTargetPerceptionUpdated.AddUniqueDynamic(this, &AEnemyAIController::OnEnemyPerceptionUpdated);
 
 	SetGenericTeamId(FGenericTeamId(1));
 }
@@ -44,7 +46,7 @@ void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Sti
     UCharacterStateComponent* CharacterStateComponent = PlayerPawn ? PlayerPawn->FindComponentByClass<UCharacterStateComponent>() : nullptr; // Añadir null check
     UBlackboardComponent* BlackboardComponent = GetBlackboardComponent();
 
-    if (!BlackboardComponent || !PlayerPawn || !Enemy || bPauseEnemyPerceptionUpdate)
+    if (!BlackboardComponent || !PlayerPawn || !Enemy)
     {
         return;
     }
@@ -54,27 +56,43 @@ void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Sti
         BlackboardComponent->ClearValue(FName("TargetActor"));
         BlackboardComponent->ClearValue(FName("DistToTarget"));
         BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), false);
-        
+
         return;
     }
 
-    if (Enemy->GetEnemyType() == EEnemyType::Paladin)
+    if (Stimulus.WasSuccessfullySensed())
     {
-        if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
+        if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Human)
         {
-            //EnemyPerceptionComponent->ForgetActor(Actor);
-            BlackboardComponent->ClearValue(FName("TargetActor"));
-            BlackboardComponent->ClearValue(FName("DistToTarget"));
-            BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), false);
-            return;
-        }
-
-        if (Stimulus.WasSuccessfullySensed())
-        {
-            GEngine->AddOnScreenDebugMessage(1, -1.f, FColor::Green, FString("Can see player!"));
+            GEngine->AddOnScreenDebugMessage(1, -1.f, FColor::Green, FString("Can see entity!"));
 
             BlackboardComponent->SetValueAsObject(FName("TargetActor"), Actor);
             BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), true);
+        }
+        else if (DamageCauser)
+        {
+            if (UCharacterStateComponent* CharStateComp = DamageCauser->GetComponentByClass<UCharacterStateComponent>())
+            {
+                if (CharStateComp->IsActionEqualToAny({ ECharacterActions::ECA_Dead }))
+                {
+                    BlackboardComponent->SetValueAsObject(FName("TargetActor"), nullptr);
+                    BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), true);
+                    DamageCauser = nullptr;
+                    return;
+                }
+                else
+                {
+                    BlackboardComponent->SetValueAsObject(FName("TargetActor"), DamageCauser);
+                    BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), true);
+                }
+            }
+        }
+        else
+        {
+            EnemyPerceptionComponent->ForgetActor(Actor);
+            BlackboardComponent->ClearValue(FName("TargetActor"));
+            BlackboardComponent->ClearValue(FName("DistToTarget"));
+            BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), false);
         }
     }
 }

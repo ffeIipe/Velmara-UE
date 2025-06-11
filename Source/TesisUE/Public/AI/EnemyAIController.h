@@ -22,7 +22,11 @@ public:
 
 	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
 	
-	bool bPauseEnemyPerceptionUpdate = false;
+	bool bIsAlreadyCleared = false;
+
+	bool bIsAlreadyFocused = false;
+
+	AActor* DamageCauser;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)

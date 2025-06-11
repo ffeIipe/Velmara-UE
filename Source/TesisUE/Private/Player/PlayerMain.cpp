@@ -314,6 +314,8 @@ void APlayerMain::PossessEnemy()
 			FollowCamera->AttachToComponent(TargetEnemy->SpringArm, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("SpringEndpoint"));
 			PlayerControllerRef->SetViewTargetWithBlend(FollowCamera, 1.f);
 
+			CharacterStateComponent->SetCharacterForm(ECharacterForm::ECF_Possesing);
+
 			SetActorHiddenInGame(true);
 			SetActorEnableCollision(false);
 			GetMesh()->bPauseAnims = true;

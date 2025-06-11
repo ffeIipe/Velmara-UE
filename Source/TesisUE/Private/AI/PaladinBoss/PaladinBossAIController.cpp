@@ -13,7 +13,7 @@ void APaladinBossAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimul
     APawn* PlayerPawn = Cast<APawn>(Actor);
     UBlackboardComponent* BlackboardComponent = GetBlackboardComponent();
 
-    if (!BlackboardComponent || !PlayerPawn || !Enemy || bPauseEnemyPerceptionUpdate) return;
+    if (!BlackboardComponent || !PlayerPawn || !Enemy) return;
     
     if (Stimulus.WasSuccessfullySensed())
     {
