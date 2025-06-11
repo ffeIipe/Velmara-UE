@@ -207,10 +207,7 @@ void AEnemy::DeactivateEnemy()
 	if (AIControllerInstance && AIControllerInstance->GetBlackboardComponent())
 	{
 		AIControllerInstance->GetBlackboardComponent()->ClearValue(FName("TargetActor"));
-		if (AEnemyAIController* EnemyAICont = Cast<AEnemyAIController>(AIControllerInstance))
-		{
-			EnemyAICont->bPauseEnemyPerceptionUpdate = false;
-		}
+		AIControllerInstance->GetBlackboardComponent()->ClearValue(FName("CanSeePlayer"));
 	}
 
 	isLaunched = false;
@@ -388,14 +385,15 @@ void AEnemy::NotifyThreat(AActor* ThreatActor)
 		return;
 	}
 
+	if (EnemyAIController)
+	{
+		EnemyAIController->DamageCauser = ThreatActor;
+	}
+
 	if (AIController && AIController->GetBlackboardComponent())
 	{
 		AIController->GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), ThreatActor);
-		
-		if (EnemyAIController)
-		{
-			EnemyAIController->bPauseEnemyPerceptionUpdate = true;
-		}
+		AIController->GetBlackboardComponent()->SetValueAsBool(FName("CanSeePlayer"), true);
 	}
 }
 
@@ -570,7 +568,7 @@ float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AC
 		if (Attributes->IsAlive())
 		{
 			Attributes->ReceiveDamage(ActualDamage);
-
+			NotifyDamageTakenToBlackboard(DamageCauser);
 			GEngine->AddOnScreenDebugMessage(17, 3.f, FColor::Red, FString("Receiving Final Damage"));
 
 			if (Execute_CanBeFinished(this))
@@ -762,7 +760,7 @@ void AEnemy::UnPossessBase()
 	if (AIController)
 	{
 		AIController->GetBlackboardComponent()->ClearValue(FName("TargetActor"));
-		Cast<AEnemyAIController>(AIController)->bPauseEnemyPerceptionUpdate = false;
+		AIController->GetBlackboardComponent()->ClearValue(FName("CanSeePlayer"));	
 	}
 }
 
@@ -774,6 +772,12 @@ void AEnemy::UnPossess()
 		{
 			UnPossessBase();
 			PlayerOwner->GetAttributes()->SetEnergy(Attributes->GetEnergy());
+
+			if (IsValid(PlayerOwner->CharacterStateComponent))
+			{
+				PlayerOwner->CharacterStateComponent->SetCharacterForm(ECharacterForm::ECF_Spectral);
+			}
+
 			PossessionOwner = nullptr;
 			EnableAI();
 		}
@@ -804,6 +808,7 @@ void AEnemy::UnPossessAndKill()
 		{
 			if (IsValid(PlayerToToggleForm->CharacterStateComponent))
 			{
+				PlayerToToggleForm->CharacterStateComponent->SetCharacterForm(ECharacterForm::ECF_Spectral);
 				PlayerToToggleForm->ToggleForm();
 			}
 		}
@@ -876,13 +881,11 @@ void AEnemy::NotifyDamageTakenToBlackboard(AActor* DamageCauser)
 		if (AIController)
 		{
 			AIController->GetBlackboardComponent()->SetValueAsBool(FName("DamageTakenRecently"), true);
-			AIController->GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), DamageCauser);
-			AIController->GetBlackboardComponent()->SetValueAsBool(FName("CanSeePlayer"), true);
+		}
 
-			for (AEnemy* Enemy : GenerateSphereOverlapToDetectOtherEnemies(GetActorLocation(), this))
-			{
-				Enemy->NotifyThreat(DamageCauser);
-			}
+		for (AEnemy* Enemy : GenerateSphereOverlapToDetectOtherEnemies(GetActorLocation(), this))
+		{
+			Enemy->NotifyThreat(DamageCauser);
 		}
 	}
 }

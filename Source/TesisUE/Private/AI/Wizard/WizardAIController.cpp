@@ -16,7 +16,7 @@ void AWizardAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus St
     UCharacterStateComponent* CharacterStateComponent = PlayerPawn ? PlayerPawn->FindComponentByClass<UCharacterStateComponent>() : nullptr; // Añadir null check
     UBlackboardComponent* BlackboardComponent = GetBlackboardComponent();
 
-    if (!BlackboardComponent || !PlayerPawn || !Enemy || bPauseEnemyPerceptionUpdate)
+    if (!BlackboardComponent || !PlayerPawn || !Enemy)
     {
         return;
     }

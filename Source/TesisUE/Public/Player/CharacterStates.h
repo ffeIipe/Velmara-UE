@@ -23,5 +23,6 @@ UENUM(BlueprintType)
 enum class ECharacterForm : uint8
 {
 	ECF_Human UMETA(DisplayName = "Human"),
-	ECF_Spectral UMETA(DisplayName = "Spectral")
+	ECF_Spectral UMETA(DisplayName = "Spectral"),
+	ECF_Possesing UMETA(DisplayName = "Possessing")
 };

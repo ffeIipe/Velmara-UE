@@ -132,11 +132,7 @@ void APaladin::Die(AActor* DamageCauser)
 			if (AIController && AIController->GetBlackboardComponent())
 			{
 				AIController->GetBlackboardComponent()->ClearValue(FName("TargetActor"));
-
-				if (EnemyAIController)
-				{
-					EnemyAIController->bPauseEnemyPerceptionUpdate = false;
-				}
+				AIController->GetBlackboardComponent()->ClearValue(FName("CanSeePlayer"));
 			}
 		}
 	}
@@ -270,25 +266,16 @@ void APaladin::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDa
 
 float APaladin::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
-	GEngine->AddOnScreenDebugMessage(13, 3.f, FColor::White, FString("Take Damage"));
-	
 	if (Attributes->IsAlive())
 	{
-		GEngine->AddOnScreenDebugMessage(14, 3.f, FColor::Green, FString("Is Alive"));
-
 		if (Attributes->IsShielded() && DamageEvent.DamageTypeClass == USpectralTrapDamageType::StaticClass())
 		{
-			GEngine->AddOnScreenDebugMessage(15, 3.f, FColor::Yellow, FString("Is Shielded"));
-
 			NotifyDamageTakenToBlackboard(DamageCauser);
 			UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShieldImpactSFX, Attributes->GetShieldMeshComponent()->GetComponentLocation());
 			Attributes->ReceiveShieldDamage(DamageAmount);
 		}
 		else
 		{
-			GEngine->AddOnScreenDebugMessage(16, 3.f, FColor::Orange, FString("Receiving Damage"));
-
-			NotifyDamageTakenToBlackboard(DamageCauser);
 			Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 		}
 	}
