@@ -83,6 +83,9 @@ private:
 	
 	UPROPERTY(EditAnywhere, Category = "Weapon Properties | FX | VFX")
 	class UNiagaraSystem* SparksEffect;
+	
+	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Mesh | Attachment Socket")
+	FName CustomInSocketName;
 
 	ICharacterState* CharacterStateInterface = nullptr;
 	
@@ -98,8 +101,16 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	USceneComponent* BoxTraceEnd;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Damage")
 	float Damage;
+	
+	UPROPERTY(EditAnywhere, Category = "Damage")
+	float CriticalChance = .15f;
+	
+	UPROPERTY(EditAnywhere, Category = "Damage")
+	float CriticalDamageMultiplier = 2.f;
+
+	float CalculateDamage();
 
 	void OnWallCollision(const FHitResult& Hit);
 

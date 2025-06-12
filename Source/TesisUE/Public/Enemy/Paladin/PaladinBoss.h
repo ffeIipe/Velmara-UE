@@ -26,11 +26,11 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawning")
 	TArray<USceneComponent*> SpawnPoints;
 
-	void DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage* HitReactAnimMontage) override;
+	void DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage* HitReactAnimMontage, const float DamageReceived) override;
 
 	bool IsLaunchable_Implementation(ACharacter* DamageCauser) override;
 
-	void GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType) override;
+	void GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived) override;
 
 private:
 	UPROPERTY(EditAnywhere)

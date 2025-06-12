@@ -76,7 +76,7 @@ public:
 
 	bool bWasPossessed = false;
 
-	virtual void GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType) override;
+	virtual void GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived) override;
 
 	virtual void GetFinished_Implementation() override;
 
@@ -179,7 +179,7 @@ protected:
 	bool bOriginalUseControllerRotationYaw;
 
 	UFUNCTION(BlueprintCallable)
-	virtual void DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage* HitReactAnimMontage);
+	virtual void DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage* HitReactAnimMontage, const float DamageReceived);
 
 	UPROPERTY(EditAnywhere, Category = "Energy | Energy Drop");
 	float MinEnergy = 1.f;
@@ -193,6 +193,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Energy| Energy Tax");
 	float UnpossesAndKillEnergyTax = 3.f;
 
+	UPROPERTY(EditAnywhere, Category = "DamageThreshold");
+	float DamageThreshold = 30.f;
+	
 	UPROPERTY(EditDefaultsOnly, Category = "Montages");
 	UAnimMontage* HitReactMontage;
 

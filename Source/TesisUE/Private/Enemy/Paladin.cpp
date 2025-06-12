@@ -187,7 +187,7 @@ void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 					UDamageType::StaticClass()
 				);
 
-				Entity->Execute_GetHit(Hit.GetActor(), Hit.ImpactPoint, UDamageType::StaticClass());
+				Entity->Execute_GetHit(Hit.GetActor(), Hit.ImpactPoint, UDamageType::StaticClass(), Damage);
 				UGameplayStatics::PlayWorldCameraShake(this, CameraShake, SwordMesh->GetComponentLocation(), 0.f, 500.f);
 				IgnoreActors.Add(Hit.GetActor());
 			}
@@ -251,7 +251,7 @@ void APaladin::LaunchUp_Implementation(const FVector& InstigatorLocation)
 	if (!Attributes->IsShielded()) LaunchEnemyUp(InstigatorLocation);
 }
 
-void APaladin::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType)
+void APaladin::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived)
 {
 	if (!Attributes || GetEnemyState() == EEnemyState::EES_Died) return;
 	
@@ -260,9 +260,11 @@ void APaladin::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDa
 		StopAnimMontage();
 		ShieldHit();
 	}
-
-	Super::GetHit_Implementation(ImpactPoint, DamageType); //sfx and fx
-
+	else
+	{
+		Super::GetHit_Implementation(ImpactPoint, DamageType, DamageReceived); //sfx and fx
+	}
+	
 	//else if (Attributes->IsAlive())
 	//{
 	//	Super::GetHit_Implementation(ImpactPoint, DamageType); //sfx and fx

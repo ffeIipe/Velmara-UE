@@ -12,6 +12,7 @@
 #include "Components/CharacterStateComponent.h"
 #include "Components/CombatComponent.h"
 #include <NiagaraFunctionLibrary.h>
+#include <Kismet/KismetMathLibrary.h>
 
 ASword::ASword()
 {
@@ -57,7 +58,7 @@ void ASword::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwn
 void ASword::AttachMeshToSocket(USceneComponent* InParent, const FName& InSocketName)
 {
 	FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, true);
-	ItemMesh->AttachToComponent(InParent, TransformRules, InSocketName);
+	ItemMesh->AttachToComponent(InParent, TransformRules, CustomInSocketName);
 }
 
 void ASword::Unequip()
@@ -129,7 +130,8 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 		{
 			if (IHitInterface* HitInterface = Cast<IHitInterface>(HitActor))
 			{
-				HitInterface->Execute_GetHit(HitActor, Hit.ImpactPoint, UDamageType::StaticClass());
+				Damage = CalculateDamage();
+				HitInterface->Execute_GetHit(HitActor, Hit.ImpactPoint, UDamageType::StaticClass(), Damage);
 
 				if (HitInterface->Execute_IsLaunchable(HitActor, Cast<ACharacter>(Owner)))
 				{
@@ -181,6 +183,15 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 			//}
 		}
 	}
+}
+
+float ASword::CalculateDamage()
+{
+	if (FMath::FRandRange(0.f, 1.f) <= CriticalChance)
+	{
+		return Damage * CriticalDamageMultiplier;
+	}
+	else return Damage;
 }
 
 void ASword::HitStop(float Duration, float TimeScale)

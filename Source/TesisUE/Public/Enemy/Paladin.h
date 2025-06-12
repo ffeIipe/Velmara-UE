@@ -25,7 +25,7 @@ public:
 
 	virtual void LaunchUp_Implementation(const FVector& InstigatorLocation) override;
 
-	void GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType) override;
+	void GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived) override;
 
 	float TakeDamage(
 		float DamageAmount,

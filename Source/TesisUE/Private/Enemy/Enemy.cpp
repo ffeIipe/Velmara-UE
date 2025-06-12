@@ -459,14 +459,15 @@ void AEnemy::ResetEnemy()
 
 void AEnemy::ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoint)
 {
-	DirectionalHitReact(ImpactPoint, HitReactMontage);
+	
 }
 
-void AEnemy::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType)
+void AEnemy::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived)
 {
 	if (Attributes->IsAlive())
 	{
 		ReactToDamage(LastDamageType, ImpactPoint);
+		DirectionalHitReact(ImpactPoint, HitReactMontage, DamageReceived);
 
 		if (HitSound)
 		{
@@ -491,7 +492,6 @@ void AEnemy::GetFinished_Implementation()
 {
 	if (GetEnemyState() != EEnemyState::EES_Died)
 	{
-		SetEnemyState(EEnemyState::EES_Died);
 		if (CharacterStateComponent) CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Dead);
 
 		if (PromptWidgetComponent && PromptWidgetComponent->GetWidget()) PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
@@ -577,7 +577,7 @@ float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AC
 	return ActualDamage;
 }
 
-void AEnemy::DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage* HitReactAnimMontage)
+void AEnemy::DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage* HitReactAnimMontage, const float DamageReceived)
 {
 	const FVector Forward = GetActorForwardVector();
 	const FVector ToHit = (ImpactPoint - GetActorLocation()).GetSafeNormal();
@@ -596,9 +596,23 @@ void AEnemy::DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage* HitRe
 
 	FName Section("FromBack");
 
+	if (DamageReceived > DamageThreshold)
+	{
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Cyan, FString("BACK BIG"));
+		Section = FName("FromBackBig");
+	}
+	
 	if (Angle >= -45.f && Angle < 45.f)
 	{
-		Section = FName("FromFront");
+		if (DamageReceived > DamageThreshold)
+		{
+			Section = FName("FromFrontBig");
+			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("BACK FRONT"));
+		}
+		else
+		{
+			Section = FName("FromFront");
+		}	
 	}
 
 	else if (Angle >= -135.f && Angle < -45.f)

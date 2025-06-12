@@ -77,7 +77,7 @@ float APaladinBoss::TakeDamage(float DamageAmount, FDamageEvent const& DamageEve
 
 }
 
-void APaladinBoss::DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage* HitReactAnimMontage)
+void APaladinBoss::DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage* HitReactAnimMontage, const float DamageReceived)
 {
 	//if (UKismetMathLibrary::RandomBool())
 	//{
@@ -96,7 +96,7 @@ bool APaladinBoss::IsLaunchable_Implementation(ACharacter* DamageCauser)
 	return Super::IsLaunchable_Implementation(DamageCauser);
 }
 
-void APaladinBoss::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType)
+void APaladinBoss::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived)
 {
 	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Emerald, FString("GET HIT PALADIN BOSS"));
 }

@@ -30,13 +30,10 @@ void AWizardAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus St
         return;
     }
 
-    if (Enemy->GetEnemyType() == EEnemyType::Spectre)
+    if (Stimulus.WasSuccessfullySensed())
     {
-        if (Stimulus.WasSuccessfullySensed())
-        {
 
-            BlackboardComponent->SetValueAsObject(FName("TargetActor"), Actor);
-            BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), true);
-        }
+        BlackboardComponent->SetValueAsObject(FName("TargetActor"), Actor);
+        BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), true);
     }
 }

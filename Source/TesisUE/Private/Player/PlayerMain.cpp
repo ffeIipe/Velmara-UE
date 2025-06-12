@@ -92,7 +92,7 @@ void APlayerMain::ResetSpectralAttack_Implementation()
 	CombatComponent->bIsSaveLightAttack = false;
 }
 
-void APlayerMain::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType)
+void APlayerMain::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived)
 {
 	if (DamageType == USpectralTrapDamageType::StaticClass())
 	{
