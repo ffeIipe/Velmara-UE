@@ -297,11 +297,7 @@ void APlayerMain::PossessEnemy()
 		AEnemy* TargetEnemy = GetTargetEnemy();
 		PlayerControllerRef = Cast<APlayerController>(GetController());
 
-		if (PlayerControllerRef 
-			&& TargetEnemy 
-			&& TargetEnemy->GetEnemyState() != EEnemyState::EES_Died
-			&& Attributes->RequiresEnergy(10.f)
-			)
+		if (PlayerControllerRef && TargetEnemy && TargetEnemy->GetEnemyState() != EEnemyState::EES_Died && Attributes->RequiresEnergy(10.f))
 		{
 			TargetEnemy->DisableAI();
 			PlayerControllerRef->Possess(TargetEnemy);
@@ -729,7 +725,7 @@ void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &APlayerMain::Interact);
 
 		EnhancedInputComponent->BindAction(CombatComponent->AttackAction, ETriggerEvent::Triggered, this, &APlayerMain::Attack);
-		EnhancedInputComponent->BindAction(CombatComponent->HeavyAttackAction, ETriggerEvent::Triggered, this, &APlayerMain::HeavyAttack);
+		EnhancedInputComponent->BindAction(CombatComponent->HeavyAttackAction, ETriggerEvent::Started, this, &APlayerMain::HeavyAttack);
 		EnhancedInputComponent->BindAction(CombatComponent->LaunchAction, ETriggerEvent::Triggered, this, &APlayerMain::LaunchAttack);
 		EnhancedInputComponent->BindAction(CombatComponent->BlockAction, ETriggerEvent::Started, this, &APlayerMain::Block);
 		EnhancedInputComponent->BindAction(CombatComponent->BlockAction, ETriggerEvent::Completed, this, &APlayerMain::ReleaseBlock);

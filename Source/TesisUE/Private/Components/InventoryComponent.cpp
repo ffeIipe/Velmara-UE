@@ -28,6 +28,11 @@ void UInventoryComponent::ChangeWeapon(int32 SlotIndex)
     if (InventorySlots.IsValidIndex(SlotIndex))
     {
         EquipItemFromSlot(SlotIndex);
+
+        if (ACharacter* PlayerChar = Cast<ACharacter>(GetOwner()))
+        {
+            PlayerChar->PlayAnimMontage(EquipMontage, 1.f, FName("Equip"));
+        }
     }
 }
 

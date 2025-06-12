@@ -167,14 +167,14 @@ void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 		UEngineTypes::ConvertToTraceType(ECC_Pawn),
 		false,
 		IgnoreActors,
-		EDrawDebugTrace::ForDuration,
+		EDrawDebugTrace::None,
 		HitResults,
 		true
 	);
 
 	for (const FHitResult& Hit : HitResults)
 	{
-		if (bHitOccurred && Hit.GetActor())
+		if (bHitOccurred && Hit.GetActor() && !IgnoreActors.Contains(Hit.GetActor()))
 		{
 			IHitInterface* Entity = Cast<IHitInterface>(Hit.GetActor());
 			if (Entity)
@@ -191,18 +191,6 @@ void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 				UGameplayStatics::PlayWorldCameraShake(this, CameraShake, SwordMesh->GetComponentLocation(), 0.f, 500.f);
 				IgnoreActors.Add(Hit.GetActor());
 			}
-
-			//if (PossessionOwner)
-			//{
-			//	TArray<AEnemy*> NearbyEnemies = GenerateSphereOverlapToDetectOtherEnemies(Hit.ImpactPoint, Hit.GetActor());
-			//	for (AEnemy* EnemyToAlert : NearbyEnemies)
-			//	{
-			//		if (IsValid(EnemyToAlert))
-			//		{
-			//			EnemyToAlert->NotifyThreat(this);
-			//		}
-			//	}
-			//}
 		}
 	}
 }
@@ -218,6 +206,20 @@ void APaladin::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	EnhancedInputComponent->BindAction(CombatComponent->HeavyAttackAction, ETriggerEvent::Triggered, this, &APaladin::HeavyAttack);
 }
 
+void APaladin::GetDefaultParameters()
+{
+	Super::GetDefaultParameters();
+
+	DefaultDamage = Damage;
+}
+
+void APaladin::SetOnPossessedParameters()
+{
+	Super::SetOnPossessedParameters();
+
+	Damage = PossessionDamage;
+}
+
 void APaladin::ShieldHit()
 {
 	if (HitReactMontage)
@@ -230,11 +232,15 @@ void APaladin::Attack(const FInputActionValue& Value)
 {
 	Super::Attack(Value);
 
+	Attributes->DecreaseEnergyBy(PossessionAttackCost);
+
 	CombatComponent->Input_Attack(Value);
 }
 
 void APaladin::HeavyAttack(const FInputActionValue& Value)
 {
+	Attributes->DecreaseEnergyBy(PossessionHeavyAttackCost);
+
 	CombatComponent->Input_HeavyAttack(Value);
 }
 
@@ -247,9 +253,9 @@ void APaladin::LaunchUp_Implementation(const FVector& InstigatorLocation)
 
 void APaladin::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType)
 {
-	if (!Attributes || GetEnemyState() == EEnemyState::EES_Died || DamageType == USpectralTrapDamageType::StaticClass()) return;
+	if (!Attributes || GetEnemyState() == EEnemyState::EES_Died) return;
 	
-	if (Attributes->IsShielded())
+	if (Attributes->IsShielded() && DamageType == USpectralTrapDamageType::StaticClass())
 	{
 		StopAnimMontage();
 		ShieldHit();

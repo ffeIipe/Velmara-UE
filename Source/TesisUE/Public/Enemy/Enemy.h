@@ -173,6 +173,7 @@ protected:
 	float DefaultMaxWalkSpeed;
 	float DefaultGravityScale;
 	float DefaultJumpZVelocity;
+	float DefaultDamage;
 	bool bDefaultOrientRotationToMovement;
 	bool bDefaultUseControllerDesiredRotation;
 	bool bOriginalUseControllerRotationYaw;
@@ -288,6 +289,9 @@ protected:
 	AAIController* AIController;
 	
 	class AEnemyAIController* EnemyAIController;
+
+	virtual void GetDefaultParameters();
+	virtual void SetOnPossessedParameters();
 
 private:
 	UPROPERTY()

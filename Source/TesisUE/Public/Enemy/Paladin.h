@@ -37,6 +37,16 @@ public:
 	virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
 
 protected:
+
+	UPROPERTY(EditDefaultsOnly, Category = "OnPossession")
+	float PossessionAttackCost;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "OnPossession")
+	float PossessionHeavyAttackCost;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "OnPossession")
+	float PossessionDamage;
+	
 	void BeginPlay();
 
 	void Die(AActor* DamageCauser) override;
@@ -90,6 +100,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "SFX")
 	USoundBase* ShieldImpactSFX;
+
+	void GetDefaultParameters() override;
+	void SetOnPossessedParameters() override;
 
 private:
 	UPROPERTY(EditAnywhere, Category = "SFX")

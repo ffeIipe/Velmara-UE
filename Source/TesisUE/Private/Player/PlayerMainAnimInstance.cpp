@@ -28,5 +28,18 @@ void UPlayerMainAnimInstance::NativeUpdateAnimation(float DeltaTime)
 		CharacterState = PlayerMain->CharacterStateComponent->GetCurrentCharacterState().State;
 		CharacterForm = PlayerMain->CharacterStateComponent->GetCurrentCharacterState().Form;
 		SpectralWeaponState = SpectralWeaponComponent->GetSpectralWeaponState();
+
+		WalkRight = CalculateWalkRight();
+		WalkForward = CalculateWalkForward();
 	}
+}
+
+float const UPlayerMainAnimInstance::CalculateWalkRight()
+{
+	return UKismetMathLibrary::Sin(FMath::DegreesToRadians(Direction)) * UKismetMathLibrary::Clamp(GroundSpeed, 0, 1);
+}
+
+float const UPlayerMainAnimInstance::CalculateWalkForward()
+{
+	return UKismetMathLibrary::Cos(FMath::DegreesToRadians(Direction)) * UKismetMathLibrary::Clamp(GroundSpeed, 0, 1);
 }

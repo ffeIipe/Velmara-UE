@@ -29,7 +29,6 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "Subsystems/EnemyPoolManager.h"
-#include <Enemy/Paladin/PaladinBoss.h>
 #include "Misc/Guid.h"
 #include "Materials/MaterialParameterCollectionInstance.h"
 
@@ -136,16 +135,8 @@ void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 	}
 
 	bUseControllerRotationYaw = bOriginalUseControllerRotationYaw;
-	if (GetCharacterMovement())
-	{
-		GetCharacterMovement()->MaxWalkSpeed = DefaultMaxWalkSpeed;
-		GetCharacterMovement()->GravityScale = DefaultGravityScale;
-		GetCharacterMovement()->JumpZVelocity = DefaultJumpZVelocity;
-		GetCharacterMovement()->bOrientRotationToMovement = bDefaultOrientRotationToMovement;
-		GetCharacterMovement()->bUseControllerDesiredRotation = bDefaultUseControllerDesiredRotation;
-		GetCharacterMovement()->RotationRate = FRotator(0.f, 300.f, 0.f);
-		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
-	}
+
+	GetDefaultParameters();
 
 	if (ANewGameModeBase* NewGameMode = Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
 	{
@@ -305,6 +296,8 @@ void AEnemy::RequestReturnToPool()
 void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
+
+	GetDefaultParameters();
 
 	CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_EquippedSword);
 
@@ -621,6 +614,32 @@ void AEnemy::DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage* HitRe
 	PlayAnimMontage(HitReactAnimMontage, 1.f, Section);
 }
 
+void AEnemy::GetDefaultParameters()
+{
+	if (GetCharacterMovement())
+	{
+		GetCharacterMovement()->MaxWalkSpeed = DefaultMaxWalkSpeed;
+		GetCharacterMovement()->GravityScale = DefaultGravityScale;
+		GetCharacterMovement()->JumpZVelocity = DefaultJumpZVelocity;
+		GetCharacterMovement()->bOrientRotationToMovement = bDefaultOrientRotationToMovement;
+		GetCharacterMovement()->bUseControllerDesiredRotation = bDefaultUseControllerDesiredRotation;
+		GetCharacterMovement()->RotationRate = FRotator(0.f, 300.f, 0.f);
+		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+	}
+}
+
+void AEnemy::SetOnPossessedParameters()
+{
+	if (GetCharacterMovement())
+	{
+		GetCharacterMovement()->bUseControllerDesiredRotation = false;
+		GetCharacterMovement()->bOrientRotationToMovement = true;
+		GetCharacterMovement()->RotationRate = FRotator(0.f, 500.f, 0.f);
+		GetCharacterMovement()->MaxWalkSpeed = 800.f;
+		GetCharacterMovement()->BrakingDecelerationWalking = 1000.f; 
+	}
+}
+
 void AEnemy::HandleEnemyCollision(ECollisionResponse CollisionResponse)
 {
 	GetMesh()->SetCollisionResponseToChannel(ECC_Pawn, CollisionResponse);
@@ -667,15 +686,6 @@ void AEnemy::DisableAI()
 		AIController->StopMovement();
 		AIController->UnPossess();
 	}
-	//else
-	//{
-	//	AAIController* AIController = Cast<AAIController>(GetController());
-	//	if (AIController)
-	//	{
-	//		AIController->StopMovement();
-	//		AIController->UnPossess();
-	//	}
-	//}
 }
 
 void AEnemy::EnableAI()
@@ -716,14 +726,8 @@ void AEnemy::OnPossessed(APlayerMain* NewOwner, float OwnerEnergy)
 	Attributes->SetEnergy(OwnerEnergy);
 
 	bUseControllerRotationYaw = false;
-	if (GetCharacterMovement())
-	{
-		GetCharacterMovement()->bUseControllerDesiredRotation = false;
-		GetCharacterMovement()->bOrientRotationToMovement = true;
-		GetCharacterMovement()->RotationRate = FRotator(0.f, 500.f, 0.f);
-		GetCharacterMovement()->MaxWalkSpeed = 800.f;
-		GetCharacterMovement()->BrakingDecelerationWalking = 1000.f;
-	}
+	
+	SetOnPossessedParameters();
 
 	if (Attributes)
 	{
@@ -748,6 +752,8 @@ void AEnemy::OnPossessed(APlayerMain* NewOwner, float OwnerEnergy)
 void AEnemy::UnPossessBase()
 {
 	bUseControllerRotationYaw = true;
+
+	GetDefaultParameters(); // gettear y settear parametros por defecto... se puede mejorar con algo mas lindo como un struct que gettee y settee... 
 
 	if (PossessionOwner)
 	{

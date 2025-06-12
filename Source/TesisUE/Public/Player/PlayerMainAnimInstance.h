@@ -34,6 +34,12 @@ public:
 	
 	UPROPERTY(BlueprintReadWrite, Category = "Movement")
 	float Direction;
+	
+	UPROPERTY(BlueprintReadWrite, Category = "Movement")
+	float WalkRight;
+	
+	UPROPERTY(BlueprintReadWrite, Category = "Movement")
+	float WalkForward;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Movement | Character State")
 	ECharacterStates CharacterState;
@@ -45,4 +51,11 @@ public:
 	ESpectralWeaponState SpectralWeaponState;
 
 	USpectralWeaponComponent* SpectralWeaponComponent;
+
+protected:
+	UFUNCTION(BlueprintCallable)
+	float const CalculateWalkRight();
+	
+	UFUNCTION(BlueprintCallable)
+	float const CalculateWalkForward();
 };

@@ -574,13 +574,13 @@ void UCombatComponent::Input_HeavyAttack(const FInputActionValue& Value)
 
 	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Attack, ECharacterActions::ECA_Dodge }))
 	{
-		if (!bIsLaunched)
+		if (!bIsLaunched || OwningCharacter->GetCharacterMovement()->MovementMode != EMovementMode::MOVE_Falling)
 		{
 			HeavyAttackEvent();
 		}
 		else
-		{
-			Crasher();
+		{	
+			OwningCharacter->PlayAnimMontage(CrasherMontage);
 		}	
 	}
 	else
@@ -642,6 +642,10 @@ void UCombatComponent::HeavyAttackEvent()
 	if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
 	{
 		SpectralAttacks->Execute_PerformSpectralBarrier(GetOwner());
+	}
+	else if (OwningCharacter->GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling)
+	{
+		OwningCharacter->PlayAnimMontage(CrasherMontage);
 	}
 	else
 	{

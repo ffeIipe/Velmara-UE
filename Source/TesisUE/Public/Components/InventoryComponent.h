@@ -23,10 +23,6 @@ public:
     UPROPERTY(VisibleAnywhere, Category = "Inventory", Transient)
     int32 EquippedSlotIndex = -1;
 
-
-    UFUNCTION(BlueprintImplementableEvent, Category = "Inventory UI", meta = (DisplayName = "RefreshInventoryUI"))
-    void K2_RefreshInventoryUI(const TArray<AItem*>& Items);
-
     UPROPERTY(VisibleAnywhere, Category = "Inventory", Transient)
     AItem* EquippedItem = nullptr;
 
@@ -96,5 +92,6 @@ private:
     UPROPERTY(EditDefaultsOnly, Category = "Inventory")
     FName HandSocketName = FName("RightHandSocket");
 
-
+    UPROPERTY(EditDefaultsOnly, Category = "Inventory | Montages | Equip")
+    UAnimMontage* EquipMontage;
 };
