@@ -759,7 +759,6 @@ void AEnemy::UnPossessBase()
 	{
 		if (IsValid(PossessionOwner))
 		{
-			PossessionOwner->CharacterStateComponent->SetCharacterForm(ECharacterForm::ECF_Spectral);
 			PossessionOwner->ReleasePossession(this);
 		}
 	}

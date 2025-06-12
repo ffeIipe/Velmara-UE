@@ -6,25 +6,31 @@
 #include <Kismet/GameplayStatics.h>
 #include "DamageTypes/SpectralTrapDamageType.h"
 
+
+
 void AEnemySpectralProjectile::BeginPlay()
 {
 	Super::BeginPlay();
+
+	ActorsToIgnore.Add(this);
 }
 
 void AEnemySpectralProjectile::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	TArray<AActor*> ActorsToIgnore;
-	ActorsToIgnore.Add(this);
-
-	if (OtherActor == Player && !ActorsToIgnore.Contains(Player))
+	if (IHitInterface* HitInterface = Cast<IHitInterface>(OtherActor))
 	{
-		UGameplayStatics::ApplyDamage(
-			Player,
-			Damage,
-			GetInstigator()->GetController(),
-			this,
-			UDamageType::StaticClass()
-		);
-		ActorsToIgnore.AddUnique(OtherActor);
-	}
+		if (!ActorsToIgnore.Contains(OtherActor))
+		{
+			UGameplayStatics::ApplyDamage(
+				OtherActor,
+				Damage,
+				GetInstigator()->GetController(),
+				this,
+				UDamageType::StaticClass()
+			);
+
+			HitInterface->GetHit_Implementation(SweepResult.ImpactPoint, UDamageType::StaticClass());
+			ActorsToIgnore.AddUnique(OtherActor);
+		}
+	}	
 }

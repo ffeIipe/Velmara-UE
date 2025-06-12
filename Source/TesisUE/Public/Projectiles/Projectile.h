@@ -25,9 +25,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly);
 	float Damage;
 
-	UPROPERTY()
-	APlayerMain* Player;
-
 	UPROPERTY(EditAnywhere, Category = "Projectile | Collider")
 	UBoxComponent* BoxCollider;
 
@@ -71,6 +68,4 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Effects");
 	UParticleSystem* HitParticles;
-
-	virtual void OnProjectileImpact(AActor* OtherActor, const FHitResult& Hit);	
 };

@@ -326,6 +326,8 @@ void APlayerMain::PossessEnemy()
 
 void APlayerMain::ReleasePossession(AEnemy* EnemyBeingUnpossessed)
 {
+	CharacterStateComponent->SetCharacterForm(ECharacterForm::ECF_Spectral);
+
 	if (PlayerControllerRef)
 	{
 		PlayerControllerRef->Possess(this);
@@ -342,6 +344,7 @@ void APlayerMain::ReleasePossession(AEnemy* EnemyBeingUnpossessed)
 			PlayerControllerRef->SetViewTargetWithBlend(FollowCamera, 1.f);
 		}
 	}
+
 
 	SetActorHiddenInGame(false);
 	SetActorEnableCollision(true);

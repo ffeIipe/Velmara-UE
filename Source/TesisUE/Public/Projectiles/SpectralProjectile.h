@@ -30,7 +30,6 @@ protected:
 		bool bFromSweep,
 		const FHitResult& SweepResult) override;
 
-	void BeginPlay() override;
 	UPROPERTY(BlueprintReadWrite, Category = "Projectile | Target")
 	AEnemy* Target;
 };

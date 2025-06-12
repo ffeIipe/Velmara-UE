@@ -34,12 +34,3 @@ void ASpectralProjectile::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent,
 	}
 }
 
-void ASpectralProjectile::BeginPlay()
-{
-    Super::BeginPlay();
-	if(Player)
-	{
-		Target = Player->GetSpectralTarget();
-	}
-}
-

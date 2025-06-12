@@ -13,10 +13,12 @@ UCLASS()
 class TESISUE_API AEnemySpectralProjectile : public AProjectile
 {
 	GENERATED_BODY()
-	
-protected:
 
+protected:
 	void BeginPlay() override;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	TArray<AActor*> ActorsToIgnore;
 
 	void OnBoxOverlap(UPrimitiveComponent* OverlappedComponent,
 		AActor* OtherActor,
