@@ -4,6 +4,11 @@
 
 #include "Components/AttributeComponent.h"
 #include "Components/CombatComponent.h"
+#include "Components/SphereComponent.h"
+#include "Components/SpawnPointComponent.h"
+#include "Components/TimelineComponent.h"
+#include "Curves/CurveFloat.h"
+#include "SpectralTrapComponent.h"
 #include "Engine/DamageEvents.h"
 #include "DamageTypes/SpectralTrapDamageType.h"
 #include <Kismet/KismetMathLibrary.h>
@@ -14,29 +19,15 @@
 
 APaladinBoss::APaladinBoss()
 {
-	USceneComponent* SP1 = CreateDefaultSubobject<USceneComponent>(TEXT("SpawnPoint1"));
-	if (SP1)
-	{
-		SP1->SetupAttachment(GetRootComponent());
-		SpawnPoints.Add(SP1);
-	}
-	USceneComponent* SP2 = CreateDefaultSubobject<USceneComponent>(TEXT("SpawnPoint2"));
-	if (SP2)
-	{
-		SP2->SetupAttachment(GetRootComponent());
-		SpawnPoints.Add(SP2);
-	}
-	USceneComponent* SP3 = CreateDefaultSubobject<USceneComponent>(TEXT("SpawnPoint3"));
-	if (SP3)
-	{
-		SP3->SetupAttachment(GetRootComponent());
-		SpawnPoints.Add(SP3);
-	}
+	SpectralTrapComponent = CreateDefaultSubobject<USpectralTrapComponent>(TEXT("SpectralTrapComponent"));
+	SpectralTrapComponent->SphereCollider->SetupAttachment(Attributes->GetShieldMeshComponent());
 }
 
 void APaladinBoss::BeginPlay()
 {
 	Super::BeginPlay();
+
+	GetComponents<USpawnPointComponent>(SpawnPoints);
 
 	if (Attributes)
 	{
@@ -74,21 +65,20 @@ float APaladinBoss::TakeDamage(float DamageAmount, FDamageEvent const& DamageEve
 	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
 	return DamageAmount;
-
 }
 
 void APaladinBoss::DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage* HitReactAnimMontage, const float DamageReceived)
 {
-	//if (UKismetMathLibrary::RandomBool())
-	//{
-	//	StopAnimMontage();
-	//	PlayAnimMontage(HitReactAnimMontage, 1.f, FName("FromRight"));
-	//}
-	//else
-	//{
-	//	StopAnimMontage();
-	//	PlayAnimMontage(HitReactAnimMontage, 1.f, FName("FromLeft"));
-	//}
+	if (UKismetMathLibrary::RandomBool())
+	{
+		StopAnimMontage();
+		PlayAnimMontage(HitReactMontage, 1.f, FName("FromRight"));
+	}
+	else
+	{
+		StopAnimMontage();
+		PlayAnimMontage(HitReactMontage, 1.f, FName("FromLeft"));
+	}
 }
 
 bool APaladinBoss::IsLaunchable_Implementation(ACharacter* DamageCauser)
@@ -99,6 +89,8 @@ bool APaladinBoss::IsLaunchable_Implementation(ACharacter* DamageCauser)
 void APaladinBoss::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived)
 {
 	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Emerald, FString("GET HIT PALADIN BOSS"));
+
+	NotifyDamageTakenToBlackboard(DamageCauserOf);
 }
 
 void APaladinBoss::TryToInvoke()
@@ -131,11 +123,11 @@ void APaladinBoss::Invoke()
 
 			AEnemy* EnemyFromPool = PoolManager->SpawnEnemyFromPool(MinionToSpawnClass, SpawnLocation, SpawnRotation, this, this);
 
-			if (APaladin* NewPaladin = Cast<APaladin>(EnemyFromPool))
+			if (AEnemy* NewEnemy = Cast<AEnemy>(EnemyFromPool))
 			{
-				NewPaladin->OnDeactivated.AddDynamic(this, &APaladinBoss::HandleMinionDeactivated);
+				NewEnemy->OnDeactivated.AddDynamic(this, &APaladinBoss::HandleMinionDeactivated);
 
-				Minions.Add(NewPaladin);
+				Minions.Add(NewEnemy);
 			}
 			else if (EnemyFromPool)
 			{
@@ -145,17 +137,54 @@ void APaladinBoss::Invoke()
 	}
 }
 
+void APaladinBoss::FloodAttack()
+{
+	if (FloodToRaise)
+	{
+		StopAnimMontage();
+		PlayAnimMontage(InvokeMontage);
+
+		RaiseFlood();
+	}
+}
+
+//void APaladinBoss::ApplyFloodDamage(AActor* PlayerRef)
+//{
+//	if (!bCanFloodDamage) return;
+//
+//	else
+//	{
+//		bCanFloodDamage = false;
+//
+//		if (PlayerRef)
+//		{
+//			UGameplayStatics::ApplyDamage(
+//				PlayerRef,
+//				FloodDamage,
+//				GetController(),
+//				this,
+//				UDamageType::StaticClass()
+//			);
+//		}
+//
+//		GetWorld()->GetTimerManager().SetTimer(EnableFloodDamage, this, &APaladinBoss::HandleFloodDamage, true);
+//	}	
+//}
+
 void APaladinBoss::HandleMinionDeactivated(AEnemy* DeactivatedMinion)
 {
-	if (APaladin* PaladinToRemove = Cast<APaladin>(DeactivatedMinion))
+	if (AEnemy* EnemyToRemove = Cast<AEnemy>(DeactivatedMinion))
 	{
-		Minions.Remove(PaladinToRemove);
+		Minions.Remove(EnemyToRemove);
 
 		if (DeactivatedMinion->OnDeactivated.IsBound())
 		{
 			DeactivatedMinion->OnDeactivated.RemoveDynamic(this, &APaladinBoss::HandleMinionDeactivated);
 		}
-		
-		//TryToInvoke();
 	}
+}
+
+void APaladinBoss::HandleFloodDamage()
+{
+	bCanFloodDamage = true;
 }

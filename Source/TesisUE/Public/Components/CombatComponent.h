@@ -119,7 +119,7 @@ public:
 	void Execute();
 
 	UFUNCTION()
-	void GetDirectionalReact(const FVector& ImpactPoint);
+	void GetDirectionalReact(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType);
 	
 	UFUNCTION()
 	void HitReactJumpToSection(FName Section);

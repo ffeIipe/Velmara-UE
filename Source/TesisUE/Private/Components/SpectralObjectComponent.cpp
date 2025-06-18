@@ -34,6 +34,8 @@ void USpectralObjectComponent::SetSpectralVisibility(bool bIsVisible)
 void USpectralObjectComponent::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	GetOwner()->GetComponents<UStaticMeshComponent>(Doors);
 
 	for (int32 i = 0; i < Doors.Num(); i++)
 	{

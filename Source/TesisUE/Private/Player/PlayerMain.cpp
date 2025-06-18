@@ -94,19 +94,15 @@ void APlayerMain::ResetSpectralAttack_Implementation()
 
 void APlayerMain::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived)
 {
-	if (DamageType == USpectralTrapDamageType::StaticClass())
+	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Dead, ECharacterActions::ECA_Stun })) return;
+
+	if (ReceiveDamageSFX)
 	{
-		CombatComponent->HitReactJumpToSection(FName("KnockDown"));
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), ReceiveDamageSFX, GetActorLocation());
 	}
-	else if(DamageType != USpectralTrapDamageType::StaticClass() && Attributes->IsAlive())
-	{
-		CombatComponent->GetDirectionalReact(ImpactPoint);
-		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Stun);
-	}
-	else if (!Attributes->IsAlive())
-	{
-		Die();
-	}
+
+	CombatComponent->GetDirectionalReact(ImpactPoint, DamageType);
+	CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Stun);
 }
 
 UCharacterStateComponent* APlayerMain::GetCharacterStateComponent_Implementation()
@@ -147,12 +143,19 @@ void APlayerMain::BeginPlay()
 	Super::BeginPlay();
 
 	PlayerControllerRef = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-	
+
 	Attributes->RegenerateTick();
-	
+
+	Attributes->OnEntityDead.AddLambda(
+		[this]
+		{
+			Die();
+		}
+	);
+
 	CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral ?
-	SpectralWeaponComponent->EnableSpectralWeapon(true) : SpectralWeaponComponent->EnableSpectralWeapon(false);
-	
+		SpectralWeaponComponent->EnableSpectralWeapon(true) : SpectralWeaponComponent->EnableSpectralWeapon(false);
+
 	CombatComponent->OnWallHit.AddDynamic(this, &APlayerMain::OnWallCollision);
 
 	for (TActorIterator<ACameraActor> It(GetWorld()); It; ++It)
@@ -204,15 +207,7 @@ float APlayerMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEven
 
 	if (Attributes && Attributes->IsAlive())
 	{
-		if (DamageEvent.DamageTypeClass && DamageEvent.DamageTypeClass == USpectralTrapDamageType::StaticClass())
-		{
-			CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Stun);
-			Attributes->ReceiveDamage(DamageAmount);
-		}
-		else
-		{
-			Attributes->ReceiveDamage(DamageAmount);
-		}
+		Attributes->ReceiveDamage(DamageAmount);
 	}
 	else
 	{
@@ -326,6 +321,20 @@ void APlayerMain::PossessEnemy()
 
 void APlayerMain::ReleasePossession(AEnemy* EnemyBeingUnpossessed)
 {
+	//calculate a percent of health to steal from the enemy
+
+	float EnemyHealthPercent = EnemyBeingUnpossessed->Attributes->GetHealthPercent();
+
+	if (EnemyHealthPercent > 0.f && EnemyHealthPercent < .1f)
+	{
+		Attributes->SetHealth(10.f);
+	}
+	else
+	{
+		float NewPercentage = (EnemyHealthPercent / 3) * 100.f;
+		Attributes->SetHealth(Attributes->GetHealth() + NewPercentage);
+	}
+
 	CharacterStateComponent->SetCharacterForm(ECharacterForm::ECF_Spectral);
 
 	if (PlayerControllerRef)

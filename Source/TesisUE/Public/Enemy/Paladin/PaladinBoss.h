@@ -9,6 +9,10 @@ class TESISUE_API APaladinBoss : public APaladin
 {
 	GENERATED_BODY()
 
+public:
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+	void ResetKeyBool(float Duration, struct FBlackboardKeySelector Key, bool SetBool, APawn* TargetPawn);
+
 protected:
 	APaladinBoss();
 
@@ -20,11 +24,14 @@ protected:
 		class AController* EventInstigator,
 		AActor* DamageCauser) override;
 
-	UPROPERTY(EditAnywhere, Category = "Spawning", meta = (DisplayName = "Initial Minion Pool Size Per Boss"))
+	UPROPERTY(EditAnywhere, Category = "Attacks | Spawning")
 	int32 InitialMinionPoolSize = 6;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawning")
-	TArray<USceneComponent*> SpawnPoints;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attacks | Spawning")
+	TArray<class USpawnPointComponent*> SpawnPoints;
+
+	UPROPERTY(VisibleAnywhere)
+	class USpectralTrapComponent* SpectralTrapComponent;
 
 	void DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage* HitReactAnimMontage, const float DamageReceived) override;
 
@@ -32,14 +39,28 @@ protected:
 
 	void GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived) override;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Attacks | Flood")
+	float FloodDamage;
+
+	bool bCanFloodDamage;
+
+	FTimerHandle EnableFloodDamage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	AActor* FloodToRaise;
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void RaiseFlood();
+
 private:
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Attacks | Spawning")
 	TSubclassOf<AEnemy> MinionToSpawnClass;
 	
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly, Category = "Montages")
 	UAnimMontage* InvokeMontage;
 
 	TArray<AEnemy*> Minions;
+
 	FTimerHandle InvokeTimer;
 
 	UFUNCTION(BlueprintCallable)
@@ -48,9 +69,15 @@ private:
 	UFUNCTION(BlueprintCallable)
 	bool CanInvoke();
 
-	UFUNCTION()
 	void Invoke();
 
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
+	void FloodAttack();
+
+	/*UFUNCTION(BlueprintCallable)
+	void ApplyFloodDamage(AActor* PlayerRef);*/
+
 	void HandleMinionDeactivated(AEnemy* DeactivatedMinion);	
+
+	void HandleFloodDamage();
 };

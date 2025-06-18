@@ -19,6 +19,7 @@
 #include "Camera/CameraActor.h"
 #include "Enemy/Paladin/ShieldedPaladin.h"
 #include "Items/Weapons/Sword.h"
+#include <DamageTypes/SpectralTrapDamageType.h>
 
 UCombatComponent::UCombatComponent()
 {
@@ -420,7 +421,7 @@ void UCombatComponent::Execute()
 	}
 }
 
-void UCombatComponent::GetDirectionalReact(const FVector& ImpactPoint)
+void UCombatComponent::GetDirectionalReact(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType)
 {
 	const FVector Forward = GetOwner()->GetActorForwardVector();
 	const FVector ToHit = (ImpactPoint - GetOwner()->GetActorLocation()).GetSafeNormal();
@@ -439,19 +440,30 @@ void UCombatComponent::GetDirectionalReact(const FVector& ImpactPoint)
 
 	FName Section("FromBack");
 
-	if (Angle >= -45.f && Angle < 45.f)
+	if (DamageType != USpectralTrapDamageType::StaticClass())
 	{
-		Section = FName("FromFront");
-	}
+		if (Angle >= -45.f && Angle < 45.f)
+		{
+			Section = FName("FromFront");
+		}
 
-	else if (Angle >= -135.f && Angle < -45.f)
-	{
-		Section = FName("FromLeft");
-	}
+		else if (Angle >= -135.f && Angle < -45.f)
+		{
+			Section = FName("FromLeft");
+		}
 
-	else if (Angle >= 45.f && Angle < 135.f)
+		else if (Angle >= 45.f && Angle < 135.f)
+		{
+			Section = FName("FromRight");
+		}
+	}
+	else
 	{
-		Section = FName("FromRight");
+		if (Angle >= -90.f && Angle < 90.f)
+		{
+			Section = FName("KnockDownFromFront");
+		}
+		else Section = FName("KnockDown");
 	}
 
 	OwningCharacter->PlayAnimMontage(HitReactMontage, 1.f, Section);

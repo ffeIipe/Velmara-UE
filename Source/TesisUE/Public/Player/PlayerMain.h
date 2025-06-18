@@ -227,6 +227,9 @@ private:
 	//~______________________________________________________________________//
 	UPROPERTY(EditDefaultsOnly, Category = "Audio | SFX")
 	USoundBase* ErrorSFX;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Audio | SFX")
+	USoundBase* ReceiveDamageSFX;
 
 	//~PAGINATION____________________________________________________________//
 	//~ Configuration | Stats & Cooldowns
