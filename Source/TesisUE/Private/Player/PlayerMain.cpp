@@ -321,20 +321,6 @@ void APlayerMain::PossessEnemy()
 
 void APlayerMain::ReleasePossession(AEnemy* EnemyBeingUnpossessed)
 {
-	//calculate a percent of health to steal from the enemy
-
-	float EnemyHealthPercent = EnemyBeingUnpossessed->Attributes->GetHealthPercent();
-
-	if (EnemyHealthPercent > 0.f && EnemyHealthPercent < .1f)
-	{
-		Attributes->SetHealth(10.f);
-	}
-	else
-	{
-		float NewPercentage = (EnemyHealthPercent / 3) * 100.f;
-		Attributes->SetHealth(Attributes->GetHealth() + NewPercentage);
-	}
-
 	CharacterStateComponent->SetCharacterForm(ECharacterForm::ECF_Spectral);
 
 	if (PlayerControllerRef)

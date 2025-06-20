@@ -140,6 +140,8 @@ void APaladin::Die(AActor* DamageCauser)
 
 void APaladin::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled)
 {
+	Attributes->DecreaseEnergyBy(PossessionAttackCost);
+
 	if (SwordCollider)
 	{
 		SwordCollider->SetCollisionEnabled(CollisionEnabled);
@@ -191,6 +193,13 @@ void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 				UGameplayStatics::PlayWorldCameraShake(this, CameraShake, SwordMesh->GetComponentLocation(), 0.f, 500.f);
 				IgnoreActors.Add(Hit.GetActor());
 			}
+
+			if (PossessionOwner)
+			{
+				float Percentage = Damage / EnergyDivider;
+				GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Cyan, FString::SanitizeFloat(Percentage));
+				Attributes->IncreaseEnergy(Percentage);
+			}
 		}
 	}
 }
@@ -232,14 +241,15 @@ void APaladin::Attack(const FInputActionValue& Value)
 {
 	Super::Attack(Value);
 
-	Attributes->DecreaseEnergyBy(PossessionAttackCost);
+	//Attributes->DecreaseEnergyBy(PossessionAttackCost); cambio esto al enable collision para que sea como un "evento" que solo se ejecute en animaciones
+	//y no se este gastando la energia haciendo click, se puede mejorar con un evento dentro del light attack (combat component)
 
 	CombatComponent->Input_Attack(Value);
 }
 
 void APaladin::HeavyAttack(const FInputActionValue& Value)
 {
-	Attributes->DecreaseEnergyBy(PossessionHeavyAttackCost);
+	//Attributes->DecreaseEnergyBy(PossessionHeavyAttackCost);
 
 	CombatComponent->Input_HeavyAttack(Value);
 }

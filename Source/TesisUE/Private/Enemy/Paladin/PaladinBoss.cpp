@@ -103,6 +103,7 @@ void APaladinBoss::TryToInvoke()
 
 bool APaladinBoss::CanInvoke()
 {
+	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Magenta, FString::SanitizeFloat(Minions.Num()));
 	return Minions.Num() <= 0;
 }
 
@@ -147,29 +148,6 @@ void APaladinBoss::FloodAttack()
 		RaiseFlood();
 	}
 }
-
-//void APaladinBoss::ApplyFloodDamage(AActor* PlayerRef)
-//{
-//	if (!bCanFloodDamage) return;
-//
-//	else
-//	{
-//		bCanFloodDamage = false;
-//
-//		if (PlayerRef)
-//		{
-//			UGameplayStatics::ApplyDamage(
-//				PlayerRef,
-//				FloodDamage,
-//				GetController(),
-//				this,
-//				UDamageType::StaticClass()
-//			);
-//		}
-//
-//		GetWorld()->GetTimerManager().SetTimer(EnableFloodDamage, this, &APaladinBoss::HandleFloodDamage, true);
-//	}	
-//}
 
 void APaladinBoss::HandleMinionDeactivated(AEnemy* DeactivatedMinion)
 {
