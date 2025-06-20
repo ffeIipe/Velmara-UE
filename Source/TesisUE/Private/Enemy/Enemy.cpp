@@ -99,6 +99,8 @@ AEnemy::AEnemy()
 	DissolveParticleComponent->SetupAttachment(GetMesh());
 
 	ExtraMovementComponent = CreateDefaultSubobject<UExtraMovementComponent>(TEXT("ExtraMovementComponent"));
+
+	bIsPooledInstance = false;
 }
 
 void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
@@ -204,7 +206,7 @@ void AEnemy::DeactivateEnemy()
 	isLaunched = false;
 	DamageCauserOf = nullptr;
 
-	OnDeactivated.Broadcast(this);
+	/*OnDeactivated.Broadcast(this);*/
 
 	GetWorldTimerManager().ClearTimer(HitFlashTimerHandle);
 	GetWorldTimerManager().ClearTimer(ReturnToPoolTimerHandle);
@@ -243,9 +245,9 @@ void AEnemy::Die(AActor* DamageCauser)
 		}
 	}
 
-	if (DamageCauser && DamageCauser->GetComponentByClass<UAttributeComponent>())
+	if (APlayerMain* PlayerRef = Cast<APlayerMain>(DamageCauser))
 	{
-		DamageCauser->GetComponentByClass<UAttributeComponent>()->IncreaseEnergy(FMath::RandRange(MinEnergy, MaxEnergy));
+		PlayerRef->Attributes->IncreaseEnergy(FMath::RandRange(MinEnergy, MaxEnergy));
 	}
 	
 	if (PromptWidgetComponent && PromptWidgetComponent->GetWidget())
@@ -260,6 +262,8 @@ void AEnemy::Die(AActor* DamageCauser)
 	{
 		UnPossess();
 	}
+
+	OnDeactivated.Broadcast(this);
 
 	GetWorldTimerManager().SetTimer(ReturnToPoolTimerHandle, this, &AEnemy::RequestReturnToPool, 5.0f, false);
 }
@@ -803,6 +807,18 @@ void AEnemy::UnPossessAndKill()
 {
 	if (IsValid(PossessionOwner) && PossessionOwner->GetAttributes() && PossessionOwner->GetAttributes()->RequiresEnergy(UnpossesAndKillEnergyTax))
 	{
+		float EnemyHealthPercent = Attributes->GetHealthPercent();
+
+		if (EnemyHealthPercent > 0.f && EnemyHealthPercent < .1f)
+		{
+			PossessionOwner->Attributes->SetHealth(10.f);
+		}
+		else
+		{
+			float NewPercentage = (EnemyHealthPercent / 3) * 100.f;
+			PossessionOwner->Attributes->SetHealth(Attributes->GetHealth() + NewPercentage);
+		}
+
 		UnPossessBase();
 
 		if (IsValid(PossessionOwner) && PossessionOwner->GetAttributes())

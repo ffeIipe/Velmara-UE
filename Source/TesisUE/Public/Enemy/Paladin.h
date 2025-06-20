@@ -47,6 +47,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "OnPossession")
 	float PossessionDamage;
 	
+	UPROPERTY(EditDefaultsOnly, Category = "OnPossession")
+	float EnergyDivider = 2.f;
+	
 	void BeginPlay();
 
 	void Die(AActor* DamageCauser) override;
