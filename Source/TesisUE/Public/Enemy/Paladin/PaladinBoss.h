@@ -33,6 +33,9 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	class USpectralTrapComponent* SpectralTrapComponent;
 
+	UPROPERTY(VisibleAnywhere)
+	UStaticMeshComponent* AuraMeshComponent;
+
 	void DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage* HitReactAnimMontage, const float DamageReceived) override;
 
 	bool IsLaunchable_Implementation(ACharacter* DamageCauser) override;

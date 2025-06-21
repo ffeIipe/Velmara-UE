@@ -440,8 +440,8 @@ void UCombatComponent::GetDirectionalReact(const FVector& ImpactPoint, TSubclass
 
 	FName Section("FromBack");
 
-	if (DamageType != USpectralTrapDamageType::StaticClass())
-	{
+	/*if (DamageType != USpectralTrapDamageType::StaticClass())*/
+	//{
 		if (Angle >= -45.f && Angle < 45.f)
 		{
 			Section = FName("FromFront");
@@ -456,15 +456,15 @@ void UCombatComponent::GetDirectionalReact(const FVector& ImpactPoint, TSubclass
 		{
 			Section = FName("FromRight");
 		}
-	}
-	else
+	//}
+	/*else
 	{
 		if (Angle >= -90.f && Angle < 90.f)
 		{
 			Section = FName("KnockDownFromFront");
 		}
 		else Section = FName("KnockDown");
-	}
+	}*/
 
 	OwningCharacter->PlayAnimMontage(HitReactMontage, 1.f, Section);
 }

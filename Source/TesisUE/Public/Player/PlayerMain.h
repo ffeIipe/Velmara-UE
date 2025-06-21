@@ -245,6 +245,11 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Stats | Possess")
 	float PossessDistance;
 
+	float DefaultMaxWalkSpeed = 700.f;
+
+	UPROPERTY(EditAnywhere, Category = "Stats | Stun")
+	float StunMaxWalkSpeed;
+
 	//~PAGINATION____________________________________________________________//
 	//~ Internal References & State
 	//~______________________________________________________________________//
@@ -278,7 +283,12 @@ private:
 	void Block(const FInputActionValue& Value);
 	void ReleaseBlock(const FInputActionValue& Value);
 	void Execute(const FInputActionValue& Value);
+	void StunBehavior();
 
+public:
+	void RemoveStunBehavior();
+
+private:
 	UFUNCTION(BlueprintCallable, Category = "Gameplay | Effects")
 	void HitStop(float Duration, float TimeScale);
 

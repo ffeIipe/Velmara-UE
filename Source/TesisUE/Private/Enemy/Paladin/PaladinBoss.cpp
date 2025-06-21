@@ -20,7 +20,10 @@
 APaladinBoss::APaladinBoss()
 {
 	SpectralTrapComponent = CreateDefaultSubobject<USpectralTrapComponent>(TEXT("SpectralTrapComponent"));
-	SpectralTrapComponent->SphereCollider->SetupAttachment(Attributes->GetShieldMeshComponent());
+	SpectralTrapComponent->SphereCollider->SetupAttachment(GetRootComponent());
+
+	AuraMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("AuraMesh"));
+	AuraMeshComponent->SetupAttachment(GetRootComponent());
 }
 
 void APaladinBoss::BeginPlay()
@@ -54,7 +57,7 @@ void APaladinBoss::BeginPlay()
 			UEnemyPoolManager* PoolManager = World->GetSubsystem<UEnemyPoolManager>();
 			if (PoolManager)
 			{
-				PoolManager->EnsurePoolInitialized(MinionToSpawnClass, InitialMinionPoolSize);
+				//PoolManager->EnsurePoolInitialized(MinionToSpawnClass, InitialMinionPoolSize);
 			}
 		}
 	}

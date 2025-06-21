@@ -301,6 +301,8 @@ void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
 
+	
+
 	GetDefaultParameters();
 
 	CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_EquippedSword);
