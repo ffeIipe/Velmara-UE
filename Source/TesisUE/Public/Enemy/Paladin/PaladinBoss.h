@@ -30,10 +30,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attacks | Spawning")
 	TArray<class USpawnPointComponent*> SpawnPoints;
 
-	UPROPERTY(VisibleAnywhere)
-	class USpectralTrapComponent* SpectralTrapComponent;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	class USpectralTrapComponent* SpectralTrapComponent2;
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	UStaticMeshComponent* AuraMeshComponent;
 
 	void DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage* HitReactAnimMontage, const float DamageReceived) override;
@@ -55,6 +55,9 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent)
 	void RaiseFlood();
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Attacks | Aura")
+	float AuraRadius = 4.f;
+
 private:
 	UPROPERTY(EditAnywhere, Category = "Attacks | Spawning")
 	TSubclassOf<AEnemy> MinionToSpawnClass;
@@ -62,6 +65,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Montages")
 	UAnimMontage* InvokeMontage;
 
+	UPROPERTY(VisibleAnywhere)
 	TArray<AEnemy*> Minions;
 
 	FTimerHandle InvokeTimer;
@@ -77,9 +81,7 @@ private:
 	UFUNCTION(BlueprintCallable)
 	void FloodAttack();
 
-	/*UFUNCTION(BlueprintCallable)
-	void ApplyFloodDamage(AActor* PlayerRef);*/
-
+	UFUNCTION() //el fkn panzas del UFUNCTION tiene que estar si o si, en caso de ser bindeado a un multicast delegate
 	void HandleMinionDeactivated(AEnemy* DeactivatedMinion);	
 
 	void HandleFloodDamage();

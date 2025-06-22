@@ -15,12 +15,13 @@
 
 #include "Player/PlayerMain.h"
 #include <Kismet/GameplayStatics.h>
+#include <Player/PlayerHeroController.h>
 
 
 APaladinBoss::APaladinBoss()
 {
-	SpectralTrapComponent = CreateDefaultSubobject<USpectralTrapComponent>(TEXT("SpectralTrapComponent"));
-	SpectralTrapComponent->SphereCollider->SetupAttachment(GetRootComponent());
+	SpectralTrapComponent2 = CreateDefaultSubobject<USpectralTrapComponent>(TEXT("SpectralTrapComponent"));
+	SpectralTrapComponent2->SphereCollider->SetupAttachment(GetRootComponent());
 
 	AuraMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("AuraMesh"));
 	AuraMeshComponent->SetupAttachment(GetRootComponent());
@@ -49,23 +50,30 @@ void APaladinBoss::BeginPlay()
 		);
 	}
 
-	if (MinionToSpawnClass && InitialMinionPoolSize > 0)
-	{
-		UWorld* World = GetWorld();
-		if (World)
-		{
-			UEnemyPoolManager* PoolManager = World->GetSubsystem<UEnemyPoolManager>();
-			if (PoolManager)
-			{
-				//PoolManager->EnsurePoolInitialized(MinionToSpawnClass, InitialMinionPoolSize);
-			}
-		}
-	}
+	//if (MinionToSpawnClass && InitialMinionPoolSize > 0)
+	//{
+	//	UWorld* World = GetWorld();
+	//	if (World)
+	//	{
+	//		UEnemyPoolManager* PoolManager = World->GetSubsystem<UEnemyPoolManager>();
+	//		if (PoolManager)
+	//		{
+	//			PoolManager->EnsurePoolInitialized(MinionToSpawnClass, InitialMinionPoolSize);
+	//		}
+	//	}
+	//}
 }
 
 float APaladinBoss::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+	
+	if (APlayerHeroController* PlayerController = Cast<APlayerHeroController>(UGameplayStatics::GetPlayerController(this, 0)))
+	{
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Orange, FString("Valid Player Hero Controller..."));
+
+		PlayerController->HandleBossHealth(Attributes->GetHealthPercent(), Attributes->GetShieldHealthPercent());
+	}
 
 	return DamageAmount;
 }
@@ -91,8 +99,6 @@ bool APaladinBoss::IsLaunchable_Implementation(ACharacter* DamageCauser)
 
 void APaladinBoss::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived)
 {
-	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Emerald, FString("GET HIT PALADIN BOSS"));
-
 	NotifyDamageTakenToBlackboard(DamageCauserOf);
 }
 
@@ -127,15 +133,15 @@ void APaladinBoss::Invoke()
 
 			AEnemy* EnemyFromPool = PoolManager->SpawnEnemyFromPool(MinionToSpawnClass, SpawnLocation, SpawnRotation, this, this);
 
-			if (AEnemy* NewEnemy = Cast<AEnemy>(EnemyFromPool))
+			if (EnemyFromPool)
 			{
-				NewEnemy->OnDeactivated.AddDynamic(this, &APaladinBoss::HandleMinionDeactivated);
+				EnemyFromPool->OnDeactivated.AddDynamic(this, &APaladinBoss::HandleMinionDeactivated);
 
-				Minions.Add(NewEnemy);
+				Minions.Add(EnemyFromPool);
 			}
-			else if (EnemyFromPool)
+			else
 			{
-				PoolManager->ReturnEnemyToPool(EnemyFromPool);
+				GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Failed to spawn minion from pool!"));
 			}
 		}
 	}
@@ -154,14 +160,11 @@ void APaladinBoss::FloodAttack()
 
 void APaladinBoss::HandleMinionDeactivated(AEnemy* DeactivatedMinion)
 {
-	if (AEnemy* EnemyToRemove = Cast<AEnemy>(DeactivatedMinion))
-	{
-		Minions.Remove(EnemyToRemove);
+	Minions.Remove(DeactivatedMinion);
 
-		if (DeactivatedMinion->OnDeactivated.IsBound())
-		{
-			DeactivatedMinion->OnDeactivated.RemoveDynamic(this, &APaladinBoss::HandleMinionDeactivated);
-		}
+	if (DeactivatedMinion->OnDeactivated.IsBound())
+	{
+		DeactivatedMinion->OnDeactivated.RemoveDynamic(this, &APaladinBoss::HandleMinionDeactivated);
 	}
 }
 

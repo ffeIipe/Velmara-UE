@@ -61,8 +61,6 @@ void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Sti
     {
         if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Human)
         {
-            GEngine->AddOnScreenDebugMessage(1, -1.f, FColor::Green, FString("Can see entity!"));
-
             BlackboardComponent->SetValueAsObject(FName("TargetActor"), Actor);
             BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), true);
             
@@ -83,8 +81,6 @@ void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Sti
                 }
                 else
                 {
-                    GEngine->AddOnScreenDebugMessage(1, -1.f, FColor::Green, FString("Can see Damage Causer!"));
-
                     BlackboardComponent->SetValueAsObject(FName("TargetActor"), DamageCauser);
                     BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), true);
 
@@ -94,8 +90,6 @@ void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Sti
         }
         else
         {
-            GEngine->AddOnScreenDebugMessage(1, -1.f, FColor::Green, FString("Clearing values..."));
-
             EnemyPerceptionComponent->ForgetActor(Actor);
             BlackboardComponent->ClearValue(FName("TargetActor"));
             BlackboardComponent->ClearValue(FName("DistToTarget"));

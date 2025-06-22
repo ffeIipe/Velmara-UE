@@ -59,7 +59,7 @@ void USpectralTrapComponent::OnSphereEndOverlap(UPrimitiveComponent* OverlappedC
 
 void USpectralTrapComponent::ApplySpectralDamage(AActor* Actor, float DamageAmount, AController* InstigatorOf, AActor* DamageCauserOf, TSubclassOf<UDamageType> DamageType)
 {
-	GEngine->AddOnScreenDebugMessage(678, 3.f, FColor::Purple, FString("USpectralTrapComponent::ApplySpectralDamage"));
+	GEngine->AddOnScreenDebugMessage(678, 3.f, FColor::White, FString("USpectralTrapComponent::ApplySpectralDamage"));
 
 	UGameplayStatics::ApplyDamage(
 		Actor,

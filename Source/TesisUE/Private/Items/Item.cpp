@@ -104,8 +104,6 @@ void AItem::ApplySavedState(const FInteractedItemSaveData* SavedData)
 {
 	if (SavedData && SavedData->bWasOpened)
 	{
-		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, FString("Was opened..."));
-		
 		bWasOpened = true;
 		Use(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
 		Destroy();

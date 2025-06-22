@@ -48,4 +48,9 @@ private:
 	bool bIsGamePausedExplicitly;
 
 	FGenericTeamId HeroTeamID;
+
+public:
+	class APlayerMainHUD* PlayerMainHUD;
+
+	void HandleBossHealth(float HealthHP, float ShieldHP);
 };

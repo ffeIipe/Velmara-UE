@@ -206,8 +206,6 @@ void AEnemy::DeactivateEnemy()
 	isLaunched = false;
 	DamageCauserOf = nullptr;
 
-	/*OnDeactivated.Broadcast(this);*/
-
 	GetWorldTimerManager().ClearTimer(HitFlashTimerHandle);
 	GetWorldTimerManager().ClearTimer(ReturnToPoolTimerHandle);
 }
@@ -249,10 +247,10 @@ void AEnemy::Die(AActor* DamageCauser)
 	{
 		PlayerRef->Attributes->IncreaseEnergy(FMath::RandRange(MinEnergy, MaxEnergy));
 	}
-	
+
 	if (PromptWidgetComponent && PromptWidgetComponent->GetWidget())
 	{
-		PromptWidgetComponent->GetPromptWidgetComponent()->EnablePromptWidget(false); 
+		PromptWidgetComponent->GetPromptWidgetComponent()->EnablePromptWidget(false);
 	}
 
 	DisableAI();
@@ -287,7 +285,6 @@ void AEnemy::RequestReturnToPool()
 		}
 		else
 		{
-			if (GEngine)GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::White, FString("Not valid Pool Subsystem"));
 			Destroy();
 		}
 	}
@@ -356,7 +353,6 @@ void AEnemy::BeginPlay()
 			GetMesh()->SetMaterial(i, DissolveMaterials[i]);
 		}
 	}
-	else GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Not valid Mesh..."));
 }
 
 void AEnemy::NotifyThreat(AActor* ThreatActor)
@@ -388,7 +384,6 @@ void AEnemy::UpdateDissolveEffect(float Value)
 	{
 		if (IsValid(DissolveMaterial))
 		{
-			GEngine->AddOnScreenDebugMessage(INDEX_NONE, -1.f, FColor::Blue, FString::SanitizeFloat(ClampedValue));
 			DissolveMaterial->SetScalarParameterValue(FName("Animation"), ClampedValue);
 		}
 	}
@@ -604,7 +599,6 @@ void AEnemy::DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage* HitRe
 
 	if (DamageReceived > DamageThreshold)
 	{
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Cyan, FString("BACK BIG"));
 		Section = FName("FromBackBig");
 	}
 	
@@ -613,7 +607,6 @@ void AEnemy::DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage* HitRe
 		if (DamageReceived > DamageThreshold)
 		{
 			Section = FName("FromFrontBig");
-			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("BACK FRONT"));
 		}
 		else
 		{
