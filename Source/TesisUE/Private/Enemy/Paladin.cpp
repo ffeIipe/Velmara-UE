@@ -68,7 +68,7 @@ void APaladin::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	SwordCollider->OnComponentBeginOverlap.AddDynamic(this, &APaladin::OnSwordOverlap);
+	 SwordCollider->OnComponentBeginOverlap.AddDynamic(this, &APaladin::OnSwordOverlap);
 
 	if (Attributes)
 	{

@@ -40,6 +40,9 @@
 #include "DamageTypes/SpectralTrapDamageType.h"
 #include <SceneEvents/NewGameInstance.h>
 
+#include "Animation/AnimInstance.h"
+
+
 APlayerMain::APlayerMain()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -94,15 +97,31 @@ void APlayerMain::ResetSpectralAttack_Implementation()
 
 void APlayerMain::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived)
 {
-	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Dead, ECharacterActions::ECA_Stun })) return;
+	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Dead })) return;
+
+	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun }))
+	{
+		if (DamageType != USpectralTrapDamageType::StaticClass())
+		{
+			return;
+		}
+	}
 
 	if (ReceiveDamageSFX)
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), ReceiveDamageSFX, GetActorLocation());
 	}
 
-	CombatComponent->GetDirectionalReact(ImpactPoint, DamageType);
-	CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Stun);
+	if (DamageType == USpectralTrapDamageType::StaticClass())
+	{
+		//CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Stun);
+		StunBehavior();
+	}
+	else
+	{
+		CombatComponent->GetDirectionalReact(ImpactPoint, DamageType);
+		//RemoveStunBehavior(); no sirve esto porque al pegarte el boss te saca el estado de stun
+	}
 }
 
 UCharacterStateComponent* APlayerMain::GetCharacterStateComponent_Implementation()
@@ -199,6 +218,20 @@ void APlayerMain::SearchTarget()
 		SpectralTarget = Cast<ASpectre>(Enemy);
 	}
 	else SpectralTarget = nullptr;
+}
+
+void APlayerMain::StunBehavior()
+{
+	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, FString("Stun Behavior..."));
+	GetMesh()->GlobalAnimRateScale = .5f;
+	GetCharacterMovement()->MaxWalkSpeed = StunMaxWalkSpeed;
+}
+
+void APlayerMain::RemoveStunBehavior()
+{
+	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Orange, FString("Resetting Default Walk Speed..."));
+	GetMesh()->GlobalAnimRateScale = 1.f;
+	GetCharacterMovement()->MaxWalkSpeed = DefaultMaxWalkSpeed;
 }
 
 float APlayerMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)

@@ -27,11 +27,37 @@ protected:
 		int32 OtherBodyIndex, bool bFromSweep,
 		const FHitResult& SweepResult);
 
+	UFUNCTION()
+	virtual void OnSphereEndOverlap(
+		UPrimitiveComponent* OverlappedComponent,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex);
+
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
 	float Damage;
+
+	UPROPERTY(EditAnywhere, Category = "Stats")
+	float DamageInterval = 1.f;
+
+	FTimerHandle ContinuousDamageTimerHandle;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
 	FVector LaunchStrenght;
 
 	AController* Instigator;
+
+	UPROPERTY(VisibleAnywhere)
+	class APlayerMain* Player;
+
+private:
+	void ApplySpectralDamage(
+		AActor* Actor,
+		float DamageAmount,
+		AController* InstigatorOf,
+		AActor* DamageCauserOf,
+		TSubclassOf<UDamageType> DamageType
+	);
+
+	void DealContinuousDamage();
 };
