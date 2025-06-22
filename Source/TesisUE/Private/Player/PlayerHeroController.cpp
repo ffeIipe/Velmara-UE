@@ -10,6 +10,10 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 
+#include "HUD/PlayerMainHUD.h"
+#include "HUD/PlayerMainWidget.h"
+#include "HUD/PaladinBossHealthBar.h"
+
 APlayerHeroController::APlayerHeroController()
 {
 	HeroTeamID = FGenericTeamId(0);
@@ -34,7 +38,8 @@ APlayerHeroController::APlayerHeroController()
 void APlayerHeroController::BeginPlay()
 {
     Super::BeginPlay();
-    // Si asignaste las clases en el constructor o desde un Blueprint derivado, aquí ya deberían estar disponibles.
+
+    PlayerMainHUD = Cast<APlayerMainHUD>(GetHUD());
 }
 
 void APlayerHeroController::SetupInputComponent()
@@ -44,26 +49,23 @@ void APlayerHeroController::SetupInputComponent()
     if (InputComponent)
     {
         InputComponent->BindAction("PauseGame", IE_Pressed, this, &APlayerHeroController::TogglePauseMenu);
-        // Asegúrate de tener una acción "PauseGame" en Project Settings > Input
-        // y asígnale una tecla (ej. Escape).
     }
 }
 
 void APlayerHeroController::TogglePauseMenu()
 {
-    if (bIsGamePausedExplicitly) // Si estamos pausados, vamos a despausar
+    if (bIsGamePausedExplicitly)
     {
         if (CurrentOptionsMenuInstance_Pause && CurrentOptionsMenuInstance_Pause->IsInViewport())
         {
             CurrentOptionsMenuInstance_Pause->RemoveFromParent();
             CurrentOptionsMenuInstance_Pause = nullptr;
-            // No despausamos el juego todavía, solo cerramos opciones. El menú de pausa sigue activo.
-            // Hacemos que el menú de pausa recupere el foco
+
             if (CurrentPauseMenuInstance)
             {
-                CurrentPauseMenuInstance->SetFocus(); // O FInputModeUIOnly con el menú de pausa como widget a enfocar
+                CurrentPauseMenuInstance->SetFocus();
             }
-            return; // Salimos para no despausar el juego si solo estábamos cerrando opciones
+            return;
         }
 
         if (CurrentPauseMenuInstance)
@@ -83,7 +85,7 @@ void APlayerHeroController::TogglePauseMenu()
         }
         UE_LOG(LogTemp, Log, TEXT("Game Unpaused"));
     }
-    else // Si no estamos pausados, vamos a pausar
+    else
     {
         if (!PauseMenuWidgetClass)
         {
@@ -120,20 +122,16 @@ void APlayerHeroController::TogglePauseMenu()
     }
 }
 
-// void AMyPlayerController::ShowOptionsMenuFromPause()
-// {
-//     if (OptionsMenuWidgetClass_Pause && !CurrentOptionsMenuInstance_Pause)
-//     {
-//         CurrentOptionsMenuInstance_Pause = CreateWidget<UWBP_OptionsMenu>(this, OptionsMenuWidgetClass_Pause);
-//         if (CurrentOptionsMenuInstance_Pause)
-//         {
-//             CurrentOptionsMenuInstance_Pause->AddToViewport(10); // ZOrder alto para que esté encima del menú de pausa
-             // Podrías querer que el menú de opciones tome el foco aquí
-//         }
-//     }
-// }
-
 FGenericTeamId APlayerHeroController::GetGenericTeamId() const
 {
 	return HeroTeamID;
+}
+
+void APlayerHeroController::HandleBossHealth(float HealthHP, float ShieldHP)
+{
+    if (PlayerMainHUD && PlayerMainHUD->PlayerMainWidgetInstance)
+    {
+        PlayerMainHUD->SetPaladinBossHealthBar();
+        PlayerMainHUD->PaladinBossHealthBarInstance->ReceivePercentagesFromBoss(HealthHP, ShieldHP);
+    }
 }

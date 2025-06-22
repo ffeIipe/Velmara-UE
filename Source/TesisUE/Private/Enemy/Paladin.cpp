@@ -197,7 +197,6 @@ void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 			if (PossessionOwner)
 			{
 				float Percentage = Damage / EnergyDivider;
-				GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Cyan, FString::SanitizeFloat(Percentage));
 				Attributes->IncreaseEnergy(Percentage);
 			}
 		}

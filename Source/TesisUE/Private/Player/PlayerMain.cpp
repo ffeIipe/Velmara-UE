@@ -222,14 +222,12 @@ void APlayerMain::SearchTarget()
 
 void APlayerMain::StunBehavior()
 {
-	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, FString("Stun Behavior..."));
 	GetMesh()->GlobalAnimRateScale = .5f;
 	GetCharacterMovement()->MaxWalkSpeed = StunMaxWalkSpeed;
 }
 
 void APlayerMain::RemoveStunBehavior()
 {
-	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Orange, FString("Resetting Default Walk Speed..."));
 	GetMesh()->GlobalAnimRateScale = 1.f;
 	GetCharacterMovement()->MaxWalkSpeed = DefaultMaxWalkSpeed;
 }
@@ -303,7 +301,6 @@ AEnemy* APlayerMain::GetTargetEnemy()
 
 	if (bHit)
 	{
-		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Emerald, FString(ResultHit.GetActor()->GetName()));
 
 		if (IHitInterface* Entity = Cast<IHitInterface>(ResultHit.GetActor()))
 		{

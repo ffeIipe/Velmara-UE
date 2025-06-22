@@ -13,7 +13,7 @@ class TESISUE_API USpectralTrapComponent : public UActorComponent
 public:	
 	USpectralTrapComponent();
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	class USphereComponent* SphereCollider;
 
 protected:

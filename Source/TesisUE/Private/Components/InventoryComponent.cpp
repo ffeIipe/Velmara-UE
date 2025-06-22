@@ -74,12 +74,7 @@ bool UInventoryComponent::TryAddItem(AItem* ItemToAdd)
 
 void UInventoryComponent::EquipItemFromSlot(int32 SlotIndex)
 {
-    if (!InventorySlots.IsValidIndex(SlotIndex) || InventorySlots[SlotIndex] == nullptr)
-    {
-        GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Black, FString("INVALID ITEM"));
-
-        return;
-    }
+    if (!InventorySlots.IsValidIndex(SlotIndex) || InventorySlots[SlotIndex] == nullptr) return;
 
     AItem* ItemToEquip = InventorySlots[SlotIndex];
 
