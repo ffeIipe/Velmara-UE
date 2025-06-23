@@ -25,7 +25,7 @@ public:
 
 	virtual void LaunchUp_Implementation(const FVector& InstigatorLocation) override;
 
-	void GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived) override;
+	void GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived) override;
 
 	float TakeDamage(
 		float DamageAmount,
@@ -38,17 +38,14 @@ public:
 
 protected:
 
-	UPROPERTY(EditDefaultsOnly, Category = "OnPossession")
+	UPROPERTY(EditDefaultsOnly, Category = "Energy | OnPossession")
 	float PossessionAttackCost;
 	
-	UPROPERTY(EditDefaultsOnly, Category = "OnPossession")
+	UPROPERTY(EditDefaultsOnly, Category = "Energy | OnPossession")
 	float PossessionHeavyAttackCost;
 	
-	UPROPERTY(EditDefaultsOnly, Category = "OnPossession")
+	UPROPERTY(EditDefaultsOnly, Category = "Energy | OnPossession")
 	float PossessionDamage;
-	
-	UPROPERTY(EditDefaultsOnly, Category = "OnPossession")
-	float EnergyDivider = 2.f;
 	
 	void BeginPlay();
 

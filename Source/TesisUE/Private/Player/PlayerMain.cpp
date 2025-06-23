@@ -95,17 +95,17 @@ void APlayerMain::ResetSpectralAttack_Implementation()
 	CombatComponent->bIsSaveLightAttack = false;
 }
 
-void APlayerMain::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived)
+void APlayerMain::GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived)
 {
 	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Dead })) return;
 
-	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun }))
+	/*if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun }))
 	{
 		if (DamageType != USpectralTrapDamageType::StaticClass())
 		{
 			return;
 		}
-	}
+	}*/
 
 	if (ReceiveDamageSFX)
 	{
@@ -470,7 +470,7 @@ void APlayerMain::Interact(const FInputActionValue& Value)
 		TraceStart,
 		TraceEnd,
 		InteractTargetRadius,
-		ETraceTypeQuery::TraceTypeQuery1,
+		ETraceTypeQuery::TraceTypeQuery1, //visibility trace
 		false,
 		ActorsToIgnore,
 		EDrawDebugTrace::ForDuration,
@@ -481,6 +481,8 @@ void APlayerMain::Interact(const FInputActionValue& Value)
 
 	if (bHit && InventoryComponent)
 	{
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString(ResultHit.GetActor()->GetName()));
+
 		if (ASword* HitSword = Cast<ASword>(ResultHit.GetActor()))
 		{
 			if (CharacterStateComponent->GetCurrentCharacterState().Form != ECharacterForm::ECF_Spectral)

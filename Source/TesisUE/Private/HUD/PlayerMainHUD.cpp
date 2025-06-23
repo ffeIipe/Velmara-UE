@@ -31,3 +31,23 @@ void APlayerMainHUD::SetPaladinBossHealthBar()
     }
     else return;
 }
+
+void APlayerMainHUD::TogglePaladinUI(bool Bool)
+{
+    if (Bool)
+    {
+        if (!PaladinUIInstance)
+        {
+            PaladinUIInstance = CreateWidget<UUserWidget>(UGameplayStatics::GetPlayerController(GetWorld(), 0), PaladinUIWidgetClass);
+            PaladinUIInstance->AddToViewport();
+        }
+        else
+        {
+            PaladinUIInstance->AddToViewport();
+        }
+    }
+    else
+    {
+        PaladinUIInstance->RemoveFromParent();
+    }
+}

@@ -90,7 +90,7 @@ void UAttributeComponent::AttachShield(USceneComponent* InParent, FName SocketNa
 
 void UAttributeComponent::DettachShield()
 {
-	if (ShieldMeshComponent)
+	if (ShieldMeshComponent && !bIsDisarmed)
 	{
 		if (OnDettachShield.IsBound())
 		{

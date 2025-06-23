@@ -21,8 +21,13 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player")
 	UPlayerMainWidget* PlayerMainWidget;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paladin")
+	TSubclassOf<UUserWidget> PaladinUIWidgetClass;
+
 public:
 	void SetPaladinBossHealthBar();
+
+	void TogglePaladinUI(bool Bool);
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss")
 	UUserWidget* PaladinBossMainWidget;
@@ -30,6 +35,8 @@ public:
 	UPlayerMainWidget* PlayerMainWidgetInstance = nullptr;
 
 	UPaladinBossHealthBar* PaladinBossHealthBarInstance = nullptr;
+
+	UUserWidget* PaladinUIInstance = nullptr;
 
 private:
 	bool bAlreadySetted = false;

@@ -30,7 +30,7 @@ protected:
 
 	bool CanBeFinished_Implementation() override;
 
-	void GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived) override;
+	void GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived) override;
 
 	virtual void OnPossessed(APlayerMain* NewOwner, float OwnerEnergy) override;
 

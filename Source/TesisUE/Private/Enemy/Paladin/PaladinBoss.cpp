@@ -46,6 +46,9 @@ void APaladinBoss::BeginPlay()
 						GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::White, FString("IS NOT SHIELDED ANYMORE"));
 					}
 				}
+
+				SpectralTrapComponent2->DestroyComponent();
+				AuraMeshComponent->DestroyComponent();
 			}
 		);
 	}
@@ -68,11 +71,11 @@ float APaladinBoss::TakeDamage(float DamageAmount, FDamageEvent const& DamageEve
 {
 	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 	
-	if (APlayerHeroController* PlayerController = Cast<APlayerHeroController>(UGameplayStatics::GetPlayerController(this, 0)))
+	if (PlayerControllerRef)
 	{
 		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Orange, FString("Valid Player Hero Controller..."));
 
-		PlayerController->HandleBossHealth(Attributes->GetHealthPercent(), Attributes->GetShieldHealthPercent());
+		PlayerControllerRef->HandleBossHealth(Attributes->GetHealthPercent(), Attributes->GetShieldHealthPercent());
 	}
 
 	return DamageAmount;
@@ -97,7 +100,7 @@ bool APaladinBoss::IsLaunchable_Implementation(ACharacter* DamageCauser)
 	return Super::IsLaunchable_Implementation(DamageCauser);
 }
 
-void APaladinBoss::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived)
+void APaladinBoss::GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived)
 {
 	NotifyDamageTakenToBlackboard(DamageCauserOf);
 }

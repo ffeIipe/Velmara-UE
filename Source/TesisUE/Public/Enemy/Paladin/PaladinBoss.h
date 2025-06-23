@@ -40,7 +40,7 @@ protected:
 
 	bool IsLaunchable_Implementation(ACharacter* DamageCauser) override;
 
-	void GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived) override;
+	void GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived) override;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Attacks | Flood")
 	float FloodDamage;

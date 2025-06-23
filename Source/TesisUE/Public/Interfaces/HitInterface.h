@@ -16,7 +16,7 @@ class TESISUE_API IHitInterface
 
 public:
 	UFUNCTION(BlueprintNativeEvent)
-	void GetHit(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived);
+	void GetHit(AActor* DamageCauser, const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived);
 	
 	UFUNCTION(BlueprintNativeEvent)
 	void GetFinished();

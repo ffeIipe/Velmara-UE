@@ -49,7 +49,7 @@ void ASpectralTrap::ApplyTrapDamage(FVector ImpactPoint)
 	{
 		if (IHitInterface* Entity = Cast<IHitInterface>(OverlappingPlayer))
 		{
-			Entity->Execute_GetHit(OverlappingPlayer, ImpactPoint, USpectralTrapDamageType::StaticClass(), Damage);
+			Entity->Execute_GetHit(OverlappingPlayer, GetOwner(), ImpactPoint, USpectralTrapDamageType::StaticClass(), Damage);
 ;		}
 	}
 }

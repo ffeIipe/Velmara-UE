@@ -31,7 +31,8 @@
 #include "SceneEvents/NewGameStateBase.h"
 #include "Subsystems/EnemyPoolManager.h"
 #include "Tutorial/PromptWidgetComponent.h"
-
+#include "Player/PlayerHeroController.h"
+#include "HUD/PlayerMainHUD.h"
 AEnemy::AEnemy()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -298,7 +299,7 @@ void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
 
-	
+	PlayerControllerRef = Cast<APlayerHeroController>(UGameplayStatics::GetPlayerController(this, 0));
 
 	GetDefaultParameters();
 
@@ -463,7 +464,7 @@ void AEnemy::ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoi
 	
 }
 
-void AEnemy::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived)
+void AEnemy::GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived)
 {
 	if (Attributes->IsAlive())
 	{
@@ -485,6 +486,12 @@ void AEnemy::GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDama
 				NiagaraSystem,
 				ImpactPoint
 			);
+		}
+
+		if (APlayerMain* PlayerRef = Cast<APlayerMain>(DamageCauser))
+		{
+			float Percentage = DamageReceived / EnergyDivider;
+			PlayerRef->Attributes->IncreaseEnergy(Percentage);
 		}
 	}
 }
@@ -742,6 +749,8 @@ void AEnemy::OnPossessed(APlayerMain* NewOwner, float OwnerEnergy)
 	
 	SetOnPossessedParameters();
 
+	PlayerControllerRef->PlayerMainHUD->TogglePaladinUI(true);
+
 	if (Attributes)
 	{
 		Attributes->StartDecreaseEnergy();
@@ -767,6 +776,8 @@ void AEnemy::UnPossessBase()
 	bUseControllerRotationYaw = true;
 
 	GetDefaultParameters(); // gettear y settear parametros por defecto... se puede mejorar con algo mas lindo como un struct que gettee y settee... 
+
+	PlayerControllerRef->PlayerMainHUD->TogglePaladinUI(false);
 
 	if (PossessionOwner)
 	{
@@ -800,19 +811,10 @@ void AEnemy::UnPossess()
 
 void AEnemy::UnPossessAndKill()
 {
-	if (IsValid(PossessionOwner) && PossessionOwner->GetAttributes() && PossessionOwner->GetAttributes()->RequiresEnergy(UnpossesAndKillEnergyTax))
+	if (PossessionOwner && PossessionOwner->GetAttributes() && PossessionOwner->GetAttributes()->RequiresEnergy(UnpossesAndKillEnergyTax))
 	{
-		float EnemyHealthPercent = Attributes->GetHealthPercent();
-
-		if (EnemyHealthPercent > 0.f && EnemyHealthPercent < .1f)
-		{
-			PossessionOwner->Attributes->SetHealth(10.f);
-		}
-		else
-		{
-			float NewPercentage = (EnemyHealthPercent / 3) * 100.f;
-			PossessionOwner->Attributes->SetHealth(Attributes->GetHealth() + NewPercentage);
-		}
+		float NewPercentage = (Attributes->GetHealthPercent() / 2) * 100.f;
+		PossessionOwner->Attributes->SetHealth(Attributes->GetHealth() + NewPercentage);
 
 		UnPossessBase();
 

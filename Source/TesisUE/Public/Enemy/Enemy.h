@@ -78,7 +78,7 @@ public:
 
 	bool bIsPooledInstance;
 
-	virtual void GetHit_Implementation(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived) override;
+	virtual void GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived) override;
 
 	virtual void GetFinished_Implementation() override;
 
@@ -195,6 +195,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Energy| Energy Tax");
 	float UnpossesAndKillEnergyTax = 3.f;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Energy | OnPossession")
+	float EnergyDivider = 2.f;
+
 	UPROPERTY(EditAnywhere, Category = "DamageThreshold");
 	float DamageThreshold = 30.f;
 	
@@ -297,6 +300,8 @@ protected:
 
 	virtual void GetDefaultParameters();
 	virtual void SetOnPossessedParameters();
+
+	class APlayerHeroController* PlayerControllerRef;
 
 private:
 	UPROPERTY()

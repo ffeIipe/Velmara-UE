@@ -131,7 +131,7 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 			if (IHitInterface* HitInterface = Cast<IHitInterface>(HitActor))
 			{
 				Damage = CalculateDamage();
-				HitInterface->Execute_GetHit(HitActor, Hit.ImpactPoint, UDamageType::StaticClass(), Damage);
+				HitInterface->Execute_GetHit(HitActor, GetOwner(), Hit.ImpactPoint, UDamageType::StaticClass(), Damage);
 
 				if (HitInterface->Execute_IsLaunchable(HitActor, Cast<ACharacter>(Owner)))
 				{
@@ -151,7 +151,7 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 
 					IgnoreActors.Add(HitActor);
 				}
-				else //no es hitteable, tengo que cambiar nombre de la funcion
+				else //else si no es hitteable (tengo que cambiar nombre de la funcion)
 				{
 					if (SparksEffect)
 					{

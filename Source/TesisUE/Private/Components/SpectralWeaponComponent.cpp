@@ -209,7 +209,7 @@ void USpectralWeaponComponent::Fire(bool bIsPrimary)
 
                 if (IHitInterface* Entity = Cast<IHitInterface>(HitActor))
                 {
-                    Entity->Execute_GetHit(Hit.GetActor(), Hit.ImpactPoint, USpectralTrapDamageType::StaticClass(), BaseDamage);
+                    Entity->Execute_GetHit(Hit.GetActor(), GetOwner(), Hit.ImpactPoint, USpectralTrapDamageType::StaticClass(), BaseDamage);
 
                     if (SparksEffect)
                     {

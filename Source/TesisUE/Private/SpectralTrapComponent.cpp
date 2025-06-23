@@ -80,11 +80,7 @@ void USpectralTrapComponent::DealContinuousDamage()
 
 		if (IHitInterface* PlayerGetHit = Cast<IHitInterface>(Player))
 		{
-			PlayerGetHit->Execute_GetHit(Player, FVector::ZeroVector, USpectralTrapDamageType::StaticClass(), Damage);
+			PlayerGetHit->Execute_GetHit(Player, GetOwner(), FVector::ZeroVector, USpectralTrapDamageType::StaticClass(), Damage);
 		}
-	}
-	else
-	{
-		GetWorld()->GetTimerManager().ClearTimer(ContinuousDamageTimerHandle);
 	}
 }

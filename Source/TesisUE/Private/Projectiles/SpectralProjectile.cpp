@@ -28,7 +28,7 @@ void ASpectralProjectile::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent,
 			UDamageType::StaticClass()
 		);
 
-		Target->Execute_GetHit(OtherActor, OtherActor->GetActorLocation(), UDamageType::StaticClass(), Damage);
+		Target->Execute_GetHit(OtherActor, GetOwner(), OtherActor->GetActorLocation(), UDamageType::StaticClass(), Damage);
 
 		ActorsToIgnore.AddUnique(OtherActor);
 	}
