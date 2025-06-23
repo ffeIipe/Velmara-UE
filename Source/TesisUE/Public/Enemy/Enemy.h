@@ -291,7 +291,7 @@ protected:
 	UPROPERTY(EditAnywhere)
 	UBehaviorTree* BTAsset;
 
-	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Save System", meta = (DisplayName = "Unique Save ID"))
+	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Save System", meta = (DisplayName = "Unique Save ID"))
 	FName UniqueSaveID;
 
 	AAIController* AIController;

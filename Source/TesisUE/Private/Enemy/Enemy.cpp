@@ -37,10 +37,8 @@ AEnemy::AEnemy()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
-	if (UniqueSaveID == NAME_None)
-	{
-		UniqueSaveID = FName(*FGuid::NewGuid().ToString());
-	}
+	UniqueSaveID = FName(*FGuid::NewGuid().ToString());
+	
 
 	GetMesh()->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
@@ -354,6 +352,8 @@ void AEnemy::BeginPlay()
 			GetMesh()->SetMaterial(i, DissolveMaterials[i]);
 		}
 	}
+
+	ActivateEnemy(GetActorLocation(),GetActorRotation());
 }
 
 void AEnemy::NotifyThreat(AActor* ThreatActor)

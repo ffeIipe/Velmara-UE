@@ -39,12 +39,12 @@ void UEnemyPoolManager::EnsurePoolInitialized(TSubclassOf<AEnemy> EnemyClass, in
         int32 EnemiesToCreate = InitialPoolSize - Pool->PooledEnemies.Num();
         for (int32 i = 0; i < EnemiesToCreate; ++i)
         {
-            AEnemy* NewEnemy = SpawnNewEnemyForPool(EnemyClass, FVector::ZeroVector, FRotator::ZeroRotator, nullptr, nullptr);
-            if (NewEnemy)
-            {
-                NewEnemy->DeactivateEnemy();
-                Pool->PooledEnemies.Add(NewEnemy);
-            }
+            //AEnemy* NewEnemy = SpawnNewEnemyForPool(EnemyClass, FVector::ZeroVector, FRotator::ZeroRotator, nullptr, nullptr);
+            //if (NewEnemy)
+            //{
+            //    NewEnemy->DeactivateEnemy();
+            //    Pool->PooledEnemies.Add(NewEnemy);
+            //}
         }
     }
 }

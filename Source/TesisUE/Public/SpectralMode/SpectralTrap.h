@@ -31,11 +31,16 @@ private:
 
 	void ApplyTrapDamage(FVector ImpactPoint);
 
-	APlayerMain* OverlappingPlayer = nullptr;
-
-	UPROPERTY(EditAnywhere, Category = "Trap")
+	UPROPERTY(EditAnywhere, Category = "Stats | Trap")
 	float Damage = 10.0f;
+	
+	UPROPERTY(EditAnywhere, Category = "Stats | Trap")
+	float DamageInterval = .5f;
 
-	UPROPERTY(EditAnywhere, Category = "Trap | SFX")
+	UPROPERTY(EditAnywhere, Category = "Stats | SFX")
 	USoundBase* TrapSFX;
+
+	FTimerHandle ContinuousDamageTimerHandle;
+
+	void DealContinuousDamage();
 };

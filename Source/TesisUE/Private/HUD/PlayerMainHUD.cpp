@@ -48,6 +48,9 @@ void APlayerMainHUD::TogglePaladinUI(bool Bool)
     }
     else
     {
-        PaladinUIInstance->RemoveFromParent();
+        if (PaladinUIInstance)
+        {
+            PaladinUIInstance->RemoveFromParent();
+        }
     }
 }

@@ -20,36 +20,63 @@ void ASpectralTrap::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponen
 
 	if (Player)
 	{
-		OverlappingPlayer = Player;
-		ApplyTrapDamage(SweepResult.ImpactPoint);
+		GetWorld()->GetTimerManager().SetTimer(
+			ContinuousDamageTimerHandle,
+			this,
+			&ASpectralTrap::DealContinuousDamage,
+			DamageInterval,
+			true
+		);
+
+		DealContinuousDamage();
+
+		//ApplyTrapDamage(SweepResult.ImpactPoint);
 	}
 }
 
 void ASpectralTrap::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	Super::OnSphereEndOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex);
+	//Super::OnSphereEndOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex);
 
-	if (Player && Player == OverlappingPlayer)
+	if (Player == OtherActor)
 	{
-		OverlappingPlayer = nullptr;
+		Player->RemoveStunBehavior();
+		Player = nullptr;
+		
+		GetWorld()->GetTimerManager().ClearTimer(ContinuousDamageTimerHandle);
 	}
 }
 
 void ASpectralTrap::ApplyTrapDamage(FVector ImpactPoint)
 {
 	UGameplayStatics::ApplyDamage(
-		OverlappingPlayer,
+		Player,
 		Damage,
-		OverlappingPlayer->GetController(),
+		Player->GetController(),
 		this,
 		USpectralTrapDamageType::StaticClass()
 	);
 
-	if (OverlappingPlayer)
+	if (Player)
 	{
-		if (IHitInterface* Entity = Cast<IHitInterface>(OverlappingPlayer))
+		if (IHitInterface* Entity = Cast<IHitInterface>(Player))
 		{
-			Entity->Execute_GetHit(OverlappingPlayer, GetOwner(), ImpactPoint, USpectralTrapDamageType::StaticClass(), Damage);
+			Entity->Execute_GetHit(Player, GetOwner(), ImpactPoint, USpectralTrapDamageType::StaticClass(), Damage);
 ;		}
+	}
+}
+
+void ASpectralTrap::DealContinuousDamage()
+{
+	if (Player)
+	{
+		GEngine->AddOnScreenDebugMessage(678, 0.5f, FColor::Purple, FString("Applying continuous damage..."));
+
+		UGameplayStatics::ApplyDamage(Player, Damage, nullptr, this, USpectralTrapDamageType::StaticClass());
+
+		if (IHitInterface* PlayerGetHit = Cast<IHitInterface>(Player))
+		{
+			PlayerGetHit->Execute_GetHit(Player, GetOwner(), FVector::ZeroVector, USpectralTrapDamageType::StaticClass(), Damage);
+		}
 	}
 }
