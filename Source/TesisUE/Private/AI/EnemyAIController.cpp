@@ -63,37 +63,20 @@ void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Sti
         {
             BlackboardComponent->SetValueAsObject(FName("TargetActor"), Actor);
             BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), true);
-            
-            return;
         }
-        else if (DamageCauser)
+        else 
         {
-            if (UCharacterStateComponent* CharStateComp = DamageCauser->GetComponentByClass<UCharacterStateComponent>())
+            if (DamageCauser != Actor)
             {
-                if (CharStateComp->IsActionEqualToAny({ ECharacterActions::ECA_Dead })
-                    || CharStateComp->IsFormEqualToAny({ ECharacterForm::ECF_Spectral }))
-                {
-                    BlackboardComponent->SetValueAsObject(FName("TargetActor"), nullptr);
-                    BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), true);
-                    DamageCauser = nullptr;
-
-                    return;
-                }
-                else
-                {
-                    BlackboardComponent->SetValueAsObject(FName("TargetActor"), DamageCauser);
-                    BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), true);
-
-                    return;
-                }
+                BlackboardComponent->SetValueAsObject(FName("TargetActor"), DamageCauser);
+                BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), true);
             }
-        }
-        else
-        {
-            EnemyPerceptionComponent->ForgetActor(Actor);
-            BlackboardComponent->ClearValue(FName("TargetActor"));
-            BlackboardComponent->ClearValue(FName("DistToTarget"));
-            BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), false);
+            else
+            {
+                BlackboardComponent->SetValueAsObject(FName("TargetActor"), nullptr);
+                BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), false);
+                DamageCauser = nullptr;
+            }
         }
     }
 }

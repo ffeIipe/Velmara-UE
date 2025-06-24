@@ -28,7 +28,7 @@ protected:
 	int32 InitialMinionPoolSize = 6;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attacks | Spawning")
-	TArray<class USpawnPointComponent*> SpawnPoints;
+	TArray<AActor*> SpawnPoints;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	class USpectralTrapComponent* SpectralTrapComponent2;
@@ -36,9 +36,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	UStaticMeshComponent* AuraMeshComponent;
 
-	void DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage* HitReactAnimMontage, const float DamageReceived) override;
-
-	//void GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived) override;
+	void GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived) override;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Attacks | Flood")
 	float FloodDamage;

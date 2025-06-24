@@ -31,7 +31,7 @@ void APaladinBoss::BeginPlay()
 {
 	Super::BeginPlay();
 
-	GetComponents<USpawnPointComponent>(SpawnPoints);
+	UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("SpawnPoint"), SpawnPoints);
 
 	if (Attributes)
 	{
@@ -82,29 +82,18 @@ float APaladinBoss::TakeDamage(float DamageAmount, FDamageEvent const& DamageEve
 	}
 
 	return DamageAmount;
-}
+}	
 
-void APaladinBoss::DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage* HitReactAnimMontage, const float DamageReceived)
+void APaladinBoss::GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived)
 {
 	if (BBComponent->GetValueAsBool(FName("CanReceiveDamage")))
 	{
-		Super::DirectionalHitReact(ImpactPoint, HitReactAnimMontage, DamageReceived);
-		
+		Super::GetHit_Implementation(DamageCauser, ImpactPoint, DamageType, DamageReceived);
+
 		float DamageAccumulated = BBComponent->GetValueAsFloat(FName("DamageAccumulated"));
 		BBComponent->SetValueAsFloat(FName("DamageAccumulated"), DamageAccumulated + DamageReceived);
 	}
-}	
-
-//void APaladinBoss::GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived)
-//{
-//	Super::GetHit_Implementation(DamageCauser, ImpactPoint, DamageType, DamageReceived);
-//	//NotifyDamageTakenToBlackboard(DamageCauserOf);
-//	//
-//	//if (!Attributes->IsShielded())
-//	//{
-//	//	DirectionalHitReact(ImpactPoint, HitReactMontage, DamageReceived);
-//	//}
-//}
+}
 
 void APaladinBoss::TryToInvoke()
 {
@@ -128,12 +117,12 @@ void APaladinBoss::Invoke()
 	UEnemyPoolManager* PoolManager = World->GetSubsystem<UEnemyPoolManager>();
 	if (!PoolManager) return;
 
-	for (USceneComponent* SpawnPoint : SpawnPoints)
+	for (AActor* SpawnPoint : SpawnPoints)
 	{
 		if (SpawnPoint)
 		{
-			FVector SpawnLocation = SpawnPoint->GetComponentLocation();
-			FRotator SpawnRotation = SpawnPoint->GetComponentRotation();
+			FVector SpawnLocation = SpawnPoint->GetActorLocation();
+			FRotator SpawnRotation = SpawnPoint->GetActorRotation();
 
 			AEnemy* EnemyFromPool = PoolManager->SpawnEnemyFromPool(MinionToSpawnClass, SpawnLocation, SpawnRotation, this, this);
 
