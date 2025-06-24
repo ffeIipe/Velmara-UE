@@ -14,8 +14,14 @@ class TESISUE_API ATrigger : public AActor
 {
 	GENERATED_BODY()
 	
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerBeginOverlap);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerEndOverlap);
+
 public:	
 	ATrigger();
+
+	FOnPlayerBeginOverlap OnPlayerBeginOverlap;
+	FOnPlayerEndOverlap OnPlayerEndOverlap;
 
 protected:
 	virtual void BeginPlay() override;

@@ -10,11 +10,15 @@ class TESISUE_API USpectralTrapComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
+	//DECLARE_MULTICAST_DELEGATE(FOnSignature);
+
 public:	
 	USpectralTrapComponent();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	class USphereComponent* SphereCollider;
+
+	void FinishDamaging();
 
 protected:
 	virtual void BeginPlay() override;
@@ -48,16 +52,7 @@ protected:
 	AController* Instigator;
 
 	UPROPERTY(VisibleAnywhere)
-	class APlayerMain* Player;
-
-private:
-	void ApplySpectralDamage(
-		AActor* Actor,
-		float DamageAmount,
-		AController* InstigatorOf,
-		AActor* DamageCauserOf,
-		TSubclassOf<UDamageType> DamageType
-	);
+	class APlayerMain* OverlappingPlayer;
 
 	void DealContinuousDamage();
 };

@@ -11,30 +11,33 @@ ATutorialTrigger::ATutorialTrigger()
 {
     PrimaryActorTick.bCanEverTick = false;
 
-    TriggerVolume = CreateDefaultSubobject<UBoxComponent>(TEXT("TriggerVolume"));
-    RootComponent = TriggerVolume;
-    TriggerVolume->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-    TriggerVolume->SetCollisionResponseToAllChannels(ECR_Ignore);
-    TriggerVolume->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+    BoxCollider->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    BoxCollider->SetCollisionResponseToAllChannels(ECR_Ignore);
+    BoxCollider->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 }
 
 void ATutorialTrigger::BeginPlay()
 {
     Super::BeginPlay();
 
-    TriggerVolume->OnComponentBeginOverlap.AddDynamic(this, &ATutorialTrigger::OnPlayerEnter);
     bHasBeenActivated = false;
+
+    OnPlayerBeginOverlap.AddDynamic(this, &ATutorialTrigger::EnableTutorial);
 }
 
-void ATutorialTrigger::OnPlayerEnter(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
-                                     UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
-                                     bool bFromSweep, const FHitResult& SweepResult)
-{
-    if (bHasBeenActivated || !OtherActor->IsA(ACharacter::StaticClass()))
-        return;
+//void ATutorialTrigger::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+//{
+//    Super::OnSphereBeginOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
+//
+//    EnableTutorial();
+//}
 
-    if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0))
+void ATutorialTrigger::EnableTutorial()
+{
+    if (Player && !bHasBeenActivated)
     {
+        APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
+
         PC->SetPause(true);
         PC->SetInputMode(FInputModeUIOnly());
         PC->bShowMouseCursor = true;

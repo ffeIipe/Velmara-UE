@@ -100,7 +100,7 @@ void UAttributeComponent::DettachShield()
 		ShieldMeshComponent->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
 		ShieldMeshComponent->SetSimulatePhysics(true);
 		ShieldMeshComponent->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
-		DissolveShield();
+		//DissolveShield();
 		bIsDisarmed = true;
 	}
 }

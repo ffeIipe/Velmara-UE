@@ -28,6 +28,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "SoftLock")
 	FORCEINLINE AActor* GetSoftLockTarget() const { return SoftLockTarget; }
 	
+	UFUNCTION(BlueprintCallable, Category = "SoftLock")
+	FORCEINLINE void RemoveSoftLockTarget() { SoftLockTarget = nullptr; }
+	
 	UFUNCTION(BlueprintCallable, Category = "Attack")
 	void ResetState();
 

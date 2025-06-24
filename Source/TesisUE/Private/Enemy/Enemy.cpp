@@ -494,6 +494,8 @@ void AEnemy::GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPo
 			PlayerRef->Attributes->IncreaseEnergy(Percentage);
 		}
 	}
+
+	NotifyDamageTakenToBlackboard(DamageCauser);
 }
 
 void AEnemy::GetFinished_Implementation()
@@ -813,14 +815,14 @@ void AEnemy::UnPossessAndKill()
 {
 	if (PossessionOwner && PossessionOwner->GetAttributes() && PossessionOwner->GetAttributes()->RequiresEnergy(UnpossesAndKillEnergyTax))
 	{
-		float NewPercentage = (Attributes->GetHealthPercent() / 2) * 100.f;
-		PossessionOwner->Attributes->SetHealth(Attributes->GetHealth() + NewPercentage);
+		float NewHealth = PossessionOwner->GetAttributes()->GetHealth();
+		PossessionOwner->Attributes->SetHealth(NewHealth + 15.f);
 
 		UnPossessBase();
 
-		if (IsValid(PossessionOwner) && PossessionOwner->GetAttributes())
+		if (PossessionOwner && PossessionOwner->GetAttributes())
 		{
-			PossessionOwner->GetAttributes()->DecreaseEnergyBy(UnpossesAndKillEnergyTax);
+			PossessionOwner->GetAttributes()->SetEnergy(Attributes->GetEnergy() - UnpossesAndKillEnergyTax);
 		}
 
 		DisableAI();

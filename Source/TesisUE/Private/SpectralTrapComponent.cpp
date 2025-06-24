@@ -24,9 +24,9 @@ void USpectralTrapComponent::BeginPlay()
 
 void USpectralTrapComponent::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	Player = Cast<APlayerMain>(OtherActor);
+	OverlappingPlayer = Cast<APlayerMain>(OtherActor);
 
-	if (Player)
+	if (OverlappingPlayer)
 	{
 		GEngine->AddOnScreenDebugMessage(845, 1.f, FColor::Green, FString("Overlapping Player..."));
 
@@ -44,43 +44,38 @@ void USpectralTrapComponent::OnSphereBeginOverlap(UPrimitiveComponent* Overlappe
 
 void USpectralTrapComponent::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	Player = Cast<APlayerMain>(OtherActor);
+	OverlappingPlayer = Cast<APlayerMain>(OtherActor);
 
-	if (Player)
+	if (OverlappingPlayer)
 	{
 		GEngine->AddOnScreenDebugMessage(845, 1.f, FColor::Red, FString("End Overlapping Player..."));
 
 		GetWorld()->GetTimerManager().ClearTimer(ContinuousDamageTimerHandle);
 
-		Player->RemoveStunBehavior();
-		Player = nullptr;
+		FinishDamaging();
+		OverlappingPlayer = nullptr;
 	}
-}
-
-void USpectralTrapComponent::ApplySpectralDamage(AActor* Actor, float DamageAmount, AController* InstigatorOf, AActor* DamageCauserOf, TSubclassOf<UDamageType> DamageType)
-{
-	GEngine->AddOnScreenDebugMessage(678, 3.f, FColor::White, FString("USpectralTrapComponent::ApplySpectralDamage"));
-
-	UGameplayStatics::ApplyDamage(
-		Actor,
-		DamageAmount,
-		InstigatorOf,
-		DamageCauserOf,
-		DamageType
-	);
 }
 
 void USpectralTrapComponent::DealContinuousDamage()
 {
-	if (Player)
+	if (OverlappingPlayer)
 	{
 		GEngine->AddOnScreenDebugMessage(678, 0.5f, FColor::Purple, FString("Applying continuous damage..."));
 
-		ApplySpectralDamage(Player, Damage, Instigator, GetOwner(), USpectralTrapDamageType::StaticClass());
+		UGameplayStatics::ApplyDamage(OverlappingPlayer, Damage, Instigator, GetOwner(), USpectralTrapDamageType::StaticClass());
 
-		if (IHitInterface* PlayerGetHit = Cast<IHitInterface>(Player))
+		if (IHitInterface* PlayerGetHit = Cast<IHitInterface>(OverlappingPlayer))
 		{
-			PlayerGetHit->Execute_GetHit(Player, GetOwner(), FVector::ZeroVector, USpectralTrapDamageType::StaticClass(), Damage);
+			PlayerGetHit->Execute_GetHit(OverlappingPlayer, GetOwner(), FVector::ZeroVector, USpectralTrapDamageType::StaticClass(), Damage);
 		}
+	}
+}
+
+void USpectralTrapComponent::FinishDamaging()
+{
+	if (OverlappingPlayer)
+	{
+		OverlappingPlayer->RemoveStunBehavior();
 	}
 }

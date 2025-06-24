@@ -41,6 +41,7 @@
 #include <SceneEvents/NewGameInstance.h>
 
 #include "Animation/AnimInstance.h"
+#include <Enemy/Paladin/PaladinBoss.h>
 
 
 APlayerMain::APlayerMain()
@@ -306,7 +307,10 @@ AEnemy* APlayerMain::GetTargetEnemy()
 		{
 			if (Entity->Execute_IsLaunchable(ResultHit.GetActor(), this))
 			{
-				return Cast<AEnemy>(ResultHit.GetActor());
+				//esto es una garompa, se soluciona de otra manera. A continuacion el 'susodicho'
+				if (Cast<APaladinBoss>(ResultHit.GetActor())) return nullptr;
+
+				else return Cast<AEnemy>(ResultHit.GetActor());
 			}
 			else return nullptr;
 		}
@@ -720,11 +724,13 @@ void APlayerMain::OnWallCollision(const FHitResult& HitResult)
 
 void APlayerMain::LoadLastCheckpoint()
 {
-	UNewGameInstance* GameInst = GetGameInstance<UNewGameInstance>();
-	if (GameInst)
-	{
-		GameInst->LoadPlayerProgress(GameInst->ActiveSaveSlotIndex);
-	}
+	//UNewGameInstance* GameInst = GetGameInstance<UNewGameInstance>();
+	//if (GameInst)
+	//{
+	//	GameInst->LoadPlayerProgress(GameInst->ActiveSaveSlotIndex);
+	//}
+
+	UGameplayStatics::OpenLevel(this, FName("AugusTest"));
 }
 
 
@@ -762,7 +768,6 @@ void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 		EnhancedInputComponent->BindAction(ChangeFormAction, ETriggerEvent::Started, this, &APlayerMain::ToggleForm);
 		EnhancedInputComponent->BindAction(PossessAction, ETriggerEvent::Completed, this, &APlayerMain::PossessEnemy);
-		//EnhancedInputComponent->BindAction(GoToMenuAction, ETriggerEvent::Completed, this, &APlayerMain::RestartLevel);
 		
 		EnhancedInputComponent->BindAction(InventoryComponent->Slot1_InventoryAction, ETriggerEvent::Started, this, &APlayerMain::ChangePrimaryWeapon);
 		EnhancedInputComponent->BindAction(InventoryComponent->Slot2_InventoryAction, ETriggerEvent::Started, this, &APlayerMain::ChangeSecondaryWeapon);

@@ -22,7 +22,14 @@ void ATrigger::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AA
 	APlayerMain* PlayerTemp = Cast<APlayerMain>(OtherActor);
 	if (PlayerTemp)
 	{
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, FString("Player Begin Overlap"));
+
 		Player = PlayerTemp;
+
+		if (OnPlayerBeginOverlap.IsBound())
+		{
+			OnPlayerBeginOverlap.Broadcast();
+		}
 	}
 }
 
@@ -35,12 +42,27 @@ void ATrigger::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AAct
 
     if (IsValid(Player) && Player == LeavingPlayer)
     {
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Player End Overlap"));
+
+		if (OnPlayerEndOverlap.IsBound())
+		{
+			OnPlayerEndOverlap.Broadcast();
+		}
+
         Player->SetOverlappingItem(nullptr);
         Player = nullptr;
     }
     else if (LeavingPlayer)
     {
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Player End Overlap"));
+
+		if (OnPlayerEndOverlap.IsBound())
+		{
+			OnPlayerEndOverlap.Broadcast();
+		}
+
         LeavingPlayer->SetOverlappingItem(nullptr);
+		Player = nullptr;
     }
 }
 

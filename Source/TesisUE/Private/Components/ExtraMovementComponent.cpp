@@ -3,6 +3,7 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CharacterStateComponent.h"
+#include <Components/CombatComponent.h>
 
 
 UExtraMovementComponent::UExtraMovementComponent()
@@ -57,6 +58,11 @@ void UExtraMovementComponent::PerformDodge()
 {
 	if (!OwnerCharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Finish, ECharacterActions::ECA_Stun }))
 	{
+		if (GetOwner()->GetComponentByClass<UCombatComponent>())
+		{
+			GetOwner()->GetComponentByClass<UCombatComponent>()->RemoveSoftLockTarget();
+		}
+
 		FVector MovementInput = OwningCharacter->GetLastMovementInputVector();
 		if (!MovementInput.IsNearlyZero())
 		{

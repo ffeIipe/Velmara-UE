@@ -269,7 +269,7 @@ void APaladin::GetHit_Implementation(AActor* DamageCauser, const FVector& Impact
 		StopAnimMontage();
 		ShieldHit();
 	}
-	else
+	else if (!Attributes->IsShielded() && DamageType != USpectralTrapDamageType::StaticClass())
 	{
 		Super::GetHit_Implementation(DamageCauser, ImpactPoint, DamageType, DamageReceived); //sfx and fx
 	}

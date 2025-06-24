@@ -1,27 +1,30 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
+//#include "GameFramework/Actor.h"
+#include "SceneEvents/Trigger.h"
 #include "TutorialTrigger.generated.h"
 
 UCLASS()
-class TESISUE_API ATutorialTrigger : public AActor
+class TESISUE_API ATutorialTrigger : public ATrigger
 {
 	GENERATED_BODY()
-	
+
 public:
     ATutorialTrigger();
 
 protected:
-    virtual void BeginPlay() override;
+    void BeginPlay() override;
+
+    //void OnSphereBeginOverlap(
+    //    UPrimitiveComponent* OverlappedComponent,
+    //    AActor* OtherActor,
+    //    UPrimitiveComponent* OtherComp,
+    //    int32 OtherBodyIndex, bool bFromSweep,
+    //    const FHitResult& SweepResult) override;
 
     UFUNCTION()
-    void OnPlayerEnter(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
-        UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
-        bool bFromSweep, const FHitResult& SweepResult);
-
-    UPROPERTY(EditAnywhere, Category = "Tutorial")
-    class UBoxComponent* TriggerVolume;
+    void EnableTutorial();
 
     UPROPERTY(EditAnywhere, Category = "Tutorial")
     class UMediaSource* TutorialVideo;

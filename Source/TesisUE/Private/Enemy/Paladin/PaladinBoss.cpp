@@ -47,11 +47,14 @@ void APaladinBoss::BeginPlay()
 					}
 				}
 
+				SpectralTrapComponent2->FinishDamaging();
 				SpectralTrapComponent2->DestroyComponent();
 				AuraMeshComponent->DestroyComponent();
 			}
 		);
 	}
+
+	BBComponent = Cast<UBlackboardComponent>(AIController->GetBlackboardComponent());
 
 	//if (MinionToSpawnClass && InitialMinionPoolSize > 0)
 	//{
@@ -83,27 +86,25 @@ float APaladinBoss::TakeDamage(float DamageAmount, FDamageEvent const& DamageEve
 
 void APaladinBoss::DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage* HitReactAnimMontage, const float DamageReceived)
 {
-	if (UKismetMathLibrary::RandomBool())
+	if (BBComponent->GetValueAsBool(FName("CanReceiveDamage")))
 	{
-		StopAnimMontage();
-		PlayAnimMontage(HitReactMontage, 1.f, FName("FromRight"));
+		Super::DirectionalHitReact(ImpactPoint, HitReactAnimMontage, DamageReceived);
+		
+		float DamageAccumulated = BBComponent->GetValueAsFloat(FName("DamageAccumulated"));
+		BBComponent->SetValueAsFloat(FName("DamageAccumulated"), DamageAccumulated + DamageReceived);
 	}
-	else
-	{
-		StopAnimMontage();
-		PlayAnimMontage(HitReactMontage, 1.f, FName("FromLeft"));
-	}
-}
+}	
 
-bool APaladinBoss::IsLaunchable_Implementation(ACharacter* DamageCauser)
-{
-	return Super::IsLaunchable_Implementation(DamageCauser);
-}
-
-void APaladinBoss::GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived)
-{
-	NotifyDamageTakenToBlackboard(DamageCauserOf);
-}
+//void APaladinBoss::GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived)
+//{
+//	Super::GetHit_Implementation(DamageCauser, ImpactPoint, DamageType, DamageReceived);
+//	//NotifyDamageTakenToBlackboard(DamageCauserOf);
+//	//
+//	//if (!Attributes->IsShielded())
+//	//{
+//	//	DirectionalHitReact(ImpactPoint, HitReactMontage, DamageReceived);
+//	//}
+//}
 
 void APaladinBoss::TryToInvoke()
 {

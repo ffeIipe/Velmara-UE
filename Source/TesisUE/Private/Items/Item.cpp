@@ -10,11 +10,6 @@ AItem::AItem()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
-	if (UniqueSaveID == NAME_None)
-	{
-		UniqueSaveID = FName(*FGuid::NewGuid().ToString());
-	}
-
 	ItemMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Item Mesh"));
 	RootComponent = ItemMesh;
 
@@ -23,6 +18,9 @@ AItem::AItem()
 
 	PromptWidget = CreateDefaultSubobject<UPromptWidgetComponent>(TEXT("PromptTrigger"));
 	PromptWidget->SetupAttachment(GetRootComponent());
+
+	UniqueSaveID = NAME_None;
+	UniqueSaveID = FName(*FGuid::NewGuid().ToString());
 }
 
 void AItem::BeginPlay()
@@ -42,7 +40,6 @@ void AItem::BeginPlay()
 		}
 	}
 }
-
 
 void AItem::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwner, APawn* NewInstigator)
 {
