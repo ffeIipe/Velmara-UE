@@ -10,9 +10,15 @@ void ASpectralWeaponItem::Use(ACharacter* Character)
     Super::Use(Character);
 
     APlayerMain* PlayerReference = Cast<APlayerMain>(Character);
-
-    PlayerReference->PlayAnimMontage(EquipMontage, 1.f, FName("Unequip"));
-
+    if (PlayerReference->CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
+    {
+        PlayerReference->PlayAnimMontage(EquipMontage, 1.f, FName("Equip"));
+    }
+    else
+    {
+        PlayerReference->PlayAnimMontage(EquipMontage, 1.f, FName("Unequip"));
+    }
+    
     if (PlayerReference && PlayerReference->SpectralWeaponComponent)
     {
         PlayerReference->SpectralWeaponComponent->InitializeSpectralWeaponComponent();

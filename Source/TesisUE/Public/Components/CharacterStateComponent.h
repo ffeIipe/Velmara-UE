@@ -12,6 +12,9 @@ struct TESISUE_API FCharacterStates
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character States | Character State")
 	ECharacterStates State;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character States | Character Spectral State")
+	ECharacterSpectralStates SpectralState;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character States | Character Action")
 	ECharacterActions Action;
@@ -21,6 +24,7 @@ struct TESISUE_API FCharacterStates
 
 	FCharacterStates()
 		: State(ECharacterStates::ECS_Unequipped)
+		, SpectralState(ECharacterSpectralStates::ECSS_Unequipped)
 		, Action(ECharacterActions::ECA_Nothing)
 		, Form(ECharacterForm::ECF_Human)
 	{
@@ -40,6 +44,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Character States | Character State")
 	ECharacterStates SetCharacterState(ECharacterStates NewState);
+	
+	UFUNCTION(BlueprintCallable, Category = "Character States | Character Spectral State")
+	ECharacterSpectralStates SetCharacterSpectralState(ECharacterSpectralStates NewSpectralState);
 
 	UFUNCTION(BlueprintCallable, Category = "Character States | Character Action")
 	ECharacterActions SetCharacterAction(ECharacterActions NewAction);
@@ -49,6 +56,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Character States | Character Action")
 	bool IsStateEqualToAny(const TArray<ECharacterStates>& StatesToCheck);
+	
+	UFUNCTION(BlueprintCallable, Category = "Character States | Character Spectral State")
+	bool IsSpectralStateEqualToAny(const TArray<ECharacterSpectralStates>& SpectralStatesToCheck);
 
 	UFUNCTION(BlueprintCallable, Category = "Character States | Character Action")
 	bool IsActionEqualToAny(const TArray<ECharacterActions>& ActionsToCheck);

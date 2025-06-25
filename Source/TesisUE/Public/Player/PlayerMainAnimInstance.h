@@ -48,7 +48,7 @@ public:
 	ECharacterForm CharacterForm;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Movement | Spectral Weapon State")
-	ESpectralWeaponState SpectralWeaponState;
+	ECharacterSpectralStates SpectralState;
 
 	USpectralWeaponComponent* SpectralWeaponComponent;
 

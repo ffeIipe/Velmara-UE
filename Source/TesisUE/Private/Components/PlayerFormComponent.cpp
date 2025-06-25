@@ -66,7 +66,10 @@ void UPlayerFormComponent::ApplySpectralEffects()
     SpectralEffectTimeline->PlayFromStart();
     UGameplayStatics::PlaySound2D(GetWorld(), EnableSpectralModeSFX);
 
-    OwningCharacter->PlayAnimMontage(EquipMontage, 1.f, FName("Equip"));
+    if (CharacterStateComponent->GetCurrentCharacterState().SpectralState == ECharacterSpectralStates::ECSS_EquippedPistol)
+    {
+        OwningCharacter->PlayAnimMontage(EquipMontage, 1.f, FName("Equip"));
+    }
 
     //TODO: improve it with a subscription to an a static class
     for (TActorIterator<ASpectralObject> It(GetWorld()); It; ++It)
@@ -83,7 +86,10 @@ void UPlayerFormComponent::ApplyHumanEffects()
     SpectralEffectTimeline->Reverse();
     UGameplayStatics::PlaySound2D(GetWorld(), DisableSpectralModeSFX);
 
-    OwningCharacter->PlayAnimMontage(EquipMontage, 1.f, FName("Unequip"));
+    if (CharacterStateComponent->GetCurrentCharacterState().SpectralState == ECharacterSpectralStates::ECSS_EquippedPistol)
+    {
+        OwningCharacter->PlayAnimMontage(EquipMontage, 1.f, FName("Unequip"));
+    }
 
     //TODO: improve it with a subscription to an a static class
     for (TActorIterator<ASpectralObject> It(GetWorld()); It; ++It)

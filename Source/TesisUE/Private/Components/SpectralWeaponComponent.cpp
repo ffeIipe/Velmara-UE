@@ -31,14 +31,16 @@ USpectralWeaponComponent::USpectralWeaponComponent()
     MaxAmmo = 6;
     CurrentAmmo = MaxAmmo;
 
-    CurrentSpectralWeaponState = ESpectralWeaponState::ESW_Unequipped;
 }
 
 void USpectralWeaponComponent::InitializeSpectralWeaponComponent()
 {
     bWasInitialized = true;
 
-    CurrentSpectralWeaponState = ESpectralWeaponState::ESW_Equipped;
+    if (UCharacterStateComponent* OwnerCharStateComp = GetOwner()->GetComponentByClass<UCharacterStateComponent>())
+    {
+        OwnerCharStateComp->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippedPistol);
+    }
 
     if (GetSpectralWeaponMeshComponent())
     {

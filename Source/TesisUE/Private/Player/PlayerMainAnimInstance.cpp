@@ -27,7 +27,7 @@ void UPlayerMainAnimInstance::NativeUpdateAnimation(float DeltaTime)
 		IsFalling = PlayerMainCharacterMovement->IsFalling();
 		CharacterState = PlayerMain->CharacterStateComponent->GetCurrentCharacterState().State;
 		CharacterForm = PlayerMain->CharacterStateComponent->GetCurrentCharacterState().Form;
-		SpectralWeaponState = SpectralWeaponComponent->GetSpectralWeaponState();
+		SpectralState = PlayerMain->CharacterStateComponent->GetCurrentCharacterState().SpectralState;
 
 		WalkRight = CalculateWalkRight();
 		WalkForward = CalculateWalkForward();

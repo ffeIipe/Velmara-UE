@@ -21,6 +21,13 @@ ECharacterStates UCharacterStateComponent::SetCharacterState(ECharacterStates Ne
 	return CharacterStates.State;
 }
 
+ECharacterSpectralStates UCharacterStateComponent::SetCharacterSpectralState(ECharacterSpectralStates NewSpectralState)
+{
+	CharacterStates.SpectralState = NewSpectralState;
+
+	return CharacterStates.SpectralState;
+}
+
 ECharacterActions UCharacterStateComponent::SetCharacterAction(ECharacterActions NewAction)
 {
 	CharacterStates.Action = NewAction;
@@ -38,6 +45,11 @@ ECharacterForm UCharacterStateComponent::SetCharacterForm(ECharacterForm NewForm
 bool UCharacterStateComponent::IsStateEqualToAny(const TArray<ECharacterStates>& StatesToCheck)
 {
 	return StatesToCheck.Contains(CharacterStates.State);
+}
+
+bool UCharacterStateComponent::IsSpectralStateEqualToAny(const TArray<ECharacterSpectralStates>& SpectralStatesToCheck)
+{
+	return SpectralStatesToCheck.Contains(CharacterStates.SpectralState);
 }
 
 bool UCharacterStateComponent::IsActionEqualToAny(const TArray<ECharacterActions>& ActionsToCheck)
