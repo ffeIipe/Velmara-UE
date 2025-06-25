@@ -16,4 +16,8 @@ class TESISUE_API ASpectralWeaponItem : public AItem
 	
 public:
 	void Use(ACharacter* Character) override;
+
+private:
+	UPROPERTY(EditDefaultsOnly)
+	UAnimMontage* EquipMontage;
 };

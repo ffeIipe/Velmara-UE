@@ -56,4 +56,9 @@ private:
 
     UFUNCTION()
     void UpdateSpectralEffect(float Value);
+
+    class ACharacter* OwningCharacter;
+
+    UPROPERTY(EditDefaultsOnly)
+    UAnimMontage* EquipMontage;
 };

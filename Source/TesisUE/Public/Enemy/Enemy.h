@@ -76,8 +76,6 @@ public:
 
 	bool bWasPossessed = false;
 
-	bool bIsPooledInstance;
-
 	virtual void GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived) override;
 
 	virtual void GetFinished_Implementation() override;

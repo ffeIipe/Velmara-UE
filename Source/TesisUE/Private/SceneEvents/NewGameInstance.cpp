@@ -381,6 +381,7 @@ void UNewGameInstance::ApplyPendingLoadedDataToWorld()
                     AItem* NewItem = GetWorld()->SpawnActor<AItem>(SavedItemData.ItemClass, PlayerCharacter->GetActorLocation(), PlayerCharacter->GetActorRotation(), SpawnParams);
                     if (NewItem)
                     {
+                        GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Item reconciliated..."));
                         NewItem->EnableVisuals(false);
                         NewItem->SetOwner(PlayerCharacter);
                         PlayerInventory->InventorySlots[i] = NewItem;

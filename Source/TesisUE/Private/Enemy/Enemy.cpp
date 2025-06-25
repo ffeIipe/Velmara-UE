@@ -33,11 +33,12 @@
 #include "Tutorial/PromptWidgetComponent.h"
 #include "Player/PlayerHeroController.h"
 #include "HUD/PlayerMainHUD.h"
+
 AEnemy::AEnemy()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
-	UniqueSaveID = FName(*FGuid::NewGuid().ToString());
+	//UniqueSaveID = FName(*FGuid::NewGuid().ToString());
 	
 
 	GetMesh()->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
@@ -98,8 +99,6 @@ AEnemy::AEnemy()
 	DissolveParticleComponent->SetupAttachment(GetMesh());
 
 	ExtraMovementComponent = CreateDefaultSubobject<UExtraMovementComponent>(TEXT("ExtraMovementComponent"));
-
-	bIsPooledInstance = false;
 }
 
 void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)

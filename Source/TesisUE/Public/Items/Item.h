@@ -55,7 +55,7 @@ public:
 
 protected:
 
-	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Save System")
+	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Save System")
 	FName UniqueSaveID;
 
 	struct FItemStats

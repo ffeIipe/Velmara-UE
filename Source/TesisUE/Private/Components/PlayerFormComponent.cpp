@@ -11,6 +11,8 @@
 #include "SpectralMode/SpectralObject.h"
 #include "EngineUtils.h"
 
+#include "GameFramework/Character.h"
+
 //TODO: optimize the iterator that search for spectral objects, that in a future may cause an fps drop
 
 UPlayerFormComponent::UPlayerFormComponent()
@@ -35,6 +37,8 @@ void UPlayerFormComponent::BeginPlay()
     CharacterStateComponent = CharacterStateInterface->Execute_GetCharacterStateComponent(GetOwner());
 
     CharacterStateComponent->SetCharacterForm(ECharacterForm::ECF_Human);
+
+    OwningCharacter = Cast<ACharacter>(GetOwner());
 
     if (SpectralCurve)
     {
@@ -62,6 +66,8 @@ void UPlayerFormComponent::ApplySpectralEffects()
     SpectralEffectTimeline->PlayFromStart();
     UGameplayStatics::PlaySound2D(GetWorld(), EnableSpectralModeSFX);
 
+    OwningCharacter->PlayAnimMontage(EquipMontage, 1.f, FName("Equip"));
+
     //TODO: improve it with a subscription to an a static class
     for (TActorIterator<ASpectralObject> It(GetWorld()); It; ++It)
     {
@@ -76,6 +82,8 @@ void UPlayerFormComponent::ApplyHumanEffects()
     CharacterStateComponent->SetCharacterForm(ECharacterForm::ECF_Human);
     SpectralEffectTimeline->Reverse();
     UGameplayStatics::PlaySound2D(GetWorld(), DisableSpectralModeSFX);
+
+    OwningCharacter->PlayAnimMontage(EquipMontage, 1.f, FName("Unequip"));
 
     //TODO: improve it with a subscription to an a static class
     for (TActorIterator<ASpectralObject> It(GetWorld()); It; ++It)

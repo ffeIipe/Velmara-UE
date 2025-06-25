@@ -11,6 +11,8 @@ void ASpectralWeaponItem::Use(ACharacter* Character)
 
     APlayerMain* PlayerReference = Cast<APlayerMain>(Character);
 
+    PlayerReference->PlayAnimMontage(EquipMontage, 1.f, FName("Unequip"));
+
     if (PlayerReference && PlayerReference->SpectralWeaponComponent)
     {
         PlayerReference->SpectralWeaponComponent->InitializeSpectralWeaponComponent();

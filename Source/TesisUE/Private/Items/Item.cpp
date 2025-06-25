@@ -19,8 +19,10 @@ AItem::AItem()
 	PromptWidget = CreateDefaultSubobject<UPromptWidgetComponent>(TEXT("PromptTrigger"));
 	PromptWidget->SetupAttachment(GetRootComponent());
 
-	UniqueSaveID = NAME_None;
-	UniqueSaveID = FName(*FGuid::NewGuid().ToString());
+	//if (UniqueSaveID == NAME_None)
+	//{
+	//	UniqueSaveID = FName(*FGuid::NewGuid().ToString());
+	//}
 }
 
 void AItem::BeginPlay()
@@ -101,8 +103,8 @@ void AItem::ApplySavedState(const FInteractedItemSaveData* SavedData)
 {
 	if (SavedData && SavedData->bWasOpened)
 	{
-		bWasOpened = true;
 		Use(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
+		bWasOpened = true;
 		Destroy();
 	}
 }
