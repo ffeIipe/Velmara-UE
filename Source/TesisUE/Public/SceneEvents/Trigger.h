@@ -20,7 +20,10 @@ class TESISUE_API ATrigger : public AActor
 public:	
 	ATrigger();
 
+	UPROPERTY(BlueprintAssignable)
 	FOnPlayerBeginOverlap OnPlayerBeginOverlap;
+
+	UPROPERTY(BlueprintAssignable)
 	FOnPlayerEndOverlap OnPlayerEndOverlap;
 
 protected:

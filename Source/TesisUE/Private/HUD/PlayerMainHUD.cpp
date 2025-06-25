@@ -12,7 +12,7 @@ void APlayerMainHUD::BeginPlay()
 {
     Super::BeginPlay();
 
-    PlayerMainWidgetInstance = CreateWidget<UPlayerMainWidget>(UGameplayStatics::GetPlayerController(GetWorld(), 0), PlayerMainWidget->GetClass());
+    PlayerMainWidgetInstance = CreateWidget<UPlayerMainWidget>(UGameplayStatics::GetPlayerController(GetWorld(), 0), PlayerMainWidgetClass);
 
     if (PlayerMainWidgetInstance)
     {
@@ -22,11 +22,11 @@ void APlayerMainHUD::BeginPlay()
 
 void APlayerMainHUD::SetPaladinBossHealthBar()
 {
-    if (PaladinBossMainWidget && !bAlreadySetted)
+    if (PaladinBossMainWidgetClass && !bAlreadySetted)
     {
         bAlreadySetted = true;
 
-        PaladinBossHealthBarInstance = CreateWidget<UPaladinBossHealthBar>(UGameplayStatics::GetPlayerController(GetWorld(), 0), PaladinBossMainWidget->GetClass());
+        PaladinBossHealthBarInstance = CreateWidget<UPaladinBossHealthBar>(UGameplayStatics::GetPlayerController(GetWorld(), 0), PaladinBossMainWidgetClass);
         PaladinBossHealthBarInstance->AddToViewport();
     }
     else return;
@@ -52,6 +52,30 @@ void APlayerMainHUD::TogglePaladinUI(bool Bool)
         {
             PaladinUIInstance->RemoveFromParent();
             PaladinUIInstance = nullptr;
+        }
+    }
+}
+
+void APlayerMainHUD::TogglePlayerUI(bool Bool)
+{
+    if (Bool)
+    {
+        if (!PlayerMainWidgetInstance)
+        {
+            PlayerMainWidgetInstance = CreateWidget<UPlayerMainWidget>(UGameplayStatics::GetPlayerController(GetWorld(), 0), PlayerMainWidgetClass);
+            PlayerMainWidgetInstance->AddToViewport();
+        }
+        else
+        {
+            PlayerMainWidgetInstance->AddToViewport();
+        }
+    }
+    else
+    {
+        if (PlayerMainWidgetInstance)
+        {
+            PlayerMainWidgetInstance->RemoveFromParent();
+            PlayerMainWidgetInstance = nullptr;
         }
     }
 }

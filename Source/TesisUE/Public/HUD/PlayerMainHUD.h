@@ -19,7 +19,7 @@ protected:
     virtual void BeginPlay() override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player")
-	UPlayerMainWidget* PlayerMainWidget;
+	TSubclassOf<UPlayerMainWidget> PlayerMainWidgetClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Paladin")
 	TSubclassOf<UUserWidget> PaladinUIWidgetClass;
@@ -28,9 +28,12 @@ public:
 	void SetPaladinBossHealthBar();
 
 	void TogglePaladinUI(bool Bool);
+
+	UFUNCTION(BlueprintCallable)
+	void TogglePlayerUI(bool Bool);
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss")
-	UUserWidget* PaladinBossMainWidget;
+	TSubclassOf<UUserWidget> PaladinBossMainWidgetClass;
 
 	UPlayerMainWidget* PlayerMainWidgetInstance = nullptr;
 

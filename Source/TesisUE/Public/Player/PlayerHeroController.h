@@ -50,7 +50,11 @@ private:
 	FGenericTeamId HeroTeamID;
 
 public:
+	UPROPERTY(BlueprintReadOnly)
 	class APlayerMainHUD* PlayerMainHUD;
 
 	void HandleBossHealth(float HealthHP, float ShieldHP);
+
+	UFUNCTION(BlueprintCallable)
+	void ToggleInput(bool Bool);
 };

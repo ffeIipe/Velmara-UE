@@ -13,6 +13,7 @@
 #include "HUD/PlayerMainHUD.h"
 #include "HUD/PlayerMainWidget.h"
 #include "HUD/PaladinBossHealthBar.h"
+#include <Player/PlayerMain.h>
 
 APlayerHeroController::APlayerHeroController()
 {
@@ -133,5 +134,23 @@ void APlayerHeroController::HandleBossHealth(float HealthHP, float ShieldHP)
     {
         PlayerMainHUD->SetPaladinBossHealthBar();
         PlayerMainHUD->PaladinBossHealthBarInstance->ReceivePercentagesFromBoss(HealthHP, ShieldHP);
+    }
+}
+
+void APlayerHeroController::ToggleInput(bool Bool)
+{
+    if (Bool)
+    {
+        if (APlayerMain* PlayerRef = Cast<APlayerMain>(GetPawn()))
+        {
+            PlayerRef->CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Nothing);
+        }
+    }
+    else
+    {
+        if (APlayerMain* PlayerRef = Cast<APlayerMain>(GetPawn()))
+        {
+            PlayerRef->CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Stun);
+        }
     }
 }
