@@ -161,8 +161,11 @@ protected:
 
 	FTimerHandle ReturnToPoolTimerHandle;
 
+public:
+	UFUNCTION()
 	void RequestReturnToPool();
 
+protected:
 	ECollisionEnabled::Type InitialMeshCollisionEnabled;
 	ECollisionEnabled::Type InitialCapsuleCollisionEnabled;
 	TMap<TEnumAsByte<ECollisionChannel>, ECollisionResponse> InitialMeshCollisionResponses;
@@ -259,7 +262,7 @@ protected:
 	
 	virtual void Look(const FInputActionValue& Value);
 
-	virtual void Attack(const FInputActionValue& Value);
+	virtual void Attack(const FInputActionValue& Value) {};
 
 	virtual void Jump() override;
 
@@ -276,7 +279,7 @@ protected:
 	void ResetEnemy();
 		
 	UFUNCTION()		
-	virtual void ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoint);
+	virtual void ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoint) {};
 	
 	UPROPERTY();
 	EMainDamageTypes LastDamageType;

@@ -165,6 +165,7 @@ void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 
 void AEnemy::DeactivateEnemy()
 {
+	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::White, FString("Deactivating " + this->GetName()));
 	if (PossessionOwner)
 	{
 		APlayerMain* PlayerOwnerRef = Cast<APlayerMain>(PossessionOwner);
@@ -174,8 +175,6 @@ void AEnemy::DeactivateEnemy()
 		}
 		PossessionOwner = nullptr;
 	}
-
-	DisableAI();
 
 	SetActorHiddenInGame(true);
 	SetActorTickEnabled(false);
@@ -201,9 +200,13 @@ void AEnemy::DeactivateEnemy()
 		AIControllerInstance->GetBlackboardComponent()->ClearValue(FName("CanSeePlayer"));
 	}
 
+	DisableAI();
+
 	isLaunched = false;
 	DamageCauserOf = nullptr;
 
+	OnDeactivated.Broadcast(this);
+	
 	GetWorldTimerManager().ClearTimer(HitFlashTimerHandle);
 	GetWorldTimerManager().ClearTimer(ReturnToPoolTimerHandle);
 }
@@ -271,6 +274,8 @@ void AEnemy::PoolableDie(AActor* DamageCauser)
 
 void AEnemy::RequestReturnToPool()
 {
+	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Purple, FString("Request return to pool..."));
+
 	DeactivateEnemy();
 
 	UWorld* World = GetWorld();
@@ -351,8 +356,6 @@ void AEnemy::BeginPlay()
 			GetMesh()->SetMaterial(i, DissolveMaterials[i]);
 		}
 	}
-
-	ActivateEnemy(GetActorLocation(),GetActorRotation());
 }
 
 void AEnemy::NotifyThreat(AActor* ThreatActor)
@@ -419,11 +422,6 @@ void AEnemy::Look(const FInputActionValue& Value)
 	AddControllerYawInput(LookingVector.X);
 }
 
-void AEnemy::Attack(const FInputActionValue& Value)
-{
-	//sus children se encargan de overridear esta funcion
-}
-
 void AEnemy::Jump()
 {
 	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Nothing, ECharacterActions::ECA_Attack }) && ExtraMovementComponent->CanDoubleJump)
@@ -456,11 +454,6 @@ void AEnemy::ResetEnemy()
 	isLaunched = false;
 	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
 	EnableAI();
-}
-
-void AEnemy::ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoint)
-{
-	
 }
 
 void AEnemy::GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived)
@@ -553,9 +546,6 @@ float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AC
 		return 0.f;
 	}
 
-	//limpiar esta garompa
-	const float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
-
 	const UDamageTypeMain* MainDamageType = DamageEvent.DamageTypeClass
 		? Cast<UDamageTypeMain>(DamageEvent.DamageTypeClass->GetDefaultObject())
 		: nullptr;
@@ -570,7 +560,7 @@ float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AC
 	{
 		if (Attributes->IsAlive())
 		{
-			Attributes->ReceiveDamage(ActualDamage);
+			Attributes->ReceiveDamage(DamageAmount);
 			NotifyDamageTakenToBlackboard(DamageCauser);
 
 			if (Execute_CanBeFinished(this))
@@ -583,7 +573,7 @@ float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AC
 			}
 		}
 	}
-	return ActualDamage;
+	return DamageAmount;
 }
 
 void AEnemy::DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage* HitReactAnimMontage, const float DamageReceived)
@@ -665,8 +655,8 @@ void AEnemy::HandleEnemyCollision(ECollisionResponse CollisionResponse)
 {
 	GetMesh()->SetCollisionResponseToChannel(ECC_Pawn, CollisionResponse);
 	GetMesh()->SetCollisionResponseToChannel(ECC_GameTraceChannel3, CollisionResponse); //sword trace
-	GetMesh()->SetCollisionResponseToChannel(ECC_GameTraceChannel2, CollisionResponse); //spectral weapon trace
-	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, CollisionResponse);
+	//GetMesh()->SetCollisionResponseToChannel(ECC_GameTraceChannel2, CollisionResponse); //spectral weapon trace
+	//GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, CollisionResponse);
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_GameTraceChannel3, CollisionResponse);
 }
 
