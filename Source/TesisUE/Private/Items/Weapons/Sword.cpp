@@ -74,7 +74,7 @@ void ASword::EnableVisuals(bool bEnable)
 {
 	Super::EnableVisuals(bEnable);
 
-	if (ItemMesh) ItemMesh->SetVisibility(bEnable);
+	//if (ItemMesh) ItemMesh->SetVisibility(bEnable);
 }
 
 void ASword::EnableSwordState(bool bEnable)

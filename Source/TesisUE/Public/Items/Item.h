@@ -58,10 +58,6 @@ public:
 
 	FName GetUniqueSaveID() const { return UniqueSaveID; }
 
-	void ActivateItem(const FVector& Location, const FRotator& Rotation);
-
-	void DeactivateItem();
-
 protected:
 
 	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Save System")
