@@ -850,13 +850,7 @@ void AEnemy::UnPossessAndKill()
 	if (PossessionOwner && PossessionOwner->GetAttributes() && PossessionOwner->GetAttributes()->RequiresEnergy(UnpossesAndKillEnergyTax))
 	{
 		PossessionOwner->Attributes->IncreaseHealth(15.f);
-
-		UnPossessBase();
-
-		if (PossessionOwner && PossessionOwner->GetAttributes())
-		{
-			PossessionOwner->GetAttributes()->SetEnergy(Attributes->GetEnergy() - UnpossesAndKillEnergyTax);
-		}
+		Attributes->IncreaseEnergy(-UnpossesAndKillEnergyTax);
 
 		DisableAI();
 		StopAnimMontage();
@@ -883,6 +877,8 @@ void AEnemy::UnPossessAndKill()
 				PossessionOwner->ToggleForm();
 			}
 		}
+
+		UnPossessBase();
 		PossessionOwner = nullptr;
 	}
 	else if (Attributes && !Attributes->RequiresEnergy(UnpossesAndKillEnergyTax) && ErrorSFX)

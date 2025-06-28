@@ -382,13 +382,19 @@ void UNewGameInstance::ApplyPendingLoadedDataToWorld()
                     if (NewItem)
                     {
                         GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Item reconciliated..."));
-                        NewItem->EnableVisuals(false);
                         NewItem->SetOwner(PlayerCharacter);
+
+                        if (UCharacterStateComponent* PlayerCharStateComp = PlayerCharacter->GetComponentByClass<UCharacterStateComponent>())
+                        {
+                            PlayerCharStateComp->SetCharacterState(ECharacterStates::ECS_EquippedSword);
+                        }
+
                         PlayerInventory->InventorySlots[i] = NewItem;
                         if (ASword* Sword = Cast<ASword>(NewItem))
                         {
                             if (APlayerMain* Player = Cast<APlayerMain>(PlayerCharacter))
                             {
+                                Sword->EnableSwordState(true);
                                 Sword->OnWallHit.AddDynamic(Player, &APlayerMain::OnWallCollision);
                             }
                         }

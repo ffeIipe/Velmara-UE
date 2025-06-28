@@ -99,6 +99,8 @@ void AItem::ApplySavedState(const FInteractedItemSaveData* SavedData)
 	{
 		Use(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
 		bWasOpened = true;
+
+
 		Destroy();
 	}
 }

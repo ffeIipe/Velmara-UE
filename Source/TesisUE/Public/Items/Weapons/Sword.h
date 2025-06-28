@@ -38,8 +38,6 @@ public:
 	virtual void Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwner, APawn* NewInstigator) override;
 	
 	virtual void Unequip() override;
-	
-	virtual void EnableVisuals(bool bEnable) override;
 
 	UFUNCTION(BlueprintCallable)
 	void EnableSwordState(bool bEnable);

@@ -115,7 +115,10 @@ void APlayerMain::GetHit_Implementation(AActor* DamageCauser, const FVector& Imp
 	}
 	else
 	{
-		CombatComponent->GetDirectionalReact(ImpactPoint, DamageType);
+		if (!IsEquipping())
+		{
+			CombatComponent->GetDirectionalReact(ImpactPoint, DamageType);
+		}	
 	}
 }
 
@@ -336,6 +339,12 @@ void APlayerMain::PossessEnemy()
 			CharacterStateComponent->SetCharacterForm(ECharacterForm::ECF_Possessing);
 
 			SetActorHiddenInGame(true);
+
+			if (InventoryComponent->GetEquippedItem())
+			{
+				InventoryComponent->GetEquippedItem()->SetActorHiddenInGame(true);
+			}
+
 			SetActorEnableCollision(false);
 			GetMesh()->bPauseAnims = true;
 		}
@@ -369,6 +378,12 @@ void APlayerMain::ReleasePossession(AEnemy* EnemyBeingUnpossessed)
 	}
 
 	SetActorHiddenInGame(false);
+
+	if (InventoryComponent->GetEquippedItem())
+	{
+		InventoryComponent->GetEquippedItem()->SetActorHiddenInGame(false);
+	}
+
 	SetActorEnableCollision(true);
 
 	if (IsValid(EnemyBeingUnpossessed))

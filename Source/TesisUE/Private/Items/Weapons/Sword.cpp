@@ -70,13 +70,6 @@ void ASword::AttachMeshToSocket(USceneComponent* InParent, const FName& InSocket
 	ItemMesh->AttachToComponent(InParent, TransformRules, InSocketName);
 }
 
-void ASword::EnableVisuals(bool bEnable)
-{
-	Super::EnableVisuals(bEnable);
-
-	//if (ItemMesh) ItemMesh->SetVisibility(bEnable);
-}
-
 void ASword::EnableSwordState(bool bEnable)
 {
 	if (CharacterStateComponent)

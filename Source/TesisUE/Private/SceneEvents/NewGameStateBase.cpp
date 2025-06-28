@@ -168,12 +168,8 @@ void ANewGameStateBase::RequestEnemyStateReconciliation(AEnemy* EnemyToReconcile
 
 	if (SavedData)
 	{
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Emerald, FString("Valid data..."));
-
 		if (SavedData->bIsAlive)
 		{
-			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, FString("Data says that was alive..."));
-
 			EnemyToReconcile->ActivateEnemy(SavedData->EnemyState.Transform.GetLocation(), SavedData->EnemyState.Transform.GetRotation().Rotator());
 			UMementoComponent* MementoComp = EnemyToReconcile->FindComponentByClass<UMementoComponent>();
 			if (MementoComp)
@@ -183,7 +179,6 @@ void ANewGameStateBase::RequestEnemyStateReconciliation(AEnemy* EnemyToReconcile
 		}
 		else
 		{
-			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Orange, FString("Data says that wasn't alive..."));
 			EnemyToReconcile->RequestReturnToPool();
 		}
 	}
