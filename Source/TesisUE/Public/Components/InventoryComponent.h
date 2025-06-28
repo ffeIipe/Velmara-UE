@@ -40,10 +40,6 @@ protected:
 
     bool bIsInventoryOpen = false;
 
-
-    //UFUNCTION(BlueprintImplementableEvent, Category = "Inventory UI", meta = (DisplayName = "RefreshInventoryUI"))
-    //void K2_RefreshInventoryUI2(const TArray<AItem*>& Items);
-
 public:
     UPROPERTY(EditAnywhere, Category = "Inventory", Transient) // Transient si no necesita guardarse
     TArray<AItem*> InventorySlots;

@@ -41,11 +41,7 @@ private:
 
     void ApplySpectralEffects();
 
-    void PlayEquipMontage();
-
     void ApplyHumanEffects();
-
-    void PlaySwordMontage();
 
     bool bIsSpectralActive = false;
 
