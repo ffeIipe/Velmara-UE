@@ -7,6 +7,7 @@
 #include "Engine/World.h"
 #include "GameFramework/WorldSettings.h"
 #include "HUD/Inventory.h"
+#include <Items/Weapons/Sword.h>
 
 UInventoryComponent::UInventoryComponent()
 {
@@ -28,11 +29,6 @@ void UInventoryComponent::ChangeWeapon(int32 SlotIndex)
     if (InventorySlots.IsValidIndex(SlotIndex))
     {
         EquipItemFromSlot(SlotIndex);
-
-        if (ACharacter* PlayerChar = Cast<ACharacter>(GetOwner()))
-        {
-            PlayerChar->PlayAnimMontage(EquipMontage, 1.f, FName("Equip"));
-        }
     }
 }
 
@@ -89,7 +85,7 @@ void UInventoryComponent::EquipItemFromSlot(int32 SlotIndex)
         {
             ItemToEquip->Equip(AttachParent, HandSocketName, OwnerCharacter, OwnerCharacter);
 
-            ItemToEquip->EnableVisuals(true);
+            //ItemToEquip->EnableVisuals(true);
 
             EquippedItem = ItemToEquip;
             EquippedSlotIndex = SlotIndex;
@@ -136,7 +132,8 @@ void UInventoryComponent::UnequipCurrentItem()
 {
     if (IsValid(EquippedItem))
     {
-        EquippedItem->EnableVisuals(false);
+        //EquippedItem->EnableVisuals(false);
+        //ASword* SwordRef = Cast<ASword>(EquippedItem)->Set
         EquippedItem = nullptr;
         EquippedSlotIndex = -1;
     }
@@ -146,7 +143,6 @@ void UInventoryComponent::UnequipCurrentItem()
         {
             EquippedSlotIndex = -1;
         }
-        // else { // Ya estaba todo desequipado, no imprimir nada }
     }
 }
 

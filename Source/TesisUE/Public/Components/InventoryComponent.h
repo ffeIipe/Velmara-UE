@@ -91,7 +91,4 @@ private:
 
     UPROPERTY(EditDefaultsOnly, Category = "Inventory")
     FName HandSocketName = FName("RightHandSocket");
-
-    UPROPERTY(EditDefaultsOnly, Category = "Inventory | Montages | Equip")
-    UAnimMontage* EquipMontage;
 };

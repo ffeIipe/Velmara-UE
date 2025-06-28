@@ -75,7 +75,7 @@ APlayerMain::APlayerMain()
 	CharacterStateComponent = CreateDefaultSubobject<UCharacterStateComponent>(TEXT("CharacterStates"));
 
 	SpectralWeaponComponent = CreateDefaultSubobject<USpectralWeaponComponent>(TEXT("SpectralWeapon"));
-	SpectralWeaponComponent->GetSpectralWeaponMeshComponent()->SetupAttachment(GetMesh(), FName("RightHandSocketWeapon"));
+	//SpectralWeaponComponent->GetSpectralWeaponMeshComponent()->SetupAttachment(GetMesh(), FName("RightHandSocketWeapon"));
 
 	ExtraMovementComponent = CreateDefaultSubobject<UExtraMovementComponent>(TEXT("ExtraMovementComponent"));
 }
@@ -495,6 +495,8 @@ void APlayerMain::Interact(const FInputActionValue& Value)
 				{
 					ActorsToIgnore.Add(HitSword);
 					HitSword->OnWallHit.AddDynamic(this, &APlayerMain::OnWallCollision);
+
+					Equipping();
 				}
 			}
 		}
@@ -510,7 +512,18 @@ void APlayerMain::Interact(const FInputActionValue& Value)
 			HitItem->Use(this);
 		}
 	}
-	//DrawDebugLine(GetWorld(), TraceStart, bHit ? ResultHit.ImpactPoint : TraceEnd, FColor::Red, false, 2.0f, 0, 1.0f);
+}
+
+void APlayerMain::Equipping()
+{
+	if (CharacterStateComponent->GetCurrentCharacterState().State == ECharacterStates::ECS_Unequipped)
+	{
+		PlayAnimMontage(EquipSwordMontage, 1.f, FName("Equip"));
+	}
+	else
+	{
+		PlayAnimMontage(EquipSwordMontage, 1.f, FName("EquipAndUnequip"));
+	}
 }
 
 void APlayerMain::Attack(const FInputActionValue& Value)
@@ -611,8 +624,8 @@ void APlayerMain::WithEnergy()
 
 		SpectralWeaponComponent->EnableSpectralWeapon(true);
 
-		if (InventoryComponent->GetEquippedItem())
-			InventoryComponent->GetEquippedItem()->EnableVisuals(false);
+		//if (InventoryComponent->GetEquippedItem())
+		//	InventoryComponent->GetEquippedItem()->EnableVisuals(false);
 	}
 }
 
@@ -739,6 +752,7 @@ void APlayerMain::ChangePrimaryWeapon()
 	if (CharacterStateComponent->IsFormEqualToAny({ ECharacterForm::ECF_Spectral })) return;
 
 	InventoryComponent->ChangeWeapon(0);
+	Equipping();
 }
 
 void APlayerMain::ChangeSecondaryWeapon()
@@ -746,6 +760,7 @@ void APlayerMain::ChangeSecondaryWeapon()
 	if (CharacterStateComponent->IsFormEqualToAny({ ECharacterForm::ECF_Spectral })) return;
 
 	InventoryComponent->ChangeWeapon(1);
+	Equipping();
 }
 
 void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

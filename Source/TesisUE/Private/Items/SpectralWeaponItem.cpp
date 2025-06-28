@@ -4,6 +4,7 @@
 #include "Components/CharacterStateComponent.h"
 #include <SceneEvents/NewGameStateBase.h>
 #include <Kismet/GameplayStatics.h>
+#include "Tutorial/PromptWidgetComponent.h"
 
 void ASpectralWeaponItem::Use(ACharacter* Character)
 {
@@ -21,7 +22,12 @@ void ASpectralWeaponItem::Use(ACharacter* Character)
     
     if (PlayerReference && PlayerReference->SpectralWeaponComponent)
     {
+        FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, true);
+        ItemMesh->AttachToComponent(Character->GetMesh(), TransformRules, FName("RightHandSocketWeapon"));
+
+        PlayerReference->SpectralWeaponComponent->GetSpectralWeaponMeshComponent()->SetStaticMesh(ItemMesh->GetStaticMesh());
         PlayerReference->SpectralWeaponComponent->InitializeSpectralWeaponComponent();
+        PromptWidget->EnablePromptWidget(false);
 
         Destroy(); 
     }

@@ -63,12 +63,6 @@ void AItem::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwne
 	}
 }
 
-
-void AItem::Unequip()
-{
-	//PromptWidget2->GetWidget()->SetVisibility(ESlateVisibility::Visible);
-}
-
 void AItem::Use(ACharacter* TargetCharacter)
 {	
 	if (!bWasOpened)
@@ -108,6 +102,73 @@ void AItem::ApplySavedState(const FInteractedItemSaveData* SavedData)
 		Destroy();
 	}
 }
+
+void AItem::ActivateItem(const FVector& Location, const FRotator& Rotation)
+{
+	//SetActorLocationAndRotation(Location, Rotation);
+	//SetActorHiddenInGame(false);
+	////SetActorTickEnabled(true);
+	//
+	//SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	//SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	//GetMesh()->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
+	//GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
+	//GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+	//GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+	//GetCapsuleComponent()->SetGenerateOverlapEvents(true);
+	//
+	//GetMesh()->bPauseAnims = false;
+	//
+	//HandleEnemyCollision(ECR_Block);
+	//
+	//EnemyState = EEnemyState::EES_None;
+	//isLaunched = false;
+	//DamageCauserOf = nullptr;
+	//bWasPossessed = false;
+	//
+	//if (Attributes)
+	//{
+	//	Attributes->ResetAttributes();
+	//}
+	//
+	//if (CharacterStateComponent)
+	//{
+	//	CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Nothing);
+	//}
+	//
+	//bUseControllerRotationYaw = bOriginalUseControllerRotationYaw;
+	//
+	//GetDefaultParameters();
+	//
+	//if (ANewGameModeBase* NewGameMode = Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
+	//{
+	//	NewGameMode->RegisterEnemy(this);
+	//
+	//	if (ANewGameStateBase* NewGameStateBase = Cast<ANewGameStateBase>(NewGameMode->GameState))
+	//	{
+	//		if (Memento)
+	//		{
+	//			NewGameStateBase->RegisterMementoEntity(this);
+	//		}
+	//	}
+	//}
+	//
+	//if (PromptWidgetComponent && PromptWidgetComponent->GetWidget())
+	//{
+	//	PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
+	//}
+	//
+	//GetMesh()->SetSimulatePhysics(false);
+	//
+	//EnableAI();
+	//
+	//DissolveTimeline->Reverse();
+}
+
+void AItem::DeactivateItem()
+{
+}
+
 void AItem::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	Super::OnSphereBeginOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);

@@ -59,6 +59,7 @@ public:
 
     void FinishReload();
 
+    UFUNCTION(BlueprintCallable)
     void AttachToOwner(USceneComponent* InParent, FName SocketName);
 
     void EnableSpectralWeapon(bool Enable);
@@ -110,7 +111,11 @@ private:
 
     bool bIsFireEnable = true;
 
+    UFUNCTION(BlueprintCallable)
     void EnableFire();
+
+    UFUNCTION(BlueprintCallable)
+    void DisableFire();
 
     void SetTimer(FTimerHandle TimerHandle, float Time, void (USpectralWeaponComponent::* InTimerMethod)());
 
