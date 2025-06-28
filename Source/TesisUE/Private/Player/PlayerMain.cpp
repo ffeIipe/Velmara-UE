@@ -82,11 +82,15 @@ APlayerMain::APlayerMain()
 
 void APlayerMain::PerformSpectralAttack_Implementation()
 {
+	if (IsEquipping() || CharacterStateComponent->GetCurrentCharacterState().SpectralState == ECharacterSpectralStates::ECSS_Unequipped) return;
+
 	SpectralWeaponComponent->PrimaryFire();
 }
 
 void APlayerMain::PerformSpectralBarrier_Implementation()
 {
+	if (IsEquipping() || CharacterStateComponent->GetCurrentCharacterState().SpectralState == ECharacterSpectralStates::ECSS_Unequipped) return;
+
 	SpectralWeaponComponent->SecondaryFire();
 }
 
@@ -100,14 +104,6 @@ void APlayerMain::GetHit_Implementation(AActor* DamageCauser, const FVector& Imp
 {
 	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Dead })) return;
 
-	/*if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun }))
-	{
-		if (DamageType != USpectralTrapDamageType::StaticClass())
-		{
-			return;
-		}
-	}*/
-
 	if (ReceiveDamageSFX)
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), ReceiveDamageSFX, GetActorLocation());
@@ -115,13 +111,11 @@ void APlayerMain::GetHit_Implementation(AActor* DamageCauser, const FVector& Imp
 
 	if (DamageType == USpectralTrapDamageType::StaticClass())
 	{
-		//CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Stun);
 		StunBehavior();
 	}
 	else
 	{
 		CombatComponent->GetDirectionalReact(ImpactPoint, DamageType);
-		//RemoveStunBehavior(); no sirve esto porque al pegarte el boss te saca el estado de stun
 	}
 }
 
@@ -374,7 +368,6 @@ void APlayerMain::ReleasePossession(AEnemy* EnemyBeingUnpossessed)
 		}
 	}
 
-
 	SetActorHiddenInGame(false);
 	SetActorEnableCollision(true);
 
@@ -492,8 +485,6 @@ void APlayerMain::Interact(const FInputActionValue& Value)
 
 	if (bHit && InventoryComponent)
 	{
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString(ResultHit.GetActor()->GetName()));
-
 		if (ASword* HitSword = Cast<ASword>(ResultHit.GetActor()))
 		{
 			if (CharacterStateComponent->GetCurrentCharacterState().Form != ECharacterForm::ECF_Spectral)
@@ -547,7 +538,15 @@ void APlayerMain::Equipping(bool bIsSwordBeingEquipped)
 					CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_EquippingSword);
 				}
 			}
-			else GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Cyan, FString("No equipped item, so none animation will be played..."));
+			else
+			{
+				if (SpectralWeaponComponent->bWasInitialized)
+				{
+					PlayAnimMontage(EquipPistolMontage, 1.f, FName("Unequip"));
+					CharacterStateComponent->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
+				}
+				else GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Cyan, FString("No equipped item, so none animation will be played..."));
+			}
 		}
 		else //o estoy equipando una pistola
 		{
@@ -576,17 +575,39 @@ void APlayerMain::Equipping(bool bIsSwordBeingEquipped)
 		{
 			if (InventoryComponent->GetEquippedItem())
 			{
-				GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Cyan, FString("Has sword"));
+				if (SpectralWeaponComponent->bWasInitialized)
+				{
+					if (CharacterStateComponent->GetCurrentCharacterState().State == ECharacterStates::ECS_EquippedSword)
+					{
+						GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Cyan, FString("Has sword equipped"));
 
-				PlayAnimMontage(EquipSwordMontage, 1.f, FName("SwitchToPistol"));
-				CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_EquippingSword);
+						PlayAnimMontage(EquipSwordMontage, 1.f, FName("SwitchToPistol"));
+						CharacterStateComponent->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
+					}
+					else
+					{
+						GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Blue, FString("Sword it's on the back"));
+
+						PlayAnimMontage(EquipPistolMontage, 1.f, FName("Equip"));
+						CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_Unequipped);
+						CharacterStateComponent->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
+					}
+				}
+				else
+				{
+					PlayAnimMontage(EquipSwordMontage, 1.f, FName("Unequip"));
+					CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_EquippingSword);
+				}
 			}
-			else if (SpectralWeaponComponent->bWasInitialized)
+			else
 			{
-				GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Blue, FString("Has pistol"));
+				if (SpectralWeaponComponent->bWasInitialized)
+				{
+					GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Blue, FString("Sword not equipped"));
 
-				PlayAnimMontage(EquipPistolMontage, 1.f, FName("Equip"));
-				CharacterStateComponent->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
+					PlayAnimMontage(EquipPistolMontage, 1.f, FName("Equip"));
+					CharacterStateComponent->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
+				}
 			}
 			
 		}

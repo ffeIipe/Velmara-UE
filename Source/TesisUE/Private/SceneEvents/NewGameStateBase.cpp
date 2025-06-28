@@ -189,7 +189,6 @@ void ANewGameStateBase::RequestEnemyStateReconciliation(AEnemy* EnemyToReconcile
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Invalid data..."));
 		FEnemySaveData InitialData;
 		InitialData.UniqueSaveID = EnemyID;
 		InitialData.bIsAlive = true;
