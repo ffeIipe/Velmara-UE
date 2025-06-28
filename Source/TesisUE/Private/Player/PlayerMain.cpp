@@ -321,7 +321,7 @@ AEnemy* APlayerMain::GetTargetEnemy()
 
 void APlayerMain::PossessEnemy()
 {
-	if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
+	if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral && !IsEquipping())
 	{
 		AEnemy* TargetEnemy = GetTargetEnemy();
 		PlayerControllerRef = Cast<APlayerController>(GetController());
@@ -417,7 +417,17 @@ void APlayerMain::Move(const FInputActionValue& Value)
 
 void APlayerMain::Dodge(const FInputActionValue& Value)
 {
-	ExtraMovementComponent->Input_Dodge();
+	if (!IsEquipping())
+	{
+		ExtraMovementComponent->Input_Dodge();
+	}
+	
+}
+
+bool APlayerMain::IsEquipping()
+{
+	return CharacterStateComponent->GetCurrentCharacterState().SpectralState == ECharacterSpectralStates::ECSS_EquippingPistol
+		|| CharacterStateComponent->GetCurrentCharacterState().State == ECharacterStates::ECS_EquippingSword;
 }
 
 void APlayerMain::Look(const FInputActionValue& Value)
@@ -430,7 +440,7 @@ void APlayerMain::Look(const FInputActionValue& Value)
 
 void APlayerMain::Jump()
 {
-	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Nothing, ECharacterActions::ECA_Attack }) && ExtraMovementComponent->CanDoubleJump)
+	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Nothing, ECharacterActions::ECA_Attack }) && ExtraMovementComponent->CanDoubleJump && !IsEquipping())
 	{
 		PlayAnimMontage(ExtraMovementComponent->JumpMontage, 1.f);
 
@@ -452,11 +462,8 @@ void APlayerMain::Landed(const FHitResult& Hit)
 
 void APlayerMain::Interact(const FInputActionValue& Value)
 {
-	if (InventoryComponent && InventoryComponent->IsInventoryOpen())
-	{
-		return;
-	}
-
+	if (InventoryComponent && InventoryComponent->IsInventoryOpen() && IsEquipping()) return;
+	
 	FVector TraceStart;
 	FRotator CameraRotation;
 	Controller->GetPlayerViewPoint(TraceStart, CameraRotation);
@@ -496,7 +503,7 @@ void APlayerMain::Interact(const FInputActionValue& Value)
 					ActorsToIgnore.Add(HitSword);
 					HitSword->OnWallHit.AddDynamic(this, &APlayerMain::OnWallCollision);
 
-					Equipping();
+					Equipping(true);
 				}
 			}
 		}
@@ -510,25 +517,85 @@ void APlayerMain::Interact(const FInputActionValue& Value)
 		else if (AItem* HitItem = Cast<AItem>(ResultHit.GetActor()))
 		{
 			HitItem->Use(this);
+			Equipping(false);
 		}
 	}
 }
 
-void APlayerMain::Equipping()
+void APlayerMain::Equipping(bool bIsSwordBeingEquipped)
 {
-	if (CharacterStateComponent->GetCurrentCharacterState().State == ECharacterStates::ECS_Unequipped)
+	ECharacterForm ActualForm = CharacterStateComponent->GetCurrentCharacterState().Form;
+
+	if (ActualForm == ECharacterForm::ECF_Human) //si estoy en humano
 	{
-		PlayAnimMontage(EquipSwordMontage, 1.f, FName("Equip"));
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Green, FString("Human form"));
+
+		if (bIsSwordBeingEquipped) //y estoy equipando una espada
+		{
+			if (InventoryComponent->GetEquippedItem())
+			{
+				if (SpectralWeaponComponent->bWasInitialized && CharacterStateComponent->GetCurrentCharacterState().SpectralState == ECharacterSpectralStates::ECSS_EquippedPistol)
+				{
+					PlayAnimMontage(EquipPistolMontage, 1.f, FName("BackToSword"));
+					CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_EquippingSword);
+				}
+				else
+				{
+					GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Red, FString("Equipping sword"));
+
+					PlayAnimMontage(EquipSwordMontage, 1.f, FName("Equip"));
+					CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_EquippingSword);
+				}
+			}
+			else GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Cyan, FString("No equipped item, so none animation will be played..."));
+		}
+		else //o estoy equipando una pistola
+		{
+			if (!InventoryComponent->GetEquippedItem()) //si no tengo espada
+			{
+				GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Orange, FString("Only pick pistol"));
+
+				PlayAnimMontage(EquipPistolMontage, 1.f, FName("Unequip"));
+				CharacterStateComponent->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
+			}
+			else
+			{
+				//si tengo espada equipada
+				GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Green, FString("Unequip sword and equip pistol"));
+
+				PlayAnimMontage(EquipSwordMontage, 1.f, FName("PickPistol"));
+				CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_EquippingSword);
+			}
+		}
 	}
-	else
+	else //si no estoy en humano
 	{
-		PlayAnimMontage(EquipSwordMontage, 1.f, FName("EquipAndUnequip"));
-	}
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Purple, FString("Spectral form"));
+
+		if (!bIsSwordBeingEquipped)
+		{
+			if (InventoryComponent->GetEquippedItem())
+			{
+				GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Cyan, FString("Has sword"));
+
+				PlayAnimMontage(EquipSwordMontage, 1.f, FName("SwitchToPistol"));
+				CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_EquippingSword);
+			}
+			else if (SpectralWeaponComponent->bWasInitialized)
+			{
+				GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Blue, FString("Has pistol"));
+
+				PlayAnimMontage(EquipPistolMontage, 1.f, FName("Equip"));
+				CharacterStateComponent->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
+			}
+			
+		}
+	}	
 }
 
 void APlayerMain::Attack(const FInputActionValue& Value)
 {
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }))
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }) && !IsEquipping())
 	{
 		CombatComponent->Input_Attack(Value);
 	}
@@ -536,7 +603,7 @@ void APlayerMain::Attack(const FInputActionValue& Value)
 
 void APlayerMain::HeavyAttack(const FInputActionValue& Value)
 {
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }))
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }) && !IsEquipping())
 	{
 		CombatComponent->Input_HeavyAttack(Value);
 	}
@@ -544,7 +611,7 @@ void APlayerMain::HeavyAttack(const FInputActionValue& Value)
 
 void APlayerMain::LaunchAttack(const FInputActionValue& Value)
 {
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }))
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }) && !IsEquipping())
 	{
 		CombatComponent->Input_Launch(Value);
 	}
@@ -552,7 +619,7 @@ void APlayerMain::LaunchAttack(const FInputActionValue& Value)
 
 void APlayerMain::Block(const FInputActionValue& Value)
 {
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }))
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }) && !IsEquipping())
 	{
 		CombatComponent->Input_Block(Value);
 	}
@@ -560,7 +627,7 @@ void APlayerMain::Block(const FInputActionValue& Value)
 
 void APlayerMain::ReleaseBlock(const FInputActionValue& Value)
 {
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }))
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }) && !IsEquipping())
 	{
 		CombatComponent->Input_ReleaseBlock(Value);
 	}
@@ -568,7 +635,7 @@ void APlayerMain::ReleaseBlock(const FInputActionValue& Value)
 
 void APlayerMain::Execute(const FInputActionValue& Value)
 {
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }))
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }) && !IsEquipping())
 	{
 		CombatComponent->Input_Execute(Value);
 	}
@@ -581,6 +648,8 @@ void APlayerMain::ToggleForm()
 	if (!GetWorld()) return;
 
 	if (!IsValid(Attributes)) return;
+
+	if (IsEquipping()) return;
 
 	if (CharacterStateComponent->IsActionEqualToAny({
 		ECharacterActions::ECA_Dead,
@@ -621,11 +690,6 @@ void APlayerMain::WithEnergy()
 		Attributes->OnDepletedCallback = [this]() { OutOfEnergy(); };
 		Attributes->RegenerateTick();
 		GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = true;
-
-		SpectralWeaponComponent->EnableSpectralWeapon(true);
-
-		//if (InventoryComponent->GetEquippedItem())
-		//	InventoryComponent->GetEquippedItem()->EnableVisuals(false);
 	}
 }
 
@@ -737,22 +801,21 @@ void APlayerMain::OnWallCollision(const FHitResult& HitResult)
 
 void APlayerMain::LoadLastCheckpoint()
 {
-	//UNewGameInstance* GameInst = GetGameInstance<UNewGameInstance>();
-	//if (GameInst)
-	//{
-	//	GameInst->LoadPlayerProgress(GameInst->ActiveSaveSlotIndex);
-	//}
+	UNewGameInstance* GameInst = GetGameInstance<UNewGameInstance>();
+	if (GameInst)
+	{
+		GameInst->LoadPlayerProgress(GameInst->ActiveSaveSlotIndex);
+	}
 
 	UGameplayStatics::OpenLevel(this, FName("AugusTest"));
 }
-
 
 void APlayerMain::ChangePrimaryWeapon()
 {
 	if (CharacterStateComponent->IsFormEqualToAny({ ECharacterForm::ECF_Spectral })) return;
 
 	InventoryComponent->ChangeWeapon(0);
-	Equipping();
+	Equipping(true);
 }
 
 void APlayerMain::ChangeSecondaryWeapon()
@@ -760,7 +823,7 @@ void APlayerMain::ChangeSecondaryWeapon()
 	if (CharacterStateComponent->IsFormEqualToAny({ ECharacterForm::ECF_Spectral })) return;
 
 	InventoryComponent->ChangeWeapon(1);
-	Equipping();
+	Equipping(true);
 }
 
 void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -778,13 +841,13 @@ void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		EnhancedInputComponent->BindAction(CombatComponent->AttackAction, ETriggerEvent::Triggered, this, &APlayerMain::Attack);
 		EnhancedInputComponent->BindAction(CombatComponent->HeavyAttackAction, ETriggerEvent::Started, this, &APlayerMain::HeavyAttack);
 		EnhancedInputComponent->BindAction(CombatComponent->LaunchAction, ETriggerEvent::Triggered, this, &APlayerMain::LaunchAttack);
-		EnhancedInputComponent->BindAction(CombatComponent->BlockAction, ETriggerEvent::Started, this, &APlayerMain::Block);
-		EnhancedInputComponent->BindAction(CombatComponent->BlockAction, ETriggerEvent::Completed, this, &APlayerMain::ReleaseBlock);
+		//EnhancedInputComponent->BindAction(CombatComponent->BlockAction, ETriggerEvent::Started, this, &APlayerMain::Block);
+		//EnhancedInputComponent->BindAction(CombatComponent->BlockAction, ETriggerEvent::Completed, this, &APlayerMain::ReleaseBlock);
 
 		EnhancedInputComponent->BindAction(ChangeFormAction, ETriggerEvent::Started, this, &APlayerMain::ToggleForm);
 		EnhancedInputComponent->BindAction(PossessAction, ETriggerEvent::Completed, this, &APlayerMain::PossessEnemy);
 		
-		EnhancedInputComponent->BindAction(InventoryComponent->Slot1_InventoryAction, ETriggerEvent::Started, this, &APlayerMain::ChangePrimaryWeapon);
-		EnhancedInputComponent->BindAction(InventoryComponent->Slot2_InventoryAction, ETriggerEvent::Started, this, &APlayerMain::ChangeSecondaryWeapon);
+		//EnhancedInputComponent->BindAction(InventoryComponent->Slot1_InventoryAction, ETriggerEvent::Started, this, &APlayerMain::ChangePrimaryWeapon);
+		//EnhancedInputComponent->BindAction(InventoryComponent->Slot2_InventoryAction, ETriggerEvent::Started, this, &APlayerMain::ChangeSecondaryWeapon);
 	}
 }

@@ -284,8 +284,10 @@ private:
 	void Dodge(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
 	void Interact(const FInputActionValue& Value);
+
 public:
-	void Equipping();
+	void Equipping(bool bIsSwordBeingEquipped);
+	bool IsEquipping();
 
 private:
 	void Attack(const FInputActionValue& Value);
