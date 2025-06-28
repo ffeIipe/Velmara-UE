@@ -46,6 +46,8 @@ enum class EEnemyState : uint8
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEnemyDeactivated, AEnemy*, DeactivatedEnemy);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEnemyDead);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEnemyDamaged);
 
 UCLASS()
 class TESISUE_API AEnemy : public ACharacter, public IHitInterface, public IMementoEntity, public ICharacterState
@@ -65,6 +67,12 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Pooling")
 	FOnEnemyDeactivated OnDeactivated;
+	
+	UPROPERTY(BlueprintAssignable)
+	FOnEnemyDead OnDead;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnEnemyDamaged OnDamaged;
 
 	virtual float TakeDamage(
 		float DamageAmount,
@@ -270,7 +278,7 @@ protected:
 
 	virtual void Dodge(const FInputActionValue& Value);
 
-	APlayerMain* PossessionOwner;
+	APlayerMain* PossessionOwner = nullptr;
 	
 	UPROPERTY(VisibleAnywhere)
 	bool isLaunched = false;

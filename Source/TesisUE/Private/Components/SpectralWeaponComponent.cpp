@@ -26,7 +26,7 @@
 USpectralWeaponComponent::USpectralWeaponComponent()
 {
     SpectralWeaponMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SpectralWeaponMesh"));
-    GetSpectralWeaponMeshComponent()->SetVisibility(false);
+    //GetSpectralWeaponMeshComponent()->SetVisibility(false);
 
     MaxAmmo = 6;
     CurrentAmmo = MaxAmmo;
@@ -41,15 +41,8 @@ void USpectralWeaponComponent::InitializeSpectralWeaponComponent()
     {
         OwnerCharStateComp->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippedPistol);
     }
-
-    if (GetSpectralWeaponMeshComponent())
-    {
-        APlayerMain* PlayerReference = Cast<APlayerMain>(GetOwner());  //temporal
-        PlayerReference->CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Human ?
-            GetSpectralWeaponMeshComponent()->SetVisibility(false) : 
-            GetSpectralWeaponMeshComponent()->SetVisibility(true);
-    }
 }
+
 
 void USpectralWeaponComponent::BeginPlay()
 {
@@ -68,6 +61,11 @@ void USpectralWeaponComponent::BeginPlay()
 void USpectralWeaponComponent::EnableFire()
 {
     bIsFireEnable = true;
+}
+
+void USpectralWeaponComponent::DisableFire()
+{
+    bIsFireEnable = false;
 }
 
 void USpectralWeaponComponent::SetTimer(FTimerHandle TimerHandle, float Time, void (USpectralWeaponComponent::*InTimerMethod)())
@@ -126,7 +124,7 @@ void USpectralWeaponComponent::SecondaryFire()
 
 void USpectralWeaponComponent::Fire(bool bIsPrimary)
 {
-    bIsFireEnable = false;
+    DisableFire();
    
     if (!OwnerInstigator || !OwnerCharacter|| !OwnerController) return;
 
@@ -262,18 +260,18 @@ void USpectralWeaponComponent::FinishReload()
 void USpectralWeaponComponent::AttachToOwner(USceneComponent* InParent, FName SocketName)
 {
     if (!bWasInitialized) return;
-
-    GetSpectralWeaponMeshComponent()->SetupAttachment(InParent, SocketName);
+    FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, true);
+    GetSpectralWeaponMeshComponent()->AttachToComponent(InParent, TransformRules, SocketName);
 }
 
 void USpectralWeaponComponent::EnableSpectralWeapon(bool Enable)
 {
-    if (GetSpectralWeaponMeshComponent() && bWasInitialized)
-    {
-        GetSpectralWeaponMeshComponent()->SetVisibility(Enable);
-    }
-    else
-    {
-        GetSpectralWeaponMeshComponent()->SetVisibility(false);
-    }
+    //if (GetSpectralWeaponMeshComponent() && bWasInitialized)
+    //{
+    //    GetSpectralWeaponMeshComponent()->SetVisibility(Enable);
+    //}
+    //else
+    //{
+    //    GetSpectralWeaponMeshComponent()->SetVisibility(false);
+    //}
 }

@@ -4,9 +4,9 @@
 #include "Items/Item.h"
 #include "EnergyItem.generated.h"
 
-/**
- * 
- */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnChestUsedSpawnEnergy);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnChestUsedSpawnLife);
+
 UCLASS()
 class TESISUE_API AEnergyItem : public AItem
 {
@@ -14,6 +14,12 @@ class TESISUE_API AEnergyItem : public AItem
 	
 public:
 	void Use(class ACharacter* TargetCharacter) override;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnChestUsedSpawnEnergy OnUsedSpawnEnergy;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnChestUsedSpawnLife OnUsedSpawnLife;
 
 private:
 	bool bWasUsed = false;

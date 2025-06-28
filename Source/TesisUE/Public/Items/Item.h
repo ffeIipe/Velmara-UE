@@ -15,16 +15,20 @@ enum class EItemState : uint8
 	EIS_Equipped
 };
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnItemUsed, ACharacter*, UserCharacter);
+
 UCLASS()
 class TESISUE_API AItem : public ATrigger
 {
 	GENERATED_BODY()
-	
+
 public:	
 
 	AItem();
 
-public:
+	UPROPERTY(BlueprintAssignable)
+	FOnItemUsed OnUsed;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	bool bWasOpened = false;
 
@@ -41,7 +45,8 @@ public:
 
 	virtual void Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwner, APawn* NewInstigator);
 	
-	virtual void Unequip();
+	UFUNCTION(BlueprintCallable)
+	virtual void Unequip() {};
 	
 	virtual void Use(class ACharacter* TargetCharacter);
 	
@@ -52,6 +57,10 @@ public:
 	virtual void ApplySavedState(const struct FInteractedItemSaveData* SavedData);
 
 	FName GetUniqueSaveID() const { return UniqueSaveID; }
+
+	void ActivateItem(const FVector& Location, const FRotator& Rotation);
+
+	void DeactivateItem();
 
 protected:
 
@@ -84,4 +93,7 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere)
 	UPromptWidgetComponent* PromptWidget;
+
+	UPROPERTY(BlueprintReadWrite)
+	ACharacter* User;
 };

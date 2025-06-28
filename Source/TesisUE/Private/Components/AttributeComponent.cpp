@@ -126,16 +126,6 @@ void UAttributeComponent::ResetAttributes()
 	Energy = 5.f;
 }
 
-void UAttributeComponent::BeginPlay()
-{
-	Super::BeginPlay();
-}
-
-void UAttributeComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-}
-
 void UAttributeComponent::DrainTick()
 {
 	if (ItHasEnergy())

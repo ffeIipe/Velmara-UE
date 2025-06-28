@@ -220,6 +220,13 @@ protected:
 	//~______________________________________________________________________//
 	UPROPERTY(EditAnywhere, Category = "Animation | Montages | Death")
 	UAnimMontage* DeathMontage;
+public:
+	UPROPERTY(EditDefaultsOnly, Category = "Inventory | Montages | Equip")
+	UAnimMontage* EquipSwordMontage;
+
+private:	
+	UPROPERTY(EditDefaultsOnly, Category = "Inventory | Montages | Equip")
+	UAnimMontage* EquipPistolMontage;
 
 private:
 	//~PAGINATION____________________________________________________________//
@@ -277,6 +284,10 @@ private:
 	void Dodge(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
 	void Interact(const FInputActionValue& Value);
+public:
+	void Equipping();
+
+private:
 	void Attack(const FInputActionValue& Value);
 	void HeavyAttack(const FInputActionValue& Value);
 	void LaunchAttack(const FInputActionValue& Value);

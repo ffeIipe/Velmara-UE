@@ -22,8 +22,6 @@ public:
 
 	FOnEntityDeadSignature OnEntityDead;
 
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-
 	void ReceiveDamage(float Damage);
 
 	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Health | Getters")
@@ -102,8 +100,6 @@ public:
 	void DissolveShield();
 
 protected:
-	virtual void BeginPlay() override;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Actor Properties | Shield")
 	class UStaticMeshComponent* ShieldMeshComponent;
 

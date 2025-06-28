@@ -22,7 +22,6 @@ ASword::ASword()
 	WeaponBox->SetupAttachment(GetRootComponent());
 	WeaponBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	WeaponBox->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
-	WeaponBox->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
 	WeaponBox->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
 
 	BoxTraceStart = CreateDefaultSubobject<USceneComponent>(TEXT("Box Trace Start"));
@@ -48,6 +47,8 @@ void ASword::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwn
 	SetInstigator(NewInstigator);
 	ItemState = EItemState::EIS_Equipped;
 
+	EnableSwordState(true);
+
 	CharacterStateInterface = Cast<ICharacterState>(NewOwner);
 	if (CharacterStateInterface)
 	{
@@ -55,21 +56,18 @@ void ASword::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwn
 	}
 }
 
+void ASword::Unequip()
+{
+	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
+	EnableSwordState(false);
+	//la anim la pongo en el propio player al cambiar de arma
+	AttachMeshToSocket(OwnerCharacter->GetMesh(), FName("BackSocket"));
+}
+
 void ASword::AttachMeshToSocket(USceneComponent* InParent, const FName& InSocketName)
 {
 	FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, true);
-	ItemMesh->AttachToComponent(InParent, TransformRules, CustomInSocketName);
-}
-
-void ASword::Unequip()
-{
-	Super::Unequip();
-
-	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-	ItemState = EItemState::EIS_Hovering;
-
-	CharacterStateInterface = nullptr;
-	CharacterStateComponent = nullptr;
+	ItemMesh->AttachToComponent(InParent, TransformRules, InSocketName);
 }
 
 void ASword::EnableVisuals(bool bEnable)
@@ -77,10 +75,13 @@ void ASword::EnableVisuals(bool bEnable)
 	Super::EnableVisuals(bEnable);
 
 	if (ItemMesh) ItemMesh->SetVisibility(bEnable);
+}
 
+void ASword::EnableSwordState(bool bEnable)
+{
 	if (CharacterStateComponent)
 	{
-		ECharacterStates NewState = bEnable ? ECharacterStates::ECS_EquippedSword : ECharacterStates::ECS_Unequipped;		
+		ECharacterStates NewState = bEnable ? ECharacterStates::ECS_EquippedSword : ECharacterStates::ECS_Unequipped;
 		CharacterStateComponent->SetCharacterState(NewState);
 	}
 }

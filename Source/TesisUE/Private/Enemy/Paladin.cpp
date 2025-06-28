@@ -193,12 +193,6 @@ void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 				UGameplayStatics::PlayWorldCameraShake(this, CameraShake, SwordMesh->GetComponentLocation(), 0.f, 500.f);
 				IgnoreActors.Add(Hit.GetActor());
 			}
-
-			if (PossessionOwner)
-			{
-				float Percentage = Damage / EnergyDivider;
-				Attributes->IncreaseEnergy(Percentage);
-			}
 		}
 	}
 }

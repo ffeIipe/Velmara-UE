@@ -25,6 +25,7 @@ public:
 
 	virtual void BeginPlay() override;
 
+	UFUNCTION(BlueprintCallable)
 	void AttachMeshToSocket(USceneComponent* InParent, const FName& InSocketName);
 	
 	FORCEINLINE UBoxComponent* GetWeaponBox() const { return WeaponBox; }
@@ -39,6 +40,9 @@ public:
 	virtual void Unequip() override;
 	
 	virtual void EnableVisuals(bool bEnable) override;
+
+	UFUNCTION(BlueprintCallable)
+	void EnableSwordState(bool bEnable);
 	
 	virtual UPrimitiveComponent* GetCollisionComponent() override;
 

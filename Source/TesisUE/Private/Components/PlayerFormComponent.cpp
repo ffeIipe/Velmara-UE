@@ -10,7 +10,7 @@
 #include "Items/Weapons/Sword.h"
 #include "SpectralMode/SpectralObject.h"
 #include "EngineUtils.h"
-
+#include "Player/PlayerMain.h"
 #include "GameFramework/Character.h"
 
 //TODO: optimize the iterator that search for spectral objects, that in a future may cause an fps drop
@@ -68,9 +68,30 @@ void UPlayerFormComponent::ApplySpectralEffects()
 
     if (CharacterStateComponent->GetCurrentCharacterState().SpectralState == ECharacterSpectralStates::ECSS_EquippedPistol)
     {
-        OwningCharacter->PlayAnimMontage(EquipMontage, 1.f, FName("Equip"));
+        if (CharacterStateComponent->GetCurrentCharacterState().State == ECharacterStates::ECS_Unequipped)
+        {
+            OwningCharacter->PlayAnimMontage(EquipMontage, 1.f, FName("Equip"));
+        }
+        else
+        {
+            if (APlayerMain* PlayerRef = Cast<APlayerMain>(OwningCharacter))
+            {
+                PlayerRef->Equipping();
+            }
+
+            FTimerHandle TempTimerHandler;
+            GetWorld()->GetTimerManager().SetTimer(TempTimerHandler, this, &UPlayerFormComponent::PlayEquipMontage, 1.1f);   
+        }
+    }
+    else
+    {
+        if (APlayerMain* PlayerRef = Cast<APlayerMain>(OwningCharacter))
+        {
+            PlayerRef->PlayAnimMontage(PlayerRef->EquipSwordMontage, 1.f, FName("Unequip"));
+        }
     }
 
+    //---------------------------------------------------------
     //TODO: improve it with a subscription to an a static class
     for (TActorIterator<ASpectralObject> It(GetWorld()); It; ++It)
     {
@@ -78,6 +99,11 @@ void UPlayerFormComponent::ApplySpectralEffects()
 
         It->GetSpectralObjectComponent()->SetSpectralVisibility(true);
     }
+}
+
+void UPlayerFormComponent::PlayEquipMontage()
+{
+    OwningCharacter->PlayAnimMontage(EquipMontage, 1.f, FName("Equip"));
 }
 
 void UPlayerFormComponent::ApplyHumanEffects()
@@ -88,7 +114,24 @@ void UPlayerFormComponent::ApplyHumanEffects()
 
     if (CharacterStateComponent->GetCurrentCharacterState().SpectralState == ECharacterSpectralStates::ECSS_EquippedPistol)
     {
-        OwningCharacter->PlayAnimMontage(EquipMontage, 1.f, FName("Unequip"));
+        /*if (CharacterStateComponent->GetCurrentCharacterState().State == ECharacterStates::ECS_Unequipped)
+        {
+            OwningCharacter->PlayAnimMontage(EquipMontage, 1.f, FName("Unequip"));
+        }
+        else*/
+        {
+            OwningCharacter->PlayAnimMontage(EquipMontage, 1.f, FName("Unequip"));
+
+            FTimerHandle TempTimerHandler;
+            GetWorld()->GetTimerManager().SetTimer(TempTimerHandler, this, &UPlayerFormComponent::PlaySwordMontage, 1.1f);
+        }
+    }
+    else
+    {
+        if (APlayerMain* PlayerRef = Cast<APlayerMain>(OwningCharacter))
+        {
+            PlayerRef->PlayAnimMontage(PlayerRef->EquipSwordMontage, 1.f, FName("Equip"));
+        }
     }
 
     //TODO: improve it with a subscription to an a static class
@@ -97,6 +140,14 @@ void UPlayerFormComponent::ApplyHumanEffects()
         if (!It || !It->GetSpectralObjectComponent()) return;
         
         It->GetSpectralObjectComponent()->SetSpectralVisibility(false);
+    }
+}
+
+void UPlayerFormComponent::PlaySwordMontage()
+{
+    if (APlayerMain* PlayerRef = Cast<APlayerMain>(OwningCharacter))
+    {
+        PlayerRef->PlayAnimMontage(PlayerRef->EquipSwordMontage, 1.f, FName("Equip"));
     }
 }
 

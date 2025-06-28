@@ -49,7 +49,6 @@ void UEnemyPoolManager::EnsurePoolInitialized(TSubclassOf<AEnemy> EnemyClass, in
     }
 }
 
-
 AEnemy* UEnemyPoolManager::SpawnEnemyFromPool(TSubclassOf<AEnemy> EnemyClass, const FVector& Location, const FRotator& Rotation, AActor* Owner, APawn* Instigator)
 {
     if (!EnemyClass)

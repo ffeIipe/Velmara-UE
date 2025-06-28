@@ -105,7 +105,7 @@ void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 {
 	SetActorLocationAndRotation(Location, Rotation);
 	SetActorHiddenInGame(false);
-	SetActorTickEnabled(true);
+	//SetActorTickEnabled(true);
 
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
@@ -303,6 +303,8 @@ void AEnemy::BeginPlay()
 
 	PlayerControllerRef = Cast<APlayerHeroController>(UGameplayStatics::GetPlayerController(this, 0));
 
+	HandleEnemyCollision(ECR_Block);
+
 	GetDefaultParameters();
 
 	CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_EquippedSword);
@@ -458,6 +460,8 @@ void AEnemy::ResetEnemy()
 
 void AEnemy::GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived)
 {
+	DamageCauser = DamageCauserOf;
+
 	if (Attributes->IsAlive())
 	{
 		ReactToDamage(LastDamageType, ImpactPoint);
@@ -480,10 +484,33 @@ void AEnemy::GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPo
 			);
 		}
 
+		float Percentage = DamageReceived / EnergyDivider;
+		int32 Orbs = FMath::RoundToInt(Percentage / 5);
+
 		if (APlayerMain* PlayerRef = Cast<APlayerMain>(DamageCauser))
 		{
-			float Percentage = DamageReceived / EnergyDivider;
 			PlayerRef->Attributes->IncreaseEnergy(Percentage);
+
+			if (OnDamaged.IsBound())
+			{
+				for (int32 i = 0; i < Orbs; i++)
+				{
+					OnDamaged.Broadcast();
+				}
+			}
+		}
+
+		if (AEnemy* EnemyRef = Cast<AEnemy>(DamageCauser))
+		{
+			if (EnemyRef->PossessionOwner)
+			{
+				EnemyRef->Attributes->IncreaseEnergy(Percentage);
+
+				for (int32 i = 0; i < Orbs; i++)
+				{
+					OnDamaged.Broadcast();
+				}
+			}
 		}
 	}
 
@@ -804,7 +831,7 @@ void AEnemy::UnPossessAndKill()
 {
 	if (PossessionOwner && PossessionOwner->GetAttributes() && PossessionOwner->GetAttributes()->RequiresEnergy(UnpossesAndKillEnergyTax))
 	{
-		float NewHealth = PossessionOwner->GetAttributes()->GetHealth();
+		float NewHealth = PossessionOwner->GetAttributes()->GetHealth() + 15.f;
 		PossessionOwner->Attributes->SetHealth(NewHealth + 15.f);
 
 		UnPossessBase();
@@ -818,7 +845,19 @@ void AEnemy::UnPossessAndKill()
 		StopAnimMontage();
 		PlayAnimMontage(DeathMontage, 1.f, FName("UnpossessDeath"));
 
+		DamageCauserOf = PossessionOwner;
+
 		Die(DamageCauserOf);
+
+		float Orbs = FMath::RoundToInt(NewHealth / 10);
+
+		if (OnDead.IsBound())
+		{
+			for (int32 i = 0; i < Orbs; i++)
+			{
+				OnDead.Broadcast();
+			}
+		}
 
 		if (IsValid(PossessionOwner))
 		{
