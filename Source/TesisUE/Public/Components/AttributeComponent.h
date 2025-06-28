@@ -32,6 +32,9 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Health | Setters")
 	FORCEINLINE void SetHealth(float Amount) { Health = Amount; };
+	
+	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Health | Setters")
+	FORCEINLINE void IncreaseHealth(float Amount) { Health += Amount; };
 
 	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Health")
 	bool IsAlive();

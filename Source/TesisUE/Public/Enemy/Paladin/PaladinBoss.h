@@ -81,6 +81,4 @@ private:
 	void HandleMinionDeactivated(AEnemy* DeactivatedMinion);	
 
 	void HandleFloodDamage();
-
-	class UBlackboardComponent* BBComponent;
 };

@@ -57,11 +57,6 @@ bool ASpectre::CanBeFinished_Implementation()
 	return false; //no puede ser finisheada esta entidad
 }
 
-void ASpectre::GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived)
-{
-	Super::GetHit_Implementation(DamageCauser, ImpactPoint, DamageType, DamageReceived);
-}
-
 void ASpectre::OnPossessed(APlayerMain* NewOwner, float OwnerEnergy)
 {
 	Super::OnPossessed(NewOwner, OwnerEnergy);

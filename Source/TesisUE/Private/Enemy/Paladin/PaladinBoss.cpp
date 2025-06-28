@@ -53,21 +53,6 @@ void APaladinBoss::BeginPlay()
 			}
 		);
 	}
-
-	BBComponent = Cast<UBlackboardComponent>(AIController->GetBlackboardComponent());
-
-	//if (MinionToSpawnClass && InitialMinionPoolSize > 0)
-	//{
-	//	UWorld* World = GetWorld();
-	//	if (World)
-	//	{
-	//		UEnemyPoolManager* PoolManager = World->GetSubsystem<UEnemyPoolManager>();
-	//		if (PoolManager)
-	//		{
-	//			PoolManager->EnsurePoolInitialized(MinionToSpawnClass, InitialMinionPoolSize);
-	//		}
-	//	}
-	//}
 }
 
 float APaladinBoss::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)

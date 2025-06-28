@@ -254,6 +254,14 @@ void AEnemy::Die(AActor* DamageCauser)
 		PromptWidgetComponent->GetPromptWidgetComponent()->EnablePromptWidget(false);
 	}
 
+	if (BBComponent)
+	{
+		BBComponent->ClearValue(FName("TargetActor"));
+		BBComponent->ClearValue(FName("CanSeePlayer"));
+		BBComponent->ClearValue(FName("DistToTarget"));
+		BBComponent->ClearValue(FName("DamageTakenRecently"));
+	}
+
 	DisableAI();
 	HandleEnemyCollision(ECR_Ignore);
 
@@ -342,20 +350,30 @@ void AEnemy::BeginPlay()
 	{
 		PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
 	}
-
-	AAIController* AIControllerInstance = Cast<AAIController>(GetController());
-	if (AIControllerInstance)
+	
+	if (AAIController* AIControllerInstance = Cast<AAIController>(GetController()))
 	{
 		AIController = AIControllerInstance;
 		EnemyAIController = Cast<AEnemyAIController>(AIController);
 	}
 
+	if (UBlackboardComponent* BBComponentInstance = Cast<UBlackboardComponent>(AIController->GetBlackboardComponent()))
+	{
+		BBComponent = BBComponentInstance;
+	}
+	else GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Cast to BBComponent failed..."));
+
 	if (GetMesh())
 	{
-		for (int32 i = 0; i < GetMesh()->GetMaterials().Num(); ++i)
+		TArray<UMaterialInterface*> TempArray = GetMesh()->GetMaterials();
+
+		for (int32 MatIndex = 0; MatIndex < TempArray.Num(); MatIndex++)
 		{
-			DissolveMaterials.Add(UMaterialInstanceDynamic::Create(GetMesh()->GetMaterial(i), this));
-			GetMesh()->SetMaterial(i, DissolveMaterials[i]);
+			UMaterialInterface* CurrentMaterial = GetMesh()->GetMaterial(MatIndex);
+			UMaterialInstanceDynamic* DynamicMaterial = Cast<UMaterialInstanceDynamic>(CurrentMaterial);
+
+			DissolveMaterials.Add(UMaterialInstanceDynamic::Create(CurrentMaterial, this));
+			GetMesh()->SetMaterial(MatIndex, DissolveMaterials[MatIndex]);
 		}
 	}
 }
@@ -485,7 +503,7 @@ void AEnemy::GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPo
 		}
 
 		float Percentage = DamageReceived / EnergyDivider;
-		int32 Orbs = FMath::RoundToInt(Percentage / 5);
+		int32 Orbs = FMath::RoundToInt(Percentage) / 5;
 
 		if (APlayerMain* PlayerRef = Cast<APlayerMain>(DamageCauser))
 		{
@@ -831,8 +849,7 @@ void AEnemy::UnPossessAndKill()
 {
 	if (PossessionOwner && PossessionOwner->GetAttributes() && PossessionOwner->GetAttributes()->RequiresEnergy(UnpossesAndKillEnergyTax))
 	{
-		float NewHealth = PossessionOwner->GetAttributes()->GetHealth() + 15.f;
-		PossessionOwner->Attributes->SetHealth(NewHealth + 15.f);
+		PossessionOwner->Attributes->IncreaseHealth(15.f);
 
 		UnPossessBase();
 
@@ -849,7 +866,7 @@ void AEnemy::UnPossessAndKill()
 
 		Die(DamageCauserOf);
 
-		float Orbs = FMath::RoundToInt(NewHealth / 10);
+		float Orbs = FMath::RoundToInt(15.f) / 5;
 
 		if (OnDead.IsBound())
 		{

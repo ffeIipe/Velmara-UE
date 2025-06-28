@@ -44,10 +44,8 @@ void UOrbsPoolManager::EnsurePoolInitialized(TSubclassOf<AActor> OrbsClass, int3
             {
                 if (NewItem->GetClass()->ImplementsInterface(UOrbPoolingInterface::StaticClass()))
                 {
-                    GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, FString("Succesful cast to OrbInterface"));
                     IOrbPoolingInterface::Execute_DeactivateOrb(NewItem);
                 }
-                else GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Failed to cast to OrbInterface"));
 
                 Pool->PooledItems.Add(NewItem);
             }
@@ -95,14 +93,10 @@ AActor* UOrbsPoolManager::SpawnOrbFromPool(TSubclassOf<AActor> OrbsClass, const 
 
 void UOrbsPoolManager::ReturnOrbToPool(AActor* Orb)
 {
-    if (!Orb)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("ReturnEnemyToPool: Enemy is null."));
-        return;
-    }
+    if (!Orb) return;
 
-    TSubclassOf<AItem> EnemyClass = Orb->GetClass();
-    FOrbsPool* Pool = GetOrCreatePool(EnemyClass);
+    TSubclassOf<AItem> ItemClass = Orb->GetClass();
+    FOrbsPool* Pool = GetOrCreatePool(ItemClass);
 
     if (Pool)
     {

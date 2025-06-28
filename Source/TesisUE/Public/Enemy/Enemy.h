@@ -312,6 +312,8 @@ protected:
 
 	class APlayerHeroController* PlayerControllerRef;
 
+	class UBlackboardComponent* BBComponent;
+
 private:
 	UPROPERTY()
 	FTimerHandle HitFlashTimerHandle;
