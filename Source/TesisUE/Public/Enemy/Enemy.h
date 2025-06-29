@@ -152,6 +152,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Save System")
 	FName GetUniqueSaveID() const { return UniqueSaveID; }
 
+	UFUNCTION(BlueprintCallable)
 	APlayerMain* GetPossessionOwner() { return PossessionOwner; }
 
 protected:
