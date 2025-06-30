@@ -54,6 +54,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Attacks | Aura")
 	float AuraRadius = 4.f;
 
+	void Die(AActor* DamageCauser) override;
+
 private:
 	UPROPERTY(EditAnywhere, Category = "Attacks | Spawning")
 	TSubclassOf<AEnemy> MinionToSpawnClass;

@@ -43,7 +43,7 @@ void APaladinBoss::BeginPlay()
 					if (UBlackboardComponent* BBComponent = AIController->GetBlackboardComponent())
 					{
 						BBComponent->SetValueAsBool(FName("IsShielded"), false);
-						GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::White, FString("IS NOT SHIELDED ANYMORE"));
+						/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::White, FString("IS NOT SHIELDED ANYMORE"));*/
 					}
 				}
 
@@ -53,6 +53,19 @@ void APaladinBoss::BeginPlay()
 			}
 		);
 	}
+
+	if (!BBComponent)
+	{
+		if (AIController)
+		{
+			BBComponent = Cast<UBlackboardComponent>(AIController->GetBlackboardComponent());
+		}
+		else
+		{
+			AIController = Cast<AAIController>(GetController());
+			BBComponent = Cast<UBlackboardComponent>(AIController->GetBlackboardComponent());
+		}
+	}
 }
 
 float APaladinBoss::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
@@ -61,7 +74,7 @@ float APaladinBoss::TakeDamage(float DamageAmount, FDamageEvent const& DamageEve
 	
 	if (PlayerControllerRef)
 	{
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Orange, FString("Valid Player Hero Controller..."));
+		/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Orange, FString("Valid Player Hero Controller..."));*/
 
 		PlayerControllerRef->HandleBossHealth(Attributes->GetHealthPercent(), Attributes->GetShieldHealthPercent());
 	}
@@ -71,12 +84,45 @@ float APaladinBoss::TakeDamage(float DamageAmount, FDamageEvent const& DamageEve
 
 void APaladinBoss::GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived)
 {
-	if (BBComponent->GetValueAsBool(FName("CanReceiveDamage")))
+	if (BBComponent)
 	{
-		Super::GetHit_Implementation(DamageCauser, ImpactPoint, DamageType, DamageReceived);
+		if (BBComponent->GetValueAsBool(FName("CanReceiveDamage")))
+		{
+			Super::GetHit_Implementation(DamageCauser, ImpactPoint, DamageType, DamageReceived);
 
-		float DamageAccumulated = BBComponent->GetValueAsFloat(FName("DamageAccumulated"));
-		BBComponent->SetValueAsFloat(FName("DamageAccumulated"), DamageAccumulated + DamageReceived);
+			float DamageAccumulated = BBComponent->GetValueAsFloat(FName("DamageAccumulated"));
+			BBComponent->SetValueAsFloat(FName("DamageAccumulated"), DamageAccumulated + DamageReceived);
+		}
+	}
+	else
+	{
+		if (AIController)
+		{
+			BBComponent = Cast<UBlackboardComponent>(AIController->GetBlackboardComponent());
+		}
+		else
+		{
+			AIController = Cast<AAIController>(GetController());
+			BBComponent = Cast<UBlackboardComponent>(AIController->GetBlackboardComponent());
+		}
+
+		if (BBComponent->GetValueAsBool(FName("CanReceiveDamage")))
+		{
+			Super::GetHit_Implementation(DamageCauser, ImpactPoint, DamageType, DamageReceived);
+
+			float DamageAccumulated = BBComponent->GetValueAsFloat(FName("DamageAccumulated"));
+			BBComponent->SetValueAsFloat(FName("DamageAccumulated"), DamageAccumulated + DamageReceived);
+		}
+	}
+}
+
+void APaladinBoss::Die(AActor* DamageCauser)
+{
+	Super::Die(DamageCauser);
+	
+	if (OnDead.IsBound())
+	{
+		OnDead.Broadcast();
 	}
 }
 
@@ -90,7 +136,7 @@ void APaladinBoss::TryToInvoke()
 
 bool APaladinBoss::CanInvoke()
 {
-	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Magenta, FString::SanitizeFloat(Minions.Num()));
+	/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Magenta, FString::SanitizeFloat(Minions.Num()));*/
 	return Minions.Num() <= 0;
 }
 
@@ -117,10 +163,10 @@ void APaladinBoss::Invoke()
 
 				Minions.Add(EnemyFromPool);
 			}
-			else
+			/*else
 			{
 				GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Failed to spawn minion from pool!"));
-			}
+			}*/
 		}
 	}
 }

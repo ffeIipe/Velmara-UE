@@ -126,7 +126,7 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 			{
 				float TempDamage = CalculateDamage();
 
-				GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Cyan, FString::SanitizeFloat(Damage));
+				/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Cyan, FString::SanitizeFloat(Damage));*/
 				HitInterface->Execute_GetHit(HitActor, GetOwner(), Hit.ImpactPoint, UDamageType::StaticClass(), Damage);
 
 				if (HitInterface->Execute_IsLaunchable(HitActor, Cast<ACharacter>(Owner)))

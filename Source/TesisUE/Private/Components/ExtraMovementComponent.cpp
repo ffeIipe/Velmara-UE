@@ -114,7 +114,7 @@ void UExtraMovementComponent::UpdateBuffer(float Alpha, float BufferDistance)
 
 	FVector TargetLocation = FMath::Lerp(CurrentLocation, CurrentLocation + (ForwardVector * BufferDistance), Alpha);
 
-	GetOwner()->SetActorLocation(TargetLocation, false);
+	GetOwner()->SetActorLocation(TargetLocation, true);
 }
 
 void UExtraMovementComponent::Input_DoubleJump()

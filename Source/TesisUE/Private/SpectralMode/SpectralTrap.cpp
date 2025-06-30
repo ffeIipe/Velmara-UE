@@ -70,7 +70,7 @@ void ASpectralTrap::DealContinuousDamage()
 {
 	if (Player)
 	{
-		GEngine->AddOnScreenDebugMessage(678, 0.5f, FColor::Purple, FString("Applying continuous damage..."));
+		/*GEngine->AddOnScreenDebugMessage(678, 0.5f, FColor::Purple, FString("Applying continuous damage..."));*/
 
 		UGameplayStatics::ApplyDamage(Player, Damage, nullptr, this, USpectralTrapDamageType::StaticClass());
 

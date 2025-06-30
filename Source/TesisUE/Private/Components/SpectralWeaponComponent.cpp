@@ -223,7 +223,7 @@ void USpectralWeaponComponent::Fire(bool bIsPrimary)
                         );
                     }
 
-                    GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Orange, FString(HitActor->GetName()));
+                    /*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Orange, FString(HitActor->GetName()));*/
                 }
                 else
                 {

@@ -28,7 +28,7 @@ void USpectralTrapComponent::OnSphereBeginOverlap(UPrimitiveComponent* Overlappe
 
 	if (OverlappingPlayer)
 	{
-		GEngine->AddOnScreenDebugMessage(845, 1.f, FColor::Green, FString("Overlapping Player..."));
+		/*GEngine->AddOnScreenDebugMessage(845, 1.f, FColor::Green, FString("Overlapping Player..."));*/
 
 		GetWorld()->GetTimerManager().SetTimer(
 			ContinuousDamageTimerHandle,
@@ -48,7 +48,7 @@ void USpectralTrapComponent::OnSphereEndOverlap(UPrimitiveComponent* OverlappedC
 
 	if (OverlappingPlayer)
 	{
-		GEngine->AddOnScreenDebugMessage(845, 1.f, FColor::Red, FString("End Overlapping Player..."));
+		/*GEngine->AddOnScreenDebugMessage(845, 1.f, FColor::Red, FString("End Overlapping Player..."));*/
 
 		GetWorld()->GetTimerManager().ClearTimer(ContinuousDamageTimerHandle);
 
@@ -61,7 +61,7 @@ void USpectralTrapComponent::DealContinuousDamage()
 {
 	if (OverlappingPlayer)
 	{
-		GEngine->AddOnScreenDebugMessage(678, 0.5f, FColor::Purple, FString("Applying continuous damage..."));
+		/*GEngine->AddOnScreenDebugMessage(678, 0.5f, FColor::Purple, FString("Applying continuous damage..."));*/
 
 		UGameplayStatics::ApplyDamage(OverlappingPlayer, Damage, Instigator, GetOwner(), USpectralTrapDamageType::StaticClass());
 

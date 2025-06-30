@@ -32,6 +32,14 @@ void APlayerMainHUD::SetPaladinBossHealthBar()
     else return;
 }
 
+void APlayerMainHUD::RemovePaladinBossHealthBar()
+{
+    if (PaladinBossHealthBarInstance)
+    {
+        PaladinBossHealthBarInstance->RemoveFromViewport();
+    }
+}
+
 void APlayerMainHUD::TogglePaladinUI(bool Bool)
 {
     if (Bool)

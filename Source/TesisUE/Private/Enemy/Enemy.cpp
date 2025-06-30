@@ -165,7 +165,7 @@ void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 
 void AEnemy::DeactivateEnemy()
 {
-	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::White, FString("Deactivating " + this->GetName()));
+	/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::White, FString("Deactivating " + this->GetName()));*/
 	if (PossessionOwner)
 	{
 		APlayerMain* PlayerOwnerRef = Cast<APlayerMain>(PossessionOwner);
@@ -261,6 +261,26 @@ void AEnemy::Die(AActor* DamageCauser)
 		BBComponent->ClearValue(FName("DistToTarget"));
 		BBComponent->ClearValue(FName("DamageTakenRecently"));
 	}
+	else
+	{
+		if (AIController)
+		{
+			BBComponent = Cast<UBlackboardComponent>(AIController->GetBlackboardComponent());
+		}
+		else
+		{
+			AIController = Cast<AAIController>(GetController());
+			BBComponent = Cast<UBlackboardComponent>(AIController->GetBlackboardComponent());
+		}
+
+		if (BBComponent)
+		{
+			BBComponent->ClearValue(FName("TargetActor"));
+			BBComponent->ClearValue(FName("CanSeePlayer"));
+			BBComponent->ClearValue(FName("DistToTarget"));
+			BBComponent->ClearValue(FName("DamageTakenRecently"));
+		}
+	}
 
 	DisableAI();
 	HandleEnemyCollision(ECR_Ignore);
@@ -282,7 +302,7 @@ void AEnemy::PoolableDie(AActor* DamageCauser)
 
 void AEnemy::RequestReturnToPool()
 {
-	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Purple, FString("Request return to pool..."));
+	/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Purple, FString("Request return to pool..."));*/
 
 	DeactivateEnemy();
 
@@ -361,7 +381,7 @@ void AEnemy::BeginPlay()
 	{
 		BBComponent = BBComponentInstance;
 	}
-	else GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Cast to BBComponent failed..."));
+	/*else GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Cast to BBComponent failed..."));*/
 
 	if (GetMesh())
 	{

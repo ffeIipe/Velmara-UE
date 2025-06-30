@@ -27,6 +27,9 @@ protected:
 public:
 	void SetPaladinBossHealthBar();
 
+	UFUNCTION(BlueprintCallable)
+	void RemovePaladinBossHealthBar();
+
 	void TogglePaladinUI(bool Bool);
 
 	UFUNCTION(BlueprintCallable)

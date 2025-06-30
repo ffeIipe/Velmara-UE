@@ -93,6 +93,19 @@ void APaladin::BeginPlay()
 			}
 		);
 	}
+
+	if (!BBComponent)
+	{
+		if (AIController)
+		{
+			BBComponent = Cast<UBlackboardComponent>(AIController->GetBlackboardComponent());
+		}
+		else
+		{
+			AIController = Cast<AAIController>(GetController());
+			BBComponent = Cast<UBlackboardComponent>(AIController->GetBlackboardComponent());
+		}
+	}
 }
 
 void APaladin::ActivateEnemy(const FVector& Location, const FRotator& Rotation)

@@ -534,7 +534,7 @@ void APlayerMain::Equipping(bool bIsSwordBeingEquipped)
 
 	if (ActualForm == ECharacterForm::ECF_Human) //si estoy en humano
 	{
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Green, FString("Human form"));
+		/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Green, FString("Human form"));*/
 
 		if (bIsSwordBeingEquipped) //y estoy equipando una espada
 		{
@@ -547,7 +547,7 @@ void APlayerMain::Equipping(bool bIsSwordBeingEquipped)
 				}
 				else
 				{
-					GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Red, FString("Equipping sword"));
+					/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Red, FString("Equipping sword"));*/
 
 					PlayAnimMontage(EquipSwordMontage, 1.f, FName("Equip"));
 					CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_EquippingSword);
@@ -560,14 +560,14 @@ void APlayerMain::Equipping(bool bIsSwordBeingEquipped)
 					PlayAnimMontage(EquipPistolMontage, 1.f, FName("Unequip"));
 					CharacterStateComponent->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
 				}
-				else GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Cyan, FString("No equipped item, so none animation will be played..."));
+				/*else GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Cyan, FString("No equipped item, so none animation will be played..."));*/
 			}
 		}
 		else //o estoy equipando una pistola
 		{
 			if (!InventoryComponent->GetEquippedItem()) //si no tengo espada
 			{
-				GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Orange, FString("Only pick pistol"));
+				/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Orange, FString("Only pick pistol"));*/
 
 				PlayAnimMontage(EquipPistolMontage, 1.f, FName("Unequip"));
 				CharacterStateComponent->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
@@ -575,7 +575,7 @@ void APlayerMain::Equipping(bool bIsSwordBeingEquipped)
 			else
 			{
 				//si tengo espada equipada
-				GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Green, FString("Unequip sword and equip pistol"));
+				/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Green, FString("Unequip sword and equip pistol"));*/
 
 				PlayAnimMontage(EquipSwordMontage, 1.f, FName("PickPistol"));
 				CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_EquippingSword);
@@ -584,7 +584,7 @@ void APlayerMain::Equipping(bool bIsSwordBeingEquipped)
 	}
 	else //si no estoy en humano
 	{
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Purple, FString("Spectral form"));
+		/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Purple, FString("Spectral form"));*/
 
 		if (!bIsSwordBeingEquipped)
 		{
@@ -594,14 +594,14 @@ void APlayerMain::Equipping(bool bIsSwordBeingEquipped)
 				{
 					if (CharacterStateComponent->GetCurrentCharacterState().State == ECharacterStates::ECS_EquippedSword)
 					{
-						GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Cyan, FString("Has sword equipped"));
+						/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Cyan, FString("Has sword equipped"));*/
 
 						PlayAnimMontage(EquipSwordMontage, 1.f, FName("SwitchToPistol"));
 						CharacterStateComponent->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
 					}
 					else
 					{
-						GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Blue, FString("Sword it's on the back"));
+						/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Blue, FString("Sword it's on the back"));*/
 
 						PlayAnimMontage(EquipPistolMontage, 1.f, FName("Equip"));
 						CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_Unequipped);
@@ -618,7 +618,7 @@ void APlayerMain::Equipping(bool bIsSwordBeingEquipped)
 			{
 				if (SpectralWeaponComponent->bWasInitialized)
 				{
-					GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Blue, FString("Sword not equipped"));
+					/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Blue, FString("Sword not equipped"));*/
 
 					PlayAnimMontage(EquipPistolMontage, 1.f, FName("Equip"));
 					CharacterStateComponent->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);

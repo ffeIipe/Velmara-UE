@@ -34,7 +34,7 @@ void ATutorialTrigger::BeginPlay()
 
 void ATutorialTrigger::EnableTutorial()
 {
-    if (Player && !bHasBeenActivated)
+    if (!bHasBeenActivated)
     {
         APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
 
