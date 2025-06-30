@@ -19,8 +19,13 @@ void AResetPlayer::BeginPlay()
 
 void AResetPlayer::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-    if (APawn* OverlappingActor = Cast<APawn>(OtherActor)) // cuando ponés AActor acá como filtro explota, por favor dejar en APawn :)
+    if (ACharacter* OverlappingActor = Cast<ACharacter>(OtherActor)) // cuando ponés AActor acá como filtro explota, por favor dejar en APawn :)
     {
+        if (APlayerMain* PlayerRef = Cast<APlayerMain>(OverlappingActor))
+        {
+            PlayerRef->ToggleForm();
+        }
+
         APlayerController* PlayerController = UGameplayStatics::GetPlayerController(this, 0);
 
         if (IMementoEntity* MementoEntity = Cast<IMementoEntity>(PlayerController->GetPawn()))
