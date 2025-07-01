@@ -34,7 +34,7 @@ void APlayerMainHUD::SetPaladinBossHealthBar()
 
 void APlayerMainHUD::RemovePaladinBossHealthBar()
 {
-    if (PaladinBossHealthBarInstance)
+    if (PaladinBossHealthBarInstance->IsInViewport())
     {
         PaladinBossHealthBarInstance->RemoveFromViewport();
     }
