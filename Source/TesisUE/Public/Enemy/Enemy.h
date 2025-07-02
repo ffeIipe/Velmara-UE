@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Character.h"
+#include "Entities/Entity.h"
 #include "Interfaces/HitInterface.h"
 #include "Interfaces/MementoEntity.h"
 #include "Interfaces/CharacterState.h"
@@ -46,11 +46,9 @@ enum class EEnemyState : uint8
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEnemyDeactivated, AEnemy*, DeactivatedEnemy);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEnemyDead);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEnemyDamaged);
 
 UCLASS()
-class TESISUE_API AEnemy : public ACharacter, public IHitInterface, public IMementoEntity, public ICharacterState
+class TESISUE_API AEnemy : public AEntity
 {
 	GENERATED_BODY()
 
@@ -63,28 +61,24 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pooling")
 	virtual void DeactivateEnemy();
 
-	virtual void PoolableDie(AActor* DamageCauser);
+	virtual void PoolableDie(/*AActor* DamageCauser*/);
 
 	UPROPERTY(BlueprintAssignable, Category = "Pooling")
 	FOnEnemyDeactivated OnDeactivated;
 	
 	UPROPERTY(BlueprintAssignable)
-	FOnEnemyDead OnDead;
+	FOnEntityDead OnDead;
 
 	UPROPERTY(BlueprintAssignable)
-	FOnEnemyDamaged OnDamaged;
+	FOnEntityDamaged OnDamaged;
 
-	virtual float TakeDamage(
-		float DamageAmount,
-		struct FDamageEvent const& DamageEvent,
-		class AController* EventInstigator,
-		AActor* DamageCauser) override;
-
-	virtual void Die(AActor* DamageCauser);
+	void Die(/*AActor* DamageCauser*/) override;
 
 	bool bWasPossessed = false;
 
 	virtual void GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived) override;
+
+	void DropOrbs(const float DamageReceived, AActor* DamageCauser);
 
 	virtual void GetFinished_Implementation() override;
 
@@ -92,36 +86,34 @@ public:
 
 	virtual bool IsLaunchable_Implementation(ACharacter* Character) override;
 
-	virtual void LaunchUp_Implementation(const FVector& InstigatorLocation) override;
+	//virtual void LaunchUp_Implementation(const FVector& InstigatorLocation) override;
 
-	virtual void ShieldHit_Implementation();
+	//virtual void ShieldHit_Implementation() {};
 
-	virtual UMementoComponent* GetMementoComponent_Implementation() override;
-
-	virtual UCharacterStateComponent* GetCharacterStateComponent_Implementation() override;
+	void NotifyDamageTakenToBlackboard(AActor* DamageCauser);
 
 	FORCEINLINE EEnemyType GetEnemyType() const { return EnemyType; }
 
 	FORCEINLINE EEnemyState GetEnemyState() const { return EnemyState; }
 
 	UFUNCTION(BlueprintCallable, Category = "Enemy|Combat")
-	FORCEINLINE AActor* GetDamageCauserActor() const { return DamageCauserOf; }
+	FORCEINLINE AActor* GetDamageCauserActor() const { return LastDamageCauser; }
 
 	void SetEnemyState(EEnemyState NewState);
-
-	UPROPERTY(VisibleAnywhere);
-	USpringArmComponent* SpringArm;
 
 	UFUNCTION(BlueprintCallable)
 	void DisableAI();
 
 	UFUNCTION(BlueprintCallable)
 	void EnableAI();
+
+	void NotifyThreat(AActor* ThreatActor);
+
+	UFUNCTION(BlueprintCallable, Category = "Save System")
+	FName GetUniqueSaveID() const { return UniqueSaveID; }
 	
-	USpringArmComponent* GetSpringArm() { return SpringArm; };
-	
-	UFUNCTION()
-	virtual void OnPossessed(APlayerMain* NewOwner, float OwnerEnergy);
+	/*UFUNCTION()
+	virtual void OnPossessed(AEntity* NewOwner, float OwnerEnergy);
 	
 	UFUNCTION()
 	virtual void UnPossessBase();
@@ -130,30 +122,10 @@ public:
 	void UnPossess();
 
 	UFUNCTION()
-	void UnPossessAndKill();
-
-	void NotifyThreat(AActor* ThreatActor);
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components | AttributesComponent");
-	UAttributeComponent* Attributes;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components | MementoComponent");
-	UMementoComponent* Memento;
+	void UnPossessAndKill();*/
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components | PromptWidgetComponent")
 	UPromptWidgetComponent* PromptWidgetComponent;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components | CharacterStateComponent")
-	UCharacterStateComponent* CharacterStateComponent;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components | ExtraMovementComponent")
-	class UExtraMovementComponent* ExtraMovementComponent;
-
-	UFUNCTION(BlueprintCallable, Category = "Save System")
-	FName GetUniqueSaveID() const { return UniqueSaveID; }
-
-	UFUNCTION(BlueprintCallable)
-	APlayerMain* GetPossessionOwner() { return PossessionOwner; }
 
 protected:
 	UPROPERTY(EditAnywhere)
@@ -161,18 +133,17 @@ protected:
 
 	TArray<AEnemy*> GenerateSphereOverlapToDetectOtherEnemies(const FVector& Origin, AActor* HitEnemyToExclude);
 
-	void NotifyDamageTakenToBlackboard(AActor* DamageCauser);
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components | Combat")
-	UCombatComponent* CombatComponent;
-
 	virtual void BeginPlay() override;
+
+	void EnableFinisherWidget();
 
 	FTimerHandle ReturnToPoolTimerHandle;
 
 public:
 	UFUNCTION()
 	void RequestReturnToPool();
+
+	AAIController* GetAIController() { return AIController; };
 
 protected:
 	ECollisionEnabled::Type InitialMeshCollisionEnabled;
@@ -189,9 +160,6 @@ protected:
 	bool bDefaultOrientRotationToMovement;
 	bool bDefaultUseControllerDesiredRotation;
 	bool bOriginalUseControllerRotationYaw;
-
-	UFUNCTION(BlueprintCallable)
-	virtual void DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage* HitReactAnimMontage, const float DamageReceived);
 
 	UPROPERTY(EditAnywhere, Category = "Energy | Energy Drop");
 	float MinEnergy = 1.f;
@@ -213,32 +181,20 @@ protected:
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Montages");
 	UAnimMontage* HitReactMontage;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Montages");
-	UAnimMontage* DeathMontage;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Montages");
 	UAnimMontage* FinisherDeathMontage;
 
-	UPROPERTY(EditAnywhere, Category = "Sounds");
-	USoundBase* HitSound;
-	
-	UPROPERTY(EditAnywhere, Category = "Sounds");
-	USoundBase* ErrorSFX;
-
-	UPROPERTY(EditAnywhere, Category = "Visual Effects");
-	UNiagaraSystem* NiagaraSystem;
-
-	UPROPERTY(EditAnywhere, Category = "Visual Effects | Dissolve")
+	UPROPERTY(EditAnywhere, Category = "Effects | Dissolve")
 	TArray<UMaterialInstanceDynamic*> DissolveMaterials;
 
 	UPROPERTY(VisibleAnywhere)
 	class UTimelineComponent* DissolveTimeline;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Visual Effects | Dissolve")
+	UPROPERTY(EditDefaultsOnly, Category = "Effects | Dissolve")
 	class UCurveFloat* DissolveCurve;
 	
-	UPROPERTY(EditDefaultsOnly, Category = "Visual Effects | Dissolve")
+	UPROPERTY(EditDefaultsOnly, Category = "Effects | Dissolve")
 	UNiagaraComponent* DissolveParticleComponent;
 
 	UFUNCTION()
@@ -249,37 +205,6 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "EnemyState")
 	EEnemyState EnemyState;
-
-	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
-	UInputAction* MoveAction;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
-	UInputAction* LookAction;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
-	UInputAction* JumpAction;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
-	UInputAction* UnPossessAction;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
-	UInputAction* UnPossessAndKillAction;
-
-	virtual void Move(const FInputActionValue& Value);
-	
-	virtual void Look(const FInputActionValue& Value);
-
-	virtual void Attack(const FInputActionValue& Value) {};
-
-	virtual void Jump() override;
-
-	virtual void Landed(const FHitResult& Hit) override;
-
-	virtual void Dodge(const FInputActionValue& Value);
-
-	APlayerMain* PossessionOwner = nullptr;
 	
 	UPROPERTY(VisibleAnywhere)
 	bool isLaunched = false;
@@ -295,9 +220,6 @@ protected:
 
 	FName SelectRandomDieAnim();
 
-	UPROPERTY()
-	AActor* DamageCauserOf;
-
 	UPROPERTY(EditAnywhere)
 	UBehaviorTree* BTAsset;
 
@@ -309,9 +231,8 @@ protected:
 	class AEnemyAIController* EnemyAIController;
 
 	virtual void GetDefaultParameters();
-	virtual void SetOnPossessedParameters();
 
-	class APlayerHeroController* PlayerControllerRef;
+	virtual void SetOnPossessedParameters();
 
 	class UBlackboardComponent* BBComponent;
 

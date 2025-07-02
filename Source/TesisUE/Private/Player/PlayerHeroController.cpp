@@ -143,14 +143,14 @@ void APlayerHeroController::ToggleInput(bool Bool)
     {
         if (APlayerMain* PlayerRef = Cast<APlayerMain>(GetPawn()))
         {
-            PlayerRef->CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Nothing);
+            PlayerRef->GetCharacterStateComponent()->SetCharacterAction(ECharacterActions::ECA_Nothing);
         }
     }
     else
     {
         if (APlayerMain* PlayerRef = Cast<APlayerMain>(GetPawn()))
         {
-            PlayerRef->CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Stun);
+            PlayerRef->GetCharacterStateComponent()->SetCharacterAction(ECharacterActions::ECA_Stun);
         }
     }
 }

@@ -34,7 +34,7 @@ APaladin::APaladin()
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_GameTraceChannel2, ECR_Ignore);
 	GetMesh()->SetCollisionResponseToChannel(ECC_GameTraceChannel2, ECR_Ignore);
 
-	Attributes->AttachShield(GetMesh(), FName("LeftHandSocket"));
+	GetAttributeComponent()->AttachShield(GetMesh(), FName("LeftHandSocket"));
 
 	SwordMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SwordMesh"));
 	
@@ -61,7 +61,7 @@ APaladin::APaladin()
 
 bool APaladin::IsLaunchable_Implementation(ACharacter* DamageCauser)
 {
-	return !Attributes->IsShielded();
+	return !GetAttributeComponent()->IsShielded();
 }
 
 void APaladin::BeginPlay()
@@ -70,9 +70,11 @@ void APaladin::BeginPlay()
 	
 	 SwordCollider->OnComponentBeginOverlap.AddDynamic(this, &APaladin::OnSwordOverlap);
 
-	if (Attributes)
+	 OnShieldTakeDamage.AddDynamic(this, &APaladin::ShieldHit);
+
+	if (GetAttributeComponent())
 	{
-		Attributes->OnDettachShield.AddLambda(
+		GetAttributeComponent()->OnDettachShield.AddLambda(
 			[this]
 			{
 				if (AAIController* AIController = Cast<AAIController>(GetController()))
@@ -85,11 +87,10 @@ void APaladin::BeginPlay()
 			}
 		);
 
-		//pongo un lambda porque si pongo la funcion die me va a pedir el dmg causer jeje
-		Attributes->OnEntityDead.AddLambda(
+		GetAttributeComponent()->OnEntityDead.AddLambda(
 			[this]
 			{
-				Die(DamageCauserOf);
+				Die();
 			}
 		);
 	}
@@ -112,9 +113,9 @@ void APaladin::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 {
 	Super::ActivateEnemy(Location, Rotation);
 
-	if (CharacterStateComponent)
+	if (GetCharacterStateComponent())
 	{
-		CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_EquippedSword); // Set Paladin's default active state
+		GetCharacterStateComponent()->SetCharacterState(ECharacterStates::ECS_EquippedSword); // Set Paladin's default active state
 	}
 
 	SetWeaponCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -127,9 +128,9 @@ void APaladin::DeactivateEnemy()
 	Super::DeactivateEnemy();
 }
 
-void APaladin::Die(AActor* DamageCauser)
+void APaladin::Die()
 {
-	Super::Die(DamageCauser);
+	Super::Die();
 
 	if (GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Flying || GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling)
 	{
@@ -137,29 +138,12 @@ void APaladin::Die(AActor* DamageCauser)
 		LaunchCharacter(FVector(0.f, 0.f, -300.f), true, true);
 	}
 	
-	TArray<AEnemy*> NearbyEnemies = GenerateSphereOverlapToDetectOtherEnemies(GetActorLocation(), this);
-	for (AEnemy* NearbyEnemy : NearbyEnemies)
-	{
-		if (IsValid(NearbyEnemy))
-		{
-			if (AIController && AIController->GetBlackboardComponent())
-			{
-				AIController->GetBlackboardComponent()->ClearValue(FName("TargetActor"));
-				AIController->GetBlackboardComponent()->ClearValue(FName("CanSeePlayer"));
-			}
-		}
-	}
+	NotifyDamageTakenToBlackboard(LastDamageCauser);
 }
 
 void APaladin::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled)
 {
-	Attributes->DecreaseEnergyBy(PossessionAttackCost);
-
-	if (SwordCollider)
-	{
-		SwordCollider->SetCollisionEnabled(CollisionEnabled);
-		IgnoreActors.Empty();
-	}
+	GetAttributeComponent()->DecreaseEnergyBy(PossessionAttackCost);
 }
 
 void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -168,7 +152,6 @@ void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 	const FVector End = BoxTraceEnd->GetComponentLocation();
 
 	TArray<FHitResult> HitResults;
-	//FHitResult BoxHit;
 	
 	IgnoreActors;
 	IgnoreActors.Add(this);
@@ -203,22 +186,11 @@ void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 				);
 
 				Entity->Execute_GetHit(Hit.GetActor(), GetOwner(), Hit.ImpactPoint, UDamageType::StaticClass(), Damage);
-				UGameplayStatics::PlayWorldCameraShake(this, CameraShake, SwordMesh->GetComponentLocation(), 0.f, 500.f);
+				PlayCameraShake(SwordMesh->GetComponentLocation(), 0.f, 500.f);
 				IgnoreActors.Add(Hit.GetActor());
 			}
 		}
 	}
-}
-
-void APaladin::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-	UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent);
-
-	if (!EnhancedInputComponent) return;
-
-	EnhancedInputComponent->BindAction(CombatComponent->HeavyAttackAction, ETriggerEvent::Triggered, this, &APaladin::HeavyAttack);
 }
 
 void APaladin::GetDefaultParameters()
@@ -239,65 +211,14 @@ void APaladin::ShieldHit()
 {
 	if (HitReactMontage)
 	{
+		StopAnimMontage();
 		PlayAnimMontage(HitReactMontage, 1.f, FName("ShieldHit"));
 	}
 }
 
-void APaladin::Attack(const FInputActionValue& Value)
-{
-	Super::Attack(Value);
-
-	//Attributes->DecreaseEnergyBy(PossessionAttackCost); cambio esto al enable collision para que sea como un "evento" que solo se ejecute en animaciones
-	//y no se este gastando la energia haciendo click, se puede mejorar con un evento dentro del light attack (combat component)
-
-	CombatComponent->Input_Attack(Value);
-}
-
-void APaladin::HeavyAttack(const FInputActionValue& Value)
-{
-	//Attributes->DecreaseEnergyBy(PossessionHeavyAttackCost);
-
-	CombatComponent->Input_HeavyAttack(Value);
-}
-
-
-
 void APaladin::LaunchUp_Implementation(const FVector& InstigatorLocation)
 {
-	if (!Attributes->IsShielded()) LaunchEnemyUp(InstigatorLocation);
-}
-
-void APaladin::GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived)
-{
-	if (!Attributes || GetEnemyState() == EEnemyState::EES_Died) return;
-	
-	if (Attributes->IsShielded() && DamageType == USpectralTrapDamageType::StaticClass())
-	{
-		StopAnimMontage();
-		ShieldHit();
-	}
-	else if (!Attributes->IsShielded() && DamageType != USpectralTrapDamageType::StaticClass())
-	{
-		Super::GetHit_Implementation(DamageCauser, ImpactPoint, DamageType, DamageReceived); //sfx and fx
-	}
-}
-
-float APaladin::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
-{
-	if (Attributes->IsAlive())
-	{
-		if (Attributes->IsShielded() && DamageEvent.DamageTypeClass == USpectralTrapDamageType::StaticClass())
-		{
-			NotifyDamageTakenToBlackboard(DamageCauser);
-			UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShieldImpactSFX, Attributes->GetShieldMeshComponent()->GetComponentLocation());
-			Attributes->ReceiveShieldDamage(DamageAmount);
-		}
-		else if (!Attributes->IsShielded() && DamageEvent.DamageTypeClass != USpectralTrapDamageType::StaticClass())
-		{
-			Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
-		}
-	}
-	return DamageAmount;
+	if (!GetAttributeComponent()->IsShielded()) LaunchEnemyUp(InstigatorLocation);
 }
 
 void APaladin::LaunchEnemyUp(const FVector& InstigatorLocation)

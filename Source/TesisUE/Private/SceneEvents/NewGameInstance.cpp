@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "Components/MementoComponent.h"
 #include "Components/AttributeComponent.h"
+#include "Components/PossessionComponent.h"
 #include "EngineUtils.h" 
 #include "Enemy/Enemy.h"
 #include "Blueprint/UserWidget.h"
@@ -229,7 +230,7 @@ bool UNewGameInstance::SavePlayerProgress(int32 SlotIndex, APawn* Entity)
     {
         if (AEnemy* EnemyRef = Cast<AEnemy>(Entity))
         {
-            PlayerCharacter = EnemyRef->GetPossessionOwner();
+            PlayerCharacter = Cast<APlayerMain>(EnemyRef->GetPossessionComponent()->GetPossessionOwner());
             if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Magenta, FString("Player reference obtained from Enemy possessed."));
         }
         else

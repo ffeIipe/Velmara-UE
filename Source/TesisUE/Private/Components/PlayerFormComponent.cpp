@@ -34,7 +34,7 @@ void UPlayerFormComponent::BeginPlay()
 
     CharacterStateInterface = Cast<ICharacterState>(GetOwner());
 
-    CharacterStateComponent = CharacterStateInterface->Execute_GetCharacterStateComponent(GetOwner());
+    CharacterStateComponent = GetOwner()->GetComponentByClass<UCharacterStateComponent>();
 
     CharacterStateComponent->SetCharacterForm(ECharacterForm::ECF_Human);
 

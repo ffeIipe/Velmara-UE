@@ -4,33 +4,22 @@
 #include "Items/Item.h"
 #include "EngineUtils.h"
 
-void ANewGameStateBase::RegisterMementoEntity(AActor* Entity)
+void ANewGameStateBase::RegisterMementoEntity(AEntity* Entity)
 {
 	if (Entity && !MementoEntities.Contains(Entity))
 	{
-		if (IMementoEntity* MementoEntity = Cast<IMementoEntity>(Entity))
+		if (Entity->GetMementoComponent())
 		{
-			UMementoComponent* MementoComponent = MementoEntity->Execute_GetMementoComponent(Entity);
-			if (IsValid(MementoComponent))
-			{
-				MementoEntities.Add(Entity);
-			}
+			MementoEntities.Add(Entity);	
 		}	
 	}
 }
 
-void ANewGameStateBase::UnregisterMementoEntity(AActor* Entity)
+void ANewGameStateBase::UnregisterMementoEntity(AEntity* Entity)
 {
-	if (Entity)
+	if (Entity && Entity->GetMementoComponent())
 	{
-		if (IMementoEntity* MementoEntity = Cast<IMementoEntity>(Entity))
-		{
-			UMementoComponent* MementoComponent = MementoEntity->Execute_GetMementoComponent(Entity);
-			if (IsValid(MementoComponent))
-			{
-				MementoEntities.Remove(Entity);
-			}
-		}
+		MementoEntities.Remove(Entity);
 	}
 }
 

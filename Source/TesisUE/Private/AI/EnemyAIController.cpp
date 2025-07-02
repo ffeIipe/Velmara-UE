@@ -46,7 +46,7 @@ void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Sti
     UCharacterStateComponent* CharacterStateComponent = PlayerPawn ? PlayerPawn->FindComponentByClass<UCharacterStateComponent>() : nullptr; // Añadir null check
     UBlackboardComponent* BlackboardComponent = GetBlackboardComponent();
 
-    if (!BlackboardComponent || !PlayerPawn || !Enemy || Enemy->CharacterStateComponent->GetCurrentCharacterState().Action == ECharacterActions::ECA_Dead) return;
+    if (!BlackboardComponent || !PlayerPawn || !Enemy || Enemy->GetCharacterStateComponent()->GetCurrentCharacterState().Action == ECharacterActions::ECA_Dead) return;
 
     if (!CharacterStateComponent)
     {

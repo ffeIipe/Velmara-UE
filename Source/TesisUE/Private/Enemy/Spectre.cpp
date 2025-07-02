@@ -18,12 +18,12 @@ void ASpectre::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (Attributes)
+	if (GetAttributeComponent())
 	{
-		Attributes->OnEntityDead.AddLambda(
+		GetAttributeComponent()->OnEntityDead.AddLambda(
 			[this]
 			{
-				Die(DamageCauserOf);
+				Die();
 			}
 		);
 	}
@@ -55,18 +55,4 @@ bool ASpectre::IsLaunchable_Implementation(ACharacter* Character)
 bool ASpectre::CanBeFinished_Implementation()
 {
 	return false; //no puede ser finisheada esta entidad
-}
-
-void ASpectre::OnPossessed(APlayerMain* NewOwner, float OwnerEnergy)
-{
-	Super::OnPossessed(NewOwner, OwnerEnergy);
-
-	bUseControllerRotationYaw = true;
-}
-
-void ASpectre::Attack(const FInputActionValue& Value)
-{
-	Super::Attack(Value);
-
-	CombatComponent->Input_Attack(Value);
 }

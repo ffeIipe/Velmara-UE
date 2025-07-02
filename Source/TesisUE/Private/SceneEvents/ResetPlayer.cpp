@@ -23,7 +23,7 @@ void AResetPlayer::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent
     {
         if (APlayerMain* PlayerRef = Cast<APlayerMain>(OverlappingActor))
         {
-            if (PlayerRef->CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
+            if (PlayerRef->GetCharacterStateComponent()->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
             {
                 PlayerRef->ToggleForm();
             }

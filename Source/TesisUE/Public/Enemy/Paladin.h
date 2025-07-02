@@ -25,15 +25,10 @@ public:
 
 	virtual void LaunchUp_Implementation(const FVector& InstigatorLocation) override;
 
-	void GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived) override;
+	virtual void ShieldHit_Implementation() {};
 
-	float TakeDamage(
-		float DamageAmount,
-		struct FDamageEvent const& DamageEvent,
-		class AController* EventInstigator,
-		AActor* DamageCauser) override;
+	/*void GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived) override;*/
 
-	UFUNCTION(BlueprintCallable)
 	virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
 
 protected:
@@ -49,7 +44,7 @@ protected:
 	
 	void BeginPlay();
 
-	void Die(AActor* DamageCauser) override;
+	void Die() override;
 	
 	TArray<AActor*> IgnoreActors;
 
@@ -77,11 +72,6 @@ protected:
 		bool bFromSweep,
 		const FHitResult& SweepResult);
 
-	void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
-
-	UFUNCTION(BlueprintImplementableEvent)
-	void PerformAttackEvent();
-
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* AttackAction;
 
@@ -95,12 +85,6 @@ protected:
 
 	void ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoint) override;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CameraShake")
-	TSubclassOf<UCameraShakeBase> CameraShake;
-
-	UPROPERTY(EditAnywhere, Category = "SFX")
-	USoundBase* ShieldImpactSFX;
-
 	void GetDefaultParameters() override;
 	void SetOnPossessedParameters() override;
 
@@ -109,10 +93,4 @@ private:
 	USoundBase* ShieldDettachSFX;
 
 	void ShieldHit();
-
-	void Attack(const FInputActionValue& Value) override;
-
-	void HeavyAttack(const FInputActionValue& Value);
-
-	void Finisher(const FInputActionValue& Value);
 };

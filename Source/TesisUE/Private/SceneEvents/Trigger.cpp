@@ -1,5 +1,6 @@
 #include "SceneEvents/Trigger.h"
 #include "Components/BoxComponent.h"
+#include "Components/PossessionComponent.h"
 #include "Player/PlayerMain.h"
 #include "Enemy/Enemy.h"
 #include <Kismet/GameplayStatics.h>
@@ -36,7 +37,7 @@ void ATrigger::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AA
 	{
 		/*if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::White, FString("Enemy Begin Overlap"));*/
 
-		if (EnemyTemp->GetPossessionOwner() != nullptr)
+		if (EnemyTemp->GetPossessionComponent()->GetPossessionOwner() != nullptr)
 		{
 			/*if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Emerald, FString("Enemy has a Possession Owner valid..."));*/
 

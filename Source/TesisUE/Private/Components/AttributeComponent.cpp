@@ -63,9 +63,9 @@ void UAttributeComponent::StartDecreaseEnergy()
 
 void UAttributeComponent::StopDecreaseEnergy()
 {
-	if (OnDepletedCallback)
+	if (OnOutOfEnergy.IsBound())
 	{
-		OnDepletedCallback();
+		OnOutOfEnergy.Broadcast();
 	}
 
 	GetWorld()->GetTimerManager().ClearTimer(EnergyDecreaseTimerHandle);

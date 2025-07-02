@@ -33,9 +33,9 @@ void APaladinBoss::BeginPlay()
 
 	UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("SpawnPoint"), SpawnPoints);
 
-	if (Attributes)
+	if (GetAttributeComponent())
 	{
-		Attributes->OnDettachShield.AddLambda(
+		GetAttributeComponent()->OnDettachShield.AddLambda(
 			[this] 
 			{
 				if (AAIController* AIController = Cast<AAIController>(GetController()))
@@ -74,9 +74,7 @@ float APaladinBoss::TakeDamage(float DamageAmount, FDamageEvent const& DamageEve
 	
 	if (PlayerControllerRef)
 	{
-		/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Orange, FString("Valid Player Hero Controller..."));*/
-
-		PlayerControllerRef->HandleBossHealth(Attributes->GetHealthPercent(), Attributes->GetShieldHealthPercent());
+		Cast<APlayerHeroController>(PlayerControllerRef)->HandleBossHealth(GetAttributeComponent()->GetHealthPercent(), GetAttributeComponent()->GetShieldHealthPercent());
 	}
 
 	return DamageAmount;
@@ -116,9 +114,9 @@ void APaladinBoss::GetHit_Implementation(AActor* DamageCauser, const FVector& Im
 	}
 }
 
-void APaladinBoss::Die(AActor* DamageCauser)
+void APaladinBoss::Die()
 {
-	Super::Die(DamageCauser);
+	Super::Die();
 	
 	if (OnDead.IsBound())
 	{

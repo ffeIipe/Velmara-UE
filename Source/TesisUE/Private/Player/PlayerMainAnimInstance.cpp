@@ -25,9 +25,9 @@ void UPlayerMainAnimInstance::NativeUpdateAnimation(float DeltaTime)
 	{
 		GroundSpeed = UKismetMathLibrary::VSizeXY(PlayerMainCharacterMovement->Velocity);
 		IsFalling = PlayerMainCharacterMovement->IsFalling();
-		CharacterState = PlayerMain->CharacterStateComponent->GetCurrentCharacterState().State;
-		CharacterForm = PlayerMain->CharacterStateComponent->GetCurrentCharacterState().Form;
-		SpectralState = PlayerMain->CharacterStateComponent->GetCurrentCharacterState().SpectralState;
+		CharacterState = PlayerMain->GetCharacterStateComponent()->GetCurrentCharacterState().State;
+		CharacterForm = PlayerMain->GetCharacterStateComponent()->GetCurrentCharacterState().Form;
+		SpectralState = PlayerMain->GetCharacterStateComponent()->GetCurrentCharacterState().SpectralState;
 
 		WalkRight = CalculateWalkRight();
 		WalkForward = CalculateWalkForward();

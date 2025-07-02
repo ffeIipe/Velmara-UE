@@ -17,7 +17,6 @@
 
 #include "Player/PlayerMain.h"
 #include "Camera/CameraActor.h"
-#include "Enemy/Paladin/ShieldedPaladin.h"
 #include "Items/Weapons/Sword.h"
 #include <DamageTypes/SpectralTrapDamageType.h>
 
@@ -63,7 +62,7 @@ void UCombatComponent::BeginPlay()
 
 	SpectralAttacks = Cast<IFormInterface>(GetOwner());
 
-	CharacterStateComponent = CharacterStateInterface->Execute_GetCharacterStateComponent(GetOwner());
+	CharacterStateComponent = GetOwner()->GetComponentByClass<UCharacterStateComponent>();
 
 	ExtraMovementComponent = GetOwner()->GetComponentByClass<UExtraMovementComponent>();
 
@@ -440,31 +439,20 @@ void UCombatComponent::GetDirectionalReact(const FVector& ImpactPoint, TSubclass
 
 	FName Section("FromBack");
 
-	/*if (DamageType != USpectralTrapDamageType::StaticClass())*/
-	//{
-		if (Angle >= -45.f && Angle < 45.f)
-		{
-			Section = FName("FromFront");
-		}
-
-		else if (Angle >= -135.f && Angle < -45.f)
-		{
-			Section = FName("FromLeft");
-		}
-
-		else if (Angle >= 45.f && Angle < 135.f)
-		{
-			Section = FName("FromRight");
-		}
-	//}
-	/*else
+	if (Angle >= -45.f && Angle < 45.f)
 	{
-		if (Angle >= -90.f && Angle < 90.f)
-		{
-			Section = FName("KnockDownFromFront");
-		}
-		else Section = FName("KnockDown");
-	}*/
+		Section = FName("FromFront");
+	}
+
+	else if (Angle >= -135.f && Angle < -45.f)
+	{
+		Section = FName("FromLeft");
+	}
+
+	else if (Angle >= 45.f && Angle < 135.f)
+	{
+		Section = FName("FromRight");
+	}
 
 	OwningCharacter->PlayAnimMontage(HitReactMontage, 1.f, Section);
 }
@@ -562,7 +550,7 @@ bool UCombatComponent::CanAttack()
 			!CharacterStateComponent->IsFormEqualToAny({ECharacterForm::ECF_Spectral}));
 }
 
-void UCombatComponent::Input_Attack(const FInputActionValue& Value)
+void UCombatComponent::Input_Attack()
 {
 	ExtraMovementComponent->bIsSaveDodge = false;
 
@@ -578,7 +566,7 @@ void UCombatComponent::Input_Attack(const FInputActionValue& Value)
 	}
 }
 
-void UCombatComponent::Input_HeavyAttack(const FInputActionValue& Value)
+void UCombatComponent::Input_HeavyAttack()
 {
 	ExtraMovementComponent->bIsSaveDodge = false;
 
@@ -601,7 +589,7 @@ void UCombatComponent::Input_HeavyAttack(const FInputActionValue& Value)
 	}
 }
 
-void UCombatComponent::Input_Launch(const FInputActionValue& Value)
+void UCombatComponent::Input_Launch()
 {
 	if (CanAttack())
 	{
@@ -614,17 +602,17 @@ void UCombatComponent::Input_Launch(const FInputActionValue& Value)
 	}
 }
 
-void UCombatComponent::Input_Block(const FInputActionValue& Value)
+void UCombatComponent::Input_Block()
 {
 	Block();
 }
 
-void UCombatComponent::Input_ReleaseBlock(const FInputActionValue& Value)
+void UCombatComponent::Input_ReleaseBlock()
 {
 	ReleaseBlock();
 }
 
-void UCombatComponent::Input_Execute(const FInputActionValue& Value)
+void UCombatComponent::Input_Execute()
 {
 	Execute();
 }

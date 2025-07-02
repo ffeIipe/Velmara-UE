@@ -227,35 +227,20 @@ private:
 	UAnimMontage* HitReactMontage;
 
 public:
-	UPROPERTY(EditAnywhere, Category = "Input | Actions")
-	UInputAction* AttackAction;
-
-	UPROPERTY(EditAnywhere, Category = "Input | Actions")
-	UInputAction* HeavyAttackAction;
-
-	UPROPERTY(EditAnywhere, Category = "Input | Actions")
-	UInputAction* BlockAction;
-	
-	UPROPERTY(EditAnywhere, Category = "Input | Actions")
-	UInputAction* LaunchAction;
-	
-	UPROPERTY(EditAnywhere, Category = "Input | Actions")
-	UInputAction* FinishAction;
-
 	/*
 	] Section
 	*/
-	void Input_Attack(const FInputActionValue& Value);
+	void Input_Attack();
 	
-	void Input_HeavyAttack(const FInputActionValue& Value);
+	void Input_HeavyAttack();
 	
-	void Input_Launch(const FInputActionValue& Value);
+	void Input_Launch();
 
-	void Input_Block(const FInputActionValue& Value);
+	void Input_Block();
 	
-	void Input_ReleaseBlock(const FInputActionValue& Value);
+	void Input_ReleaseBlock();
 
-	void Input_Execute(const FInputActionValue& Value);
+	void Input_Execute();
 
 	UFUNCTION()
 	void LightAttackEvent();

@@ -6,6 +6,8 @@
 #include "Blueprint/UserWidget.h"
 #include "HUD/PlayerMainHUD.h"
 #include "Tutorial/PromptWidgetComponent.h"
+#include "Player/PlayerMain.h"
+
 
 AInputPromptTrigger::AInputPromptTrigger()
 {

@@ -11,7 +11,7 @@ void ASpectralWeaponItem::Use(ACharacter* Character)
     Super::Use(Character);
 
     APlayerMain* PlayerReference = Cast<APlayerMain>(Character);
-    if (PlayerReference->CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
+    if (PlayerReference->GetCharacterStateComponent()->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
     {
         PlayerReference->Equipping(false);
     }

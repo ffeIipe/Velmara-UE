@@ -12,13 +12,13 @@ void AEnergyItem::Use(ACharacter* TargetCharacter)
 
 	User = TargetCharacter;
 
-	Player = Cast<APlayerMain>(TargetCharacter);
+	AEntity* UserEntity = Cast<AEntity>(TargetCharacter);
 
-	if (Player && Player->GetAttributes())
+	if (UserEntity && UserEntity->GetAttributeComponent())
 	{
-		Player->GetAttributes()->IncreaseEnergy(EnergyToIncrease);
+		UserEntity->GetAttributeComponent()->IncreaseEnergy(EnergyToIncrease);
 
-		Player->GetAttributes()->SetHealth(Player->GetAttributes()->GetHealth() + HealthToIncrease);
+		UserEntity->GetAttributeComponent()->SetHealth(UserEntity->GetAttributeComponent()->GetHealth() + HealthToIncrease);
 
 		if (OnUsedSpawnEnergy.IsBound())
 		{

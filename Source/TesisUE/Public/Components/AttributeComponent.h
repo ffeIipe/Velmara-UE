@@ -7,8 +7,8 @@
 #include "AttributeComponent.generated.h"
 
 DECLARE_MULTICAST_DELEGATE(FOnDettachShieldSignature);
-
 DECLARE_MULTICAST_DELEGATE(FOnEntityDeadSignature);
+DECLARE_MULTICAST_DELEGATE(FOnEntityOutOfEnergy);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class TESISUE_API UAttributeComponent : public UActorComponent
@@ -21,6 +21,8 @@ public:
 	FOnDettachShieldSignature OnDettachShield;
 
 	FOnEntityDeadSignature OnEntityDead;
+
+	FOnEntityOutOfEnergy OnOutOfEnergy;
 
 	void ReceiveDamage(float Damage);
 

@@ -11,6 +11,7 @@
 #include "Components/InputComponent.h"
 #include "Components/MementoComponent.h"
 #include "Components/TimelineComponent.h"
+#include "Components/PossessionComponent.h"
 #include "DamageTypes/DamageTypeMain.h"
 #include "Engine/DamageEvents.h"
 #include "EnhancedInputComponent.h"
@@ -40,7 +41,6 @@ AEnemy::AEnemy()
 
 	//UniqueSaveID = FName(*FGuid::NewGuid().ToString());
 	
-
 	GetMesh()->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
@@ -53,16 +53,12 @@ AEnemy::AEnemy()
 	GetCapsuleComponent()->SetCapsuleRadius(45.f);
 	InitialCapsuleCollisionEnabled = GetCapsuleComponent()->GetCollisionEnabled();
 
-	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
+	/*SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	SpringArm->SetupAttachment(GetRootComponent());
 	SpringArm->SetRelativeLocation(FVector(0.f, 0.f, 50.f));
 	SpringArm->SocketOffset = FVector(0.f, 0.f, 45.f);
 	SpringArm->bEnableCameraLag = true;
-	SpringArm->CameraLagSpeed = 10.f;
-
-	Attributes = CreateDefaultSubobject<UAttributeComponent>(TEXT("Attributes"));
-
-	Memento = CreateDefaultSubobject<UMementoComponent>(TEXT("Memento"));
+	SpringArm->CameraLagSpeed = 10.f;*/
 
 	PromptWidgetComponent = CreateDefaultSubobject<UPromptWidgetComponent>(TEXT("PromptWidget"));
 	PromptWidgetComponent->SetupAttachment(GetRootComponent());
@@ -79,10 +75,6 @@ AEnemy::AEnemy()
 	GetCharacterMovement()->GravityScale = 3.f;
 	GetCharacterMovement()->JumpZVelocity = 1000.f;
 
-	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("Combat Component"));
-
-	CharacterStateComponent = CreateDefaultSubobject<UCharacterStateComponent>(TEXT("CharacterStateComponent"));
-
 	bInitialMeshGenerateOverlapEvents = GetMesh()->GetGenerateOverlapEvents();
 	bInitialCapsuleGenerateOverlapEvents = GetCapsuleComponent()->GetGenerateOverlapEvents();
 
@@ -97,8 +89,6 @@ AEnemy::AEnemy()
 
 	DissolveParticleComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("Dissolve"));
 	DissolveParticleComponent->SetupAttachment(GetMesh());
-
-	ExtraMovementComponent = CreateDefaultSubobject<UExtraMovementComponent>(TEXT("ExtraMovementComponent"));
 }
 
 void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
@@ -121,17 +111,17 @@ void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 
 	EnemyState = EEnemyState::EES_None;
 	isLaunched = false;
-	DamageCauserOf = nullptr;
+	LastDamageCauser = nullptr;
 	bWasPossessed = false;
 
-	if (Attributes)
+	if (GetAttributeComponent())
 	{
-		Attributes->ResetAttributes();
+		GetAttributeComponent()->ResetAttributes();
 	}
 
-	if (CharacterStateComponent)
+	if (GetCharacterStateComponent())
 	{
-		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Nothing);
+		GetCharacterStateComponent()->SetCharacterAction(ECharacterActions::ECA_Nothing);
 	}
 
 	bUseControllerRotationYaw = bOriginalUseControllerRotationYaw;
@@ -144,7 +134,7 @@ void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 
 		if (ANewGameStateBase* NewGameStateBase = Cast<ANewGameStateBase>(NewGameMode->GameState))
 		{
-			if (Memento)
+			if (GetMementoComponent())
 			{
 				NewGameStateBase->RegisterMementoEntity(this);
 			}
@@ -166,15 +156,15 @@ void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 void AEnemy::DeactivateEnemy()
 {
 	/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::White, FString("Deactivating " + this->GetName()));*/
-	if (PossessionOwner)
+	/*if (GetPossessionComponent()->GetPossessionOwner())
 	{
-		APlayerMain* PlayerOwnerRef = Cast<APlayerMain>(PossessionOwner);
+		APlayerMain* PlayerOwnerRef = Cast<APlayerMain>(GetPossessionComponent()->GetPossessionOwner());
 		if (PlayerOwnerRef && IsValid(PlayerOwnerRef))
 		{
 			UnPossessBase();
 		}
 		PossessionOwner = nullptr;
-	}
+	}*/
 
 	SetActorHiddenInGame(true);
 	SetActorTickEnabled(false);
@@ -203,29 +193,24 @@ void AEnemy::DeactivateEnemy()
 	DisableAI();
 
 	isLaunched = false;
-	DamageCauserOf = nullptr;
-
-	OnDeactivated.Broadcast(this);
+	LastDamageCauser = nullptr;
+	
+	if (OnDeactivated.IsBound())
+	{
+		OnDeactivated.Broadcast(this);
+	}
 	
 	GetWorldTimerManager().ClearTimer(HitFlashTimerHandle);
 	GetWorldTimerManager().ClearTimer(ReturnToPoolTimerHandle);
 }
 
-void AEnemy::Die(AActor* DamageCauser)
+void AEnemy::Die(/*AActor* DamageCauser*/)
 {
-	if (EnemyState == EEnemyState::EES_Died) return;
+	Super::Die(/*DamageCauser*/);
 
-	SetEnemyState(EEnemyState::EES_Died);
+	DissolveTimeline->PlayFromStart(); //enemy
 
-	StopAnimMontage();
-	PlayAnimMontage(DeathMontage, 1.f, SelectRandomDieAnim());
-
-	DissolveTimeline->PlayFromStart();
-
-	if (CharacterStateComponent) CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Dead);
-
-	DamageCauserOf = DamageCauser;
-
+	//save data de que murio
 	if (UWorld* World = GetWorld())
 	{
 		if (ANewGameStateBase* GameState = World->GetGameState<ANewGameStateBase>())
@@ -235,69 +220,39 @@ void AEnemy::Die(AActor* DamageCauser)
 			CurrentStateData.bIsAlive = false;
 			CurrentStateData.EnemyClass = GetClass();
 
-			if (Memento)
+			if (GetMementoComponent())
 			{
-				CurrentStateData.EnemyState = Memento->CaptureOwnerState();
+				CurrentStateData.EnemyState = GetMementoComponent()->CaptureOwnerState();
 			}
 
 			GameState->UpdateEnemyState(CurrentStateData);
 		}
-	}
+	} 
 
-	if (APlayerMain* PlayerRef = Cast<APlayerMain>(DamageCauser))
-	{
-		PlayerRef->Attributes->IncreaseEnergy(FMath::RandRange(MinEnergy, MaxEnergy));
-	}
-
-	if (PromptWidgetComponent && PromptWidgetComponent->GetWidget())
+	if (PromptWidgetComponent && PromptWidgetComponent->GetWidget())//enemy
 	{
 		PromptWidgetComponent->GetPromptWidgetComponent()->EnablePromptWidget(false);
-	}
-
-	if (BBComponent)
-	{
-		BBComponent->ClearValue(FName("TargetActor"));
-		BBComponent->ClearValue(FName("CanSeePlayer"));
-		BBComponent->ClearValue(FName("DistToTarget"));
-		BBComponent->ClearValue(FName("DamageTakenRecently"));
-	}
-	else
-	{
-		if (AIController)
-		{
-			BBComponent = Cast<UBlackboardComponent>(AIController->GetBlackboardComponent());
-		}
-		else
-		{
-			AIController = Cast<AAIController>(GetController());
-			BBComponent = Cast<UBlackboardComponent>(AIController->GetBlackboardComponent());
-		}
-
-		if (BBComponent)
-		{
-			BBComponent->ClearValue(FName("TargetActor"));
-			BBComponent->ClearValue(FName("CanSeePlayer"));
-			BBComponent->ClearValue(FName("DistToTarget"));
-			BBComponent->ClearValue(FName("DamageTakenRecently"));
-		}
 	}
 
 	DisableAI();
 	HandleEnemyCollision(ECR_Ignore);
 
-	if (PossessionOwner)
+	if (GetPossessionComponent()->GetPossessionOwner())
 	{
-		UnPossess();
+		GetPossessionComponent()->ReleasePossession();
 	}
 
-	OnDeactivated.Broadcast(this);
+	if (OnDeactivated.IsBound())
+	{
+		OnDeactivated.Broadcast(this);
+	}
 
 	GetWorldTimerManager().SetTimer(ReturnToPoolTimerHandle, this, &AEnemy::RequestReturnToPool, 5.0f, false);
 }
 
-void AEnemy::PoolableDie(AActor* DamageCauser)
+void AEnemy::PoolableDie(/*AActor* DamageCauser*/)
 {
-	Die(DamageCauser);
+	Die(/*DamageCauser*/);
 }
 
 void AEnemy::RequestReturnToPool()
@@ -329,13 +284,25 @@ void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
 
+	OnCanBeFinished.AddDynamic(this, &AEnemy::EnableFinisherWidget);
+
+	GetAttributeComponent()->OnOutOfEnergy.AddLambda(
+		[this]
+		{
+			if (GetPossessionComponent()->GetPossessionOwner())
+			{
+				GetPossessionComponent()->ReleasePossession();
+			}
+		}
+	);
+
 	PlayerControllerRef = Cast<APlayerHeroController>(UGameplayStatics::GetPlayerController(this, 0));
 
 	HandleEnemyCollision(ECR_Block);
 
 	GetDefaultParameters();
 
-	CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_EquippedSword);
+	GetCharacterStateComponent()->SetCharacterState(ECharacterStates::ECS_EquippedSword);
 
 	if (DissolveCurve)
 	{
@@ -350,7 +317,7 @@ void AEnemy::BeginPlay()
 
 		if (ANewGameStateBase* NewGameStateBase = Cast<ANewGameStateBase>(NewGameMode->GameState))
 		{
-			if (Memento)
+			if (GetMementoComponent())
 			{
 				NewGameStateBase->RegisterMementoEntity(this);
 			}
@@ -370,7 +337,7 @@ void AEnemy::BeginPlay()
 	{
 		PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
 	}
-	
+
 	if (AAIController* AIControllerInstance = Cast<AAIController>(GetController()))
 	{
 		AIController = AIControllerInstance;
@@ -395,6 +362,15 @@ void AEnemy::BeginPlay()
 			DissolveMaterials.Add(UMaterialInstanceDynamic::Create(CurrentMaterial, this));
 			GetMesh()->SetMaterial(MatIndex, DissolveMaterials[MatIndex]);
 		}
+	}
+}
+
+void AEnemy::EnableFinisherWidget()
+{
+	if (PromptWidgetComponent && PromptWidgetComponent->GetWidget())
+	{
+		PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Visible);
+		PromptWidgetComponent->LoadAndApplyPrompt();
 	}
 }
 
@@ -437,58 +413,6 @@ void AEnemy::UpdateDissolveEffect(float Value)
 	}
 }
 
-void AEnemy::Move(const FInputActionValue& Value)
-{
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Dead, ECharacterActions::ECA_Stun }))
-	{
-		const FVector2D MoveVector = Value.Get<FVector2D>();
-
-		const FRotator ControlRotation = GetControlRotation();
-		const FRotator YawRotation(0.f, ControlRotation.Yaw, 0.f);
-
-		const FVector DirectionForward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-		const FVector DirectionSideward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-
-		AddMovementInput(DirectionForward, MoveVector.Y);
-		AddMovementInput(DirectionSideward, MoveVector.X);
-	}
-}
-
-void AEnemy::Look(const FInputActionValue& Value)
-{
-	const FVector2D LookingVector = Value.Get<FVector2D>();
-
-	AddControllerPitchInput(LookingVector.Y);
-	AddControllerYawInput(LookingVector.X);
-}
-
-void AEnemy::Jump()
-{
-	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Nothing, ECharacterActions::ECA_Attack }) && ExtraMovementComponent->CanDoubleJump)
-	{
-		PlayAnimMontage(ExtraMovementComponent->JumpMontage, 1.f);
-
-		Super::Jump();
-
-		if (GetCharacterMovement()->IsFalling() && ExtraMovementComponent->CanDoubleJump)
-		{
-			ExtraMovementComponent->Input_DoubleJump();
-		}
-	}
-}
-
-void AEnemy::Landed(const FHitResult& Hit)
-{
-	Super::Landed(Hit);
-	CombatComponent->bIsLaunched = false;
-	ExtraMovementComponent->CanDoubleJump = true;
-}
-
-void AEnemy::Dodge(const FInputActionValue& Value)
-{
-	ExtraMovementComponent->Input_Dodge();
-}
-
 void AEnemy::ResetEnemy()
 {
 	isLaunched = false;
@@ -498,73 +422,57 @@ void AEnemy::ResetEnemy()
 
 void AEnemy::GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived)
 {
-	DamageCauser = DamageCauserOf;
+	Super::GetHit_Implementation(DamageCauser, ImpactPoint, DamageType, DamageReceived);
 
-	if (Attributes->IsAlive())
+	ReactToDamage(LastDamageType, ImpactPoint);
+
+	DropOrbs(DamageReceived, DamageCauser);
+
+	NotifyDamageTakenToBlackboard(DamageCauser);
+}
+
+void AEnemy::DropOrbs(const float DamageReceived, AActor* DamageCauser)
+{
+	float Percentage = DamageReceived / EnergyDivider;
+	int32 Orbs = FMath::RoundToInt(Percentage) / 5;
+
+	if (APlayerMain* PlayerRef = Cast<APlayerMain>(DamageCauser))
 	{
-		ReactToDamage(LastDamageType, ImpactPoint);
-		DirectionalHitReact(ImpactPoint, HitReactMontage, DamageReceived);
+		PlayerRef->GetAttributeComponent()->IncreaseEnergy(Percentage);
 
-		if (HitSound)
+		if (OnDamaged.IsBound())
 		{
-			UGameplayStatics::PlaySoundAtLocation(
-				this,
-				HitSound,
-				ImpactPoint
-			);
-		}
-		if (NiagaraSystem)
-		{
-			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-				GetWorld(),
-				NiagaraSystem,
-				ImpactPoint
-			);
-		}
-
-		float Percentage = DamageReceived / EnergyDivider;
-		int32 Orbs = FMath::RoundToInt(Percentage) / 5;
-
-		if (APlayerMain* PlayerRef = Cast<APlayerMain>(DamageCauser))
-		{
-			PlayerRef->Attributes->IncreaseEnergy(Percentage);
-
-			if (OnDamaged.IsBound())
+			for (int32 i = 0; i < Orbs; i++)
 			{
-				for (int32 i = 0; i < Orbs; i++)
-				{
-					OnDamaged.Broadcast();
-				}
-			}
-		}
-
-		if (AEnemy* EnemyRef = Cast<AEnemy>(DamageCauser))
-		{
-			if (EnemyRef->PossessionOwner)
-			{
-				EnemyRef->Attributes->IncreaseEnergy(Percentage);
-
-				for (int32 i = 0; i < Orbs; i++)
-				{
-					OnDamaged.Broadcast();
-				}
+				OnDamaged.Broadcast();
 			}
 		}
 	}
 
-	NotifyDamageTakenToBlackboard(DamageCauser);
+	if (AEnemy* EnemyRef = Cast<AEnemy>(DamageCauser))
+	{
+		if (EnemyRef->GetPossessionComponent()->GetPossessionOwner())
+		{
+			EnemyRef->GetAttributeComponent()->IncreaseEnergy(Percentage);
+
+			for (int32 i = 0; i < Orbs; i++)
+			{
+				OnDamaged.Broadcast();
+			}
+		}
+	}
 }
 
 void AEnemy::GetFinished_Implementation()
 {
 	if (GetEnemyState() != EEnemyState::EES_Died)
 	{
-		if (CharacterStateComponent) CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Dead);
+		if (GetCharacterStateComponent()) GetCharacterStateComponent()->SetCharacterAction(ECharacterActions::ECA_Dead);
 
 		if (PromptWidgetComponent && PromptWidgetComponent->GetWidget()) PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
 
 		FVector Start = GetActorLocation();
-		FVector End = DamageCauserOf ? DamageCauserOf->GetActorLocation() : Start + GetActorForwardVector();
+		FVector End = LastDamageCauser ? LastDamageCauser->GetActorLocation() : Start + GetActorForwardVector();
 		FRotator NewRotation = UKismetMathLibrary::FindLookAtRotation(Start, End);
 		SetActorRotation(NewRotation);
 
@@ -572,13 +480,13 @@ void AEnemy::GetFinished_Implementation()
 		StopAnimMontage();
 		PlayAnimMontage(FinisherDeathMontage, 1.f); 
 
-		Die(DamageCauserOf);
+		Die();
 	}
 }
 
 bool AEnemy::CanBeFinished_Implementation()
 {
-	return Attributes->GetHealthPercent() <= .2f;
+	return GetAttributeComponent()->GetHealthPercent() <= .2f;
 }
 
 bool AEnemy::IsLaunchable_Implementation(ACharacter* Character)
@@ -586,109 +494,41 @@ bool AEnemy::IsLaunchable_Implementation(ACharacter* Character)
 	return false;
 }
 
-void AEnemy::LaunchUp_Implementation(const FVector& InstigatorLocation)
-{
-}
-
-void AEnemy::ShieldHit_Implementation()
-{
-}
-
-UMementoComponent* AEnemy::GetMementoComponent_Implementation()
-{
-	return Memento;
-}
-
-UCharacterStateComponent* AEnemy::GetCharacterStateComponent_Implementation()
-{
-	return CharacterStateComponent;
-}
-
-float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
-{
-	if (EnemyState == EEnemyState::EES_Died)
-	{
-		return 0.f;
-	}
-
-	const UDamageTypeMain* MainDamageType = DamageEvent.DamageTypeClass
-		? Cast<UDamageTypeMain>(DamageEvent.DamageTypeClass->GetDefaultObject())
-		: nullptr;
-
-	LastDamageType = MainDamageType
-		? MainDamageType->DamageType
-		: EMainDamageTypes::EMDT_None;
-
-	DamageCauserOf = DamageCauser;
-
-	if (Attributes)
-	{
-		if (Attributes->IsAlive())
-		{
-			Attributes->ReceiveDamage(DamageAmount);
-			NotifyDamageTakenToBlackboard(DamageCauser);
-
-			if (Execute_CanBeFinished(this))
-			{
-				if (PromptWidgetComponent && PromptWidgetComponent->GetWidget())
-				{
-					PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Visible);
-					PromptWidgetComponent->LoadAndApplyPrompt();
-				}
-			}
-		}
-	}
-	return DamageAmount;
-}
-
-void AEnemy::DirectionalHitReact(const FVector& ImpactPoint, UAnimMontage* HitReactAnimMontage, const float DamageReceived)
-{
-	const FVector Forward = GetActorForwardVector();
-	const FVector ToHit = (ImpactPoint - GetActorLocation()).GetSafeNormal();
-
-	const double CosAngle = FVector::DotProduct(Forward, ToHit);
-
-	double Angle = FMath::Acos(CosAngle);
-
-	Angle = FMath::RadiansToDegrees(Angle);
-
-	const FVector CrossProduct = FVector::CrossProduct(Forward, ToHit);
-	if (CrossProduct.Z < 0)
-	{
-		Angle *= -1.f;
-	}
-
-	FName Section("FromBack");
-
-	if (DamageReceived > DamageThreshold)
-	{
-		Section = FName("FromBackBig");
-	}
-	
-	if (Angle >= -45.f && Angle < 45.f)
-	{
-		if (DamageReceived > DamageThreshold)
-		{
-			Section = FName("FromFrontBig");
-		}
-		else
-		{
-			Section = FName("FromFront");
-		}	
-	}
-
-	else if (Angle >= -135.f && Angle < -45.f)
-	{
-		Section = FName("FromLeft");
-	}
-
-	else if (Angle >= 45.f && Angle < 135.f)
-	{
-		Section = FName("FromRight");
-	}
-
-	PlayAnimMontage(HitReactAnimMontage, 1.f, Section);
-}
+//float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+//{
+//	/*if (EnemyState == EEnemyState::EES_Died)
+//	{
+//		return 0.f;
+//	}
+//
+//	const UDamageTypeMain* MainDamageType = DamageEvent.DamageTypeClass
+//		? Cast<UDamageTypeMain>(DamageEvent.DamageTypeClass->GetDefaultObject())
+//		: nullptr;
+//
+//	LastDamageType = MainDamageType
+//		? MainDamageType->DamageType
+//		: EMainDamageTypes::EMDT_None;*/
+//
+//
+//	if (GetAttributeComponent())
+//	{
+//		if (GetAttributeComponent()->IsAlive())
+//		{
+//			GetAttributeComponent()->ReceiveDamage(DamageAmount);
+//			NotifyDamageTakenToBlackboard(DamageCauser);
+//
+//			if (Execute_CanBeFinished(this))
+//			{
+//				if (PromptWidgetComponent && PromptWidgetComponent->GetWidget())
+//				{
+//					PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Visible);
+//					PromptWidgetComponent->LoadAndApplyPrompt();
+//				}
+//			}
+//		}
+//	}
+//	return DamageAmount;
+//}
 
 void AEnemy::GetDefaultParameters()
 {
@@ -762,6 +602,34 @@ void AEnemy::DisableAI()
 		AIController->StopMovement();
 		AIController->UnPossess();
 	}
+
+	if (BBComponent)
+	{
+		BBComponent->ClearValue(FName("TargetActor"));
+		BBComponent->ClearValue(FName("CanSeePlayer"));
+		BBComponent->ClearValue(FName("DistToTarget"));
+		BBComponent->ClearValue(FName("DamageTakenRecently"));
+	}
+	else
+	{
+		if (AIController)
+		{
+			BBComponent = Cast<UBlackboardComponent>(AIController->GetBlackboardComponent());
+		}
+		else
+		{
+			AIController = Cast<AAIController>(GetController());
+			BBComponent = Cast<UBlackboardComponent>(AIController->GetBlackboardComponent());
+		}
+
+		if (BBComponent)
+		{
+			BBComponent->ClearValue(FName("TargetActor"));
+			BBComponent->ClearValue(FName("CanSeePlayer"));
+			BBComponent->ClearValue(FName("DistToTarget"));
+			BBComponent->ClearValue(FName("DamageTakenRecently"));
+		}
+	}
 }
 
 void AEnemy::EnableAI()
@@ -778,7 +646,7 @@ void AEnemy::EnableAI()
 
 	if (AIController)
 	{
-		if (!PossessionOwner)
+		if (!GetPossessionComponent()->GetPossessionOwner())
 		{
 			AIController->Possess(this);
 
@@ -793,119 +661,119 @@ void AEnemy::EnableAI()
 	}
 }
 
-void AEnemy::OnPossessed(APlayerMain* NewOwner, float OwnerEnergy)
-{
-	if (!IsValid(NewOwner)) return;
+//void AEnemy::OnPossessed(AEntity* NewOwner, float OwnerEnergy)
+//{
+//	if (!IsValid(NewOwner)) return;
+//
+//	PossessionOwner = NewOwner;
+//
+//	GetAttributeComponent()->SetEnergy(OwnerEnergy);
+//
+//	bUseControllerRotationYaw = false;
+//	
+//	SetOnPossessedParameters();
+//
+//	PlayerControllerRef->PlayerMainHUD->TogglePaladinUI(true);
+//
+//	if (GetAttributeComponent())
+//	{
+//		GetAttributeComponent()->StartDecreaseEnergy();
+//		GetAttributeComponent()->OnDepletedCallback = [this, WeakOwningPlayer = TWeakObjectPtr<APlayerMain>(NewOwner)]() {
+//			if (WeakOwningPlayer.IsValid())
+//			{
+//				UnPossess();
+//			}
+//			else
+//			{
+//				if (PossessionOwner == WeakOwningPlayer.Get(true))
+//				{
+//					UnPossess();
+//					PossessionOwner = nullptr;
+//				}
+//			}
+//			};
+//	}
+//}
 
-	PossessionOwner = NewOwner;
+//void AEnemy::UnPossessBase()
+//{
+//	bUseControllerRotationYaw = true;
+//
+//	GetDefaultParameters(); // gettear y settear parametros por defecto... se puede mejorar con algo mas lindo como un struct que gettee y settee... 
+//
+//	PlayerControllerRef->PlayerMainHUD->TogglePaladinUI(false);
+//
+//	if (PossessionOwner)
+//	{
+//		if (IsValid(PossessionOwner))
+//		{
+//			PossessionOwner->ReleasePossession(this);
+//		}
+//	}
+//
+//	if (AIController)
+//	{
+//		AIController->GetBlackboardComponent()->ClearValue(FName("TargetActor"));
+//		AIController->GetBlackboardComponent()->ClearValue(FName("CanSeePlayer"));	
+//	}
+//}
 
-	Attributes->SetEnergy(OwnerEnergy);
-
-	bUseControllerRotationYaw = false;
-	
-	SetOnPossessedParameters();
-
-	PlayerControllerRef->PlayerMainHUD->TogglePaladinUI(true);
-
-	if (Attributes)
-	{
-		Attributes->StartDecreaseEnergy();
-		Attributes->OnDepletedCallback = [this, WeakOwningPlayer = TWeakObjectPtr<APlayerMain>(NewOwner)]() {
-			if (WeakOwningPlayer.IsValid())
-			{
-				UnPossess();
-			}
-			else
-			{
-				if (PossessionOwner == WeakOwningPlayer.Get(true))
-				{
-					UnPossess();
-					PossessionOwner = nullptr;
-				}
-			}
-			};
-	}
-}
-
-void AEnemy::UnPossessBase()
-{
-	bUseControllerRotationYaw = true;
-
-	GetDefaultParameters(); // gettear y settear parametros por defecto... se puede mejorar con algo mas lindo como un struct que gettee y settee... 
-
-	PlayerControllerRef->PlayerMainHUD->TogglePaladinUI(false);
-
-	if (PossessionOwner)
-	{
-		if (IsValid(PossessionOwner))
-		{
-			PossessionOwner->ReleasePossession(this);
-		}
-	}
-
-	if (AIController)
-	{
-		AIController->GetBlackboardComponent()->ClearValue(FName("TargetActor"));
-		AIController->GetBlackboardComponent()->ClearValue(FName("CanSeePlayer"));	
-	}
-}
-
-void AEnemy::UnPossess()
-{
-	if (PossessionOwner)
-	{
-		if (PossessionOwner->GetAttributes())
-		{
-			UnPossessBase();
-			PossessionOwner->GetAttributes()->SetEnergy(Attributes->GetEnergy());
-			PossessionOwner = nullptr;
-			EnableAI();
-		}
-	}
-	else PossessionOwner = nullptr;
-}
-
-void AEnemy::UnPossessAndKill()
-{
-	if (PossessionOwner && PossessionOwner->GetAttributes() && PossessionOwner->GetAttributes()->RequiresEnergy(UnpossesAndKillEnergyTax))
-	{
-		PossessionOwner->Attributes->IncreaseHealth(15.f);
-		Attributes->IncreaseEnergy(-UnpossesAndKillEnergyTax);
-
-		DisableAI();
-		StopAnimMontage();
-		PlayAnimMontage(DeathMontage, 1.f, FName("UnpossessDeath"));
-
-		DamageCauserOf = PossessionOwner;
-
-		Die(DamageCauserOf);
-
-		float Orbs = FMath::RoundToInt(15.f) / 5;
-
-		if (OnDead.IsBound())
-		{
-			for (int32 i = 0; i < Orbs; i++)
-			{
-				OnDead.Broadcast();
-			}
-		}
-
-		if (IsValid(PossessionOwner))
-		{
-			if (IsValid(PossessionOwner->CharacterStateComponent))
-			{
-				PossessionOwner->ToggleForm();
-			}
-		}
-
-		UnPossessBase();
-		PossessionOwner = nullptr;
-	}
-	else if (Attributes && !Attributes->RequiresEnergy(UnpossesAndKillEnergyTax) && ErrorSFX)
-	{
-		UGameplayStatics::PlaySound2D(GetWorld(), ErrorSFX);
-	}
-}
+//void AEnemy::UnPossess()
+//{
+//	if (PossessionOwner)
+//	{
+//		if (PossessionOwner->GetAttributesComponent())
+//		{
+//			UnPossessBase();
+//			PossessionOwner->GetAttributes()->SetEnergy(GetAttributeComponent()->GetEnergy());
+//			PossessionOwner = nullptr;
+//			EnableAI();
+//		}
+//	}
+//	else PossessionOwner = nullptr;
+//}
+//
+//void AEnemy::UnPossessAndKill()
+//{
+//	if (PossessionOwner && PossessionOwner->GetAttributes() && PossessionOwner->GetAttributes()->RequiresEnergy(UnpossesAndKillEnergyTax))
+//	{
+//		PossessionOwner->Attributes->IncreaseHealth(15.f);
+//		GetAttributeComponent()->IncreaseEnergy(-UnpossesAndKillEnergyTax);
+//
+//		DisableAI();
+//		StopAnimMontage();
+//		PlayAnimMontage(DeathMontage, 1.f, FName("UnpossessDeath"));
+//
+//		LastDamageCauser = PossessionOwner;
+//
+//		Die(LastDamageCauser);
+//
+//		float Orbs = FMath::RoundToInt(15.f) / 5;
+//
+//		if (OnDead.IsBound())
+//		{
+//			for (int32 i = 0; i < Orbs; i++)
+//			{
+//				OnDead.Broadcast();
+//			}
+//		}
+//
+//		if (IsValid(PossessionOwner))
+//		{
+//			if (IsValid(PossessionOwner->CharacterStateComponent))
+//			{
+//				PossessionOwner->ToggleForm();
+//			}
+//		}
+//
+//		UnPossessBase();
+//		PossessionOwner = nullptr;
+//	}
+//	else if (GetAttributeComponent() && !GetAttributeComponent()->RequiresEnergy(UnpossesAndKillEnergyTax) && ErrorSFX)
+//	{
+//		UGameplayStatics::PlaySound2D(GetWorld(), ErrorSFX);
+//	}
+//}
 
 TArray<AEnemy*> AEnemy::GenerateSphereOverlapToDetectOtherEnemies(const FVector& Origin, AActor* HitEnemyToExclude)
 {
@@ -963,7 +831,7 @@ void AEnemy::NotifyDamageTakenToBlackboard(AActor* DamageCauser)
 	AEnemy* EnemyRef = Cast<AEnemy>(DamageCauser);
 	APlayerMain* PlayerRef = Cast<APlayerMain>(DamageCauser);
 	
-	if (EnemyRef && EnemyRef->GetPossessionOwner() || PlayerRef)
+	if (EnemyRef && EnemyRef->GetPossessionComponent()->GetPossessionOwner() || PlayerRef)
 	{
 		if (AIController)
 		{
@@ -984,21 +852,21 @@ void AEnemy::NotifyDamageTakenToBlackboard(AActor* DamageCauser)
 	}
 }
 	
-void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-	UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent);
-
-	if (!EnhancedInputComponent) return;
-
-	EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AEnemy::Move);
-	EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AEnemy::Look);
-	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &AEnemy::Jump);
-	EnhancedInputComponent->BindAction(ExtraMovementComponent->DodgeAction, ETriggerEvent::Triggered, this, &AEnemy::Dodge);
-
-	EnhancedInputComponent->BindAction(CombatComponent->AttackAction, ETriggerEvent::Triggered, this, &AEnemy::Attack);
-
-	EnhancedInputComponent->BindAction(UnPossessAction, ETriggerEvent::Completed, this, &AEnemy::UnPossess);
-	EnhancedInputComponent->BindAction(UnPossessAndKillAction, ETriggerEvent::Completed, this, &AEnemy::UnPossessAndKill);
-}
+//void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+//{
+//	Super::SetupPlayerInputComponent(PlayerInputComponent);
+//
+//	UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent);
+//
+//	if (!EnhancedInputComponent) return;
+//
+//	EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AEnemy::Move);
+//	EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AEnemy::Look);
+//	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &AEnemy::Jump);
+//	EnhancedInputComponent->BindAction(ExtraMovementComponent->DodgeAction, ETriggerEvent::Triggered, this, &AEnemy::Dodge);
+//
+//	EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &AEnemy::Attack);
+//
+//	EnhancedInputComponent->BindAction(UnPossessAction, ETriggerEvent::Completed, this, &AEnemy::UnPossess);
+//	EnhancedInputComponent->BindAction(UnPossessAndKillAction, ETriggerEvent::Completed, this, &AEnemy::UnPossessAndKill);
+//}

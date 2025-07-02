@@ -18,6 +18,7 @@
 #include "Components/CharacterStateComponent.h"
 #include "Components/SpectralWeaponComponent.h"
 #include "Components/ExtraMovementComponent.h"
+#include "Components/PossessionComponent.h"
 #include "Curves/CurveFloat.h"
 
 #include "Camera/CameraActor.h"
@@ -50,46 +51,21 @@ APlayerMain::APlayerMain()
 
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 
-	bUseControllerRotationPitch = false;
-	bUseControllerRotationYaw = false;
-	bUseControllerRotationRoll = false;
-
-	GetCharacterMovement()->bOrientRotationToMovement = true;
-
-	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("Camera Boom"));
-	CameraBoom->SetupAttachment(GetRootComponent());
-
 	PlayerFormComponent = CreateDefaultSubobject<UPlayerFormComponent>(TEXT("PlayerFormComponent"));
 
-	Attributes = CreateDefaultSubobject<UAttributeComponent>(TEXT("AttibuteComponent"));
-
-	MementoComponent = CreateDefaultSubobject<UMementoComponent>(TEXT("Memento"));
-
-	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("Combat"));
-	CombatComponent->FinisherLocation = CreateDefaultSubobject<USceneComponent>(TEXT("FinisherLocation"));
-	CombatComponent->FinisherLocation->SetupAttachment(GetMesh());
-	CombatComponent->FinisherLocation->SetRelativeLocation(FVector(-8.f, 80.f, 0.f));
-
-	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("Inventory"));
-
-	CharacterStateComponent = CreateDefaultSubobject<UCharacterStateComponent>(TEXT("CharacterStates"));
-
 	SpectralWeaponComponent = CreateDefaultSubobject<USpectralWeaponComponent>(TEXT("SpectralWeapon"));
-	//SpectralWeaponComponent->GetSpectralWeaponMeshComponent()->SetupAttachment(GetMesh(), FName("RightHandSocketWeapon"));
-
-	ExtraMovementComponent = CreateDefaultSubobject<UExtraMovementComponent>(TEXT("ExtraMovementComponent"));
 }
 
 void APlayerMain::PerformSpectralAttack_Implementation()
 {
-	if (IsEquipping() || CharacterStateComponent->GetCurrentCharacterState().SpectralState == ECharacterSpectralStates::ECSS_Unequipped) return;
+	if (IsEquipping() || GetCharacterStateComponent()->GetCurrentCharacterState().SpectralState == ECharacterSpectralStates::ECSS_Unequipped) return;
 
 	SpectralWeaponComponent->PrimaryFire();
 }
 
 void APlayerMain::PerformSpectralBarrier_Implementation()
 {
-	if (IsEquipping() || CharacterStateComponent->GetCurrentCharacterState().SpectralState == ECharacterSpectralStates::ECSS_Unequipped) return;
+	if (IsEquipping() || GetCharacterStateComponent()->GetCurrentCharacterState().SpectralState == ECharacterSpectralStates::ECSS_Unequipped) return;
 
 	SpectralWeaponComponent->SecondaryFire();
 }
@@ -97,83 +73,36 @@ void APlayerMain::PerformSpectralBarrier_Implementation()
 void APlayerMain::ResetSpectralAttack_Implementation()
 {
 	SpectralAttackIndex = 0;
-	CombatComponent->bIsSaveLightAttack = false;
+	GetCombatComponent()->bIsSaveLightAttack = false;
 }
 
 void APlayerMain::GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived)
 {
-	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Dead })) return;
-
-	if (ReceiveDamageSFX)
-	{
-		UGameplayStatics::PlaySoundAtLocation(GetWorld(), ReceiveDamageSFX, GetActorLocation());
-	}
+	Super::GetHit_Implementation(DamageCauser, ImpactPoint, DamageType, DamageReceived);
 
 	if (DamageType == USpectralTrapDamageType::StaticClass())
 	{
 		StunBehavior();
-	}
-	else
-	{
-		if (!IsEquipping())
-		{
-			CombatComponent->GetDirectionalReact(ImpactPoint, DamageType);
-		}	
-	}
-}
-
-UCharacterStateComponent* APlayerMain::GetCharacterStateComponent_Implementation()
-{
-	return CharacterStateComponent;
-}
-
-UMementoComponent* APlayerMain::GetMementoComponent_Implementation()
-{
-	return MementoComponent;
-}
-
-void APlayerMain::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled)
-{
-	if (InventoryComponent)
-	{
-		AItem* CurrentItem = InventoryComponent->GetEquippedItem();
-		if (CurrentItem)
-		{
-			UPrimitiveComponent* ItemCollisionComponent = CurrentItem->GetCollisionComponent();
-			if (ItemCollisionComponent)
-			{
-				ItemCollisionComponent->SetCollisionEnabled(CollisionEnabled);
-				if (ASword* Sword = Cast<ASword>(CurrentItem))
-				{
-					if (CollisionEnabled != ECollisionEnabled::NoCollision)
-					{
-						Sword->IgnoreActors.Empty();
-					}
-				}
-			}
-		}
-	}
+	}	
 }
 
 void APlayerMain::BeginPlay()
 {
 	Super::BeginPlay();
 
-	PlayerControllerRef = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+	GetAttributeComponent()->RegenerateTick();
 
-	Attributes->RegenerateTick();
-
-	Attributes->OnEntityDead.AddLambda(
+	GetAttributeComponent()->OnEntityDead.AddLambda(
 		[this]
 		{
 			Die();
 		}
 	);
 
-	CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral ?
+	GetCharacterStateComponent()->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral ?
 		SpectralWeaponComponent->EnableSpectralWeapon(true) : SpectralWeaponComponent->EnableSpectralWeapon(false);
 
-	CombatComponent->OnWallHit.AddDynamic(this, &APlayerMain::OnWallCollision);
+	GetCombatComponent()->OnWallHit.AddDynamic(this, &APlayerMain::OnWallCollision);
 
 	for (TActorIterator<ACameraActor> It(GetWorld()); It; ++It)
 	{
@@ -184,7 +113,7 @@ void APlayerMain::BeginPlay()
 	APlayerController* PC = Cast<APlayerController>(GetController());
 	if (FollowCamera && PC)
 	{
-		FollowCamera->AttachToComponent(CameraBoom, FAttachmentTransformRules::SnapToTargetIncludingScale, FName("SprinEndpoint"));
+		FollowCamera->AttachToComponent(GetSpringArmComponent(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName("SpringEndpoint"));
 		PC->SetViewTargetWithBlend(FollowCamera, 1.f);
 	}
 
@@ -196,7 +125,7 @@ void APlayerMain::BeginPlay()
 	{
 		if (ANewGameStateBase* NewGameStateBase = Cast<ANewGameStateBase>(NewGameMode->GameState))
 		{
-			if (MementoComponent)
+			if (GetMementoComponent())
 			{
 				NewGameStateBase->RegisterMementoEntity(this);
 			}
@@ -209,7 +138,7 @@ void APlayerMain::SearchTarget()
 	FVector Start = GetActorLocation();
 	FVector End = GetActorLocation() + GetViewRotation().Vector() * TrackTargetDistance;
 
-	AActor* Enemy = CombatComponent->SphereTraceForEnemies(Start, End);
+	AActor* Enemy = GetCombatComponent()->SphereTraceForEnemies(Start, End);
 
 	if (Enemy)
 	{
@@ -218,25 +147,13 @@ void APlayerMain::SearchTarget()
 	else SpectralTarget = nullptr;
 }
 
-void APlayerMain::StunBehavior()
-{
-	GetMesh()->GlobalAnimRateScale = .5f;
-	GetCharacterMovement()->MaxWalkSpeed = StunMaxWalkSpeed;
-}
-
-void APlayerMain::RemoveStunBehavior()
-{
-	GetMesh()->GlobalAnimRateScale = 1.f;
-	GetCharacterMovement()->MaxWalkSpeed = DefaultMaxWalkSpeed;
-}
-
 float APlayerMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	if (!bCanReceiveDamage) return 0.f;
 
-	if (Attributes && Attributes->IsAlive())
+	if (GetAttributeComponent() && GetAttributeComponent()->IsAlive())
 	{
-		Attributes->ReceiveDamage(DamageAmount);
+		GetAttributeComponent()->ReceiveDamage(DamageAmount);
 	}
 	else
 	{
@@ -245,292 +162,9 @@ float APlayerMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEven
 	return DamageAmount;
 }
 
-void APlayerMain::HitStop(float Duration, float TimeScale)
-{
-	if (UWorld* World = GetWorld())
-	{
-		World->GetWorldSettings()->SetTimeDilation(TimeScale);
-
-		FTimerHandle TimerHandle;
-		World->GetTimerManager().SetTimer(TimerHandle, this, &APlayerMain::ResetTimeDilation, Duration, false);
-	}
-}
-
-void APlayerMain::ResetTimeDilation()
-{
-	if (UWorld* World = GetWorld())
-	{
-		World->GetWorldSettings()->SetTimeDilation(1.0f);
-	}
-}
-
-AEnemy* APlayerMain::GetTargetEnemy()
-{
-	FVector Start;
-	FVector End;
-
-	if (FollowCamera)
-	{
-		Start = FollowCamera->GetActorLocation() + FollowCamera->GetActorForwardVector() * 100.f;
-		End = Start + FollowCamera->GetActorForwardVector() * PossessDistance;
-	}
-
-	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
-	ObjectTypes.Empty();
-	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_GameTraceChannel3));
-
-	TArray<AActor*> ActorsToIgnore;
-	ActorsToIgnore.Add(GetOwner());
-
-	FHitResult ResultHit;
-
-	bool bHit = UKismetSystemLibrary::SphereTraceSingle(
-		GetWorld(),
-		Start,
-		End,
-		InteractTargetRadius,
-		ETraceTypeQuery::TraceTypeQuery4,
-		false,
-		ActorsToIgnore,
-		EDrawDebugTrace::ForDuration,
-		ResultHit,
-		true
-	);
-
-	if (bHit)
-	{
-
-		if (IHitInterface* Entity = Cast<IHitInterface>(ResultHit.GetActor()))
-		{
-			if (Entity->Execute_IsLaunchable(ResultHit.GetActor(), this))
-			{
-				//esto es una garompa, se soluciona de otra manera. A continuacion el 'susodicho'
-				if (Cast<APaladinBoss>(ResultHit.GetActor())) return nullptr;
-
-				else return Cast<AEnemy>(ResultHit.GetActor());
-			}
-			else return nullptr;
-		}
-		else return nullptr;
-	}
-	else return nullptr;
-}
-
-void APlayerMain::PossessEnemy()
-{
-	if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral && !IsEquipping())
-	{
-		AEnemy* TargetEnemy = GetTargetEnemy();
-		PlayerControllerRef = Cast<APlayerController>(GetController());
-
-		if (PlayerControllerRef && TargetEnemy && TargetEnemy->GetEnemyState() != EEnemyState::EES_Died && Attributes->RequiresEnergy(10.f))
-		{
-			TargetEnemy->DisableAI();
-			PlayerControllerRef->Possess(TargetEnemy);
-			PossessedEnemy = TargetEnemy;
-
-			TargetEnemy->EnableInput(PlayerControllerRef);
-			TargetEnemy->AutoPossessPlayer = EAutoReceiveInput::Player0;
-			TargetEnemy->OnPossessed(this, Attributes->GetEnergy());
-
-			FollowCamera->AttachToComponent(TargetEnemy->SpringArm, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("SpringEndpoint"));
-			PlayerControllerRef->SetViewTargetWithBlend(FollowCamera, 1.f);
-
-			CharacterStateComponent->SetCharacterForm(ECharacterForm::ECF_Possessing);
-
-			SetActorHiddenInGame(true);
-
-			if (InventoryComponent->GetEquippedItem())
-			{
-				InventoryComponent->GetEquippedItem()->SetActorHiddenInGame(true);
-			}
-
-			SetActorEnableCollision(false);
-			GetMesh()->bPauseAnims = true;
-		}
-		else if (!Attributes->RequiresEnergy(10.f) && ErrorSFX)
-		{
-			UGameplayStatics::PlaySound2D(GetWorld(), ErrorSFX);
-		}
-	}
-	else CombatComponent->Execute();
-}
-
-void APlayerMain::ReleasePossession(AEnemy* EnemyBeingUnpossessed)
-{
-	CharacterStateComponent->SetCharacterForm(ECharacterForm::ECF_Spectral);
-
-	if (PlayerControllerRef)
-	{
-		PlayerControllerRef->Possess(this);
-
-		if (IsValid(this->PossessedEnemy))
-		{
-			this->PossessedEnemy->DisableInput(PlayerControllerRef);
-			this->PossessedEnemy->EnableAI();
-		}
-
-		if (IsValid(FollowCamera) && IsValid(CameraBoom))
-		{
-			FollowCamera->AttachToComponent(CameraBoom, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("SpringEndpoint"));
-			PlayerControllerRef->SetViewTargetWithBlend(FollowCamera, 1.f);
-		}
-	}
-
-	SetActorHiddenInGame(false);
-
-	if (InventoryComponent->GetEquippedItem())
-	{
-		InventoryComponent->GetEquippedItem()->SetActorHiddenInGame(false);
-	}
-
-	SetActorEnableCollision(true);
-
-	if (IsValid(EnemyBeingUnpossessed))
-	{
-		SetActorLocation(EnemyBeingUnpossessed->GetActorLocation());
-		SetActorRotation(EnemyBeingUnpossessed->GetActorRotation());
-	}
-	else if (IsValid(this->PossessedEnemy))
-	{
-		SetActorLocation(this->PossessedEnemy->GetActorLocation());
-		SetActorRotation(this->PossessedEnemy->GetActorRotation());
-	}
-
-	if (GetMesh())
-	{
-		GetMesh()->bPauseAnims = false;
-	}
-
-	this->PossessedEnemy = nullptr;
-}
-
-
-void APlayerMain::Move(const FInputActionValue& Value)
-{
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Block, ECharacterActions::ECA_Finish, ECharacterActions::ECA_Dead, ECharacterActions::ECA_Stun }))
-	{
-		const FVector2D MoveVector = Value.Get<FVector2D>();
-
-		const FRotator ControlRotation = GetControlRotation();
-		const FRotator YawRotation(0.f, ControlRotation.Yaw, 0.f);
-
-		const FVector DirectionForward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-		const FVector DirectionSideward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-
-		AddMovementInput(DirectionForward, MoveVector.Y);
-		AddMovementInput(DirectionSideward, MoveVector.X);
-	}
-}
-
-void APlayerMain::Dodge(const FInputActionValue& Value)
-{
-	if (!IsEquipping())
-	{
-		ExtraMovementComponent->Input_Dodge();
-	}
-	
-}
-
-bool APlayerMain::IsEquipping()
-{
-	return CharacterStateComponent->GetCurrentCharacterState().SpectralState == ECharacterSpectralStates::ECSS_EquippingPistol
-		|| CharacterStateComponent->GetCurrentCharacterState().State == ECharacterStates::ECS_EquippingSword;
-}
-
-void APlayerMain::Look(const FInputActionValue& Value)
-{
-	const FVector2D LookingVector = Value.Get<FVector2D>();
-
-	AddControllerPitchInput(LookingVector.Y);
-	AddControllerYawInput(LookingVector.X);
-}
-
-void APlayerMain::Jump()
-{
-	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Nothing, ECharacterActions::ECA_Attack }) && ExtraMovementComponent->CanDoubleJump && !IsEquipping())
-	{
-		PlayAnimMontage(ExtraMovementComponent->JumpMontage, 1.f);
-
-		Super::Jump();
-
-		if (GetCharacterMovement()->IsFalling() && ExtraMovementComponent->CanDoubleJump)
-		{
-			ExtraMovementComponent->Input_DoubleJump();
-		}
-	}
-}
-
-void APlayerMain::Landed(const FHitResult& Hit)
-{
-	Super::Landed(Hit);
-	CombatComponent->bIsLaunched = false;
-	ExtraMovementComponent->CanDoubleJump = true;
-}
-
-void APlayerMain::Interact(const FInputActionValue& Value)
-{
-	if (InventoryComponent && InventoryComponent->IsInventoryOpen() && IsEquipping()) return;
-	
-	FVector TraceStart;
-	FRotator CameraRotation;
-	Controller->GetPlayerViewPoint(TraceStart, CameraRotation);
-
-	FVector TraceDirection = CameraRotation.Vector();
-	FVector TraceEnd = TraceStart + (TraceDirection * InteractTraceLenght);
-
-	TArray<AActor*> ActorsToIgnore;
-	ActorsToIgnore.Add(GetOwner());
-
-	FHitResult ResultHit;
-
-	bool bHit = UKismetSystemLibrary::SphereTraceSingle(
-		GetWorld(),
-		TraceStart,
-		TraceEnd,
-		InteractTargetRadius,
-		ETraceTypeQuery::TraceTypeQuery1, //visibility trace
-		false,
-		ActorsToIgnore,
-		EDrawDebugTrace::ForDuration,
-		ResultHit,
-		true
-	);
-
-
-	if (bHit && InventoryComponent)
-	{
-		if (ASword* HitSword = Cast<ASword>(ResultHit.GetActor()))
-		{
-			if (CharacterStateComponent->GetCurrentCharacterState().Form != ECharacterForm::ECF_Spectral)
-			{
-				if (InventoryComponent->TryAddItem(HitSword))
-				{
-					ActorsToIgnore.Add(HitSword);
-					HitSword->OnWallHit.AddDynamic(this, &APlayerMain::OnWallCollision);
-
-					Equipping(true);
-				}
-			}
-		}
-		else if (ISpectralInteractable* SpectralObjectInteractable = Cast<ISpectralInteractable>(ResultHit.GetActor()))
-		{
-			if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
-			{
-				SpectralObjectInteractable->Execute_SpectralInteract(ResultHit.GetActor(), this);
-			}
-		}
-		else if (AItem* HitItem = Cast<AItem>(ResultHit.GetActor()))
-		{
-			HitItem->Use(this);
-			Equipping(false);
-		}
-	}
-}
-
 void APlayerMain::Equipping(bool bIsSwordBeingEquipped)
 {
-	ECharacterForm ActualForm = CharacterStateComponent->GetCurrentCharacterState().Form;
+	ECharacterForm ActualForm = GetCharacterStateComponent()->GetCurrentCharacterState().Form;
 
 	if (ActualForm == ECharacterForm::ECF_Human) //si estoy en humano
 	{
@@ -538,19 +172,19 @@ void APlayerMain::Equipping(bool bIsSwordBeingEquipped)
 
 		if (bIsSwordBeingEquipped) //y estoy equipando una espada
 		{
-			if (InventoryComponent->GetEquippedItem())
+			if (GetInventoryComponent()->GetEquippedItem())
 			{
-				if (SpectralWeaponComponent->bWasInitialized && CharacterStateComponent->GetCurrentCharacterState().SpectralState == ECharacterSpectralStates::ECSS_EquippedPistol)
+				if (SpectralWeaponComponent->bWasInitialized && GetCharacterStateComponent()->GetCurrentCharacterState().SpectralState == ECharacterSpectralStates::ECSS_EquippedPistol)
 				{
 					PlayAnimMontage(EquipPistolMontage, 1.f, FName("BackToSword"));
-					CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_EquippingSword);
+					GetCharacterStateComponent()->SetCharacterState(ECharacterStates::ECS_EquippingSword);
 				}
 				else
 				{
 					/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Red, FString("Equipping sword"));*/
 
 					PlayAnimMontage(EquipSwordMontage, 1.f, FName("Equip"));
-					CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_EquippingSword);
+					GetCharacterStateComponent()->SetCharacterState(ECharacterStates::ECS_EquippingSword);
 				}
 			}
 			else
@@ -558,19 +192,19 @@ void APlayerMain::Equipping(bool bIsSwordBeingEquipped)
 				if (SpectralWeaponComponent->bWasInitialized)
 				{
 					PlayAnimMontage(EquipPistolMontage, 1.f, FName("Unequip"));
-					CharacterStateComponent->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
+					GetCharacterStateComponent()->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
 				}
 				/*else GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Cyan, FString("No equipped item, so none animation will be played..."));*/
 			}
 		}
 		else //o estoy equipando una pistola
 		{
-			if (!InventoryComponent->GetEquippedItem()) //si no tengo espada
+			if (!GetInventoryComponent()->GetEquippedItem()) //si no tengo espada
 			{
 				/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Orange, FString("Only pick pistol"));*/
 
 				PlayAnimMontage(EquipPistolMontage, 1.f, FName("Unequip"));
-				CharacterStateComponent->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
+				GetCharacterStateComponent()->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
 			}
 			else
 			{
@@ -578,7 +212,7 @@ void APlayerMain::Equipping(bool bIsSwordBeingEquipped)
 				/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Green, FString("Unequip sword and equip pistol"));*/
 
 				PlayAnimMontage(EquipSwordMontage, 1.f, FName("PickPistol"));
-				CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_EquippingSword);
+				GetCharacterStateComponent()->SetCharacterState(ECharacterStates::ECS_EquippingSword);
 			}
 		}
 	}
@@ -588,30 +222,30 @@ void APlayerMain::Equipping(bool bIsSwordBeingEquipped)
 
 		if (!bIsSwordBeingEquipped)
 		{
-			if (InventoryComponent->GetEquippedItem())
+			if (GetInventoryComponent()->GetEquippedItem())
 			{
 				if (SpectralWeaponComponent->bWasInitialized)
 				{
-					if (CharacterStateComponent->GetCurrentCharacterState().State == ECharacterStates::ECS_EquippedSword)
+					if (GetCharacterStateComponent()->GetCurrentCharacterState().State == ECharacterStates::ECS_EquippedSword)
 					{
 						/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Cyan, FString("Has sword equipped"));*/
 
 						PlayAnimMontage(EquipSwordMontage, 1.f, FName("SwitchToPistol"));
-						CharacterStateComponent->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
+						GetCharacterStateComponent()->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
 					}
 					else
 					{
 						/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Blue, FString("Sword it's on the back"));*/
 
 						PlayAnimMontage(EquipPistolMontage, 1.f, FName("Equip"));
-						CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_Unequipped);
-						CharacterStateComponent->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
+						GetCharacterStateComponent()->SetCharacterState(ECharacterStates::ECS_Unequipped);
+						GetCharacterStateComponent()->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
 					}
 				}
 				else
 				{
 					PlayAnimMontage(EquipSwordMontage, 1.f, FName("Unequip"));
-					CharacterStateComponent->SetCharacterState(ECharacterStates::ECS_EquippingSword);
+					GetCharacterStateComponent()->SetCharacterState(ECharacterStates::ECS_EquippingSword);
 				}
 			}
 			else
@@ -621,7 +255,7 @@ void APlayerMain::Equipping(bool bIsSwordBeingEquipped)
 					/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Blue, FString("Sword not equipped"));*/
 
 					PlayAnimMontage(EquipPistolMontage, 1.f, FName("Equip"));
-					CharacterStateComponent->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
+					GetCharacterStateComponent()->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
 				}
 			}
 			
@@ -629,65 +263,17 @@ void APlayerMain::Equipping(bool bIsSwordBeingEquipped)
 	}	
 }
 
-void APlayerMain::Attack(const FInputActionValue& Value)
-{
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }) && !IsEquipping())
-	{
-		CombatComponent->Input_Attack(Value);
-	}
-}
-
-void APlayerMain::HeavyAttack(const FInputActionValue& Value)
-{
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }) && !IsEquipping())
-	{
-		CombatComponent->Input_HeavyAttack(Value);
-	}
-}
-
-void APlayerMain::LaunchAttack(const FInputActionValue& Value)
-{
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }) && !IsEquipping())
-	{
-		CombatComponent->Input_Launch(Value);
-	}
-}
-
-void APlayerMain::Block(const FInputActionValue& Value)
-{
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }) && !IsEquipping())
-	{
-		CombatComponent->Input_Block(Value);
-	}
-}
-
-void APlayerMain::ReleaseBlock(const FInputActionValue& Value)
-{
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }) && !IsEquipping())
-	{
-		CombatComponent->Input_ReleaseBlock(Value);
-	}
-}
-
-void APlayerMain::Execute(const FInputActionValue& Value)
-{
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }) && !IsEquipping())
-	{
-		CombatComponent->Input_Execute(Value);
-	}
-}
-
 void APlayerMain::ToggleForm()
 {
-	if (!IsValid(CharacterStateComponent)) return;
+	if (!IsValid(GetCharacterStateComponent())) return;
 	
 	if (!GetWorld()) return;
 
-	if (!IsValid(Attributes)) return;
+	if (!IsValid(GetAttributeComponent())) return;
 
 	if (IsEquipping()) return;
 
-	if (CharacterStateComponent->IsActionEqualToAny({
+	if (GetCharacterStateComponent()->IsActionEqualToAny({
 		ECharacterActions::ECA_Dead,
 		ECharacterActions::ECA_Block,
 		ECharacterActions::ECA_Finish,
@@ -701,17 +287,17 @@ void APlayerMain::ToggleForm()
 	float CurrentTime = GetWorld()->GetTimeSeconds();
 	if (CurrentTime - LastTransformationTime < TransformationCooldown) return;
 
-	if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Human)
+	if (GetCharacterStateComponent()->GetCurrentCharacterState().Form == ECharacterForm::ECF_Human)
 	{
-		Attributes->StartDecreaseEnergy();
+		GetAttributeComponent()->StartDecreaseEnergy();
 		WithEnergy();
-		Attributes->StopRegenerateTick();
+		GetAttributeComponent()->StopRegenerateTick();
 	}
 	else
 	{
-		Attributes->StopDecreaseEnergy();
+		GetAttributeComponent()->StopDecreaseEnergy();
 		OutOfEnergy();
-		Attributes->RegenerateTick();
+		GetAttributeComponent()->RegenerateTick();
 	}
 
 	LastTransformationTime = CurrentTime;
@@ -719,12 +305,12 @@ void APlayerMain::ToggleForm()
 
 void APlayerMain::WithEnergy()
 {
-	if (Attributes->ItHasEnergy())
+	if (GetAttributeComponent()->ItHasEnergy())
 	{
 		PlayerFormComponent->ToggleForm(true);
-		Attributes->StartDecreaseEnergy();
-		Attributes->OnDepletedCallback = [this]() { OutOfEnergy(); };
-		Attributes->RegenerateTick();
+		GetAttributeComponent()->StartDecreaseEnergy();
+		GetAttributeComponent()->OnDepletedCallback = [this]() { OutOfEnergy(); };
+		GetAttributeComponent()->RegenerateTick();
 		GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = true;
 	}
 }
@@ -732,9 +318,9 @@ void APlayerMain::WithEnergy()
 void APlayerMain::OutOfEnergy()
 {
 	PlayerFormComponent->ToggleForm(false);
-	if (Attributes)
+	if (GetAttributeComponent())
 	{
-		Attributes->RegenerateTick();
+		GetAttributeComponent()->RegenerateTick();
 	}
 
 	if (GetCharacterMovement() && GetCharacterMovement()->GetPawnOwner())
@@ -747,67 +333,41 @@ void APlayerMain::OutOfEnergy()
 		SpectralWeaponComponent->EnableSpectralWeapon(false);
 	}
 
-	if (InventoryComponent && InventoryComponent->GetEquippedItem())
+	if (GetInventoryComponent() && GetInventoryComponent()->GetEquippedItem())
 	{
-		InventoryComponent->GetEquippedItem()->EnableVisuals(true);
+		GetInventoryComponent()->GetEquippedItem()->EnableVisuals(true);
 	}
 
-	if (this->PossessedEnemy)
+	if (GetPossessionComponent()->GetEnemyPossessed())
 	{
-		if (IsValid(this->PossessedEnemy))
-		{
-			this->PossessedEnemy->UnPossess();
-		}
-		else this->PossessedEnemy = nullptr;
-		
+		GetPossessionComponent()->ReleasePossession();
 	}
 }
 
 void APlayerMain::Die()
 {
-	if (!bIsDead)
+	if (PlayerControllerRef)
 	{
-		bIsDead = true;
-
-		GetCharacterMovement()->DisableMovement();
-		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Dead);
-
-		if (DeathMontage)
-		{
-			StopAnimMontage();
-			PlayAnimMontage(DeathMontage);
-		}
-		
-		APlayerController* PlayerController = Cast<APlayerController>(GetController());
-		if (PlayerController)
-		{
-			DisableInput(PlayerController);
-		}
-		
-		FTimerHandle TimerHandle_LoadCheckpoint;
-		GetWorldTimerManager().SetTimer(TimerHandle_LoadCheckpoint, this, &APlayerMain::LoadLastCheckpoint, 2.0f, false);
+		DisableInput(PlayerControllerRef);
 	}
+
+	FTimerHandle TimerHandle_LoadCheckpoint;
+	GetWorldTimerManager().SetTimer(TimerHandle_LoadCheckpoint, this, &APlayerMain::LoadLastCheckpoint, 2.0f, false);
 }
 
 void APlayerMain::Revive()
 {
-	if (bIsDead)
+	if (GetCharacterStateComponent()->GetCurrentCharacterState().Action == ECharacterActions::ECA_Dead)
 	{
-		bIsDead = false;
-
 		StopAnimMontage();
 
-		APlayerController* PlayerController = Cast<APlayerController>(GetController());
-		if (PlayerController)
+		if (PlayerControllerRef)
 		{
-			EnableInput(PlayerController);
+			EnableInput(PlayerControllerRef);
 		}
 
 		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
-		if (CombatComponent)
-		{
-			CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Nothing);
-		}
+		GetCharacterStateComponent()->SetCharacterAction(ECharacterActions::ECA_Nothing);
 	}
 }
 
@@ -815,24 +375,12 @@ void APlayerMain::ResetFollowCamera()
 {
 	if (FollowCamera && PlayerControllerRef)
 	{
-		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Nothing);
-		FollowCamera->AttachToComponent(CameraBoom, FAttachmentTransformRules::SnapToTargetIncludingScale, FName("SprinEndpoint"));
+		GetCharacterStateComponent()->SetCharacterAction(ECharacterActions::ECA_Nothing);
+		FollowCamera->AttachToComponent(GetSpringArmComponent(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName("SpringEndpoint"));
 		PlayerControllerRef->EnableInput(PlayerControllerRef);
 		bCanReceiveDamage = true;
 		Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->SetEnemiesAIEnabled(true);
 	}
-}
-
-void APlayerMain::RestartLevel()
-{	
-	FName CurrentLevel = *UGameplayStatics::GetCurrentLevelName(this);
-	UGameplayStatics::OpenLevel(this, FName("Felipe"));
-}
-
-void APlayerMain::OnWallCollision(const FHitResult& HitResult)
-{
-	StopAnimMontage();
-	CombatComponent->HitReactJumpToSection(FName("ReactToShield"));
 }
 
 void APlayerMain::LoadLastCheckpoint()
@@ -848,42 +396,42 @@ void APlayerMain::LoadLastCheckpoint()
 
 void APlayerMain::ChangePrimaryWeapon()
 {
-	if (CharacterStateComponent->IsFormEqualToAny({ ECharacterForm::ECF_Spectral })) return;
+	if (GetCharacterStateComponent()->IsFormEqualToAny({ ECharacterForm::ECF_Spectral })) return;
 
-	InventoryComponent->ChangeWeapon(0);
+	GetInventoryComponent()->ChangeWeapon(0);
 	Equipping(true);
 }
 
 void APlayerMain::ChangeSecondaryWeapon()
 {
-	if (CharacterStateComponent->IsFormEqualToAny({ ECharacterForm::ECF_Spectral })) return;
+	if (GetCharacterStateComponent()->IsFormEqualToAny({ ECharacterForm::ECF_Spectral })) return;
 
-	InventoryComponent->ChangeWeapon(1);
+	GetInventoryComponent()->ChangeWeapon(1);
 	Equipping(true);
 }
 
-void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
-	{
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APlayerMain::Move);
-		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlayerMain::Look);
-		EnhancedInputComponent->BindAction(ExtraMovementComponent->JumpAction, ETriggerEvent::Triggered, this, &APlayerMain::Jump);
-		EnhancedInputComponent->BindAction(ExtraMovementComponent->DodgeAction, ETriggerEvent::Started, this, &APlayerMain::Dodge);
-		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &APlayerMain::Interact);
-
-		EnhancedInputComponent->BindAction(CombatComponent->AttackAction, ETriggerEvent::Triggered, this, &APlayerMain::Attack);
-		EnhancedInputComponent->BindAction(CombatComponent->HeavyAttackAction, ETriggerEvent::Started, this, &APlayerMain::HeavyAttack);
-		EnhancedInputComponent->BindAction(CombatComponent->LaunchAction, ETriggerEvent::Triggered, this, &APlayerMain::LaunchAttack);
-		//EnhancedInputComponent->BindAction(CombatComponent->BlockAction, ETriggerEvent::Started, this, &APlayerMain::Block);
-		//EnhancedInputComponent->BindAction(CombatComponent->BlockAction, ETriggerEvent::Completed, this, &APlayerMain::ReleaseBlock);
-
-		EnhancedInputComponent->BindAction(ChangeFormAction, ETriggerEvent::Started, this, &APlayerMain::ToggleForm);
-		EnhancedInputComponent->BindAction(PossessAction, ETriggerEvent::Completed, this, &APlayerMain::PossessEnemy);
-		
-		//EnhancedInputComponent->BindAction(InventoryComponent->Slot1_InventoryAction, ETriggerEvent::Started, this, &APlayerMain::ChangePrimaryWeapon);
-		//EnhancedInputComponent->BindAction(InventoryComponent->Slot2_InventoryAction, ETriggerEvent::Started, this, &APlayerMain::ChangeSecondaryWeapon);
-	}
-}
+//void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+//{
+//	Super::SetupPlayerInputComponent(PlayerInputComponent);
+//
+//	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
+//	{
+//		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APlayerMain::Move);
+//		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlayerMain::Look);
+//		EnhancedInputComponent->BindAction(GetExtraMovementComponent()->JumpAction, ETriggerEvent::Triggered, this, &APlayerMain::Jump);
+//		EnhancedInputComponent->BindAction(GetExtraMovementComponent()->DodgeAction, ETriggerEvent::Started, this, &APlayerMain::Dodge);
+//		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &APlayerMain::Interact);
+//
+//		EnhancedInputComponent->BindAction(GetCombatComponent()->AttackAction, ETriggerEvent::Triggered, this, &APlayerMain::Attack);
+//		EnhancedInputComponent->BindAction(GetCombatComponent()->HeavyAttackAction, ETriggerEvent::Started, this, &APlayerMain::HeavyAttack);
+//		EnhancedInputComponent->BindAction(GetCombatComponent()->LaunchAction, ETriggerEvent::Triggered, this, &APlayerMain::LaunchAttack);
+//		//EnhancedInputComponent->BindAction(GetCombatComponent()->BlockAction, ETriggerEvent::Started, this, &APlayerMain::Block);
+//		//EnhancedInputComponent->BindAction(GetCombatComponent()->BlockAction, ETriggerEvent::Completed, this, &APlayerMain::ReleaseBlock);
+//
+//		EnhancedInputComponent->BindAction(ChangeFormAction, ETriggerEvent::Started, this, &APlayerMain::ToggleForm);
+//		EnhancedInputComponent->BindAction(PossessAction, ETriggerEvent::Completed, this, &APlayerMain::PossessEnemy);
+//		
+//		//EnhancedInputComponent->BindAction(GetInventoryComponent()->Slot1_InventoryAction, ETriggerEvent::Started, this, &APlayerMain::ChangePrimaryWeapon);
+//		//EnhancedInputComponent->BindAction(GetInventoryComponent()->Slot2_InventoryAction, ETriggerEvent::Started, this, &APlayerMain::ChangeSecondaryWeapon);
+//	}
+//}

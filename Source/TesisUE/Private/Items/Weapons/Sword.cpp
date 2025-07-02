@@ -161,9 +161,8 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 						);
 					}
 
-					APlayerMain* PlayerRef = Cast<APlayerMain>(GetOwner());
-
-					PlayerRef->CombatComponent->HitReactJumpToSection(FName("ReactToShield"));
+					//APlayerMain* PlayerRef = Cast<APlayerMain>(GetOwner());
+					//PlayerRef->CombatComponent->HitReactJumpToSection(FName("ReactToShield"));
 
 					if (ShieldImpactSFX)
 					{

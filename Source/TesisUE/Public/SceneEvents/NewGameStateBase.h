@@ -16,10 +16,10 @@ class TESISUE_API ANewGameStateBase : public AGameStateBase
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "Memento")
-	void RegisterMementoEntity(AActor* Entity);
+	void RegisterMementoEntity(AEntity* Entity);
 	
 	UFUNCTION(BlueprintCallable, Category = "Memento")
-	void UnregisterMementoEntity(AActor* Entity);
+	void UnregisterMementoEntity(AEntity* Entity);
 
 	UFUNCTION(BlueprintCallable, Category = "Memento", BlueprintPure)
 	TArray<AActor*> GetMementoEntities() const;
