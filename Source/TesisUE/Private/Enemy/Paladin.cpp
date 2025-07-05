@@ -131,6 +131,12 @@ void APaladin::Die()
 void APaladin::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled)
 {
 	GetAttributeComponent()->DecreaseEnergyBy(PossessionAttackCost);
+
+	if (SwordCollider)
+	{
+		SwordCollider->SetCollisionEnabled(CollisionEnabled);
+		IgnoreActors.Empty();
+	}
 }
 
 void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -152,7 +158,7 @@ void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 		UEngineTypes::ConvertToTraceType(ECC_Pawn),
 		false,
 		IgnoreActors,
-		EDrawDebugTrace::None,
+		EDrawDebugTrace::ForDuration,
 		HitResults,
 		true
 	);
@@ -205,7 +211,11 @@ void APaladin::ShieldHit()
 
 void APaladin::LaunchUp_Implementation(const FVector& InstigatorLocation)
 {
-	if (!GetAttributeComponent()->IsShielded()) LaunchEnemyUp(InstigatorLocation);
+	if (!GetAttributeComponent()->IsShielded())
+	{
+		Super::LaunchUp_Implementation(InstigatorLocation);
+		LaunchEnemyUp(InstigatorLocation);
+	}
 }
 
 void APaladin::LaunchEnemyUp(const FVector& InstigatorLocation)
@@ -215,7 +225,6 @@ void APaladin::LaunchEnemyUp(const FVector& InstigatorLocation)
 	isLaunched = true;
 	DisableAI();
 	PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
-	SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, InstigatorLocation.Z));
 	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
 }
 
@@ -249,10 +258,14 @@ void APaladin::ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactP
 
 	case EMainDamageTypes::EMDT_Finisher:
 		GetFinished_Implementation();
-		return;
 		break;
+
+	case EMainDamageTypes::EMDT_None:
+		GetCombatComponent()->GetDirectionalReact(ImpactPoint);
+		break;
+
 	default:
-		Super::ReactToDamage(DamageType, ImpactPoint);
+		GetCombatComponent()->GetDirectionalReact(ImpactPoint);
 		break;
 	}
 }
