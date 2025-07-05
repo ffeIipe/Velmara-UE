@@ -1,6 +1,9 @@
 #include "Components/PlayerFormComponent.h"
 #include "Components/SpectralObjectComponent.h"
-#include "Interfaces/CharacterState.h"
+#include "Components/AttributeComponent.h"
+#include "Components/InventoryComponent.h"
+#include "Components/PossessionComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Actor.h"
 #include "Engine/World.h"
 #include "Kismet/GameplayStatics.h"
@@ -10,6 +13,7 @@
 #include "Items/Weapons/Sword.h"
 #include "SpectralMode/SpectralObject.h"
 #include "EngineUtils.h"
+#include "Entities/Entity.h"
 #include "Player/PlayerMain.h"
 #include "GameFramework/Character.h"
 
@@ -32,13 +36,10 @@ void UPlayerFormComponent::BeginPlay()
 {
     Super::BeginPlay();
 
-    CharacterStateInterface = Cast<ICharacterState>(GetOwner());
+    EntityOwner = Cast<AEntity>(GetOwner());
 
-    CharacterStateComponent = GetOwner()->GetComponentByClass<UCharacterStateComponent>();
-
+    CharacterStateComponent = EntityOwner->GetCharacterStateComponent();
     CharacterStateComponent->SetCharacterForm(ECharacterForm::ECF_Human);
-
-    OwningCharacter = Cast<ACharacter>(GetOwner());
 
     if (SpectralCurve)
     {
@@ -48,16 +49,21 @@ void UPlayerFormComponent::BeginPlay()
     }
 }
 
-void UPlayerFormComponent::ToggleForm(bool CanToggle)
+void UPlayerFormComponent::ToggleForm()
 {
-    if (CanToggle)
+    float CurrentTime = GetWorld()->GetTimeSeconds();
+    if (CurrentTime - LastTransformationTime < TransformationCooldown) return;
+
+    if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Human)
     {
-        CharacterStateComponent->IsFormEqualToAny({ ECharacterForm::ECF_Human }) ? ApplySpectralEffects() : ApplyHumanEffects();
+        ApplySpectralEffects();
     }
     else
     {
         ApplyHumanEffects();
     }
+
+    LastTransformationTime = CurrentTime;
 }
 
 void UPlayerFormComponent::ApplySpectralEffects()
@@ -66,18 +72,31 @@ void UPlayerFormComponent::ApplySpectralEffects()
     SpectralEffectTimeline->PlayFromStart();
     UGameplayStatics::PlaySound2D(GetWorld(), EnableSpectralModeSFX);
 
-    if (APlayerMain* PlayerRef = Cast<APlayerMain>(OwningCharacter))
+    if (OnSpectralEffectApplied.IsBound())
+    {
+        OnSpectralEffectApplied.Broadcast();
+    }
+
+    if (EntityOwner->GetAttributeComponent()->ItHasEnergy())
+    {
+        EntityOwner->GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = true;
+        EntityOwner->GetAttributeComponent()->StartDecreaseEnergy();
+    }
+
+    if (APlayerMain* PlayerRef = Cast<APlayerMain>(EntityOwner))
     {
         PlayerRef->Equipping(false);
     }
 
-    //-------------------------------------------------------------
-    //TODO: se puede mejorar con una suscripcion a una static class
-    for (TActorIterator<ASpectralObject> It(GetWorld()); It; ++It)
     {
-        if (!It->GetSpectralObjectComponent())return;
+        //-------------------------------------------------------------
+        //TODO: se puede mejorar con una suscripcion a una static class
+        for (TActorIterator<ASpectralObject> It(GetWorld()); It; ++It)
+        {
+            if (!It->GetSpectralObjectComponent())return;
 
-        It->GetSpectralObjectComponent()->SetSpectralVisibility(true);
+            It->GetSpectralObjectComponent()->SetSpectralVisibility(true);
+        }
     }
 }
 
@@ -86,20 +105,42 @@ void UPlayerFormComponent::ApplyHumanEffects()
     CharacterStateComponent->SetCharacterForm(ECharacterForm::ECF_Human);
     SpectralEffectTimeline->Reverse();
     UGameplayStatics::PlaySound2D(GetWorld(), DisableSpectralModeSFX);
+    
+    if (OnHumanEffectApplied.IsBound())
+    {
+        OnHumanEffectApplied.Broadcast();
+    }
 
+    EntityOwner->GetAttributeComponent()->StopDecreaseEnergy();
 
-    if (APlayerMain* PlayerRef = Cast<APlayerMain>(OwningCharacter))
+    EntityOwner->GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = false;
+
+    if (EntityOwner->GetInventoryComponent()->GetEquippedItem())
+    {
+        EntityOwner->GetInventoryComponent()->GetEquippedItem()->EnableVisuals(true);
+    }
+
+    if (EntityOwner->GetPossessionComponent()->GetEntityPossessed())
+    {
+        EntityOwner->GetPossessionComponent()->ReleasePossession();
+    }
+
+    EntityOwner->GetAttributeComponent()->RegenerateTick();
+
+    if (APlayerMain* PlayerRef = Cast<APlayerMain>(EntityOwner))
     {
         PlayerRef->Equipping(true);
     }
 
-    //---------------------------------------------------------
-    //TODO: improve it with a subscription to an a static class
-    for (TActorIterator<ASpectralObject> It(GetWorld()); It; ++It)
     {
-        if (!It || !It->GetSpectralObjectComponent()) return;
+        //---------------------------------------------------------
+        //TODO: improve it with a subscription to an a static class
+        for (TActorIterator<ASpectralObject> It(GetWorld()); It; ++It)
+        {
+            if (!It || !It->GetSpectralObjectComponent()) return;
 
-        It->GetSpectralObjectComponent()->SetSpectralVisibility(false);
+            It->GetSpectralObjectComponent()->SetSpectralVisibility(false);
+        }
     }
 }
 

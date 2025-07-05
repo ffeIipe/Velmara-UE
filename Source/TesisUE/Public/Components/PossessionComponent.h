@@ -7,7 +7,6 @@
 #include "PossessionComponent.generated.h"
 
 class AEntity;
-class AEnemy;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPossessed);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnReleasePossession);
@@ -27,7 +26,7 @@ public:
 	AEntity* GetPossessionOwner() { return PossessionOwner; };
 	
 	UFUNCTION(BlueprintCallable)
-	AEnemy* GetEnemyPossessed() { return EnemyPossessed; };
+	AEntity* GetEntityPossessed() { return EntityPossessed; };
 
 	void Possess();
 
@@ -39,7 +38,7 @@ public:
 	FOnCannotPossess OnCannotPossess;
 	FOnCannotRelease OnCannotRelease;
 
-	void ReceivePossession(AEntity* NewOwner, AEnemy* TargetEnemy, float OwnerEnergy);
+	void ReceivePossession(AEntity* NewOwner, AEntity* TargetEnemy, float OwnerEnergy);
 
 	void ReleasePossession();
 
@@ -48,13 +47,8 @@ public:
 private:
 	void BeginPlay() override;
 
-	AEntity* PossessionOwner;
-	AEnemy* EnemyPossessed;
 
-	/*
-	* ----------Internal Gameplay Logic----------
-	*/
-	AEnemy* GetPossessionVictim();
+	AEntity* GetPossessionVictim();
 
 	/*
 	* ----------Stats----------
@@ -74,5 +68,11 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Energy| Energy Tax");
 	float ReleaseAndExecuteEnergyTax = 3.f;
 	
+	AEntity* PossessionOwner;
+
+	AEntity* EntityPossessed;
+	
 	AEntity* EntityOwner;
+
+	APlayerController* PlayerControllerRef;
 };

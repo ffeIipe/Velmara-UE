@@ -4,6 +4,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CharacterStateComponent.h"
 #include <Components/CombatComponent.h>
+#include <Entities/Entity.h>
+#include "InputAction.h"
 
 
 UExtraMovementComponent::UExtraMovementComponent()
@@ -17,8 +19,10 @@ void UExtraMovementComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	EntityOwner = Cast<AEntity>(GetOwner());
+
 	OwningCharacter = Cast<ACharacter>(GetOwner());
-	OwnerCharacterStateComponent = GetOwner()->GetComponentByClass<UCharacterStateComponent>();
+	OwnerCharacterStateComponent = EntityOwner->GetCharacterStateComponent();
 
 	if (BufferCurve)
 	{
@@ -30,8 +34,7 @@ void UExtraMovementComponent::BeginPlay()
 
 void UExtraMovementComponent::Input_Dodge()
 {
-	if (OwningCharacter->GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling ||
-		OwningCharacter->GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Flying) return;
+	if (EntityOwner->GetCharacterMovement()->GetGroundMovementMode() == EMovementMode::MOVE_Falling || EntityOwner->GetCharacterMovement()->GetGroundMovementMode() == EMovementMode::MOVE_Flying || !EntityOwner->IsEquipping())
 
 	if (OwnerCharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Dodge }))
 	{
@@ -58,10 +61,7 @@ void UExtraMovementComponent::PerformDodge()
 {
 	if (!OwnerCharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Finish, ECharacterActions::ECA_Stun }))
 	{
-		if (GetOwner()->GetComponentByClass<UCombatComponent>())
-		{
-			GetOwner()->GetComponentByClass<UCombatComponent>()->RemoveSoftLockTarget();
-		}
+		EntityOwner->GetCombatComponent()->RemoveSoftLockTarget();
 
 		FVector MovementInput = OwningCharacter->GetLastMovementInputVector();
 		if (!MovementInput.IsNearlyZero())
@@ -115,6 +115,31 @@ void UExtraMovementComponent::UpdateBuffer(float Alpha, float BufferDistance)
 	FVector TargetLocation = FMath::Lerp(CurrentLocation, CurrentLocation + (ForwardVector * BufferDistance), Alpha);
 
 	GetOwner()->SetActorLocation(TargetLocation, true);
+}
+
+void UExtraMovementComponent::Input_Move(const FInputActionValue& Value)
+{
+	if (!OwnerCharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Block, ECharacterActions::ECA_Finish, ECharacterActions::ECA_Dead, ECharacterActions::ECA_Stun }))
+	{
+		const FVector2D MoveVector = Value.Get<FVector2D>();
+
+		const FRotator ControlRotation = EntityOwner->GetControlRotation();
+		const FRotator YawRotation(0.f, ControlRotation.Yaw, 0.f);
+
+		const FVector DirectionForward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+		const FVector DirectionSideward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+
+		EntityOwner->AddMovementInput(DirectionForward, MoveVector.Y);
+		EntityOwner->AddMovementInput(DirectionSideward, MoveVector.X);
+	}	
+}
+
+void UExtraMovementComponent::Input_Look(const FInputActionValue& Value)
+{
+	const FVector2D LookingVector = Value.Get<FVector2D>();
+
+	EntityOwner->AddControllerPitchInput(LookingVector.Y);
+	EntityOwner->AddControllerYawInput(LookingVector.X);
 }
 
 void UExtraMovementComponent::Input_DoubleJump()

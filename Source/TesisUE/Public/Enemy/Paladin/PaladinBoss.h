@@ -18,6 +18,8 @@ protected:
 
 	void BeginPlay() override;
 
+	void ShieldDettach();
+
 	float TakeDamage(
 		float DamageAmount,
 		struct FDamageEvent const& DamageEvent,

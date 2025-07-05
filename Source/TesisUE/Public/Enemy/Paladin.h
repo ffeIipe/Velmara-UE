@@ -44,6 +44,8 @@ protected:
 	
 	void BeginPlay();
 
+	void NotifyIsNotShieldedToBlackboard();
+
 	void Die() override;
 	
 	TArray<AActor*> IgnoreActors;
