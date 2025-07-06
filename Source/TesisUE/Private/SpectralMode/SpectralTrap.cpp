@@ -2,6 +2,7 @@
 #include "Player/PlayerMain.h"
 #include "Components/BoxComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Engine/DamageEvents.h"
 #include "DamageTypes/SpectralTrapDamageType.h"
 
 void ASpectralTrap::BeginPlay()
@@ -61,7 +62,8 @@ void ASpectralTrap::ApplyTrapDamage(FVector ImpactPoint)
 	{
 		if (IHitInterface* Entity = Cast<IHitInterface>(Player))
 		{
-			Entity->Execute_GetHit(Player, GetOwner(), ImpactPoint, USpectralTrapDamageType::StaticClass(), Damage);
+			FDamageEvent DamageEvent(UDamageType::StaticClass());
+			Entity->Execute_GetHit(Player, GetOwner(), ImpactPoint, DamageEvent, Damage);
 ;		}
 	}
 }
@@ -70,13 +72,12 @@ void ASpectralTrap::DealContinuousDamage()
 {
 	if (Player)
 	{
-		/*GEngine->AddOnScreenDebugMessage(678, 0.5f, FColor::Purple, FString("Applying continuous damage..."));*/
-
 		UGameplayStatics::ApplyDamage(Player, Damage, nullptr, this, USpectralTrapDamageType::StaticClass());
 
 		if (IHitInterface* PlayerGetHit = Cast<IHitInterface>(Player))
 		{
-			PlayerGetHit->Execute_GetHit(Player, GetOwner(), FVector::ZeroVector, USpectralTrapDamageType::StaticClass(), Damage);
+			FDamageEvent DamageEvent(UDamageType::StaticClass());
+			PlayerGetHit->Execute_GetHit(Player, GetOwner(), FVector::ZeroVector, DamageEvent, Damage);
 		}
 	}
 }

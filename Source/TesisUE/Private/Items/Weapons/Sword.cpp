@@ -6,7 +6,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "Interfaces/HitInterface.h"
-
+#include "Engine/DamageEvents.h"
 #include "Player/PlayerMain.h"
 #include "Interfaces/CharacterState.h"
 #include "Components/CharacterStateComponent.h"
@@ -125,7 +125,9 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 			if (IHitInterface* HitInterface = Cast<IHitInterface>(HitActor))
 			{
 				float TempDamage = CalculateDamage();
-				HitInterface->Execute_GetHit(HitActor, GetOwner(), Hit.ImpactPoint, DamageTypeClass, Damage);
+
+				FDamageEvent DamageEvent(DamageTypeClass);
+				HitInterface->Execute_GetHit(HitActor, GetOwner(), Hit.ImpactPoint, DamageEvent, Damage);
 
 				if (HitInterface->Execute_IsLaunchable(HitActor, Cast<ACharacter>(Owner)))
 				{

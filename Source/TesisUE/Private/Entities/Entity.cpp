@@ -58,7 +58,7 @@ AEntity::AEntity()
 	SpringArmComponent->bUsePawnControlRotation = true;
 }
 
-void AEntity::GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived)
+void AEntity::GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived)
 {
 	if (GetCharacterStateComponent()->IsActionEqualToAny({ ECharacterActions::ECA_Dead })) return;
 
@@ -103,10 +103,12 @@ void AEntity::PlayCameraShake(const FVector& Epicenter, float InnerRadius, float
 
 bool AEntity::CanBeFinished_Implementation()
 {
+	if (GEngine)GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("CanBeFinished Exec..."));
 	if (GetAttributeComponent()->GetHealthPercent() <= .2f)
 	{
 		if (OnCanBeFinished.IsBound())
 		{
+
 			OnCanBeFinished.Broadcast();
 		}
 
@@ -143,6 +145,11 @@ void AEntity::BeginPlay()
 	Super::BeginPlay();
 	
 	PlayerControllerRef = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+
+	if (!GetCharacterStateComponent())
+	{
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("CharacterStateComponent invalid"));
+	}
 
 	GetAttributeComponent()->OnEntityDead.AddDynamic(this, &AEntity::Die);
 	GetAttributeComponent()->OnOutOfEnergy.AddDynamic(this, &AEntity::OutOfEnergy);
@@ -312,7 +319,8 @@ float AEntity::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, A
 		{
 			GetAttributeComponent()->ReceiveDamage(DamageAmount);
 
-			Execute_CanBeFinished(this);
+			//if (GEngine)GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Damaged"));
+			CanBeFinished_Implementation();
 		}
 	}
 	return DamageAmount;

@@ -51,7 +51,7 @@ public:
 	FORCEINLINE UAttributeComponent* GetAttributeComponent() const { return AttributeComponent; }
 
 	UFUNCTION(BlueprintPure, Category = "Components | Character State")
-	FORCEINLINE UCharacterStateComponent* GetCharacterStateComponent() { return CharacterStateComponent; }
+	FORCEINLINE UCharacterStateComponent* GetCharacterStateComponent() const { return CharacterStateComponent; }
 
 	UFUNCTION(BlueprintPure, Category = "Components | Extra Movement")
 	FORCEINLINE UExtraMovementComponent* GetExtraMovementComponent() const { return ExtraMovementComponent; }
@@ -83,8 +83,7 @@ public:
 
 	virtual void GetHit_Implementation(
 		AActor* DamageCauser,
-		const FVector& ImpactPoint,
-		TSubclassOf<UDamageType> DamageType,
+		const FVector& ImpactPoint, FDamageEvent const& DamageEvent,
 		const float DamageReceived) override;
 
 	virtual bool CanBeFinished_Implementation() override;

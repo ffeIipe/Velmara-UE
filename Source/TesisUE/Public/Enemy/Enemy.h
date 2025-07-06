@@ -71,13 +71,13 @@ public:
 	// --- Combat & Damage ---
 	void Die() override;
 
-	virtual void GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived) override;
+	virtual void GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, FDamageEvent const&  DamageEvent, const float DamageReceived) override;
 
 	void DropOrbs(const float DamageReceived, AActor* DamageCauser);
 
 	virtual void GetFinished_Implementation() override;
 
-	virtual bool CanBeFinished_Implementation() override;
+	//virtual bool CanBeFinished_Implementation() override;
 
 	virtual bool IsLaunchable_Implementation(ACharacter* Character) override;
 
@@ -129,6 +129,7 @@ protected:
 	TArray<AEnemy*> GenerateSphereOverlapToDetectOtherEnemies(const FVector& Origin, AActor* HitEnemyToExclude);
 
 	// --- Combat & Damage ---
+	UFUNCTION()
 	void EnableFinisherWidget();
 
 	UPROPERTY(EditAnywhere, Category = "DamageThreshold");

@@ -44,8 +44,7 @@ public:
 
 	virtual void GetHit_Implementation(
 		AActor* DamageCauser,
-		const FVector& ImpactPoint,
-		TSubclassOf<UDamageType> DamageType,
+		const FVector& ImpactPoint, FDamageEvent const& DamageEvent,
 		const float DamageReceived) override;
 
 	virtual float TakeDamage(

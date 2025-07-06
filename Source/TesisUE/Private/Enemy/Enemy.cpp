@@ -408,14 +408,17 @@ void AEnemy::ResetEnemy()
 	EnableAI();
 }
 
-void AEnemy::GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived)
+void AEnemy::GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived)
 {
-	Super::GetHit_Implementation(DamageCauser, ImpactPoint, DamageType, DamageReceived);
-
-	if (UDamageTypeMain* DamageTypeMainObject = Cast<UDamageTypeMain>(DamageType->GetDefaultObject()))
+	Super::GetHit_Implementation(DamageCauser, ImpactPoint, DamageEvent, DamageReceived);
+	
+	if (DamageEvent.DamageTypeClass)
 	{
-		EMainDamageTypes MainDamageType = DamageTypeMainObject->DamageType;
-		ReactToDamage(MainDamageType, ImpactPoint);
+		if (UDamageTypeMain* MainDamageTypeClass = Cast<UDamageTypeMain>(DamageEvent.DamageTypeClass->GetDefaultObject()))
+		{
+			EMainDamageTypes MainDamageType = MainDamageTypeClass->DamageType;
+			ReactToDamage(MainDamageType, ImpactPoint);
+		}
 	}
 
 	DropOrbs(DamageReceived, DamageCauser);
@@ -473,11 +476,6 @@ void AEnemy::GetFinished_Implementation()
 
 		Die();
 	}
-}
-
-bool AEnemy::CanBeFinished_Implementation()
-{
-	return GetAttributeComponent()->GetHealthPercent() <= .2f;
 }
 
 bool AEnemy::IsLaunchable_Implementation(ACharacter* Character)
