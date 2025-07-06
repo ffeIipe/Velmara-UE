@@ -100,6 +100,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void DisableAI();
 
+	void ClearBlackboardValues();
+
 	UFUNCTION(BlueprintCallable)
 	void EnableAI();
 
@@ -120,6 +122,9 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+
+	UFUNCTION()
+	void ReturnAttackTokenToTarget();
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 

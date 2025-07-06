@@ -14,7 +14,6 @@ void AWizardAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus St
     AEnemy* Enemy = Cast<AEnemy>(GetPawn());
     APawn* PlayerPawn = Cast<APawn>(Actor);
     UCharacterStateComponent* CharacterStateComponent = PlayerPawn ? PlayerPawn->FindComponentByClass<UCharacterStateComponent>() : nullptr;
-    UBlackboardComponent* BlackboardComponent = GetBlackboardComponent();
 
     if (!BlackboardComponent || !PlayerPawn || !Enemy || Enemy->GetCharacterStateComponent()->GetCurrentCharacterState().Action == ECharacterActions::ECA_Dead) return;
     

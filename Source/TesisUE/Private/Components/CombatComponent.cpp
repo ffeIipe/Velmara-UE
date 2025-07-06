@@ -50,6 +50,8 @@ void UCombatComponent::ResetState()
 
 	if (SpectralAttacks) SpectralAttacks->Execute_ResetSpectralAttack(GetOwner());
 
+	if (OnAttackEnd.IsBound()) OnAttackEnd.Broadcast();
+
 	ExtraMovementComponent->bIsSaveDodge = false;
 }
 

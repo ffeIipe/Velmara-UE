@@ -11,7 +11,6 @@ void APaladinBossAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimul
 {
     AEnemy* Enemy = Cast<AEnemy>(GetPawn());
     APawn* PlayerPawn = Cast<APawn>(Actor);
-    UBlackboardComponent* BlackboardComponent = GetBlackboardComponent();
     UCharacterStateComponent* PlayerCharStateComp = PlayerPawn ? PlayerPawn->FindComponentByClass<UCharacterStateComponent>() : nullptr;
 
     if (!BlackboardComponent || !PlayerPawn || !Enemy) return;

@@ -74,12 +74,13 @@ public:
 	UFUNCTION(BlueprintCallable)
 	AActor* GetLastDamageCauser() { return LastDamageCauser; }
 
-	// --- Interface Implementations ---
 	UPROPERTY(BlueprintAssignable)
 	FOnEntityCanBeFinished OnCanBeFinished;
 
 	UPROPERTY(BlueprintAssignable)
 	FOnEntityShieldTakeDamage OnShieldTakeDamage;
+
+	// --- Interface Implementations ---
 
 	virtual void GetHit_Implementation(
 		AActor* DamageCauser,
