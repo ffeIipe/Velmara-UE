@@ -2,10 +2,10 @@
 
 #include "CoreMinimal.h"
 #include "Animation/AnimInstance.h"
+#include "Enemy/Enemy.h"
 #include "EnemyCharacterAnimInstance.generated.h"
 
 class UCharacterMovementComponent;
-class ACharacter;
 
 UCLASS()
 class TESISUE_API UEnemyCharacterAnimInstance : public UAnimInstance
@@ -16,9 +16,10 @@ public:
 	virtual void NativeInitializeAnimation() override;
 	virtual void NativeThreadSafeUpdateAnimation(float DeltaSeconds);
 
+
 protected:
 	UPROPERTY()
-	ACharacter* OwningCharacter; 
+	AEnemy* OwningEnemy; 
 
 	UPROPERTY()
 	UCharacterMovementComponent* OwningMovementComponent;
@@ -31,4 +32,22 @@ protected:
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "AnimData|LocomotionData")
 	bool bHasAcceleration;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Movement")
+	float Direction;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Movement")
+	float WalkRight;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Movement")
+	float WalkForward;
+
+	UFUNCTION(BlueprintCallable)
+	float const CalculateWalkRight();
+
+	UFUNCTION(BlueprintCallable)
+	float const CalculateWalkForward();
+
+	UPROPERTY(BlueprintReadWrite)
+	EEnemyState CurrentEnemyState;
 };
