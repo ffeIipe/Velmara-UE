@@ -175,7 +175,6 @@ void USpectralWeaponComponent::Fire(bool bIsPrimary)
 
     for (int32 i = 0; i < NumTraces; ++i)
     {
-
         FVector CurrentTraceEnd = TraceEnd;
         if (!bIsPrimary)
         {
@@ -194,8 +193,12 @@ void USpectralWeaponComponent::Fire(bool bIsPrimary)
 
         if (bHit)
         {
+            if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::White, FString("Hit something..."));
+
             if (AActor* HitActor = Hit.GetActor())
             {
+                if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Yellow, FString(Hit.GetActor()->GetName()));
+
                 float BaseDamage = bIsPrimary ? PrimaryDamage : SecondaryDamage;
                 UGameplayStatics::ApplyPointDamage(
                     Hit.GetActor(),

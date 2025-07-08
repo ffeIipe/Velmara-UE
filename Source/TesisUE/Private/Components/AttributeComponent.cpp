@@ -171,7 +171,7 @@ void UAttributeComponent::DecreaseEnergyBy(float EnergyToDecrease)
 
 void UAttributeComponent::ReceiveShieldDamage(float Damage)
 {
-	CurrentShieldHealth = FMath::Clamp(CurrentShieldHealth - Damage, 0.f, MaxShieldHealth);
+	CurrentShieldHealth -= Damage;
 
 	if (CurrentShieldHealth <= 0.f)
 	{

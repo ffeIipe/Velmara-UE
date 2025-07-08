@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -26,7 +24,7 @@ public:
     void ReturnAttackToken();
 
 protected:
-    UPROPERTY(EditAnywhere, Category = "Tokens", meta = (ClampMin = "0"))
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tokens", meta = (ClampMin = "0"))
     int32 MaxAttackTokens = 2;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tokens")

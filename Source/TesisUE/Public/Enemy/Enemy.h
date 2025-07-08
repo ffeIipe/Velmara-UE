@@ -243,7 +243,7 @@ private:
 	FTimerHandle HitFlashTimerHandle;
 
 	UFUNCTION(BlueprintCallable)
-	void HandleEnemyCollision(ECollisionResponse CollisionResponse);
+	void HandleEnemyCollision(bool bEnable);
 
 	UFUNCTION()
 	void GetExecuted();
