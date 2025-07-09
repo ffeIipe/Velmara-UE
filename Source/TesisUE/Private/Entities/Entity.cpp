@@ -319,23 +319,21 @@ float AEntity::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, A
 {
 	LastDamageCauser = DamageCauser;
 
-	if (GetAttributeComponent()->IsAlive())
-	{
-		if (GetAttributeComponent()->IsShielded() && DamageEvent.DamageTypeClass == USpectralTrapDamageType::StaticClass())
-		{
-			UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShieldImpactSFX, GetAttributeComponent()->GetShieldMeshComponent()->GetComponentLocation());
-			GetAttributeComponent()->ReceiveShieldDamage(DamageAmount);
 
-			if (OnShieldTakeDamage.IsBound())
-			{
-				OnShieldTakeDamage.Broadcast();
-			}
-		}
-		else if (!GetAttributeComponent()->IsShielded() && DamageEvent.DamageTypeClass != USpectralTrapDamageType::StaticClass())
+	if (GetAttributeComponent()->IsShielded() && DamageEvent.DamageTypeClass == USpectralTrapDamageType::StaticClass())
+	{
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShieldImpactSFX, GetAttributeComponent()->GetShieldMeshComponent()->GetComponentLocation());
+		GetAttributeComponent()->ReceiveShieldDamage(DamageAmount);
+
+		if (OnShieldTakeDamage.IsBound())
 		{
-			GetAttributeComponent()->ReceiveDamage(DamageAmount);
-			CanBeFinished_Implementation();
+			OnShieldTakeDamage.Broadcast();
 		}
+	}
+	else /*if (!GetAttributeComponent()->IsShielded() && DamageEvent.DamageTypeClass != USpectralTrapDamageType::StaticClass())*/
+	{
+		GetAttributeComponent()->ReceiveDamage(DamageAmount);
+		CanBeFinished_Implementation();
 	}
 	return DamageAmount;
 }

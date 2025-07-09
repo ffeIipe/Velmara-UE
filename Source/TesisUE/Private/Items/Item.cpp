@@ -12,8 +12,8 @@ AItem::AItem()
 
 	ItemMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Item Mesh"));
 	RootComponent = ItemMesh;
-	ItemMesh->SetCollisionResponseToAllChannels(ECR_Block);
-	ItemMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+	ItemMesh->SetCollisionResponseToAllChannels(ECR_Ignore);
+	ItemMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 
 	BoxCollider->SetupAttachment(GetRootComponent());
 	BoxCollider->SetCollisionResponseToAllChannels(ECR_Ignore);
