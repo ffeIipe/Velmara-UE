@@ -100,8 +100,13 @@ public:
 	bool CanDoubleJump = true;
 
 protected:
-	// Called when the game starts
 	virtual void BeginPlay() override;
 
 	class AEntity* EntityOwner;
+
+private:
+	/*void UpdateHumanRun(const FVector& MoveVector);*/
+	void UpdateAllowRunStrafe(float MoveVectorY);
+
+	bool bAllowRunStrafe = true;
 };

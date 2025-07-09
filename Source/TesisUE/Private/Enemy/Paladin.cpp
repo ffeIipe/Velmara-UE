@@ -149,7 +149,7 @@ void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 	IgnoreActors;
 	IgnoreActors.Add(this);
 
-	bool bHitOccurred = UKismetSystemLibrary::BoxTraceMulti(
+	bool bHitOccurred = UKismetSystemLibrary::BoxTraceMulti(//
 		this,
 		Start,
 		End,

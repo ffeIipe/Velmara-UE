@@ -342,7 +342,7 @@ void APlayerMain::LoadLastCheckpoint()
 		GameInst->LoadPlayerProgress(GameInst->ActiveSaveSlotIndex);
 	}
 
-	UGameplayStatics::OpenLevel(this, FName("AugusTest"));
+	//UGameplayStatics::OpenLevel(this, FName("AugusTest"));
 }
 
 void APlayerMain::ChangePrimaryWeapon()
