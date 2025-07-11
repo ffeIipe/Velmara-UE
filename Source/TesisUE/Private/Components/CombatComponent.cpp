@@ -413,14 +413,15 @@ void UCombatComponent::Execute()
 		{
 			if (IHitInterface::Execute_CanBeFinished(Enemy))
 			{
-				GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Green, FString("Finisher executed"));
-
 				CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Finish);
 
-				Enemy->SetActorLocation(FVector(
-					GetOwner()->GetActorLocation().X + 160.f,
-					GetOwner()->GetActorLocation().Y + 20.f,
-					Enemy->GetActorLocation().Z), true);
+				FVector NewFinisherLocation = FVector(
+					GetOwner()->GetActorLocation().X + 160.f, //x
+					GetOwner()->GetActorLocation().Y + 20.f, //y
+					Enemy->GetActorLocation().Z //z
+				);
+
+				Enemy->SetActorLocation(NewFinisherLocation, false);
 
 				FVector Start = OwningCharacter->GetActorLocation();
 				FVector End = Enemy->GetActorLocation();
@@ -428,7 +429,6 @@ void UCombatComponent::Execute()
 				OwningCharacter->SetActorRotation(LookAtRotation);
 
 				OwningCharacter->PlayAnimMontage(FinisherMontage, 1.0f);
-				//IHitInterface::Execute_GetFinished(Enemy);
 
 				APlayerMain* Player = Cast<APlayerMain>(GetOwner());
 
