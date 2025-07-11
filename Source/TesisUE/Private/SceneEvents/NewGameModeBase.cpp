@@ -4,6 +4,7 @@
 #include "SceneEvents/NewGameModeBase.h"
 #include "SceneEvents/NewGameInstance.h"
 #include "Enemy/Enemy.h"
+#include "Components/AttributeComponent.h"
 
 TArray<AEnemy*> ANewGameModeBase::GetRegisteredEnemies()
 {
@@ -24,7 +25,7 @@ void ANewGameModeBase::SetEnemiesAIEnabled(bool bEnabled)
 {
 	for (AEnemy* Enemy : RegisteredEnemies)
 	{
-		if (Enemy)
+		if (Enemy && Enemy->GetAttributeComponent()->IsAlive())
 		{
 			bEnabled ? Enemy->EnableAI() : Enemy->DisableAI();
 		}

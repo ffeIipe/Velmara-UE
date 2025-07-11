@@ -394,6 +394,8 @@ void UCombatComponent::ReleaseBlock()
 
 void UCombatComponent::Execute()
 {
+	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Red, FString("Execute Finisher"));
+
 	if (CharacterStateComponent->IsStateEqualToAny({ ECharacterStates::ECS_Unequipped })) return;
 
 	if (CharacterStateComponent->IsActionEqualToAny({ 
@@ -403,12 +405,16 @@ void UCombatComponent::Execute()
 		ECharacterActions::ECA_Stun
 		})) return;
 
+	if (EntityOwner->GetCharacterMovement()->MovementMode == MOVE_Falling || EntityOwner->GetCharacterMovement()->MovementMode == MOVE_Flying) return;
+
 	if (AActor* Enemy = SphereTraceForEnemies(OwningCharacter->GetActorLocation(), OwningCharacter->GetActorLocation() + OwningCharacter->GetActorForwardVector() * 40.f))
 	{
 		if (Enemy->GetClass()->ImplementsInterface(UHitInterface::StaticClass()))
 		{
 			if (IHitInterface::Execute_CanBeFinished(Enemy))
 			{
+				GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Green, FString("Finisher executed"));
+
 				CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Finish);
 
 				Enemy->SetActorLocation(FVector(
@@ -422,7 +428,7 @@ void UCombatComponent::Execute()
 				OwningCharacter->SetActorRotation(LookAtRotation);
 
 				OwningCharacter->PlayAnimMontage(FinisherMontage, 1.0f);
-				IHitInterface::Execute_GetFinished(Enemy);
+				//IHitInterface::Execute_GetFinished(Enemy);
 
 				APlayerMain* Player = Cast<APlayerMain>(GetOwner());
 
@@ -486,12 +492,10 @@ void UCombatComponent::LaunchCharacterUp()
 	{
 		OwningCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
 		bIsLaunched = true;
-		/*GetOwner()->AddActorLocalOffset(FVector(0.f, 0.f, 300.f));
-		GetOwner()->SetActorLocation()*/
 
 		StartLaunchingUp();
 
-		Paladin->Execute_LaunchUp(SoftLockTarget, FVector(GetOwner()->GetActorLocation())); //llamar a su componente de combate y activar su timeline de 
+		Paladin->Execute_LaunchUp(SoftLockTarget, FVector(GetOwner()->GetActorLocation())); 
 	}
 }
 

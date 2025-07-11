@@ -54,11 +54,6 @@ APaladin::APaladin()
 	BoxTraceEnd->SetupAttachment(SwordMesh);
 }
 
-bool APaladin::IsLaunchable_Implementation(ACharacter* DamageCauser)
-{
-	return !GetAttributeComponent()->IsShielded();
-}
-
 void APaladin::BeginPlay()
 {
 	Super::BeginPlay();
@@ -91,9 +86,9 @@ void APaladin::NotifyIsNotShieldedToBlackboard()
 		{
 			BBComponent->SetValueAsBool(FName("IsShielded"), false);
 		}
-		else GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, FString("BBComponent not found!"));
+		//else GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, FString("BBComponent not found!"));
 	}
-	else GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, FString("AIController not found!"));
+	//else GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, FString("AIController not found!"));
 }
 
 void APaladin::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
@@ -149,7 +144,7 @@ void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 	IgnoreActors;
 	IgnoreActors.Add(this);
 
-	bool bHitOccurred = UKismetSystemLibrary::BoxTraceMulti(//
+	bool bHitOccurred = UKismetSystemLibrary::BoxTraceMulti(
 		this,
 		Start,
 		End,
@@ -158,7 +153,7 @@ void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 		UEngineTypes::ConvertToTraceType(ECC_Pawn),
 		false,
 		IgnoreActors,
-		EDrawDebugTrace::ForDuration,
+		EDrawDebugTrace::None,
 		HitResults,
 		true
 	);
@@ -213,11 +208,8 @@ void APaladin::ShieldHit()
 
 void APaladin::LaunchUp_Implementation(const FVector& InstigatorLocation)
 {
-	if (!GetAttributeComponent()->IsShielded())
-	{
-		Super::LaunchUp_Implementation(InstigatorLocation);
-		LaunchEnemyUp(InstigatorLocation);
-	}
+	Super::LaunchUp_Implementation(InstigatorLocation);
+	LaunchEnemyUp(InstigatorLocation);
 }
 
 void APaladin::LaunchEnemyUp(const FVector& InstigatorLocation)

@@ -44,10 +44,12 @@ protected:
 
 	UBlackboardComponent* BlackboardComponent;
 
-private:
-	class AEntity* CachedOwner;
+	class AEntity* EntityOwner;
 	AEntity* CachedTarget;
 	
 	UPROPERTY(VisibleAnywhere)
 	bool bHasReservedAttackToken;
+
+	UPROPERTY(EditAnywhere)
+	bool bHasToCheckPlayerForm = true;
 };

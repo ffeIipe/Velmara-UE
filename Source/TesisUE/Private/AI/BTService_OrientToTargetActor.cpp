@@ -50,6 +50,6 @@ void UBTService_OrientToTargetActor::TickNode(UBehaviorTreeComponent& OwnerComp,
 		const FRotator LookAtRot = UKismetMathLibrary::FindLookAtRotation(OwningPawn->GetActorLocation(), TargetActor->GetActorLocation());
 		const FRotator TargetRot = FMath::RInterpTo(OwningPawn->GetActorRotation(), LookAtRot, DeltaSeconds, RotationInterpSpeed);
 
-		OwningPawn->SetActorRotation(TargetRot);
+		OwningPawn->SetActorRotation(FRotator(OwningPawn->GetActorRotation().Pitch, TargetRot.Yaw, OwningPawn->GetActorRotation().Roll));
 	}
 }
