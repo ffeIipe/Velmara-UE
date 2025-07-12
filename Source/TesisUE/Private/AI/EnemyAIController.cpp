@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #include "AI/EnemyAIController.h"
 #include "Navigation/CrowdFollowingComponent.h"
 #include "Perception/AIPerceptionComponent.h"
@@ -26,6 +24,20 @@ AEnemyAIController::AEnemyAIController(const FObjectInitializer& ObjectInitializ
 	SetGenericTeamId(FGenericTeamId(1));
 }
 
+void AEnemyAIController::CustomInitialize(AEntity* NewOwner, UBlackboardComponent* NewBlackboardComponent, UCharacterStateComponent* NewCharacterStateComponent)
+{
+    EntityOwner = NewOwner;
+    BlackboardComponent = NewBlackboardComponent;
+	OwningCharacterStateComponent = NewCharacterStateComponent;
+
+    EnemyPerceptionComponent->OnTargetPerceptionUpdated.AddUniqueDynamic(this, &AEnemyAIController::OnEnemyPerceptionUpdated);
+}
+
+void AEnemyAIController::DeactivateController()
+{
+	EnemyPerceptionComponent->OnTargetPerceptionUpdated.RemoveDynamic(this, &AEnemyAIController::OnEnemyPerceptionUpdated);
+}
+
 ETeamAttitude::Type AEnemyAIController::GetTeamAttitudeTowards(const AActor& Other) const
 {
 	const APawn* PawnToCheck = Cast<const APawn>(&Other);
@@ -44,11 +56,9 @@ void AEnemyAIController::BeginPlay()
 {
     Super::BeginPlay();
 
-    EntityOwner = Cast<AEntity>(GetPawn());
+    EntityOwner = Cast<AEntity>(GetCharacter());
     BlackboardComponent = GetBlackboardComponent();
 }
-
-
 
 void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
@@ -56,7 +66,7 @@ void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Sti
 
     if (!EntityOwner)
     {
-        EntityOwner = Cast<AEntity>(GetPawn());
+        EntityOwner = Cast<AEntity>(GetCharacter());
     }
 
     if (!EntityOwner->GetCharacterStateComponent())
@@ -79,7 +89,6 @@ void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Sti
     {
         BlackboardComponent->ClearValue(FName("TargetActor"));
         BlackboardComponent->ClearValue(FName("DistToTarget"));
-        BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), false);
 
         return;
     }
@@ -95,32 +104,29 @@ void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Sti
                 if (TokenManager && TokenManager->TryReserveAttackToken())
                 {
                     bHasReservedAttackToken = true;
-                    BlackboardComponent->SetValueAsBool(FName("CanPerformMelee"), true);
+                    BlackboardComponent->SetValueAsBool(FName("HasAttackToken"), true);
                 }
                 else
                 {
-                    BlackboardComponent->SetValueAsBool(FName("CanPerformMelee"), false);
+                    BlackboardComponent->SetValueAsBool(FName("HasAttackToken"), false);
                 }
             }
             else
             {
-                BlackboardComponent->SetValueAsBool(FName("CanPerformMelee"), true);
+                BlackboardComponent->SetValueAsBool(FName("HasAttackToken"), true);
             }
 
             BlackboardComponent->SetValueAsObject(FName("TargetActor"), Actor);
-            BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), true);
         }
         else
         {
             if (DamageCauser != Actor)
             {
                 BlackboardComponent->SetValueAsObject(FName("TargetActor"), DamageCauser);
-                BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), true);
             }
             else
             {
                 BlackboardComponent->SetValueAsObject(FName("TargetActor"), nullptr);
-                BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), false);
                 DamageCauser = nullptr;
             }
         }
@@ -142,6 +148,6 @@ void AEnemyAIController::SetHasReservedAttackToken(bool bHasToken)
     bHasReservedAttackToken = bHasToken;
     if (!bHasToken && BlackboardComponent)
     {
-        BlackboardComponent->SetValueAsBool(FName("CanPerformMelee"), false);
+        BlackboardComponent->SetValueAsBool(FName("HasAttackToken"), false);
     }
 }

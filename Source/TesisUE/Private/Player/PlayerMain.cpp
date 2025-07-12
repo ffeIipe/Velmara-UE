@@ -96,7 +96,10 @@ void APlayerMain::BeginPlay()
 	GetAttributeComponent()->RegenerateTick();
 	GetAttributeComponent()->OnEntityDead.AddDynamic(this, &APlayerMain::Die);
 
-	GetCombatComponent()->OnWallHit.AddDynamic(this, &APlayerMain::OnWallCollision);
+	if (!GetCombatComponent()->OnWallHit.IsBound())
+	{
+		GetCombatComponent()->OnWallHit.AddDynamic(this, &APlayerMain::OnWallCollision);
+	}
 	
 	GetPossessionComponent()->OnPossessionAttemptFailed.AddDynamic(GetCombatComponent(), &UCombatComponent::Input_Execute);
 
@@ -139,8 +142,6 @@ void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	{
 		EnhancedInputComponent->BindAction(InputAction_SwitchForm, ETriggerEvent::Started, this, &APlayerMain::ToggleForm);
 		EnhancedInputComponent->BindAction(InputAction_Possess, ETriggerEvent::Started, GetPossessionComponent(), &UPossessionComponent::AttemptPossession);
-		EnhancedInputComponent->BindAction(InputAction_Block, ETriggerEvent::Triggered, GetExtraMovementComponent(), &UExtraMovementComponent::Input_Run);
-		EnhancedInputComponent->BindAction(InputAction_Block, ETriggerEvent::Completed, GetExtraMovementComponent(), &UExtraMovementComponent::Input_Run);
 	}
 }
 

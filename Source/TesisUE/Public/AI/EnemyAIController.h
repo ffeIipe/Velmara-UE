@@ -20,6 +20,10 @@ class TESISUE_API AEnemyAIController : public AAIController
 public:
 	AEnemyAIController(const FObjectInitializer& ObjectInitializer);
 
+	void CustomInitialize(class AEntity* NewOwner, UBlackboardComponent* NewBlackboardComponent, class UCharacterStateComponent* NewCharacterStateComponent);
+
+	void DeactivateController();
+
 	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
 	
 	bool bIsAlreadyCleared = false;
@@ -44,9 +48,11 @@ protected:
 
 	UBlackboardComponent* BlackboardComponent;
 
-	class AEntity* EntityOwner;
+	AEntity* EntityOwner;
 	AEntity* CachedTarget;
 	
+	UCharacterStateComponent* OwningCharacterStateComponent;
+
 	UPROPERTY(VisibleAnywhere)
 	bool bHasReservedAttackToken;
 

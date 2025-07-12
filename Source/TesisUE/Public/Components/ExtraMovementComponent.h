@@ -76,8 +76,8 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Stats | DoubleJump")
 	float LaunchStrenght = 800.f;
 	
-	UPROPERTY(EditAnywhere, Category = "Stats | DoubleJump")
-	float DefaultWalkSpeed = 700.f;
+	//UPROPERTY(EditAnywhere, Category = "Stats | DoubleJump")
+	float DefaultWalkSpeed;
 	
 	UPROPERTY(EditAnywhere, Category = "Stats | DoubleJump")
 	float RunSpeed = 1200.f;
@@ -105,8 +105,9 @@ protected:
 	class AEntity* EntityOwner;
 
 private:
-	/*void UpdateHumanRun(const FVector& MoveVector);*/
 	void UpdateAllowRunStrafe(float MoveVectorY);
 
 	bool bAllowRunStrafe = true;
+
+	bool bIsRunInputPressed = false;
 };

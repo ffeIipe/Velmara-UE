@@ -24,6 +24,9 @@ void UExtraMovementComponent::BeginPlay()
 	OwningCharacter = Cast<ACharacter>(GetOwner());
 	OwnerCharacterStateComponent = EntityOwner->GetCharacterStateComponent();
 
+	//setting default walk speed
+	DefaultWalkSpeed = EntityOwner->GetCharacterMovement()->MaxWalkSpeed;
+
 	if (BufferCurve)
 	{
 		FOnTimelineFloat ProgressDodgeFunction;
@@ -35,9 +38,9 @@ void UExtraMovementComponent::BeginPlay()
 
 void UExtraMovementComponent::Input_Dodge()
 {
-	if (EntityOwner->GetCharacterMovement()->GetGroundMovementMode() == EMovementMode::MOVE_Falling 
-		|| EntityOwner->GetCharacterMovement()->GetGroundMovementMode() == EMovementMode::MOVE_Flying 
-		|| !EntityOwner->IsEquipping()) return;
+	if (EntityOwner->GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling || 
+		EntityOwner->GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Flying ||
+		EntityOwner->IsEquipping()) return;
 
 	if (OwnerCharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Dodge }))
 	{
@@ -149,9 +152,18 @@ void UExtraMovementComponent::Input_Look(const FInputActionValue& Value)
 
 void UExtraMovementComponent::Input_Run(const FInputActionValue& Value)
 {
+	if (OwnerCharacterStateComponent->IsActionEqualToAny({ 
+		ECharacterActions::ECA_Block, 
+		ECharacterActions::ECA_Finish, 
+		ECharacterActions::ECA_Dead, 
+		ECharacterActions::ECA_Stun })) return;
+
+	if (OwningCharacter->GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling || 
+		OwningCharacter->GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Flying) return;
+
 	if (Value.Get<bool>())
 	{
-		if (OwnerCharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
+		if (EntityOwner->bUseControllerRotationYaw)
 		{
 			if (!bAllowRunStrafe)
 			{

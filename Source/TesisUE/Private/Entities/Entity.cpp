@@ -146,13 +146,10 @@ void AEntity::BeginPlay()
 	
 	PlayerControllerRef = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 
-	if (!GetCharacterStateComponent())
-	{
-		//if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("CharacterStateComponent invalid"));
-	}
-
 	GetAttributeComponent()->OnEntityDead.AddDynamic(this, &AEntity::Die);
 	GetAttributeComponent()->OnOutOfEnergy.AddDynamic(this, &AEntity::OutOfEnergy);
+
+	GetMementoComponent()->SaveState();
 }
 
 void AEntity::AttachFollowCamera(USpringArmComponent* AttachTarget)
@@ -176,12 +173,12 @@ void AEntity::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 		EnhancedInputComponent->BindAction(InputAction_Move, ETriggerEvent::Triggered, GetExtraMovementComponent(), &UExtraMovementComponent::Input_Move);
 		EnhancedInputComponent->BindAction(InputAction_Dodge, ETriggerEvent::Started, GetExtraMovementComponent(), &UExtraMovementComponent::Input_Dodge);
 		EnhancedInputComponent->BindAction(InputAction_Look, ETriggerEvent::Triggered, GetExtraMovementComponent(), &UExtraMovementComponent::Input_Look);
+		EnhancedInputComponent->BindAction(InputAction_Block, ETriggerEvent::Triggered, GetExtraMovementComponent(), &UExtraMovementComponent::Input_Run);
+		EnhancedInputComponent->BindAction(InputAction_Block, ETriggerEvent::Completed, GetExtraMovementComponent(), &UExtraMovementComponent::Input_Run);
 
 		EnhancedInputComponent->BindAction(InputAction_Attack, ETriggerEvent::Started, GetCombatComponent(), &UCombatComponent::Input_Attack);
 		EnhancedInputComponent->BindAction(InputAction_HeavyAttack, ETriggerEvent::Started, GetCombatComponent(), &UCombatComponent::Input_HeavyAttack);
 		EnhancedInputComponent->BindAction(InputAction_Launch, ETriggerEvent::Started, GetCombatComponent(), &UCombatComponent::Input_Launch);
-		//EnhancedInputComponent->BindAction(InputAction_Block, ETriggerEvent::Started, GetCombatComponent(), &UCombatComponent::Input_Block);
-		//EnhancedInputComponent->BindAction(InputAction_Block, ETriggerEvent::Completed, GetCombatComponent(), &UCombatComponent::Input_ReleaseBlock);
 	}
 }
 

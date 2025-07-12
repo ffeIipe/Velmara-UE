@@ -22,7 +22,6 @@
 //    {
 //        BlackboardComponent->ClearValue(FName("TargetActor"));
 //        BlackboardComponent->ClearValue(FName("DistToTarget"));
-//        BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), false);
 //
 //        return;
 //    }
@@ -31,6 +30,5 @@
 //    {
 //
 //        BlackboardComponent->SetValueAsObject(FName("TargetActor"), Actor);
-//        BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), true);
 //    }
 //}

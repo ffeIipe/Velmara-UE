@@ -109,6 +109,12 @@ public:
 
 	AAIController* GetAIController() { return AIController; };
 
+	UFUNCTION()
+	void OnPossessed();
+	
+	UFUNCTION()
+	void OnUnpossessed();
+
 	// --- Components ---
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components | PromptWidgetComponent")
 	UPromptWidgetComponent* PromptWidgetComponent;
@@ -127,14 +133,18 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	UFUNCTION()
-	void ReturnAttackTokenToTarget();
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	// --- AI ---
 	UPROPERTY(EditAnywhere)
 	float RadiusToNotifyAllies = 2500.f;
+
+	UFUNCTION()
+	void ReturnAttackTokenToTarget();
+
+	UFUNCTION()
+	void NotifyIsNotShieldedToBlackboard();
 
 	TArray<AEnemy*> GenerateSphereOverlapToDetectOtherEnemies(const FVector& Origin, AActor* HitEnemyToExclude);
 
@@ -222,8 +232,7 @@ protected:
 	bool bDefaultUseControllerDesiredRotation;
 	bool bOriginalUseControllerRotationYaw;
 
-	virtual void GetDefaultParameters();
-	virtual void SetOnPossessedParameters();
+	virtual void ApplyPossessionParameters(bool bShouldEnable);
 
 	// --- AI Controllers & Blackboard ---
 	UPROPERTY(EditAnywhere)

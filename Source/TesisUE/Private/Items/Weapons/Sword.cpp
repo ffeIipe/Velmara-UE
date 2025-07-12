@@ -46,10 +46,9 @@ void ASword::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwn
 
 	EnableSwordState(true);
 
-	CharacterStateInterface = Cast<ICharacterState>(NewOwner);
-	if (CharacterStateInterface)
+	if (AEntity* EntityRef = Cast<AEntity>(NewOwner))
 	{
-		CharacterStateComponent = CharacterStateInterface->Execute_GetCharacterStateComponent(NewOwner);
+		EntityRef->GetCharacterStateComponent()->SetCharacterState(ECharacterStates::ECS_EquippedSword);
 	}
 }
 
@@ -147,7 +146,7 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 
 					//fx when the hit is true
 					CameraShake();
-					HitStop(.0005f, .01f);
+					HitStop(.0008f, .01f);
 
 					IgnoreActors.Add(HitActor);
 				}

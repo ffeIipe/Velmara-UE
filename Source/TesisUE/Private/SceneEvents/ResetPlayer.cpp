@@ -8,7 +8,7 @@
 #include "Player/PlayerMain.h"
 #include "GameFramework/PlayerStart.h"
 #include "Components/MementoComponent.h"
-#include "Interfaces/MementoEntity.h"
+#include "Entities/Entity.h"
 
 void AResetPlayer::BeginPlay()
 {
@@ -19,7 +19,7 @@ void AResetPlayer::BeginPlay()
 
 void AResetPlayer::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-    if (ACharacter* OverlappingActor = Cast<ACharacter>(OtherActor)) // cuando ponés AActor acá como filtro explota, por favor dejar en APawn :)
+    if (AEntity* OverlappingActor = Cast<AEntity>(OtherActor))
     {
         if (APlayerMain* PlayerRef = Cast<APlayerMain>(OverlappingActor))
         {
@@ -29,20 +29,15 @@ void AResetPlayer::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent
             }
         }
 
-        APlayerController* PlayerController = UGameplayStatics::GetPlayerController(this, 0);
-
-        if (IMementoEntity* MementoEntity = Cast<IMementoEntity>(PlayerController->GetPawn()))
-        {
-            if (UMementoComponent* MementoComp = MementoEntity->Execute_GetMementoComponent(OtherActor))
-            {
-                FTransform LastTransform = MementoComp->GetLastSavedTransform();
-                OverlappingActor->SetActorTransform(LastTransform);
-            }
+       /* APlayerController* PlayerController = UGameplayStatics::GetPlayerController(this, 0);
+        if (Cast<APlayerController>(OverlappingActor->GetController()) == PlayerController)
+        */{
+            OverlappingActor->SetActorTransform(OverlappingActor->GetMementoComponent()->GetLastSavedTransform());
         }
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("ResetPlayer: Overlapping actor!"));
     }
-}
-
-void AResetPlayer::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
-{
-    
+    else if (GEngine) 
+    {
+        GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("ResetPlayer: Overlapping actor is not an Entity!"));
+	}
 }

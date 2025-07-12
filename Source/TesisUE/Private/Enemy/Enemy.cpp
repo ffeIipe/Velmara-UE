@@ -90,7 +90,6 @@ void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 {
 	SetActorLocationAndRotation(Location, Rotation);
 	SetActorHiddenInGame(false);
-	//SetActorTickEnabled(true);
 
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
@@ -103,6 +102,7 @@ void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 	GetMesh()->bPauseAnims = false;
 
 	HandleEnemyCollision(true);
+	ApplyPossessionParameters(false);
 
 	EnemyState = EEnemyState::EES_None;
 	isLaunched = false;
@@ -120,8 +120,6 @@ void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 	}
 
 	bUseControllerRotationYaw = bOriginalUseControllerRotationYaw;
-
-	GetDefaultParameters();
 
 	if (ANewGameModeBase* NewGameMode = Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
 	{
@@ -151,7 +149,6 @@ void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 void AEnemy::DeactivateEnemy()
 {
 	SetActorHiddenInGame(true);
-	SetActorTickEnabled(false);
 	HandleEnemyCollision(false);
 
 	StopAnimMontage();
@@ -171,7 +168,6 @@ void AEnemy::DeactivateEnemy()
 	if (AIControllerInstance && AIControllerInstance->GetBlackboardComponent())
 	{
 		AIControllerInstance->GetBlackboardComponent()->ClearValue(FName("TargetActor"));
-		AIControllerInstance->GetBlackboardComponent()->ClearValue(FName("CanSeePlayer"));
 	}
 
 	DisableAI();
@@ -267,18 +263,18 @@ void AEnemy::BeginPlay()
 
 	OnCanBeFinished.AddDynamic(this, &AEnemy::EnableFinisherWidget);
 	
-	GetPossessionComponent()->OnPossessorEjected.AddDynamic(this, &AEnemy::EnableAI);
+	GetPossessionComponent()->OnPossessed.AddDynamic(this, &AEnemy::OnPossessed);
+	GetPossessionComponent()->OnPossessorEjected.AddDynamic(this, &AEnemy::OnUnpossessed);
 	GetPossessionComponent()->OnPossessorExecutedMeAndEjected.AddDynamic(this, &AEnemy::GetExecuted);
 
 	GetCombatComponent()->OnAttackEnd.AddDynamic(this, &AEnemy::ReturnAttackTokenToTarget);
 	
 	GetAttributeComponent()->OnEntityDead.AddDynamic(this, &AEnemy::ReturnAttackTokenToTarget);
+	GetAttributeComponent()->OnDettachShield.AddDynamic(this, &AEnemy::NotifyIsNotShieldedToBlackboard);
 
 	PlayerControllerRef = Cast<APlayerHeroController>(UGameplayStatics::GetPlayerController(this, 0));
 
 	HandleEnemyCollision(true);
-
-	GetDefaultParameters();
 
 	if (GetCharacterStateComponent())
 	{
@@ -329,7 +325,6 @@ void AEnemy::BeginPlay()
 	{
 		BBComponent = BBComponentInstance;
 	}
-	/*else GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Cast to BBComponent failed..."));*/
 
 	if (GetMesh())
 	{
@@ -363,6 +358,15 @@ void AEnemy::ReturnAttackTokenToTarget()
 	{
 		EnemyAIController->SetHasReservedAttackToken(false);
 	}
+}
+
+void AEnemy::NotifyIsNotShieldedToBlackboard()
+{
+	if (!AIController) AIController = Cast<AAIController>(GetController());
+
+	if (!BBComponent) BBComponent = Cast<UBlackboardComponent>(AIController->GetBlackboardComponent());
+
+	BBComponent->SetValueAsBool(FName("IsShielded"), false);
 }
 
 void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -400,10 +404,21 @@ void AEnemy::NotifyThreat(AActor* ThreatActor)
 	if (AIController && AIController->GetBlackboardComponent())
 	{
 		AIController->GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), ThreatActor);
-		AIController->GetBlackboardComponent()->SetValueAsBool(FName("CanSeePlayer"), true);
 	}
 
 	// una func con un forget?
+}
+
+void AEnemy::OnPossessed()
+{
+	DisableAI();
+	ApplyPossessionParameters(true);
+}
+
+void AEnemy::OnUnpossessed()
+{
+	EnableAI();
+	ApplyPossessionParameters(false);
 }
 
 void AEnemy::UpdateDissolveEffect(float Value)
@@ -497,9 +512,6 @@ void AEnemy::GetFinished_Implementation()
 
 		StopAnimMontage();
 		PlayAnimMontage(FinisherDeathMontage, 1.f); 
-
-		//GetAttributeComponent()->ReceiveDamage(100.f);
-		//DisableAI();
 	}
 }
 
@@ -508,30 +520,9 @@ bool AEnemy::IsLaunchable_Implementation(ACharacter* Character)
 	return !GetAttributeComponent()->IsShielded() && GetAttributeComponent()->IsAlive();
 }
 
-void AEnemy::GetDefaultParameters()
+void AEnemy::ApplyPossessionParameters(bool bShouldEnable)
 {
-	if (GetCharacterMovement())
-	{
-		GetCharacterMovement()->MaxWalkSpeed = DefaultMaxWalkSpeed;
-		GetCharacterMovement()->GravityScale = DefaultGravityScale;
-		GetCharacterMovement()->JumpZVelocity = DefaultJumpZVelocity;
-		GetCharacterMovement()->bOrientRotationToMovement = bDefaultOrientRotationToMovement;
-		GetCharacterMovement()->bUseControllerDesiredRotation = bDefaultUseControllerDesiredRotation;
-		GetCharacterMovement()->RotationRate = FRotator(0.f, 300.f, 0.f);
-		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
-	}
-}
 
-void AEnemy::SetOnPossessedParameters()
-{
-	if (GetCharacterMovement())
-	{
-		GetCharacterMovement()->bUseControllerDesiredRotation = false;
-		GetCharacterMovement()->bOrientRotationToMovement = true;
-		GetCharacterMovement()->RotationRate = FRotator(0.f, 500.f, 0.f);
-		GetCharacterMovement()->MaxWalkSpeed = 800.f;
-		GetCharacterMovement()->BrakingDecelerationWalking = 1000.f; 
-	}
 }
 
 void AEnemy::HandleEnemyCollision(bool bEnable)
@@ -616,54 +607,44 @@ EEnemyState AEnemy::SetEnemyState(EEnemyState NewState)
 
 void AEnemy::DisableAI()
 {
-	if (!AIController)
-	{
-		AIController = Cast<AAIController>(GetController());
-		BBComponent = Cast<UBlackboardComponent>(AIController->GetBlackboardComponent());
-	}
+	if (!AIController) AIController = Cast<AAIController>(GetController());
 
 	AIController->StopMovement();
 	AIController->UnPossess();
 	AIController->GetBrainComponent()->StopLogic(FString("AI Disabled"));
 	AIController->RunBehaviorTree(nullptr);
 
-	ClearBlackboardValues();
+	if (!EnemyAIController) EnemyAIController = Cast<AEnemyAIController>(AIController);
 
+	EnemyAIController->DeactivateController();
+
+	ClearBlackboardValues();
 }
 
 void AEnemy::ClearBlackboardValues()
 {
+	if (!BBComponent) BBComponent = Cast<UBlackboardComponent>(AIController->GetBlackboardComponent());
+
 	BBComponent->ClearValue(FName("TargetActor"));
-	BBComponent->ClearValue(FName("CanSeePlayer"));
 	BBComponent->ClearValue(FName("DistToTarget"));
 	BBComponent->ClearValue(FName("DamageTakenRecently"));
 }
 
 void AEnemy::EnableAI()
 {
-	if (!AIController)
+	if (!AIController) AIController = Cast<AAIController>(GetController());
+
+	if (!EnemyAIController) EnemyAIController = Cast<AEnemyAIController>(AIController);
+
+	AIController->Possess(this);
+	AIController->GetBrainComponent()->RestartLogic();
+
+	if (BTAsset)
 	{
-		AAIController* CurrentController = Cast<AAIController>(GetController());
-		if (CurrentController)
-		{
-			AIController = CurrentController;
-		}
+		AIController->RunBehaviorTree(BTAsset);
 	}
 
-	if (AIController)
-	{
-		AIController->Possess(this);
-		AIController->GetBrainComponent()->RestartLogic();
-		AIController->GetBrainComponent()->RestartLogic();
-
-		if (AIController->GetPawn() == this)
-		{
-			if (BTAsset)
-			{
-				bool bRunResult = AIController->RunBehaviorTree(BTAsset);
-			}
-		}
-	}
+	EnemyAIController->CustomInitialize(this, BBComponent, GetCharacterStateComponent());
 }
 
 TArray<AEnemy*> AEnemy::GenerateSphereOverlapToDetectOtherEnemies(const FVector& Origin, AActor* HitEnemyToExclude)
@@ -728,7 +709,6 @@ void AEnemy::NotifyDamageTakenToBlackboard(AActor* DamageCauser)
 		{
 			AIController->GetBlackboardComponent()->SetValueAsBool(FName("DamageTakenRecently"), true);
 			AIController->GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), DamageCauser);
-			AIController->GetBlackboardComponent()->SetValueAsBool(FName("CanSeePlayer"), true);
 		}
 
 		if (EnemyAIController)

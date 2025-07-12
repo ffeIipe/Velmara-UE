@@ -42,8 +42,6 @@ protected:
 	
 	void BeginPlay();
 
-	void NotifyIsNotShieldedToBlackboard();
-
 	void Die() override;
 	
 	TArray<AActor*> IgnoreActors;
@@ -85,12 +83,14 @@ protected:
 
 	void ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoint) override;
 
-	void GetDefaultParameters() override;
-	void SetOnPossessedParameters() override;
+	void Slash();
+
+	void ApplyPossessionParameters(bool bShouldEnable) override;
 
 private:
 	UPROPERTY(EditAnywhere, Category = "SFX")
 	USoundBase* ShieldDettachSFX;
 
+	UFUNCTION()
 	void ShieldHit();
 };

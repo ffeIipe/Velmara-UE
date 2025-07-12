@@ -27,6 +27,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIController.h"
 #include <Player/PlayerHeroController.h>
+#include <Kismet/KismetMathLibrary.h>
 
 
 APaladin::APaladin()
@@ -35,6 +36,8 @@ APaladin::APaladin()
 	GetMesh()->SetCollisionResponseToChannel(ECC_GameTraceChannel2, ECR_Ignore);
 
 	GetAttributeComponent()->AttachShield(GetMesh(), FName("LeftHandSocket"));
+
+	DefaultDamage = Damage;
 
 	SwordMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SwordMesh"));
 	SwordMesh->SetupAttachment(GetMesh(), TEXT("RightHandSocket"));
@@ -62,8 +65,6 @@ void APaladin::BeginPlay()
 
 	OnShieldTakeDamage.AddDynamic(this, &APaladin::ShieldHit);
 
-	GetAttributeComponent()->OnDettachShield.AddDynamic(this, &APaladin::NotifyIsNotShieldedToBlackboard);
-
 	if (!BBComponent)
 	{
 		if (AIController)
@@ -76,19 +77,6 @@ void APaladin::BeginPlay()
 			BBComponent = Cast<UBlackboardComponent>(AIController->GetBlackboardComponent());
 		}
 	}
-}
-
-void APaladin::NotifyIsNotShieldedToBlackboard()
-{
-	if (AIController)
-	{
-		if (BBComponent)
-		{
-			BBComponent->SetValueAsBool(FName("IsShielded"), false);
-		}
-		//else GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, FString("BBComponent not found!"));
-	}
-	//else GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, FString("AIController not found!"));
 }
 
 void APaladin::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
@@ -183,18 +171,14 @@ void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 	}
 }
 
-void APaladin::GetDefaultParameters()
+void APaladin::ApplyPossessionParameters(bool bShouldEnable)
 {
-	Super::GetDefaultParameters();
-
-	DefaultDamage = Damage;
-}
-
-void APaladin::SetOnPossessedParameters()
-{
-	Super::SetOnPossessedParameters();
-
-	Damage = PossessionDamage;
+	Super::ApplyPossessionParameters(bShouldEnable);
+	if (bShouldEnable)
+	{
+		Damage = PossessionDamage;
+	}
+	else Damage = DefaultDamage;
 }
 
 void APaladin::ShieldHit()
@@ -254,6 +238,18 @@ void APaladin::ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactP
 		GetFinished_Implementation();
 		break;
 
+	case EMainDamageTypes::EMDT_Slash:
+		Slash();
+		break;
+
+	case EMainDamageTypes::EMDT_Puncture:
+		PlayAnimMontage(HitReactMontage, 1.f, FName("PunctureReact"));
+		break;
+
+	case EMainDamageTypes::EMDT_Impact:
+		PlayAnimMontage(HitReactMontage, 1.f, FName("ImpactReact"));
+		break;
+
 	case EMainDamageTypes::EMDT_None:
 		GetCombatComponent()->GetDirectionalReact(ImpactPoint);
 		break;
@@ -262,4 +258,14 @@ void APaladin::ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactP
 		GetCombatComponent()->GetDirectionalReact(ImpactPoint);
 		break;
 	}
+}
+
+void APaladin::Slash()
+{
+	FRotator DamageCauserLocation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), LastDamageCauser->GetActorLocation());
+
+	SetActorRotation(FRotator(0.f, DamageCauserLocation.Yaw, 0.f));
+
+	StopAnimMontage();
+	PlayAnimMontage(HitReactMontage, 1.f, FName("FromFrontBig"));
 }

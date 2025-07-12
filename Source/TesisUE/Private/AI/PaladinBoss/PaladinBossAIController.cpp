@@ -20,19 +20,16 @@ void APaladinBossAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimul
         if (PlayerCharStateComp->GetCurrentCharacterState().Form != ECharacterForm::ECF_Possessing)
         {
             BlackboardComponent->SetValueAsObject(FName("TargetActor"), Actor);
-            BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), true);
         }
         else
         {
             if (DamageCauser != Actor)
             {
                 BlackboardComponent->SetValueAsObject(FName("TargetActor"), DamageCauser);
-                BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), true);
             }
             else
             {
                 BlackboardComponent->SetValueAsObject(FName("TargetActor"), nullptr);
-                BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), false);
                 DamageCauser = nullptr;
             }
         }

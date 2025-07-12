@@ -18,6 +18,7 @@ protected:
 
 	void BeginPlay() override;
 
+	UFUNCTION()
 	void ShieldDettach();
 
 	float TakeDamage(

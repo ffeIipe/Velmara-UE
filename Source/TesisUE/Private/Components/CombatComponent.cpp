@@ -281,7 +281,7 @@ void UCombatComponent::SoftLockOn()
 
 		if (APaladin* Enemy = Cast<APaladin>(SphereTraceForEnemies(Start, End)))
 		{
-			if (Enemy->GetEnemyState() != EEnemyState::EES_Died)
+			if (Enemy->GetCharacterStateComponent()->GetCurrentCharacterState().Action != ECharacterActions::ECA_Dead)
 			{
 				SoftLockTarget = Enemy;
 				RotationToTarget();
@@ -421,18 +421,19 @@ void UCombatComponent::Execute()
 					Enemy->GetActorLocation().Z //z
 				);
 
-				Enemy->SetActorLocation(NewFinisherLocation, false);
+				if (Enemy->SetActorLocation(NewFinisherLocation, true))
+				{
+					FVector Start = OwningCharacter->GetActorLocation();
+					FVector End = Enemy->GetActorLocation();
+					FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(Start, End);
+					OwningCharacter->SetActorRotation(LookAtRotation);
 
-				FVector Start = OwningCharacter->GetActorLocation();
-				FVector End = Enemy->GetActorLocation();
-				FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(Start, End);
-				OwningCharacter->SetActorRotation(LookAtRotation);
+					OwningCharacter->PlayAnimMontage(FinisherMontage, 1.0f);
 
-				OwningCharacter->PlayAnimMontage(FinisherMontage, 1.0f);
+					APlayerMain* Player = Cast<APlayerMain>(GetOwner());
 
-				APlayerMain* Player = Cast<APlayerMain>(GetOwner());
-
-				Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->SetEnemiesAIEnabled(false);
+					Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->SetEnemiesAIEnabled(false);
+				}
 			}
 			else return;
 		}

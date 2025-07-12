@@ -93,13 +93,13 @@ void UPossessionComponent::EjectPossessor()
 
 void UPossessionComponent::OnPossessionReceived(AEntity* NewPossessor)
 {
+    if (OnPossessed.IsBound()) OnPossessed.Broadcast();
+    
     PossessedByEntity = NewPossessor;
 
     const float EnergyFromPossessor = NewPossessor->GetAttributeComponent()->GetEnergy();
     OwnerEntity->GetAttributeComponent()->SetEnergy(EnergyFromPossessor);
     OwnerEntity->GetAttributeComponent()->StartDecreaseEnergy();
-
-    if (OnPossessed.IsBound()) OnPossessed.Broadcast();
 }
 
 void UPossessionComponent::OnPossessionReleased()
@@ -150,7 +150,7 @@ AEntity* UPossessionComponent::FindPossessionVictim()
         ETraceTypeQuery::TraceTypeQuery4,
         false,
         ActorsToIgnore,
-        EDrawDebugTrace::None,
+        EDrawDebugTrace::ForDuration,
         HitResult,
         true
     );
