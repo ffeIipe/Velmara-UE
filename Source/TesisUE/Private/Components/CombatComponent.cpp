@@ -407,33 +407,24 @@ void UCombatComponent::Execute()
 
 	if (EntityOwner->GetCharacterMovement()->MovementMode == MOVE_Falling || EntityOwner->GetCharacterMovement()->MovementMode == MOVE_Flying) return;
 
-	if (AActor* Enemy = SphereTraceForEnemies(OwningCharacter->GetActorLocation(), OwningCharacter->GetActorLocation() + OwningCharacter->GetActorForwardVector() * 40.f))
+	if (AEntity* Enemy = SphereTraceForEnemies(OwningCharacter->GetActorLocation(), OwningCharacter->GetActorLocation() + OwningCharacter->GetActorForwardVector() * 40.f))
 	{
 		if (Enemy->GetClass()->ImplementsInterface(UHitInterface::StaticClass()))
 		{
-			if (IHitInterface::Execute_CanBeFinished(Enemy))
+			if (IHitInterface::Execute_CanBeFinished(Enemy) && Enemy->GetCharacterStateComponent()->GetCurrentCharacterState().Action != ECharacterActions::ECA_Dead)
 			{
 				CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Finish);
 
-				FVector NewFinisherLocation = FVector(
-					GetOwner()->GetActorLocation().X + 160.f, //x
-					GetOwner()->GetActorLocation().Y + 20.f, //y
-					Enemy->GetActorLocation().Z //z
-				);
+				FVector Start = OwningCharacter->GetActorLocation();
+				FVector End = Enemy->GetActorLocation();
+				FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(Start, End);
+				OwningCharacter->SetActorRotation(LookAtRotation);
 
-				if (Enemy->SetActorLocation(NewFinisherLocation, true))
-				{
-					FVector Start = OwningCharacter->GetActorLocation();
-					FVector End = Enemy->GetActorLocation();
-					FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(Start, End);
-					OwningCharacter->SetActorRotation(LookAtRotation);
+				OwningCharacter->PlayAnimMontage(FinisherMontage, 1.0f);
 
-					OwningCharacter->PlayAnimMontage(FinisherMontage, 1.0f);
+				APlayerMain* Player = Cast<APlayerMain>(GetOwner());
 
-					APlayerMain* Player = Cast<APlayerMain>(GetOwner());
-
-					Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->SetEnemiesAIEnabled(false);
-				}
+				Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->SetEnemiesAIEnabled(false);
 			}
 			else return;
 		}
@@ -547,7 +538,7 @@ void UCombatComponent::Crasher()
 	}
 }
 
-AActor* UCombatComponent::SphereTraceForEnemies(FVector Start, FVector End)
+AEntity* UCombatComponent::SphereTraceForEnemies(FVector Start, FVector End)
 {
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
 	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
@@ -570,7 +561,7 @@ AActor* UCombatComponent::SphereTraceForEnemies(FVector Start, FVector End)
 		true
 	);
 
-	return ResultHit.GetActor();
+	return Cast<AEntity>(ResultHit.GetActor());
 }
 
 bool UCombatComponent::CanAttack()

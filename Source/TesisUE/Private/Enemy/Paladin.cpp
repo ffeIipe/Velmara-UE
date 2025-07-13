@@ -235,7 +235,7 @@ void APaladin::ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactP
 		break;
 
 	case EMainDamageTypes::EMDT_Finisher:
-		GetFinished_Implementation();
+		FinishedDamage();
 		break;
 
 	case EMainDamageTypes::EMDT_Slash:

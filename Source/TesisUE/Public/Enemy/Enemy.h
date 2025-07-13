@@ -75,7 +75,9 @@ public:
 
 	void DropOrbs(const float DamageReceived, AActor* DamageCauser);
 
-	virtual void GetFinished_Implementation() override;
+	//virtual void GetFinished_Implementation() override;
+
+	void FinishedDamage();
 
 	//virtual bool CanBeFinished_Implementation() override;
 

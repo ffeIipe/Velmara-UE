@@ -52,6 +52,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Dodge")
 	void PerformDodge();
 
+	void DodgeAnimBasedOnInput();
+
 	UPROPERTY()
 	class UTimelineComponent* BufferDodgeTimeline;
 
@@ -75,14 +77,14 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Stats | DoubleJump")
 	float LaunchStrenght = 800.f;
-	
-	//UPROPERTY(EditAnywhere, Category = "Stats | DoubleJump")
+
 	float DefaultWalkSpeed;
 	
-	UPROPERTY(EditAnywhere, Category = "Stats | DoubleJump")
-	float RunSpeed = 1200.f;
-
-	ACharacter* OwningCharacter;
+	UPROPERTY(EditAnywhere, Category = "Stats | Movement")
+	float MaxRunSpeed = 800.f;
+	
+	UPROPERTY(EditAnywhere, Category = "Stats | Movement")
+	float MaxStrafeSpeed = 650.f;
 
 	class UCharacterStateComponent* OwnerCharacterStateComponent;
 	
@@ -99,15 +101,22 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	bool CanDoubleJump = true;
 
+	void CustomInitialize(AEntity* NewEntity, UCharacterStateComponent* NewOwnerCharStateComp);
+
 protected:
 	virtual void BeginPlay() override;
 
 	class AEntity* EntityOwner;
 
 private:
-	void UpdateAllowRunStrafe(float MoveVectorY);
+	void UpdateAllowRunStrafe();
 
+	bool bAllowRun = true;
 	bool bAllowRunStrafe = true;
 
 	bool bIsRunInputPressed = false;
+
+	FVector2D MoveVector;
+
+	FVector LastMovementInput;
 };

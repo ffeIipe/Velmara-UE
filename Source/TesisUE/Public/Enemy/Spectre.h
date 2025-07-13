@@ -19,8 +19,6 @@ public:
 protected:
 	ASpectre();
 
-	//void BeginPlay() override;
-
 	void HandleEnemyCollision(bool bEnable) override;
 	
 	float TakeDamage(

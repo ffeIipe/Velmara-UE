@@ -127,15 +127,6 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 
 				if (HitInterface->Execute_IsLaunchable(HitActor, Cast<ACharacter>(Owner)))
 				{
-					/*if (DamageTypeClass)
-					{
-						if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::White, FString(DamageTypeClass->GetName()));
-					}
-					else 
-					{
-						DamageTypeClass = UDamageType::StaticClass();
-					}*/
-
 					UGameplayStatics::ApplyDamage(
 						HitActor,
 						Damage,
@@ -146,7 +137,7 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 
 					//fx when the hit is true
 					CameraShake();
-					HitStop(.0008f, .01f);
+					HitStop(.0006f, .01f);
 
 					IgnoreActors.Add(HitActor);
 				}
@@ -164,16 +155,11 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 						);
 					}
 
-					//APlayerMain* PlayerRef = Cast<APlayerMain>(GetOwner());
-					//PlayerRef->CombatComponent->HitReactJumpToSection(FName("ReactToShield"));
-
 					if (ShieldImpactSFX)
 					{
 						UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShieldImpactSFX, Hit.ImpactPoint);
 					}
 				}
-				
-				
 			}
 		}
 	}

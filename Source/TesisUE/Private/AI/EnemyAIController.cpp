@@ -30,11 +30,27 @@ void AEnemyAIController::CustomInitialize(AEntity* NewOwner, UBlackboardComponen
     BlackboardComponent = NewBlackboardComponent;
 	OwningCharacterStateComponent = NewCharacterStateComponent;
 
-    EnemyPerceptionComponent->OnTargetPerceptionUpdated.AddUniqueDynamic(this, &AEnemyAIController::OnEnemyPerceptionUpdated);
+    if (!EnemyPerceptionComponent->OnTargetPerceptionUpdated.IsBound())
+    {
+        EnemyPerceptionComponent->OnTargetPerceptionUpdated.AddUniqueDynamic(this, &AEnemyAIController::OnEnemyPerceptionUpdated);
+    }   
+
+    if (IsValid(EntityOwner) 
+        && IsValid(BlackboardComponent) 
+        && IsValid(OwningCharacterStateComponent) 
+        && EnemyPerceptionComponent->OnTargetPerceptionUpdated.IsBound())
+    {
+	    if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, FString("Controller initialized..."));
+    }
+    else if (GEngine)     
+    {
+        GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Controller initialization failed!"));
+	}
 }
 
 void AEnemyAIController::DeactivateController()
 {
+    if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, FString("Controller deactivated..."));
 	EnemyPerceptionComponent->OnTargetPerceptionUpdated.RemoveDynamic(this, &AEnemyAIController::OnEnemyPerceptionUpdated);
 }
 
@@ -58,6 +74,16 @@ void AEnemyAIController::BeginPlay()
 
     EntityOwner = Cast<AEntity>(GetCharacter());
     BlackboardComponent = GetBlackboardComponent();
+
+    if (EntityOwner && BlackboardComponent)
+    {
+        if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Entity Owner & BBComponent are valids! And Begin Play was executed..."));
+	}
+
+    if (!EnemyPerceptionComponent->OnTargetPerceptionUpdated.IsBound())
+    {
+        if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Purple, FString("Enemy perception update it´s not bound!!!"));
+    }
 }
 
 void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)

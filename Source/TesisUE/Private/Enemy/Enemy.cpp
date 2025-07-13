@@ -35,6 +35,7 @@
 #include "Tutorial/PromptWidgetComponent.h"
 #include "Player/PlayerHeroController.h"
 #include "HUD/PlayerMainHUD.h"
+#include "Perception/AIPerceptionComponent.h"  
 
 AEnemy::AEnemy()
 {
@@ -339,6 +340,8 @@ void AEnemy::BeginPlay()
 			GetMesh()->SetMaterial(MatIndex, DissolveMaterials[MatIndex]);
 		}
 	}
+	
+	EnableAI();
 }
 
 void AEnemy::ReturnAttackTokenToTarget()
@@ -413,12 +416,14 @@ void AEnemy::OnPossessed()
 {
 	DisableAI();
 	ApplyPossessionParameters(true);
+	GetExtraMovementComponent()->CustomInitialize(this, GetCharacterStateComponent());
 }
 
 void AEnemy::OnUnpossessed()
 {
 	EnableAI();
 	ApplyPossessionParameters(false);
+	GetExtraMovementComponent()->CustomInitialize(this, GetCharacterStateComponent());
 }
 
 void AEnemy::UpdateDissolveEffect(float Value)
@@ -495,9 +500,9 @@ void AEnemy::DropOrbs(const float DamageReceived, AActor* DamageCauser)
 	}
 }
 
-void AEnemy::GetFinished_Implementation()
+void AEnemy::FinishedDamage()
 {
-	if (GetEnemyState() != EEnemyState::EES_Died)
+	if (GetCharacterStateComponent()->GetCurrentCharacterState().Action != ECharacterActions::ECA_Dead)
 	{
 		if (GetCharacterStateComponent()) GetCharacterStateComponent()->SetCharacterAction(ECharacterActions::ECA_Dead);
 
@@ -511,7 +516,7 @@ void AEnemy::GetFinished_Implementation()
 		Die();
 
 		StopAnimMontage();
-		PlayAnimMontage(FinisherDeathMontage, 1.f); 
+		PlayAnimMontage(FinisherDeathMontage, 1.f);
 	}
 }
 
@@ -610,9 +615,9 @@ void AEnemy::DisableAI()
 	if (!AIController) AIController = Cast<AAIController>(GetController());
 
 	AIController->StopMovement();
-	AIController->UnPossess();
-	AIController->GetBrainComponent()->StopLogic(FString("AI Disabled"));
-	AIController->RunBehaviorTree(nullptr);
+	//AIController->UnPossess();
+
+	AIController->RunBehaviorTree(nullptr);	
 
 	if (!EnemyAIController) EnemyAIController = Cast<AEnemyAIController>(AIController);
 
@@ -636,8 +641,10 @@ void AEnemy::EnableAI()
 
 	if (!EnemyAIController) EnemyAIController = Cast<AEnemyAIController>(AIController);
 
+	//AIController->UnPossess();
 	AIController->Possess(this);
-	AIController->GetBrainComponent()->RestartLogic();
+
+	EnemyAIController->PerceptionComponent->Activate();
 
 	if (BTAsset)
 	{

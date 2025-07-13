@@ -81,7 +81,7 @@ public:
 	UFUNCTION()
 	void HitReactJumpToSection(FName Section);
 	UFUNCTION()
-	AActor* SphereTraceForEnemies(FVector Start, FVector End);
+	AEntity* SphereTraceForEnemies(FVector Start, FVector End);
 
 	// --- Attack State Flags ---
 	UPROPERTY(VisibleAnywhere, Category = "Attack | LightAttack")
