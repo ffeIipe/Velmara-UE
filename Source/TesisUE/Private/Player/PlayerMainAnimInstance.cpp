@@ -4,6 +4,7 @@
 #include "Components/SpectralWeaponComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Components/CharacterStateComponent.h"
+#include "Components/ExtraMovementComponent.h"
 
 void UPlayerMainAnimInstance::NativeInitializeAnimation()
 {
@@ -14,6 +15,8 @@ void UPlayerMainAnimInstance::NativeInitializeAnimation()
 	{
 		PlayerMainCharacterMovement = PlayerMain->GetCharacterMovement();
 		SpectralWeaponComponent = PlayerMain->GetComponentByClass<USpectralWeaponComponent>();
+		MaxWalkSpeed = PlayerMainCharacterMovement->MaxWalkSpeed;	
+		MaxRunSpeed = PlayerMain->GetExtraMovementComponent()->MaxRunSpeed;
 	}
 }
 

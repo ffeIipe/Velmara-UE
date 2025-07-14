@@ -56,6 +56,8 @@ AEntity::AEntity()
 	SpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("Spring Arm"));
 	SpringArmComponent->SetupAttachment(GetRootComponent());
 	SpringArmComponent->bUsePawnControlRotation = true;
+
+	GetAttributeComponent()->OnOutOfEnergy.AddDynamic(this, &AEntity::OutOfEnergy);
 }
 
 void AEntity::GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived)
@@ -103,12 +105,10 @@ void AEntity::PlayCameraShake(const FVector& Epicenter, float InnerRadius, float
 
 bool AEntity::CanBeFinished_Implementation()
 {
-	//if (GEngine)GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("CanBeFinished Exec..."));
 	if (GetAttributeComponent()->GetHealthPercent() <= .2f)
 	{
 		if (OnCanBeFinished.IsBound())
 		{
-
 			OnCanBeFinished.Broadcast();
 		}
 
@@ -145,9 +145,6 @@ void AEntity::BeginPlay()
 	Super::BeginPlay();
 	
 	PlayerControllerRef = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-
-	GetAttributeComponent()->OnEntityDead.AddDynamic(this, &AEntity::Die);
-	GetAttributeComponent()->OnOutOfEnergy.AddDynamic(this, &AEntity::OutOfEnergy);
 
 	GetMementoComponent()->SaveState();
 }
@@ -197,7 +194,7 @@ void AEntity::Landed(const FHitResult& Hit)
 		GetCharacterMovement()->StopMovementImmediately();
 		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
 
-		Die();
+		Die(DeathMontage, FName("DeathFromHeight"));
 	}
 }
 
@@ -288,24 +285,6 @@ void AEntity::RemoveStunBehavior()
 	GetCharacterMovement()->MaxWalkSpeed = DefaultMaxWalkSpeed;
 }
 
-void AEntity::Die()
-{
-	if (GetCharacterStateComponent()->GetCurrentCharacterState().Action == ECharacterActions::ECA_Dead) return;
-
-	GetCharacterStateComponent()->SetCharacterAction(ECharacterActions::ECA_Dead);
-	
-	if (GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling || GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Flying)
-	{
-		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
-	}
-
-	if (DeathMontage)
-	{
-		StopAnimMontage();
-		PlayAnimMontage(DeathMontage);
-	}
-}
-
 bool AEntity::IsEquipping()
 {
 	return GetCharacterStateComponent()->GetCurrentCharacterState().SpectralState == ECharacterSpectralStates::ECSS_EquippingPistol
@@ -315,7 +294,6 @@ bool AEntity::IsEquipping()
 float AEntity::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	LastDamageCauser = DamageCauser;
-
 
 	if (GetAttributeComponent()->IsShielded() && DamageEvent.DamageTypeClass == USpectralTrapDamageType::StaticClass())
 	{
@@ -327,7 +305,7 @@ float AEntity::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, A
 			OnShieldTakeDamage.Broadcast();
 		}
 	}
-	else /*if (!GetAttributeComponent()->IsShielded() && DamageEvent.DamageTypeClass != USpectralTrapDamageType::StaticClass())*/
+	else
 	{
 		GetAttributeComponent()->ReceiveDamage(DamageAmount);
 		CanBeFinished_Implementation();
@@ -340,6 +318,24 @@ void AEntity::OutOfEnergy()
 	if (GetPossessionComponent()->GetPossessedEntity())
 	{
 		GetPossessionComponent()->ReleasePossession();
+	}
+}
+
+void AEntity::Die(UAnimMontage* DeathAnim, FName Section)
+{
+	if (GetCharacterStateComponent()->GetCurrentCharacterState().Action == ECharacterActions::ECA_Dead) return;
+
+	GetCharacterStateComponent()->SetCharacterAction(ECharacterActions::ECA_Dead);
+
+	if (GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling || GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Flying)
+	{
+		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
+	}
+
+	if (DeathAnim)
+	{
+		StopAnimMontage();
+		PlayAnimMontage(DeathAnim, 1.f, Section);
 	}
 }
 

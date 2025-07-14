@@ -22,6 +22,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pause")
 	void TogglePauseMenu();
 
+	/*UFUNCTION(BlueprintCallable)
+	void SetGenericTeamId(FGenericTeamId NewTeamID) override;*/
+
+	virtual void SetGenericTeamId(const FGenericTeamId& TeamID) override;
+
+	UFUNCTION(BlueprintCallable)
+	virtual FGenericTeamId GetGenericTeamId() const override;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -35,8 +43,6 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Audio")
 	USoundMix* PauseSoundMix;
-
-	virtual FGenericTeamId GetGenericTeamId() const override;
 
 private:
 	UPROPERTY()

@@ -1,6 +1,7 @@
 #include "Components/MementoComponent.h"
 #include "Components/AttributeComponent.h"
 #include "GameFramework/Actor.h"
+#include <Entities/Entity.h>
 
 UMementoComponent::UMementoComponent()
 {
@@ -51,11 +52,12 @@ void UMementoComponent::ApplyExternalState(const FEntityMementoState& StateToApp
 FEntityMementoState UMementoComponent::CaptureOwnerState() const
 {
     FEntityMementoState State;
-    AActor* Owner = GetOwner();
-    if (Owner)
+    AEntity* EntityOwner = Cast<AEntity>(GetOwner());
+
+    if (EntityOwner)
     {
-        State.Transform = Owner->GetActorTransform();
-        UAttributeComponent* AttrComp = Owner->GetComponentByClass<UAttributeComponent>();
+        State.Transform = EntityOwner->GetActorTransform();
+        UAttributeComponent* AttrComp = EntityOwner->GetAttributeComponent();
         if (AttrComp)
         {
             State.Health = AttrComp->GetHealth();

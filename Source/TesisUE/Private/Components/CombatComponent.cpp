@@ -50,7 +50,7 @@ void UCombatComponent::ResetState()
 
 	if (SpectralAttacks) SpectralAttacks->Execute_ResetSpectralAttack(GetOwner());
 
-	if (OnAttackEnd.IsBound()) OnAttackEnd.Broadcast();
+	if (OnAttackEnd.IsBound()) OnAttackEnd.Broadcast(); //esto se llama desde AN_ResetState en el montage de ataque
 
 	ExtraMovementComponent->bIsSaveDodge = false;
 }
@@ -400,7 +400,7 @@ void UCombatComponent::Execute()
 
 	if (CharacterStateComponent->IsActionEqualToAny({ 
 		ECharacterActions::ECA_Dead,
-		ECharacterActions::ECA_Dodge,
+		/*ECharacterActions::ECA_Dodge, que pueda ser cancelable*/
 		ECharacterActions::ECA_Finish,
 		ECharacterActions::ECA_Stun
 		})) return;

@@ -25,15 +25,19 @@ public:
     void EjectPossessor();
     void EjectAndExecute();
 
+	//retorna la entidad que este Entity esta poseyendo
     UFUNCTION(BlueprintPure, Category = "Possession")
     AEntity* GetPossessedEntity() const { return CurrentlyPossessedEntity; }
 
+	//retorna la entidad que posee a este Entity
     UFUNCTION(BlueprintPure, Category = "Possession")
     AEntity* GetPossessingEntity() const { return PossessedByEntity; }
 
+	//retorna true si esta entidad esta siendo poseida por otra entidad
     UFUNCTION(BlueprintPure, Category = "Possession")
     bool IsPossessed() const { return PossessedByEntity != nullptr; }
 
+	//retorna true si esta entidad esta poseyendo a otra entidad
     UFUNCTION(BlueprintPure, Category = "Possession")
     bool IsPossessing() const { return CurrentlyPossessedEntity != nullptr; }
 
@@ -73,8 +77,8 @@ private:
     APlayerController* PlayerController;
 
     UPROPERTY()
-    AEntity* CurrentlyPossessedEntity;
+    AEntity* CurrentlyPossessedEntity = nullptr;
 
     UPROPERTY()
-    AEntity* PossessedByEntity;
+    AEntity* PossessedByEntity = nullptr;
 };

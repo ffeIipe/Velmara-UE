@@ -40,9 +40,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Energy | OnPossession")
 	float PossessionDamage;
 	
+	UPROPERTY(EditDefaultsOnly, Category = "Movement | OnPossession")
+	float PossessionMaxWalkSpeed = 700.f;
+	
 	void BeginPlay();
 
-	void Die() override;
+	void Die(UAnimMontage* DeathAnim, FName Section) override;
 	
 	TArray<AActor*> IgnoreActors;
 

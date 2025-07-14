@@ -104,6 +104,9 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+	UFUNCTION()
+	void PerformDead();
+
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 private:
@@ -115,7 +118,7 @@ private:
 	AItem* OverlappingItem;
 
 	// --- Life Cycle ---
-	void Die() override;
+	void Die(UAnimMontage* DeathAnim, FName Section) override;
 	void Revive();
 	void LoadLastCheckpoint();
 	void OutOfEnergy() override;

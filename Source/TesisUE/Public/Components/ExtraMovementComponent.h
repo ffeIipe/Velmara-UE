@@ -103,17 +103,15 @@ public:
 
 	void CustomInitialize(AEntity* NewEntity, UCharacterStateComponent* NewOwnerCharStateComp);
 
-protected:
+private:
 	virtual void BeginPlay() override;
 
 	class AEntity* EntityOwner;
 
-private:
 	void UpdateAllowRunStrafe();
 
 	bool bAllowRun = true;
 	bool bAllowRunStrafe = true;
-
 	bool bIsRunInputPressed = false;
 
 	FVector2D MoveVector;

@@ -17,7 +17,7 @@
 
 APlayerHeroController::APlayerHeroController()
 {
-	HeroTeamID = FGenericTeamId(0);
+	HeroTeamID = FGenericTeamId(2);
 
     CurrentPauseMenuInstance = nullptr;
     CurrentOptionsMenuInstance_Pause = nullptr;
@@ -36,6 +36,7 @@ APlayerHeroController::APlayerHeroController()
     //     PauseSoundMix = PauseSoundMixAsset.Object;
     // }
 }
+
 void APlayerHeroController::BeginPlay()
 {
     Super::BeginPlay();
@@ -121,6 +122,11 @@ void APlayerHeroController::TogglePauseMenu()
             UE_LOG(LogTemp, Log, TEXT("Game Paused"));
         }
     }
+}
+
+void APlayerHeroController::SetGenericTeamId(const FGenericTeamId& TeamID)
+{
+    HeroTeamID = TeamID;
 }
 
 FGenericTeamId APlayerHeroController::GetGenericTeamId() const

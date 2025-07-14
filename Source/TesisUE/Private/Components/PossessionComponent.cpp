@@ -6,6 +6,7 @@
 #include "Entities/Entity.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
+#include <GenericTeamAgentInterface.h>
 
 UPossessionComponent::UPossessionComponent()
 {

@@ -94,7 +94,7 @@ void APlayerMain::BeginPlay()
 	Super::BeginPlay();
 
 	GetAttributeComponent()->RegenerateTick();
-	GetAttributeComponent()->OnEntityDead.AddDynamic(this, &APlayerMain::Die);
+	GetAttributeComponent()->OnEntityDead.AddDynamic(this, &APlayerMain::PerformDead);
 
 	if (!GetCombatComponent()->OnWallHit.IsBound())
 	{
@@ -135,6 +135,11 @@ void APlayerMain::BeginPlay()
 	}
 }
 
+void APlayerMain::PerformDead()
+{
+	Die(DeathMontage, NAME_None);
+}
+
 void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
@@ -169,7 +174,7 @@ float APlayerMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEven
 	}
 	else
 	{
-		Die();
+		Die(DeathMontage, NAME_None);
 	}
 	return DamageAmount;
 }
@@ -296,9 +301,9 @@ void APlayerMain::OutOfEnergy()
 	PlayerFormComponent->ToggleForm();
 }
 
-void APlayerMain::Die()
+void APlayerMain::Die(UAnimMontage* DeathAnim, FName Section)
 {
-	Super::Die();
+	Super::Die(DeathAnim, Section);
 
 	if (PlayerControllerRef)
 	{
@@ -344,8 +349,6 @@ void APlayerMain::LoadLastCheckpoint()
 	{
 		GameInst->LoadPlayerProgress(GameInst->ActiveSaveSlotIndex);
 	}
-
-	//UGameplayStatics::OpenLevel(this, FName("AugusTest"));
 }
 
 void APlayerMain::ChangePrimaryWeapon()

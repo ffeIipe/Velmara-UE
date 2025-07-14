@@ -1,6 +1,7 @@
 #include "SceneEvents/Checkpoint.h"
-#include "Player/PlayerMain.h"
+#include "Entities/Entity.h"
 #include "Components/MementoComponent.h"
+#include "Components/PossessionComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "SceneEvents/NewGameStateBase.h"
 #include "SceneEvents/NewGameInstance.h"
@@ -13,25 +14,25 @@ void ACheckpoint::OnSphereBeginOverlap(
     bool bFromSweep,
     const FHitResult& SweepResult)
 {
-    if (APawn* OverlappingPawn = Cast<APawn>(OtherActor))
+    if (AEntity* OverlappingEntity = Cast<AEntity>(OtherActor))
     {
-        AController* TempController = OverlappingPawn->GetController();
+        DisableCollision();
 
-        if (TempController == UGameplayStatics::GetPlayerController(this, 0))
+        if (OverlappingEntity->GetPossessionComponent()->IsPossessed())
         {
-            DisableCollision();
-
-            UNewGameInstance* GameInst = Cast<UNewGameInstance>(GetGameInstance());
-            if (GameInst)
-            {
-                if (GameInst->SavePlayerProgress(GameInst->ActiveSaveSlotIndex, OverlappingPawn))
-                {
-                    if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Emerald, FString("Player progress saved via GameInstance."));
-                    UE_LOG(LogTemp, Log, TEXT("ACheckpoint: Player progress saved via GameInstance. Slot: %d"), GameInst->ActiveSaveSlotIndex);
-                }
-            }
-
-            Destroy();
+            OverlappingEntity->GetPossessionComponent()->GetPossessingEntity()->SetActorTransform(OverlappingEntity->GetActorTransform());
         }
+
+        UNewGameInstance* GameInst = Cast<UNewGameInstance>(GetGameInstance());
+        if (GameInst)
+        {
+            if (GameInst->SavePlayerProgress(GameInst->ActiveSaveSlotIndex, OverlappingEntity))
+            {
+                if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Emerald, FString("Player progress saved via GameInstance."));
+                UE_LOG(LogTemp, Log, TEXT("ACheckpoint: Player progress saved via GameInstance. Slot: %d"), GameInst->ActiveSaveSlotIndex);
+            }
+        }
+
+        Destroy();
     }
 }

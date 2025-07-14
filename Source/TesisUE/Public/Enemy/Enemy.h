@@ -53,8 +53,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pooling")
 	virtual void DeactivateEnemy();
 
-	virtual void PoolableDie();
-
 	UPROPERTY(BlueprintAssignable, Category = "Pooling")
 	FOnEnemyDeactivated OnDeactivated;
 
@@ -69,7 +67,7 @@ public:
 	FOnEntityDamaged OnDamaged;
 
 	// --- Combat & Damage ---
-	void Die() override;
+	void Die(UAnimMontage* DeathAnim, FName Section) override;
 
 	virtual void GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, FDamageEvent const&  DamageEvent, const float DamageReceived) override;
 
@@ -134,6 +132,9 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+
+	UFUNCTION()
+	void PerformDead();
 
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;

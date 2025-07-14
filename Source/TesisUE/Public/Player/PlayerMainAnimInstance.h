@@ -43,6 +43,12 @@ public:
 	
 	UPROPERTY(BlueprintReadWrite, Category = "Movement")
 	float WalkForward;
+	
+	UPROPERTY(BlueprintReadWrite, Category = "Movement")
+	float MaxWalkSpeed;
+	
+	UPROPERTY(BlueprintReadWrite, Category = "Movement")
+	float MaxRunSpeed;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Movement | Character State")
 	ECharacterStates CharacterState;

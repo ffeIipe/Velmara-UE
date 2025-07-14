@@ -9,6 +9,7 @@
 #include "GameFramework/PlayerStart.h"
 #include "Components/MementoComponent.h"
 #include "Entities/Entity.h"
+#include <SceneEvents/NewGameInstance.h>
 
 void AResetPlayer::BeginPlay()
 {
@@ -31,9 +32,16 @@ void AResetPlayer::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent
 
        /* APlayerController* PlayerController = UGameplayStatics::GetPlayerController(this, 0);
         if (Cast<APlayerController>(OverlappingActor->GetController()) == PlayerController)
-        */{
+      *//*{
             OverlappingActor->SetActorTransform(OverlappingActor->GetMementoComponent()->GetLastSavedTransform());
+        }*/
+
+        UNewGameInstance* GameInst = GetGameInstance<UNewGameInstance>();
+        if (GameInst)
+        {
+            GameInst->LoadPlayerProgress(GameInst->ActiveSaveSlotIndex);
         }
+
 		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("ResetPlayer: Overlapping actor!"));
     }
     else if (GEngine) 

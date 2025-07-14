@@ -57,7 +57,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Attacks | Aura")
 	float AuraRadius = 4.f;
 
-	void Die() override;
+	void Die(UAnimMontage* DeathAnim, FName Section) override;
 
 private:
 	UPROPERTY(EditAnywhere, Category = "Attacks | Spawning")

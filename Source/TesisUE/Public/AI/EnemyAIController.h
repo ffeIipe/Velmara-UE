@@ -46,6 +46,8 @@ protected:
 	UFUNCTION()
 	virtual void OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
 
+	void SetHasAttackToken(class UEnemyTokenManager* TokenManager, AActor* Actor);
+
 	UBlackboardComponent* BlackboardComponent;
 
 	AEntity* EntityOwner;

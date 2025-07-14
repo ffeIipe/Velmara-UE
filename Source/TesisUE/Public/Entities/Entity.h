@@ -103,8 +103,8 @@ public:
 	UFUNCTION()
 	virtual void OutOfEnergy();
 
-	UFUNCTION()
-	virtual void Die();
+	UFUNCTION(BlueprintCallable)
+	virtual void Die(UAnimMontage* DeathAnim, FName Section = NAME_None);
 
 	void PlayCameraShake(const FVector& Epicenter, float InnerRadius, float OuterRadius);
 

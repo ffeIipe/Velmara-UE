@@ -11,6 +11,7 @@
 #include "Components/AttributeComponent.h"
 #include "Components/CombatComponent.h"
 #include "Components/CharacterStateComponent.h"
+#include "Components/PossessionComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/TimelineComponent.h"
 
@@ -38,6 +39,7 @@ APaladin::APaladin()
 	GetAttributeComponent()->AttachShield(GetMesh(), FName("LeftHandSocket"));
 
 	DefaultDamage = Damage;
+	DefaultMaxWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
 
 	SwordMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SwordMesh"));
 	SwordMesh->SetupAttachment(GetMesh(), TEXT("RightHandSocket"));
@@ -55,15 +57,15 @@ APaladin::APaladin()
 
 	BoxTraceEnd = CreateDefaultSubobject<USceneComponent>(TEXT("Box Trace End"));
 	BoxTraceEnd->SetupAttachment(SwordMesh);
+
+	SwordCollider->OnComponentBeginOverlap.AddDynamic(this, &APaladin::OnSwordOverlap);
+
+	OnShieldTakeDamage.AddDynamic(this, &APaladin::ShieldHit);
 }
 
 void APaladin::BeginPlay()
 {
 	Super::BeginPlay();
-
-	SwordCollider->OnComponentBeginOverlap.AddDynamic(this, &APaladin::OnSwordOverlap);
-
-	OnShieldTakeDamage.AddDynamic(this, &APaladin::ShieldHit);
 
 	if (!BBComponent)
 	{
@@ -98,9 +100,9 @@ void APaladin::DeactivateEnemy()
 	Super::DeactivateEnemy();
 }
 
-void APaladin::Die()
+void APaladin::Die(UAnimMontage* DeathAnim, FName Section)
 {
-	Super::Die();
+	Super::Die(DeathAnim, Section);
 
 	if (GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Flying || GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling)
 	{
@@ -156,16 +158,30 @@ void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 				UGameplayStatics::ApplyDamage(
 					Hit.GetActor(),
 					Damage,
-					GetInstigatorController(),
+					GetController(),
 					this,
 					UDamageType::StaticClass()
 				);
 
 				FDamageEvent DamageEvent(UDamageType::StaticClass());
-				Entity->Execute_GetHit(Hit.GetActor(), GetOwner(), Hit.ImpactPoint, DamageEvent, Damage);
+				Entity->Execute_GetHit(Hit.GetActor(), this, Hit.ImpactPoint, DamageEvent, Damage);
 
 				PlayCameraShake(SwordMesh->GetComponentLocation(), 0.f, 500.f);
 				IgnoreActors.Add(Hit.GetActor());
+
+				if (GetPossessionComponent()->IsPossessed())
+				{
+					if (IGenericTeamAgentInterface* OtherTeamAgent = Cast<IGenericTeamAgentInterface>(GetController()))
+					{
+						if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Emerald, FString("Paladin: Set Other Team Agent ID to 2"));
+
+						OtherTeamAgent->SetGenericTeamId(FGenericTeamId(2));
+					}
+					else 
+					{
+						if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, FString("Paladin: Other Team Agent is not valid!"));
+					}
+				}
 			}
 		}
 	}
@@ -177,8 +193,13 @@ void APaladin::ApplyPossessionParameters(bool bShouldEnable)
 	if (bShouldEnable)
 	{
 		Damage = PossessionDamage;
+		GetCharacterMovement()->MaxWalkSpeed = PossessionMaxWalkSpeed;
 	}
-	else Damage = DefaultDamage;
+	else
+	{
+		Damage = DefaultDamage;
+		GetCharacterMovement()->MaxWalkSpeed = DefaultMaxWalkSpeed;
+	}
 }
 
 void APaladin::ShieldHit()

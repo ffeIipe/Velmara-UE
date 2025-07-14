@@ -230,7 +230,7 @@ bool UNewGameInstance::SavePlayerProgress(int32 SlotIndex, APawn* Entity)
     {
         if (AEnemy* EnemyRef = Cast<AEnemy>(Entity))
         {
-            PlayerCharacter = Cast<APlayerMain>(EnemyRef->GetPossessionComponent()->GetPossessedEntity());
+            PlayerCharacter = Cast<APlayerMain>(EnemyRef->GetPossessionComponent()->GetPossessingEntity());
             if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Magenta, FString("Player reference obtained from Enemy possessed."));
         }
         else
@@ -239,11 +239,11 @@ bool UNewGameInstance::SavePlayerProgress(int32 SlotIndex, APawn* Entity)
         }
     }
 
-    UInventoryComponent* PlayerInventory = IsValid(PlayerCharacter) ? PlayerCharacter->FindComponentByClass<UInventoryComponent>() : nullptr;
+    UInventoryComponent* PlayerInventory = IsValid(PlayerCharacter) ? PlayerCharacter->GetInventoryComponent() : nullptr;
 
     if (IsValid(PlayerCharacter))
     {
-        UMementoComponent* PlayerMemento = PlayerCharacter->FindComponentByClass<UMementoComponent>();
+        UMementoComponent* PlayerMemento = PlayerCharacter->GetMementoComponent();
         if (PlayerMemento)
         {
             PlayerMemento->SaveState();
@@ -353,16 +353,16 @@ void UNewGameInstance::ApplyPendingLoadedDataToWorld()
         return;
     }
 
-    ACharacter* PlayerCharacter = UGameplayStatics::GetPlayerCharacter(this, 0);
+    APlayerMain* PlayerCharacter = Cast<APlayerMain>(UGameplayStatics::GetPlayerCharacter(this, 0));
     if (PlayerCharacter)
     {
-        UMementoComponent* PlayerMemento = PlayerCharacter->FindComponentByClass<UMementoComponent>();
+        UMementoComponent* PlayerMemento = PlayerCharacter->GetMementoComponent();
         if (PlayerMemento)
         {
             PlayerMemento->ApplyExternalState(PendingGameDataToLoad->PlayerState);
         }
 
-        UInventoryComponent* PlayerInventory = PlayerCharacter->FindComponentByClass<UInventoryComponent>();
+        UInventoryComponent* PlayerInventory = PlayerCharacter->GetInventoryComponent();
         if (PlayerInventory)
         {
             PlayerInventory->InventorySlots.Init(nullptr, PlayerInventory->MaxSlots);

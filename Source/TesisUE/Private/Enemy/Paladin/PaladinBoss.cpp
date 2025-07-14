@@ -101,9 +101,9 @@ void APaladinBoss::GetHit_Implementation(AActor* DamageCauser, const FVector& Im
 	}
 }
 
-void APaladinBoss::Die()
+void APaladinBoss::Die(UAnimMontage* DeathAnim, FName Section)
 {
-	Super::Die();
+	Super::Die(DeathAnim, Section);
 	
 	if (OnDead.IsBound())
 	{

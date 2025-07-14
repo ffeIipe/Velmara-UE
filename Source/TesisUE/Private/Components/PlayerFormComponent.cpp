@@ -16,6 +16,7 @@
 #include "Entities/Entity.h"
 #include "Player/PlayerMain.h"
 #include "GameFramework/Character.h"
+#include <Player/PlayerHeroController.h>
 
 //TODO: optimize the iterator that search for spectral objects, that in a future may cause an fps drop
 
@@ -68,6 +69,12 @@ void UPlayerFormComponent::ToggleForm()
 
 void UPlayerFormComponent::ApplySpectralEffects()
 {
+    if (APlayerHeroController* PlayerController = Cast<APlayerHeroController>(UGameplayStatics::GetPlayerController(GetWorld(), 0)))
+    {
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, FString("PlayerController: Set Generic Team ID to 0"));
+		PlayerController->SetGenericTeamId(FGenericTeamId(0));
+    }
+
     CharacterStateComponent->SetCharacterForm(ECharacterForm::ECF_Spectral);
     SpectralEffectTimeline->PlayFromStart();
     UGameplayStatics::PlaySound2D(GetWorld(), EnableSpectralModeSFX);
@@ -102,6 +109,12 @@ void UPlayerFormComponent::ApplySpectralEffects()
 
 void UPlayerFormComponent::ApplyHumanEffects()
 {
+    if (APlayerHeroController* PlayerController = Cast<APlayerHeroController>(UGameplayStatics::GetPlayerController(GetWorld(), 0)))
+    {
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, FString("PlayerController: Set Generic Team ID to 2"));
+        PlayerController->SetGenericTeamId(FGenericTeamId(2));
+    }
+    
     CharacterStateComponent->SetCharacterForm(ECharacterForm::ECF_Human);
     SpectralEffectTimeline->Reverse();
     UGameplayStatics::PlaySound2D(GetWorld(), DisableSpectralModeSFX);
