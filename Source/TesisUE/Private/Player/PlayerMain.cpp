@@ -3,46 +3,37 @@
 #include "EngineUtils.h"
 #include "SceneEvents/NewGameModeBase.h"
 #include "SceneEvents/NewGameStateBase.h"
+#include "SceneEvents/NewGameInstance.h"
 
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Components/InputComponent.h"
-#include "Components/TimelineComponent.h"
 #include "Components/AttributeComponent.h"
 #include "Components/PlayerFormComponent.h"
-#include "Components/BoxComponent.h"
 #include "Components/MementoComponent.h"
-#include "Components/CapsuleComponent.h"
 #include "Components/CombatComponent.h"
 #include "Components/InventoryComponent.h"
 #include "Components/CharacterStateComponent.h"
 #include "Components/PossessionComponent.h"
 #include "Components/SpectralWeaponComponent.h"
-#include "Components/ExtraMovementComponent.h"
 #include "Curves/CurveFloat.h"
 
 #include "Camera/CameraActor.h"
 #include "Enemy/Spectre.h"
 #include "Enemy/Enemy.h"
-#include "Enemy/Paladin.h"
 
 #include "Items/Weapons/Sword.h"
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
-#include "InputActionValue.h"
 
 #include "Kismet/GameplayStatics.h"
-#include "Kismet/KismetSystemLibrary.h"
-#include "Kismet/KismetMathLibrary.h"
-#include "SpectralMode/Interfaces/SpectralInteractable.h"
 
 #include "Engine/DamageEvents.h"
 #include "DamageTypes/SpectralTrapDamageType.h"
 #include <SceneEvents/NewGameInstance.h>
 
 #include "Animation/AnimInstance.h"
-#include <Enemy/Paladin/PaladinBoss.h>
 
 
 APlayerMain::APlayerMain()
@@ -79,7 +70,7 @@ void APlayerMain::ResetSpectralAttack_Implementation()
 	GetCombatComponent()->bIsSaveLightAttack = false;
 }
 
-void APlayerMain::GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived)
+void APlayerMain::GetHit_Implementation(AEntity* DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived)
 {
 	Super::GetHit_Implementation(DamageCauser, ImpactPoint, DamageEvent, DamageReceived);
 
@@ -112,8 +103,7 @@ void APlayerMain::BeginPlay()
 		break;
 	}
 
-	APlayerController* PC = Cast<APlayerController>(GetController());
-	if (FollowCamera && PC)
+	if (APlayerController* PC = Cast<APlayerController>(GetController()); FollowCamera && PC)
 	{
 		FollowCamera->AttachToComponent(GetSpringArmComponent(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName("SpringEndpoint"));
 		PC->SetViewTargetWithBlend(FollowCamera, 1.f);
@@ -342,10 +332,9 @@ void APlayerMain::ResetFollowCamera()
 	}
 }
 
-void APlayerMain::LoadLastCheckpoint()
+void APlayerMain::LoadLastCheckpoint() const
 {
-	UNewGameInstance* GameInst = GetGameInstance<UNewGameInstance>();
-	if (GameInst)
+	if (UNewGameInstance* GameInst = GetGameInstance<UNewGameInstance>())
 	{
 		GameInst->LoadPlayerProgress(GameInst->ActiveSaveSlotIndex);
 	}

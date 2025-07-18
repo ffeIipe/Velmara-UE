@@ -6,6 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "ExtraMovementComponent.generated.h"
 
+class AEntity;
 struct FInputActionValue;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -52,7 +53,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Dodge")
 	void PerformDodge();
 
-	void DodgeAnimBasedOnInput();
+	void DodgeAnimBasedOnInput() const;
 
 	UPROPERTY()
 	class UTimelineComponent* BufferDodgeTimeline;
@@ -76,16 +77,17 @@ public:
 	void UpdateBuffer(float Alpha, float BufferDistance);
 
 	UPROPERTY(EditAnywhere, Category = "Stats | DoubleJump")
-	float LaunchStrenght = 800.f;
+	float LaunchStrength = 800.f;
 
 	float DefaultWalkSpeed;
 	
-	UPROPERTY(EditAnywhere, Category = "Stats | Movement")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stats | Movement")
 	float MaxRunSpeed = 800.f;
 	
 	UPROPERTY(EditAnywhere, Category = "Stats | Movement")
 	float MaxStrafeSpeed = 650.f;
 
+	UPROPERTY()
 	class UCharacterStateComponent* OwnerCharacterStateComponent;
 	
 	void Input_Move(const FInputActionValue& Value);
@@ -106,7 +108,8 @@ public:
 private:
 	virtual void BeginPlay() override;
 
-	class AEntity* EntityOwner;
+	UPROPERTY()
+	AEntity* EntityOwner;
 
 	void UpdateAllowRunStrafe();
 

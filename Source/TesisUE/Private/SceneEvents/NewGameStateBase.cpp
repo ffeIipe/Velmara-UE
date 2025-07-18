@@ -73,15 +73,13 @@ void ANewGameStateBase::InitializeWorldInteractedItemsState(const TArray<FIntera
 		WorldInteractedItemsStates.Add(Data.UniqueSaveID, Data);
 	}
 
-	if (UWorld* World = GetWorld())
+	if (const UWorld* World = GetWorld())
 	{
 		for (TActorIterator<AItem> It(World); It; ++It)
 		{
-			AItem* WorldItem = *It;
-			if (IsValid(WorldItem))
+			if (AItem* WorldItem = *It; IsValid(WorldItem))
 			{
-				FInteractedItemSaveData* SavedData = WorldInteractedItemsStates.Find(WorldItem->GetUniqueSaveID());
-				if (SavedData)
+				if (FInteractedItemSaveData* SavedData = WorldInteractedItemsStates.Find(WorldItem->GetUniqueSaveID()))
 				{
 					WorldItem->ApplySavedState(SavedData);
 				}
@@ -108,11 +106,9 @@ void ANewGameStateBase::RequestInteractedItemStateReconciliation(AItem* ItemToRe
 {
 	if (!IsValid(ItemToReconcile)) return;
 
-	FName ItemID = ItemToReconcile->GetUniqueSaveID();
+	const FName ItemID = ItemToReconcile->GetUniqueSaveID();
 
-	FInteractedItemSaveData* SavedData = WorldInteractedItemsStates.Find(ItemID);
-
-	if (SavedData)
+	if (FInteractedItemSaveData* SavedData = WorldInteractedItemsStates.Find(ItemID))
 	{
 		ItemToReconcile->ApplySavedState(SavedData);
 	}
@@ -153,15 +149,13 @@ void ANewGameStateBase::RequestEnemyStateReconciliation(AEnemy* EnemyToReconcile
 	if (!IsValid(EnemyToReconcile)) return;
 
 	FName EnemyID = EnemyToReconcile->GetUniqueSaveID();
-	FEnemySaveData* SavedData = WorldEnemyStates.Find(EnemyID);
 
-	if (SavedData)
+	if (FEnemySaveData* SavedData = WorldEnemyStates.Find(EnemyID))
 	{
 		if (SavedData->bIsAlive)
 		{
 			EnemyToReconcile->ActivateEnemy(SavedData->EnemyState.Transform.GetLocation(), SavedData->EnemyState.Transform.GetRotation().Rotator());
-			UMementoComponent* MementoComp = EnemyToReconcile->FindComponentByClass<UMementoComponent>();
-			if (MementoComp)
+			if (UMementoComponent* MementoComp = EnemyToReconcile->FindComponentByClass<UMementoComponent>())
 			{
 				MementoComp->ApplyExternalState(SavedData->EnemyState);
 			}

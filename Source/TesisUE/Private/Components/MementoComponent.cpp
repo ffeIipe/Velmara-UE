@@ -34,12 +34,10 @@ void UMementoComponent::LoadState()
 
 void UMementoComponent::ApplyExternalState(const FEntityMementoState& StateToApply)
 {
-    AActor* Owner = GetOwner();
-    if (Owner)
+    if (AActor* Owner = GetOwner())
     {
         Owner->SetActorTransform(StateToApply.Transform);
-        UAttributeComponent* AttrComp = Owner->GetComponentByClass<UAttributeComponent>();
-        if (AttrComp)
+        if (UAttributeComponent* AttrComp = Owner->GetComponentByClass<UAttributeComponent>())
         {
             AttrComp->SetHealth(StateToApply.Health);
             AttrComp->SetEnergy(StateToApply.Energy);
@@ -52,13 +50,11 @@ void UMementoComponent::ApplyExternalState(const FEntityMementoState& StateToApp
 FEntityMementoState UMementoComponent::CaptureOwnerState() const
 {
     FEntityMementoState State;
-    AEntity* EntityOwner = Cast<AEntity>(GetOwner());
 
-    if (EntityOwner)
+    if (AEntity* EntityOwner = Cast<AEntity>(GetOwner()))
     {
         State.Transform = EntityOwner->GetActorTransform();
-        UAttributeComponent* AttrComp = EntityOwner->GetAttributeComponent();
-        if (AttrComp)
+        if (UAttributeComponent* AttrComp = EntityOwner->GetAttributeComponent())
         {
             State.Health = AttrComp->GetHealth();
             State.Energy = AttrComp->GetEnergy();

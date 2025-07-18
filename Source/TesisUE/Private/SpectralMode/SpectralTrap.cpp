@@ -63,7 +63,7 @@ void ASpectralTrap::ApplyTrapDamage(FVector ImpactPoint)
 		if (IHitInterface* Entity = Cast<IHitInterface>(Player))
 		{
 			FDamageEvent DamageEvent(UDamageType::StaticClass());
-			Entity->Execute_GetHit(Player, GetOwner(), ImpactPoint, DamageEvent, Damage);
+			Entity->Execute_GetHit(Player, Cast<AEntity>(GetOwner()), ImpactPoint, DamageEvent, Damage);
 ;		}
 	}
 }
@@ -77,7 +77,7 @@ void ASpectralTrap::DealContinuousDamage()
 		if (IHitInterface* PlayerGetHit = Cast<IHitInterface>(Player))
 		{
 			FDamageEvent DamageEvent(UDamageType::StaticClass());
-			PlayerGetHit->Execute_GetHit(Player, GetOwner(), FVector::ZeroVector, DamageEvent, Damage);
+			PlayerGetHit->Execute_GetHit(Player, Cast<AEntity>(GetOwner()), FVector::ZeroVector, DamageEvent, Damage);
 		}
 	}
 }

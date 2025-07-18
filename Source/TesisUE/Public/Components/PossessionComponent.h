@@ -25,19 +25,19 @@ public:
     void EjectPossessor();
     void EjectAndExecute();
 
-	//retorna la entidad que este Entity esta poseyendo
+	///returns the entity that this one is possessing
     UFUNCTION(BlueprintPure, Category = "Possession")
     AEntity* GetPossessedEntity() const { return CurrentlyPossessedEntity; }
 
-	//retorna la entidad que posee a este Entity
+	///returns the entity that is possessing this one
     UFUNCTION(BlueprintPure, Category = "Possession")
     AEntity* GetPossessingEntity() const { return PossessedByEntity; }
 
-	//retorna true si esta entidad esta siendo poseida por otra entidad
+	///returns true if this entity is being possessed by another entity
     UFUNCTION(BlueprintPure, Category = "Possession")
     bool IsPossessed() const { return PossessedByEntity != nullptr; }
 
-	//retorna true si esta entidad esta poseyendo a otra entidad
+	///returns true if this entity is possessing someone else
     UFUNCTION(BlueprintPure, Category = "Possession")
     bool IsPossessing() const { return CurrentlyPossessedEntity != nullptr; }
 
@@ -59,7 +59,7 @@ protected:
 private:
     void OnPossessionReceived(AEntity* NewPossessor);
     void OnPossessionReleased();
-    AEntity* FindPossessionVictim();
+    AEntity* FindPossessionVictim() const;
 
     UPROPERTY(EditDefaultsOnly, Category = "Possession")
     float PossessDistance = 1500.f;

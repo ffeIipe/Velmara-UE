@@ -1,10 +1,7 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Enemy/Enemy.h"
-#include "Interfaces/CharacterState.h"
 #include "Paladin.generated.h"
 
 class UBoxComponent;
@@ -21,13 +18,13 @@ public:
 
 	virtual void DeactivateEnemy() override;
 
+	virtual bool IsLaunchable_Implementation() override;
+	
 	virtual void LaunchUp_Implementation(const FVector& InstigatorLocation) override;
 
 	virtual void ShieldHit_Implementation() {};
-
-	//void GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived) override;
-
-	virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
+	
+	virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled) override;
 
 protected:
 
@@ -42,12 +39,10 @@ protected:
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Movement | OnPossession")
 	float PossessionMaxWalkSpeed = 700.f;
-	
-	void BeginPlay();
 
-	void Die(UAnimMontage* DeathAnim, FName Section) override;
-	
-	TArray<AActor*> IgnoreActors;
+	virtual void BeginPlay() override;
+
+	virtual void Die(UAnimMontage* DeathAnim, FName Section) override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float Damage;
@@ -84,15 +79,15 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void HitInAir();
 
-	void ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoint) override;
+	virtual void ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoint) override;
 
 	void Slash();
 
-	void ApplyPossessionParameters(bool bShouldEnable) override;
+	virtual void ApplyPossessionParameters(bool bShouldEnable) override;
 
 private:
 	UPROPERTY(EditAnywhere, Category = "SFX")
-	USoundBase* ShieldDettachSFX;
+	USoundBase* ShieldDetachSFX;
 
 	UFUNCTION()
 	void ShieldHit();

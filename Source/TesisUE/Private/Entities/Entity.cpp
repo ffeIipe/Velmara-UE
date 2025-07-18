@@ -60,7 +60,7 @@ AEntity::AEntity()
 	GetAttributeComponent()->OnOutOfEnergy.AddDynamic(this, &AEntity::OutOfEnergy);
 }
 
-void AEntity::GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived)
+void AEntity::GetHit_Implementation(AEntity* DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived)
 {
 	if (GetCharacterStateComponent()->IsActionEqualToAny({ ECharacterActions::ECA_Dead })) return;
 
@@ -115,6 +115,11 @@ bool AEntity::CanBeFinished_Implementation()
 		return true;
 	}
 	else return false;
+}
+
+bool AEntity::IsLaunchable_Implementation()
+{
+	return false;
 }
 
 void AEntity::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled)
@@ -182,8 +187,6 @@ void AEntity::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 void AEntity::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);
-
-	//if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Red, FString("Landed	..."));
 
 	GetCombatComponent()->bIsLaunched = false;
 	GetExtraMovementComponent()->CanDoubleJump = true;
@@ -293,7 +296,7 @@ bool AEntity::IsEquipping()
 
 float AEntity::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
-	LastDamageCauser = DamageCauser;
+	LastDamageCauser = Cast<AEntity>(DamageCauser);
 
 	if (GetAttributeComponent()->IsShielded() && DamageEvent.DamageTypeClass == USpectralTrapDamageType::StaticClass())
 	{

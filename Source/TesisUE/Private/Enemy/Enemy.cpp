@@ -3,7 +3,6 @@
 #include "AIController.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardComponent.h"
-#include "Camera/CameraComponent.h"
 #include "Components/AttributeComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/CombatComponent.h"
@@ -18,15 +17,10 @@
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/DamageType.h"
-#include "GameFramework/SpringArmComponent.h"
-#include "HUD/HealthBarComponent.h"
-#include "InputActionValue.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
-#include "Materials/MaterialParameterCollectionInstance.h"
 #include "Misc/Guid.h"
 #include "NiagaraComponent.h"
-#include "NiagaraFunctionLibrary.h"
 #include "Player/PlayerMain.h"
 #include "SceneEvents/NewGameModeBase.h"
 #include "SceneEvents/NewGameStateBase.h"
@@ -34,7 +28,6 @@
 #include "Subsystems/EnemyTokenManager.h"
 #include "Tutorial/PromptWidgetComponent.h"
 #include "Player/PlayerHeroController.h"
-#include "HUD/PlayerMainHUD.h"
 #include "Perception/AIPerceptionComponent.h"  
 
 AEnemy::AEnemy()
@@ -117,7 +110,7 @@ void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 	ApplyPossessionParameters(false);
 
 	EnemyState = EEnemyState::EES_None;
-	isLaunched = false;
+	bIsLaunched = false;
 	LastDamageCauser = nullptr;
 	bWasPossessed = false;
 
@@ -184,7 +177,7 @@ void AEnemy::DeactivateEnemy()
 
 	DisableAI();
 
-	isLaunched = false;
+	bIsLaunched = false;
 	LastDamageCauser = nullptr;
 	
 	if (OnDeactivated.IsBound())
@@ -246,11 +239,9 @@ void AEnemy::RequestReturnToPool()
 {
 	DeactivateEnemy();
 
-	UWorld* World = GetWorld();
-	if (World)
+	if (UWorld* World = GetWorld())
 	{
-		UEnemyPoolManager* PoolManager = World->GetSubsystem<UEnemyPoolManager>();
-		if (PoolManager)
+		if (UEnemyPoolManager* PoolManager = World->GetSubsystem<UEnemyPoolManager>())
 		{
 			PoolManager->ReturnEnemyToPool(this);
 		}
@@ -263,7 +254,7 @@ void AEnemy::RequestReturnToPool()
 
 void AEnemy::BeginPlay()
 {
-	Super::BeginPlay(); //TODO: reducir code para que sea mas liviana la carga de sub-levels
+	Super::BeginPlay();
 
 	PlayerControllerRef = Cast<APlayerHeroController>(UGameplayStatics::GetPlayerController(this, 0));
 
@@ -326,8 +317,6 @@ void AEnemy::BeginPlay()
 		for (int32 MatIndex = 0; MatIndex < TempArray.Num(); MatIndex++)
 		{
 			UMaterialInterface* CurrentMaterial = GetMesh()->GetMaterial(MatIndex);
-			UMaterialInstanceDynamic* DynamicMaterial = Cast<UMaterialInstanceDynamic>(CurrentMaterial);
-
 			DissolveMaterials.Add(UMaterialInstanceDynamic::Create(CurrentMaterial, this));
 			GetMesh()->SetMaterial(MatIndex, DissolveMaterials[MatIndex]);
 		}
@@ -343,11 +332,9 @@ void AEnemy::PerformDead()
 
 void AEnemy::ReturnAttackTokenToTarget()
 {
-	UWorld* World = GetWorld();
-	if (World)
+	if (UWorld* World = GetWorld())
 	{
-		UEnemyTokenManager* TokenManager = World->GetSubsystem<UEnemyTokenManager>();
-		if (TokenManager)
+		if (UEnemyTokenManager* TokenManager = World->GetSubsystem<UEnemyTokenManager>())
 		{
 			TokenManager->ReturnAttackToken();
 		}
@@ -389,7 +376,7 @@ void AEnemy::EnableFinisherWidget()
 	}
 }
 
-void AEnemy::NotifyThreat(AActor* ThreatActor)
+void AEnemy::NotifyThreat(AEntity* ThreatActor)
 {
 	if (!ThreatActor)
 	{
@@ -433,7 +420,7 @@ void AEnemy::OnUnpossessed()
 
 void AEnemy::UpdateDissolveEffect(float Value)
 {
-	float ClampedValue = FMath::Clamp(Value, 0.f, 1.f);
+	const float ClampedValue = FMath::Clamp(Value, 0.f, 1.f);
 
 	for (UMaterialInstanceDynamic* DissolveMaterial : DissolveMaterials)
 	{
@@ -445,18 +432,18 @@ void AEnemy::UpdateDissolveEffect(float Value)
 
 	if (IsValid(DissolveParticleComponent))
 	{
-		DissolveParticleComponent->SetNiagaraVariableFloat(FString("User_Animation"), ClampedValue);
+		DissolveParticleComponent->SetVariableFloat(FName("User_Animation"), ClampedValue);
 	}
 }
 
 void AEnemy::ResetEnemy()
 {
-	isLaunched = false;
+	bIsLaunched = false;
 	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
 	EnableAI();
 }
 
-void AEnemy::GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived)
+void AEnemy::GetHit_Implementation(AEntity* DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived)
 {
 	Super::GetHit_Implementation(DamageCauser, ImpactPoint, DamageEvent, DamageReceived);
 	
@@ -469,16 +456,22 @@ void AEnemy::GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPo
 		}
 	}
 
-	DropOrbs(DamageReceived, DamageCauser);
-	NotifyDamageTakenToBlackboard(DamageCauser);
+	if (DamageCauser)
+	{
+		if (bShouldDropOrbs)
+		{
+			DropOrbs(DamageReceived, DamageCauser);
+		}
+		NotifyDamageTakenToBlackboard(DamageCauser);
+	}
 }
 
-void AEnemy::DropOrbs(const float DamageReceived, AActor* DamageCauser)
+void AEnemy::DropOrbs(const float DamageReceived, AEntity* DamageCauser) const
 {
-	float Percentage = DamageReceived / EnergyDivider;
-	int32 Orbs = FMath::RoundToInt(Percentage) / 5;
+	const float Percentage = DamageReceived / EnergyDivider;
+	const int32 Orbs = FMath::RoundToInt(Percentage) / 5;
 
-	if (APlayerMain* PlayerRef = Cast<APlayerMain>(DamageCauser))
+	if (const APlayerMain* PlayerRef = Cast<APlayerMain>(DamageCauser))
 	{
 		PlayerRef->GetAttributeComponent()->IncreaseEnergy(Percentage);
 
@@ -491,9 +484,9 @@ void AEnemy::DropOrbs(const float DamageReceived, AActor* DamageCauser)
 		}
 	}
 
-	if (AEnemy* EnemyRef = Cast<AEnemy>(DamageCauser))
+	if (const AEnemy* EnemyRef = Cast<AEnemy>(DamageCauser))
 	{
-		if (EnemyRef->GetPossessionComponent()->GetPossessedEntity())
+		if (EnemyRef->GetPossessionComponent()->IsPossessed())
 		{
 			EnemyRef->GetAttributeComponent()->IncreaseEnergy(Percentage);
 
@@ -523,14 +516,9 @@ void AEnemy::FinishedDamage()
 	}
 }
 
-bool AEnemy::IsLaunchable_Implementation(ACharacter* Character)
+bool AEnemy::IsLaunchable_Implementation()
 {
 	return !GetAttributeComponent()->IsShielded() && GetAttributeComponent()->IsAlive();
-}
-
-void AEnemy::ApplyPossessionParameters(bool bShouldEnable)
-{
-
 }
 
 void AEnemy::HandleEnemyCollision(bool bEnable)
@@ -576,7 +564,7 @@ void AEnemy::GetExecuted()
 {
 	Die(DeathMontage, FName("UnpossessDeath"));
 
-	DropOrbs(25.f, GetPossessionComponent()->GetPossessingEntity());
+	DropOrbs(30.f, GetPossessionComponent()->GetPossessingEntity());
 }	
 
 FName AEnemy::SelectRandomDieAnim()
@@ -588,19 +576,14 @@ FName AEnemy::SelectRandomDieAnim()
 	{
 	case 0:
 		return SectionName = FName("Death1");
-		break;
 	case 1:
 		return SectionName = FName("Death2");
-		break;
 	case 2:
 		return SectionName = FName("Death3");
-		break;
 	case 3:
 		return SectionName = FName("Death4");
-		break;
 	default:
 		return FName("");
-		break;
 	}
 }
 
@@ -709,7 +692,7 @@ TArray<AEnemy*> AEnemy::GenerateSphereOverlapToDetectOtherEnemies(const FVector&
 	return EnemiesFound;
 }
 
-void AEnemy::NotifyDamageTakenToBlackboard(AActor* DamageCauser)
+void AEnemy::NotifyDamageTakenToBlackboard(AEntity* DamageCauser)
 {
 	AEnemy* IsEnemyDamageCauser = Cast<AEnemy>(DamageCauser);
 	APlayerMain* IsPlayerDamageCauser = Cast<APlayerMain>(DamageCauser);

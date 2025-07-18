@@ -1,4 +1,5 @@
 #include "Player/PlayerMainAnimInstance.h"
+#include "KismetAnimationLibrary.h"
 #include "Player/PlayerMain.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/SpectralWeaponComponent.h"
@@ -35,19 +36,6 @@ void UPlayerMainAnimInstance::NativeUpdateAnimation(float DeltaTime)
 		CharacterForm = PlayerMain->GetCharacterStateComponent()->GetCurrentCharacterState().Form;
 		SpectralState = PlayerMain->GetCharacterStateComponent()->GetCurrentCharacterState().SpectralState;
 
-		Direction = CalculateDirection(PlayerMain->GetVelocity(), PlayerMain->GetActorRotation());
-
-		//WalkRight = FMath::Sin(Direction) * GroundSpeed
-		//WalkForward = CalculateWalkForward();
+		Direction = UKismetAnimationLibrary::CalculateDirection(PlayerMain->GetVelocity(), PlayerMain->GetActorRotation());
 	}
-}
-
-float const UPlayerMainAnimInstance::CalculateWalkRight()
-{
-	return UKismetMathLibrary::Sin(FMath::DegreesToRadians(Direction)) * UKismetMathLibrary::Clamp(GroundSpeed, 0.f, 1.f);
-}
-
-float const UPlayerMainAnimInstance::CalculateWalkForward()
-{
-	return UKismetMathLibrary::Cos(FMath::DegreesToRadians(Direction)) * UKismetMathLibrary::Clamp(GroundSpeed, 0.f, 1.f);
 }

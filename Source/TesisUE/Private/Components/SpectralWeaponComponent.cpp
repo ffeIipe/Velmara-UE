@@ -197,7 +197,7 @@ void USpectralWeaponComponent::Fire(bool bIsPrimary)
 
             if (AActor* HitActor = Hit.GetActor())
             {
-                if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Yellow, FString(Hit.GetActor()->GetName()));
+                //if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Yellow, FString(Hit.GetActor()->GetName()));
 
                 float BaseDamage = bIsPrimary ? PrimaryDamage : SecondaryDamage;
                 UGameplayStatics::ApplyPointDamage(
@@ -213,7 +213,7 @@ void USpectralWeaponComponent::Fire(bool bIsPrimary)
                 if (IHitInterface* Entity = Cast<IHitInterface>(HitActor))
                 {
                     FDamageEvent DamageEvent(USpectralTrapDamageType::StaticClass());
-                    Entity->Execute_GetHit(Hit.GetActor(), GetOwner(), Hit.ImpactPoint, DamageEvent, BaseDamage);
+                    Entity->Execute_GetHit(Hit.GetActor(), Cast<AEntity>(OwnerCharacter), Hit.ImpactPoint, DamageEvent, BaseDamage);
 
                     if (SparksEffect)
                     {

@@ -4,6 +4,8 @@
 #include "UObject/Interface.h"
 #include "HitInterface.generated.h"
 
+class AEntity;
+
 UINTERFACE(MinimalAPI)
 class UHitInterface : public UInterface
 {
@@ -16,7 +18,7 @@ class TESISUE_API IHitInterface
 
 public:
 	UFUNCTION(BlueprintNativeEvent)
-	void GetHit(AActor* DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived);
+	void GetHit(AEntity* DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived);
 	
 	UFUNCTION(BlueprintNativeEvent)
 	void GetFinished();
@@ -28,7 +30,7 @@ public:
 	void LaunchUp(const FVector& InstigatorLocation);
 	
 	UFUNCTION(BlueprintNativeEvent)
-	bool IsLaunchable(class ACharacter* DamageCauser);
+	bool IsLaunchable();
 
 
 };

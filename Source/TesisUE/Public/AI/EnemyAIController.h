@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -8,10 +6,9 @@
 
 class UAIPerceptionComponent;
 class UAISenseConfig_Sight;
+class APlayerController;
+class AEntity;
 
-/**
- *
- */
 UCLASS()
 class TESISUE_API AEnemyAIController : public AAIController
 {
@@ -22,7 +19,7 @@ public:
 
 	void CustomInitialize(class AEntity* NewOwner, UBlackboardComponent* NewBlackboardComponent, class UCharacterStateComponent* NewCharacterStateComponent);
 
-	void DeactivateController();
+	void DeactivateController() const;
 
 	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
 	
@@ -30,12 +27,13 @@ public:
 
 	bool bIsAlreadyFocused = false;
 
-	AActor* DamageCauser;
+	UPROPERTY()
+	AEntity* DamageCauser = nullptr;
 
 	void SetHasReservedAttackToken(bool bHasToken);
 
 protected:
-	void BeginPlay() override;
+	virtual void BeginPlay() override;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UAIPerceptionComponent* EnemyPerceptionComponent;
@@ -46,13 +44,20 @@ protected:
 	UFUNCTION()
 	virtual void OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
 
+	bool IsDamageCauserValid(const AEntity* EntityToCheck) const;
+
 	void SetHasAttackToken(class UEnemyTokenManager* TokenManager, AActor* Actor);
 
+	UPROPERTY()
 	UBlackboardComponent* BlackboardComponent;
 
+	UPROPERTY()
 	AEntity* EntityOwner;
+
+	UPROPERTY()
 	AEntity* CachedTarget;
-	
+
+	UPROPERTY()
 	UCharacterStateComponent* OwningCharacterStateComponent;
 
 	UPROPERTY(VisibleAnywhere)
@@ -60,4 +65,7 @@ protected:
 
 	UPROPERTY(EditAnywhere)
 	bool bHasToCheckPlayerForm = true;
+
+	UPROPERTY()
+	APlayerController* CachedPlayerController = nullptr;
 };

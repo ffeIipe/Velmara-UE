@@ -9,7 +9,7 @@ UCharacterStateComponent::UCharacterStateComponent()
 	CharacterStates.Form = ECharacterForm::ECF_Human;
 }
 
-const FCharacterStates& UCharacterStateComponent::GetCurrentCharacterState()
+const FCharacterStates& UCharacterStateComponent::GetCurrentCharacterState() const
 {
 	return CharacterStates;
 }
@@ -42,22 +42,22 @@ ECharacterForm UCharacterStateComponent::SetCharacterForm(ECharacterForm NewForm
 	return CharacterStates.Form;
 }
 
-bool UCharacterStateComponent::IsStateEqualToAny(const TArray<ECharacterStates>& StatesToCheck)
+bool UCharacterStateComponent::IsStateEqualToAny(const TArray<ECharacterStates>& StatesToCheck) const
 {
 	return StatesToCheck.Contains(CharacterStates.State);
 }
 
-bool UCharacterStateComponent::IsSpectralStateEqualToAny(const TArray<ECharacterSpectralStates>& SpectralStatesToCheck)
+bool UCharacterStateComponent::IsSpectralStateEqualToAny(const TArray<ECharacterSpectralStates>& SpectralStatesToCheck) const
 {
 	return SpectralStatesToCheck.Contains(CharacterStates.SpectralState);
 }
 
-bool UCharacterStateComponent::IsActionEqualToAny(const TArray<ECharacterActions>& ActionsToCheck)
+bool UCharacterStateComponent::IsActionEqualToAny(const TArray<ECharacterActions>& ActionsToCheck) const
 {
 	return ActionsToCheck.Contains(CharacterStates.Action);
 }
 
-bool UCharacterStateComponent::IsFormEqualToAny(const TArray<ECharacterForm>& FormsToCheck)
+bool UCharacterStateComponent::IsFormEqualToAny(const TArray<ECharacterForm>& FormsToCheck) const
 {
 	return FormsToCheck.Contains(CharacterStates.Form);
 }

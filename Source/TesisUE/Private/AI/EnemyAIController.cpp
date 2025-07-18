@@ -7,7 +7,7 @@
 #include "Components/PossessionComponent.h"
 #include "Enemy/Enemy.h"
 #include "Subsystems/EnemyTokenManager.h"
-#include <Player/PlayerHeroController.h>
+#include <Kismet/GameplayStatics.h>
 
 AEnemyAIController::AEnemyAIController(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer.SetDefaultSubobjectClass<UCrowdFollowingComponent>("PathFollowingComponent"))
 {
@@ -23,7 +23,7 @@ AEnemyAIController::AEnemyAIController(const FObjectInitializer& ObjectInitializ
 	EnemyPerceptionComponent->SetDominantSense(UAISenseConfig_Sight::StaticClass());
 	EnemyPerceptionComponent->OnTargetPerceptionUpdated.AddUniqueDynamic(this, &AEnemyAIController::OnEnemyPerceptionUpdated);
 
-	SetGenericTeamId(FGenericTeamId(0));
+    AAIController::SetGenericTeamId(FGenericTeamId(0));
 }
 
 void AEnemyAIController::CustomInitialize(AEntity* NewOwner, UBlackboardComponent* NewBlackboardComponent, UCharacterStateComponent* NewCharacterStateComponent)
@@ -40,22 +40,25 @@ void AEnemyAIController::CustomInitialize(AEntity* NewOwner, UBlackboardComponen
     PerceptionComponent->ForgetAll();
 }
 
-void AEnemyAIController::DeactivateController()
+void AEnemyAIController::DeactivateController() const
 {
 	EnemyPerceptionComponent->OnTargetPerceptionUpdated.RemoveAll(this);
 }
 
 ETeamAttitude::Type AEnemyAIController::GetTeamAttitudeTowards(const AActor& Other) const
 {
-    const APawn* PawnToCheck = Cast<APawn>(&Other);
-
-    if (const IGenericTeamAgentInterface* OtherTeamAgent = Cast<IGenericTeamAgentInterface>(PawnToCheck->GetController()))
+    if (!IsDamageCauserValid(Cast<AEntity>(&Other)))
     {
-        FGenericTeamId OtherTeamId = OtherTeamAgent->GetGenericTeamId();
+        const APawn* PawnToCheck = Cast<APawn>(&Other);
 
-        if      (OtherTeamId == FGenericTeamId(0)) return ETeamAttitude::Neutral;
-        else if (OtherTeamId == FGenericTeamId(1)) return ETeamAttitude::Friendly;
-        else if (OtherTeamId == FGenericTeamId(2)) return ETeamAttitude::Hostile;
+        if (const IGenericTeamAgentInterface* OtherTeamAgent = Cast<IGenericTeamAgentInterface>(PawnToCheck->GetController()))
+        {
+            FGenericTeamId OtherTeamId = OtherTeamAgent->GetGenericTeamId();
+
+            if      (OtherTeamId == FGenericTeamId(0)) return ETeamAttitude::Neutral;
+            else if (OtherTeamId == FGenericTeamId(1)) return ETeamAttitude::Friendly;
+            else if (OtherTeamId == FGenericTeamId(2)) return ETeamAttitude::Hostile;
+        }
     }
     return ETeamAttitude::Neutral;
 }
@@ -66,58 +69,28 @@ void AEnemyAIController::BeginPlay()
 
     EntityOwner = Cast<AEntity>(GetCharacter());
     BlackboardComponent = GetBlackboardComponent();
+    CachedPlayerController = Cast<APlayerController>(UGameplayStatics::GetPlayerController(this, 0));
 }
 
 void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
-    if (GEngine) GEngine->AddOnScreenDebugMessage(449, 3.f, FColor::Blue, FString("Enemy Perception Updated"));
-
+    if (!CachedPlayerController) return;
+    
     if (EntityOwner->GetCharacterStateComponent()->GetCurrentCharacterState().Action == ECharacterActions::ECA_Dead) return;
 
-    if (!EntityOwner)
+    UEnemyTokenManager* TokenManager = GetWorld()->GetSubsystem<UEnemyTokenManager>();
+    if (!TokenManager) return;
+
+    if (Stimulus.WasSuccessfullySensed())
     {
-        EntityOwner = Cast<AEntity>(GetCharacter());
-    }
-
-    if (!EntityOwner->GetCharacterStateComponent())
-    {
-        EntityOwner->GetCharacterStateComponent();
-    }
-
-    if (!BlackboardComponent)
-    {
-        BlackboardComponent = GetBlackboardComponent();
-    }
-
-    if (Stimulus.WasSuccessfullySensed()) //TODO: en el combat componenent agregar una especie de team attitude custom
-    {
-        UEnemyTokenManager* TokenManager = GetWorld()->GetSubsystem<UEnemyTokenManager>();
-
-        if (GetTeamAttitudeTowards(*Actor) == ETeamAttitude::Hostile)
-        {
-            SetHasAttackToken(TokenManager, Actor);
-        }
-        else if (DamageCauser != Actor)
-        {
-			SetHasAttackToken(TokenManager, DamageCauser);
-        }
-        else
-        {
-            PerceptionComponent->ForgetActor(Actor);
-            BlackboardComponent->ClearValue(FName("TargetActor"));
-
-            if (bHasReservedAttackToken)
-            {
-                bHasReservedAttackToken = false;
-                TokenManager->ReturnAttackToken();
-                BlackboardComponent->SetValueAsBool(FName("HasAttackToken"), false);
-            }
-        }
+        if (GetTeamAttitudeTowards(*Actor) == ETeamAttitude::Hostile || !bHasToCheckPlayerForm) SetHasAttackToken(TokenManager, Actor); 
+        
+        if (IsDamageCauserValid(DamageCauser)) SetHasAttackToken(TokenManager, DamageCauser);
     }
     else
     {
-        UEnemyTokenManager* TokenManager = GetWorld()->GetSubsystem<UEnemyTokenManager>();
-        
+        PerceptionComponent->ForgetActor(Actor);
+        BlackboardComponent->ClearValue(FName("TargetActor"));
         if (bHasReservedAttackToken)
         {
             bHasReservedAttackToken = false;
@@ -127,8 +100,19 @@ void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Sti
     }
 }
 
+bool AEnemyAIController::IsDamageCauserValid(const AEntity* EntityToCheck) const
+{
+    return EntityToCheck && (EntityToCheck)->GetPossessionComponent()->IsPossessed() && (EntityToCheck)->GetController() == CachedPlayerController;
+}
+
 void AEnemyAIController::SetHasAttackToken(UEnemyTokenManager* TokenManager, AActor* Actor)
 {
+    if (Actor->IsHidden())
+    {
+        BlackboardComponent->SetValueAsObject(FName("TargetActor"), nullptr);
+        return;
+    }
+    
     if (!bHasReservedAttackToken)
     {
         if (TokenManager && TokenManager->TryReserveAttackToken())
@@ -149,7 +133,7 @@ void AEnemyAIController::SetHasAttackToken(UEnemyTokenManager* TokenManager, AAc
     BlackboardComponent->SetValueAsObject(FName("TargetActor"), Actor);
 }
 
-void AEnemyAIController::SetHasReservedAttackToken(bool bHasToken)
+void AEnemyAIController::SetHasReservedAttackToken(const bool bHasToken)
 {
     bHasReservedAttackToken = bHasToken;
     if (!bHasToken && BlackboardComponent)

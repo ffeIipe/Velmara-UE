@@ -23,7 +23,7 @@ APlayerHeroController::APlayerHeroController()
     CurrentOptionsMenuInstance_Pause = nullptr;
     bIsGamePausedExplicitly = false;
 
-    // Ejemplo de cómo asignar clases desde C++ (alternativa a EditDefaultsOnly en Blueprints)
+    // ejemplo de como asignar clases desde C++ (alternativa a EditDefaultsOnly en Blueprints)
     // static ConstructorHelpers::FClassFinder<UUserWidget> PauseMenuAsset(TEXT("/Game/UI/WBP_PauseMenu")); // Cambia la ruta
     // if (PauseMenuAsset.Succeeded())
     // {

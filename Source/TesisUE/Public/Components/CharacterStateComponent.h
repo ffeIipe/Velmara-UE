@@ -40,7 +40,7 @@ public:
 	UCharacterStateComponent();
 
 	UFUNCTION(BlueprintCallable, Category = "States")
-	const FCharacterStates& GetCurrentCharacterState();
+	const FCharacterStates& GetCurrentCharacterState() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Character States | Character State")
 	ECharacterStates SetCharacterState(ECharacterStates NewState);
@@ -55,16 +55,16 @@ public:
 	ECharacterForm SetCharacterForm(ECharacterForm NewForm);
 
 	UFUNCTION(BlueprintCallable, Category = "Character States | Character Action")
-	bool IsStateEqualToAny(const TArray<ECharacterStates>& StatesToCheck);
+	bool IsStateEqualToAny(const TArray<ECharacterStates>& StatesToCheck) const;
 	
 	UFUNCTION(BlueprintCallable, Category = "Character States | Character Spectral State")
-	bool IsSpectralStateEqualToAny(const TArray<ECharacterSpectralStates>& SpectralStatesToCheck);
+	bool IsSpectralStateEqualToAny(const TArray<ECharacterSpectralStates>& SpectralStatesToCheck) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Character States | Character Action")
-	bool IsActionEqualToAny(const TArray<ECharacterActions>& ActionsToCheck);
+	bool IsActionEqualToAny(const TArray<ECharacterActions>& ActionsToCheck) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Character States | Character Form")
-	bool IsFormEqualToAny(const TArray<ECharacterForm>& FormsToCheck);
+	bool IsFormEqualToAny(const TArray<ECharacterForm>& FormsToCheck) const;
 
 protected:
 	virtual void BeginPlay() override;

@@ -1,4 +1,4 @@
-#pragma once
+ #pragma once
 
 #include "CoreMinimal.h"
 #include "Animation/AnimInstance.h"
@@ -14,11 +14,10 @@ class TESISUE_API UEnemyCharacterAnimInstance : public UAnimInstance
 
 public:
 	virtual void NativeInitializeAnimation() override;
-	virtual void NativeThreadSafeUpdateAnimation(float DeltaSeconds);
-
+	virtual void NativeThreadSafeUpdateAnimation(float DeltaSeconds) override;
 
 protected:
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly, Category = "Owner")
 	AEnemy* OwningEnemy; 
 
 	UPROPERTY()
@@ -42,12 +41,12 @@ protected:
 	UPROPERTY(BlueprintReadWrite, Category = "Movement")
 	float WalkForward;
 
-	/*UFUNCTION(BlueprintCallable)
-	float const CalculateWalkRight();
-
-	UFUNCTION(BlueprintCallable)
-	float const CalculateWalkForward();*/
-
+	UPROPERTY(BlueprintReadWrite, Category = "Movement")
+	float MaxWalkSpeed;
+	
+	UPROPERTY(BlueprintReadWrite, Category = "Movement")
+	float MaxRunSpeed;
+	
 	UPROPERTY(BlueprintReadWrite)
 	EEnemyState CurrentEnemyState;
 };

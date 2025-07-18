@@ -9,19 +9,15 @@ class TESISUE_API APaladinBoss : public APaladin
 {
 	GENERATED_BODY()
 
-public:
-	/*UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
-	void ResetKeyBool(float Duration, struct FBlackboardKeySelector Key, bool SetBool, APawn* TargetPawn);*/
-
 protected:
 	APaladinBoss();
 
-	void BeginPlay() override;
+	virtual void BeginPlay() override;
 
 	UFUNCTION()
-	void ShieldDettach();
+	void ShieldDetach();
 
-	float TakeDamage(
+	virtual float TakeDamage(
 		float DamageAmount,
 		struct FDamageEvent const& DamageEvent,
 		class AController* EventInstigator,
@@ -39,7 +35,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	UStaticMeshComponent* AuraMeshComponent;
 
-	void GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived) override;
+	virtual void GetHit_Implementation(AEntity* DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived) override;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Attacks | Flood")
 	float FloodDamage;
@@ -57,7 +53,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Attacks | Aura")
 	float AuraRadius = 4.f;
 
-	void Die(UAnimMontage* DeathAnim, FName Section) override;
+	virtual void Die(UAnimMontage* DeathAnim, FName Section) override;
 
 private:
 	UPROPERTY(EditAnywhere, Category = "Attacks | Spawning")

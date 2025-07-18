@@ -27,8 +27,6 @@ void UExtraMovementComponent::BeginPlay()
 
 	EntityOwner = Cast<AEntity>(GetOwner());
 	OwnerCharacterStateComponent = EntityOwner ? EntityOwner->GetCharacterStateComponent() : nullptr;
-
-	//setting default walk speed
 	DefaultWalkSpeed = EntityOwner->GetCharacterMovement()->MaxWalkSpeed;
 
 	if (BufferCurve)
@@ -87,7 +85,7 @@ void UExtraMovementComponent::PerformDodge()
 	}
 }
 
-void UExtraMovementComponent::DodgeAnimBasedOnInput()
+void UExtraMovementComponent::DodgeAnimBasedOnInput() const
 {
 	FName Section("Default");
 
@@ -208,7 +206,7 @@ void UExtraMovementComponent::Input_DoubleJump()
 	if (!OwnerCharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Block, ECharacterActions::ECA_Finish, ECharacterActions::ECA_Dead }))
 	{
 		EntityOwner->PlayAnimMontage(DoubleJumpMontage);
-		EntityOwner->LaunchCharacter(FVector(0.f, 0.f, LaunchStrenght), false, true);
+		EntityOwner->LaunchCharacter(FVector(0.f, 0.f, LaunchStrength), false, true);
 		CanDoubleJump = false;
 	}
 }
@@ -222,8 +220,7 @@ void UExtraMovementComponent::PlayTurnInPlaceMontage(const FVector& DesiredInput
 	double Angle = FMath::Acos(CosAngle);
 	Angle = FMath::RadiansToDegrees(Angle);
 
-	const FVector CrossProduct = FVector::CrossProduct(CharacterForward, NormalizedDesiredInputDirection);
-	if (CrossProduct.Z < 0)
+	if (const FVector CrossProduct = FVector::CrossProduct(CharacterForward, NormalizedDesiredInputDirection); CrossProduct.Z < 0)
 	{
 		Angle *= -1.f;
 	}

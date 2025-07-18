@@ -4,7 +4,6 @@
 #include "Engine/DamageEvents.h"
 #include "GameFramework/DamageType.h"
 #include "DamageTypes/DamageTypeMain.h"
-#include "DamageTypes/SpectralTrapDamageType.h"
 
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/BoxComponent.h"
@@ -13,21 +12,14 @@
 #include "Components/CharacterStateComponent.h"
 #include "Components/PossessionComponent.h"
 #include "Components/CapsuleComponent.h"
-#include "Components/TimelineComponent.h"
 
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 
 #include "Interfaces/HitInterface.h"
-#include "EnhancedInputComponent.h"
 
-#include "EnhancedInputSubsystems.h"
-#include "InputActionValue.h"
-
-#include "AI/EnemyAIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIController.h"
-#include <Player/PlayerHeroController.h>
 #include <Kismet/KismetMathLibrary.h>
 
 
@@ -100,7 +92,12 @@ void APaladin::DeactivateEnemy()
 	Super::DeactivateEnemy();
 }
 
-void APaladin::Die(UAnimMontage* DeathAnim, FName Section)
+bool APaladin::IsLaunchable_Implementation()
+{
+	return !GetAttributeComponent()->IsShielded(); //returns false if it has shield equipped or not detached yet.
+}
+
+void APaladin::Die(UAnimMontage* DeathAnim, const FName Section)
 {
 	Super::Die(DeathAnim, Section);
 
@@ -131,10 +128,9 @@ void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 
 	TArray<FHitResult> HitResults;
 	
-	IgnoreActors;
 	IgnoreActors.Add(this);
 
-	bool bHitOccurred = UKismetSystemLibrary::BoxTraceMulti(
+	const bool bHitOccurred = UKismetSystemLibrary::BoxTraceMulti(
 		this,
 		Start,
 		End,
@@ -152,8 +148,7 @@ void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 	{
 		if (bHitOccurred && Hit.GetActor() && !IgnoreActors.Contains(Hit.GetActor()))
 		{
-			IHitInterface* Entity = Cast<IHitInterface>(Hit.GetActor());
-			if (Entity)
+			if (const IHitInterface* Entity = Cast<IHitInterface>(Hit.GetActor()))
 			{
 				UGameplayStatics::ApplyDamage(
 					Hit.GetActor(),
@@ -164,24 +159,14 @@ void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 				);
 
 				FDamageEvent DamageEvent(UDamageType::StaticClass());
-				Entity->Execute_GetHit(Hit.GetActor(), this, Hit.ImpactPoint, DamageEvent, Damage);
-
+				
+				AEntity* FinalDamageCauser = nullptr;	
+				if (GetPossessionComponent()->IsPossessed()) FinalDamageCauser =  this;
+				
+				Entity->Execute_GetHit(Hit.GetActor(), FinalDamageCauser, Hit.ImpactPoint, DamageEvent, Damage);
+				
 				PlayCameraShake(SwordMesh->GetComponentLocation(), 0.f, 500.f);
 				IgnoreActors.Add(Hit.GetActor());
-
-				if (GetPossessionComponent()->IsPossessed())
-				{
-					if (IGenericTeamAgentInterface* OtherTeamAgent = Cast<IGenericTeamAgentInterface>(GetController()))
-					{
-						if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Emerald, FString("Paladin: Set Other Team Agent ID to 2"));
-
-						OtherTeamAgent->SetGenericTeamId(FGenericTeamId(2));
-					}
-					else 
-					{
-						if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, FString("Paladin: Other Team Agent is not valid!"));
-					}
-				}
 			}
 		}
 	}
@@ -219,9 +204,9 @@ void APaladin::LaunchUp_Implementation(const FVector& InstigatorLocation)
 
 void APaladin::LaunchEnemyUp(const FVector& InstigatorLocation)
 {
-	if (isLaunched) return;
+	if (bIsLaunched) return;
 
-	isLaunched = true;
+	bIsLaunched = true;
 	DisableAI();
 	PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
 	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
@@ -239,7 +224,6 @@ void APaladin::HitInAir()
 	float PlayerLocationZ = UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->GetActorLocation().Z;
 	SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, PlayerLocationZ));
 	PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
-	GetCharacterMovement()->IsFlying();
 	DisableAI();
 }
 

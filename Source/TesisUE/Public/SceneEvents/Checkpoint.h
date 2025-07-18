@@ -13,8 +13,8 @@ UCLASS()
 class TESISUE_API ACheckpoint : public ATrigger
 {
 	GENERATED_BODY()
-	
-	void OnSphereBeginOverlap(
+
+	virtual void OnSphereBeginOverlap(
 		UPrimitiveComponent* OverlappedComponent,
 		AActor* OtherActor,
 		UPrimitiveComponent* OtherComp,

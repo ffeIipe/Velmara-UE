@@ -5,16 +5,13 @@
 #include "GameFramework/GameUserSettings.h"
 #include "GameFramework/Character.h"
 #include "Components/MementoComponent.h"
-#include "Components/AttributeComponent.h"
 #include "Components/PossessionComponent.h"
-#include "EngineUtils.h" 
 #include "Enemy/Enemy.h"
 #include "Blueprint/UserWidget.h"
 #include "Player/PlayerMain.h"
 #include "Components/InventoryComponent.h"
 #include "Items/Item.h"
 #include "Items/Weapons/Sword.h"
-#include <SceneEvents/NewGameModeBase.h>
 #include <SceneEvents/NewGameStateBase.h>
 
 UNewGameInstance::UNewGameInstance()
@@ -70,9 +67,7 @@ void UNewGameInstance::SetDefaultGameSettings()
 
 void UNewGameInstance::LoadGameSettings()
 {
-    USettingsSaveGame* LoadedSettings = Cast<USettingsSaveGame>(UGameplayStatics::LoadGameFromSlot(SettingsSlotName, DefaultUserIndex));
-
-    if (LoadedSettings)
+    if (USettingsSaveGame* LoadedSettings = Cast<USettingsSaveGame>(UGameplayStatics::LoadGameFromSlot(SettingsSlotName, DefaultUserIndex)))
     {
         CurrentSettings = LoadedSettings;
         UE_LOG(LogTemp, Log, TEXT("NewGameInstance: Game settings loaded successfully."));
@@ -113,20 +108,15 @@ void UNewGameInstance::ApplyGraphicsSettings()
         UGameUserSettings* UserSettings = GEngine->GameUserSettings;
 
         UserSettings->SetScreenResolution(CurrentSettings->ScreenResolution);
-
-        // Para calidad de texturas y sombras, usamos los grupos de escalabilidad.
-        // Los valores suelen ser 0 (Bajo), 1 (Medio), 2 (Alto), 3 (Épico).
-        // Puedes ajustar esto según cómo hayas definido tus niveles de calidad.
         UserSettings->SetTextureQuality(CurrentSettings->TextureQuality);
         UserSettings->SetShadowQuality(CurrentSettings->ShadowQuality);
-        // Podrías añadir más aquí: AntiAliasingQuality, ViewDistanceQuality, etc.
         // UserSettings->SetAntiAliasingQuality(CurrentSettings->AntiAliasingQuality); 
         // UserSettings->SetViewDistanceQuality(CurrentSettings->ViewDistanceQuality);
         // UserSettings->SetPostProcessingQuality(CurrentSettings->PostProcessingQuality);
         // UserSettings->SetVisualEffectQuality(CurrentSettings->VisualEffectQuality);
         // UserSettings->SetFoliageQuality(CurrentSettings->FoliageQuality);
 
-        UserSettings->ApplySettings(false); // false para aplicar inmediatamente sin confirmación
+        UserSettings->ApplySettings(false);
         UE_LOG(LogTemp, Log, TEXT("NewGameInstance: Graphics settings applied. Resolution: %s, TextureQ: %d, ShadowQ: %d"),
             *CurrentSettings->ScreenResolution.ToString(), CurrentSettings->TextureQuality, CurrentSettings->ShadowQuality);
     }
@@ -224,18 +214,18 @@ bool UNewGameInstance::SavePlayerProgress(int32 SlotIndex, APawn* Entity)
 
     if (PlayerCharacter)
     {
-        if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Cyan, FString("Player reference obtained from Player."));
+        //if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Cyan, FString("Player reference obtained from Player."));
     }
     else
     {
         if (AEnemy* EnemyRef = Cast<AEnemy>(Entity))
         {
             PlayerCharacter = Cast<APlayerMain>(EnemyRef->GetPossessionComponent()->GetPossessingEntity());
-            if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Magenta, FString("Player reference obtained from Enemy possessed."));
+            //if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Magenta, FString("Player reference obtained from Enemy possessed."));
         }
         else
         {
-            if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Player reference not obtained."));
+            //if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Player reference not obtained."));
         }
     }
 
@@ -243,8 +233,7 @@ bool UNewGameInstance::SavePlayerProgress(int32 SlotIndex, APawn* Entity)
 
     if (IsValid(PlayerCharacter))
     {
-        UMementoComponent* PlayerMemento = PlayerCharacter->GetMementoComponent();
-        if (PlayerMemento)
+        if (UMementoComponent* PlayerMemento = PlayerCharacter->GetMementoComponent())
         {
             PlayerMemento->SaveState();
             SaveGameInstance->PlayerState = PlayerMemento->GetCurrentSavedState();
@@ -273,17 +262,16 @@ bool UNewGameInstance::SavePlayerProgress(int32 SlotIndex, APawn* Entity)
         }
     }
 
-    ANewGameStateBase* GameState = GetWorld() ? GetWorld()->GetGameState<ANewGameStateBase>() : nullptr;
-    if (GameState)
+    if (ANewGameStateBase* GameState = GetWorld() ? GetWorld()->GetGameState<ANewGameStateBase>() : nullptr)
     {
         GameState->GetAllEnemyStates(SaveGameInstance->EnemiesData);
 
         TArray<FInteractedItemSaveData> AllWorldItemStates;
         GameState->GetAllInteractedItemStates(AllWorldItemStates);
 
-        TSet<FName> InventoryItemIDs;
         if (PlayerInventory)
         {
+            TSet<FName> InventoryItemIDs;
             for (AItem* ItemInInventory : PlayerInventory->GetInventoryItems())
             {
                 if (IsValid(ItemInInventory))
@@ -353,17 +341,14 @@ void UNewGameInstance::ApplyPendingLoadedDataToWorld()
         return;
     }
 
-    APlayerMain* PlayerCharacter = Cast<APlayerMain>(UGameplayStatics::GetPlayerCharacter(this, 0));
-    if (PlayerCharacter)
+    if (APlayerMain* PlayerCharacter = Cast<APlayerMain>(UGameplayStatics::GetPlayerCharacter(this, 0)))
     {
-        UMementoComponent* PlayerMemento = PlayerCharacter->GetMementoComponent();
-        if (PlayerMemento)
+        if (UMementoComponent* PlayerMemento = PlayerCharacter->GetMementoComponent())
         {
             PlayerMemento->ApplyExternalState(PendingGameDataToLoad->PlayerState);
         }
 
-        UInventoryComponent* PlayerInventory = PlayerCharacter->GetInventoryComponent();
-        if (PlayerInventory)
+        if (UInventoryComponent* PlayerInventory = PlayerCharacter->GetInventoryComponent())
         {
             PlayerInventory->InventorySlots.Init(nullptr, PlayerInventory->MaxSlots);
 
@@ -379,10 +364,9 @@ void UNewGameInstance::ApplyPendingLoadedDataToWorld()
                 const FInventoryItemSaveData& SavedItemData = PendingGameDataToLoad->InventorySlotsData[i];
                 if (SavedItemData.ItemClass != nullptr)
                 {
-                    AItem* NewItem = GetWorld()->SpawnActor<AItem>(SavedItemData.ItemClass, PlayerCharacter->GetActorLocation(), PlayerCharacter->GetActorRotation(), SpawnParams);
-                    if (NewItem)
+                    if (AItem* NewItem = GetWorld()->SpawnActor<AItem>(SavedItemData.ItemClass, PlayerCharacter->GetActorLocation(), PlayerCharacter->GetActorRotation(), SpawnParams))
                     {
-                        GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Item reconciliated..."));
+                        //GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Item reconciliated..."));
                         NewItem->SetOwner(PlayerCharacter);
 
                         if (UCharacterStateComponent* PlayerCharStateComp = PlayerCharacter->GetComponentByClass<UCharacterStateComponent>())
@@ -411,8 +395,7 @@ void UNewGameInstance::ApplyPendingLoadedDataToWorld()
         }
     }
 
-    ANewGameStateBase* GameState = World->GetGameState<ANewGameStateBase>();
-    if (GameState)
+    if (ANewGameStateBase* GameState = World->GetGameState<ANewGameStateBase>())
     {
         GameState->InitializeWorldState(PendingGameDataToLoad->EnemiesData);
         GameState->InitializeWorldInteractedItemsState(PendingGameDataToLoad->InteractedItemsData);
@@ -443,8 +426,7 @@ void UNewGameInstance::ShowLoadingScreen()
 {
     if (LoadingScreenWidgetClass && !CurrentLoadingScreenInstance)
     {
-        APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
-        if (PC)
+        if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0))
         {
             CurrentLoadingScreenInstance = CreateWidget<UUserWidget>(PC, LoadingScreenWidgetClass);
             if (CurrentLoadingScreenInstance)

@@ -5,11 +5,8 @@
 #include "Interfaces/HitInterface.h"
 #include "Engine/DamageEvents.h"
 #include "Player/PlayerMain.h"
-#include "Interfaces/CharacterState.h"
 #include "Components/CharacterStateComponent.h"
-#include "Components/CombatComponent.h"
 #include <NiagaraFunctionLibrary.h>
-#include <Kismet/KismetMathLibrary.h>
 
 ASword::ASword()
 {
@@ -120,16 +117,14 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 		{
 			if (IHitInterface* HitInterface = Cast<IHitInterface>(HitActor))
 			{
-				float TempDamage = CalculateDamage();
-
 				FDamageEvent DamageEvent(DamageTypeClass);
-				HitInterface->Execute_GetHit(HitActor, GetOwner(), Hit.ImpactPoint, DamageEvent, Damage);
+				HitInterface->Execute_GetHit(HitActor, Cast<AEntity>(GetOwner()), Hit.ImpactPoint, DamageEvent, Damage);
 
-				if (HitInterface->Execute_IsLaunchable(HitActor, Cast<ACharacter>(Owner)))
+				if (HitInterface->Execute_IsLaunchable(HitActor))
 				{
 					UGameplayStatics::ApplyDamage(
 						HitActor,
-						Damage,
+						CalculateDamage(),
 						GetInstigator()->GetController(),
 						GetOwner(),
 						DamageTypeClass

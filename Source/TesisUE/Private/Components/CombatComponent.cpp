@@ -16,9 +16,7 @@
 #include "Interfaces/FormInterface.h"
 
 #include "Player/PlayerMain.h"
-#include "Camera/CameraActor.h"
 #include "Items/Weapons/Sword.h"
-#include <DamageTypes/SpectralTrapDamageType.h>
 
 UCombatComponent::UCombatComponent()
 {
@@ -212,6 +210,8 @@ void UCombatComponent::HeavyAttack(int AttackIndex)
 		}
 		else
 		{
+			if (HeavyAttackCombo.IsEmpty()) return;
+			
 			OwningCharacter->PlayAnimMontage(HeavyAttackCombo[AttackIndex]);
 			HeavyAttackIndex++;
 
@@ -394,7 +394,7 @@ void UCombatComponent::ReleaseBlock()
 
 void UCombatComponent::Execute()
 {
-	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Red, FString("Execute Finisher"));
+	/*if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Red, FString("Execute Finisher"));*/
 
 	if (CharacterStateComponent->IsStateEqualToAny({ ECharacterStates::ECS_Unequipped })) return;
 
@@ -421,8 +421,6 @@ void UCombatComponent::Execute()
 				OwningCharacter->SetActorRotation(LookAtRotation);
 
 				OwningCharacter->PlayAnimMontage(FinisherMontage, 1.0f);
-
-				APlayerMain* Player = Cast<APlayerMain>(GetOwner());
 
 				Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->SetEnemiesAIEnabled(false);
 			}
@@ -480,7 +478,7 @@ void UCombatComponent::LaunchCharacterUp()
 {
 	IHitInterface* Paladin = Cast<IHitInterface>(SoftLockTarget);
 
-	if (SoftLockTarget && Paladin->Execute_IsLaunchable(SoftLockTarget, OwningCharacter))
+	if (SoftLockTarget && Paladin->Execute_IsLaunchable(SoftLockTarget))
 	{
 		OwningCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
 		bIsLaunched = true;

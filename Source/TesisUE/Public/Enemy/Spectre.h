@@ -19,19 +19,19 @@ public:
 protected:
 	ASpectre();
 
-	void HandleEnemyCollision(bool bEnable) override;
-	
-	float TakeDamage(
+	virtual void HandleEnemyCollision(bool bEnable) override;
+
+	virtual float TakeDamage(
 		float DamageAmount,
 		struct FDamageEvent const& DamageEvent,
 		class AController* EventInstigator,
 		AActor* DamageCauser) override;
 
-	bool IsLaunchable_Implementation(ACharacter* Character) override;
+	virtual bool IsLaunchable_Implementation() override;
 
-	bool CanBeFinished_Implementation() override;
+	virtual bool CanBeFinished_Implementation() override;
 
-	//virtual void OnPossessed(AEntity* NewOwner, float OwnerEnergy) override;
+	virtual void ApplyPossessionParameters(bool bShouldEnable) override;
 
 private:
 	UPROPERTY(EditDefaultsOnly)

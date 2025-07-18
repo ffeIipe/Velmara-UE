@@ -4,9 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "Entities/Entity.h"
-#include "Interfaces/HitInterface.h"
-
-#include "Subsystems/EnemyPoolManager.h"
 #include "Enemy.generated.h"
 
 class UCameraComponent;
@@ -67,24 +64,19 @@ public:
 	FOnEntityDamaged OnDamaged;
 
 	// --- Combat & Damage ---
-	void Die(UAnimMontage* DeathAnim, FName Section) override;
+	virtual void Die(UAnimMontage* DeathAnim, FName Section) override;
 
-	virtual void GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, FDamageEvent const&  DamageEvent, const float DamageReceived) override;
+	virtual void GetHit_Implementation(AEntity* DamageCauser, const FVector& ImpactPoint, FDamageEvent const&  DamageEvent, const float DamageReceived) override;
 
-	void DropOrbs(const float DamageReceived, AActor* DamageCauser);
-
-	//virtual void GetFinished_Implementation() override;
+	void DropOrbs(const float DamageReceived, AEntity* DamageCauser) const;
 
 	void FinishedDamage();
 
-	//virtual bool CanBeFinished_Implementation() override;
+	virtual bool IsLaunchable_Implementation() override;
 
-	virtual bool IsLaunchable_Implementation(ACharacter* Character) override;
-
-	void NotifyDamageTakenToBlackboard(AActor* DamageCauser);
+	void NotifyDamageTakenToBlackboard(AEntity* DamageCauser);
 
 	virtual void LaunchUp_Implementation(const FVector& InstigatorLocation) override;
-	//virtual void ShieldHit_Implementation() {};
 
 	// --- AI & State ---
 	FORCEINLINE EEnemyType GetEnemyType() const { return EnemyType; }
@@ -105,9 +97,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void EnableAI();
 
-	void NotifyThreat(AActor* ThreatActor);
+	void NotifyThreat(AEntity * ThreatActor);
 
-	AAIController* GetAIController() { return AIController; };
+	AAIController* GetAIController() const { return AIController; };
 
 	UFUNCTION()
 	void OnPossessed();
@@ -187,7 +179,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Montages");
 	UAnimMontage* FinisherDeathMontage;
 
-	FName SelectRandomDieAnim();
+	static FName SelectRandomDieAnim();
 
 	// --- Dissolve Effect ---
 	UPROPERTY(EditAnywhere, Category = "Effects | Dissolve")
@@ -213,7 +205,7 @@ protected:
 	EEnemyState EnemyState;
 
 	UPROPERTY(VisibleAnywhere)
-	bool isLaunched = false;
+	bool bIsLaunched = false;
 
 	// --- Resetting & Defaults ---
 	UFUNCTION(BlueprintCallable)
@@ -235,7 +227,10 @@ protected:
 	bool bDefaultUseControllerDesiredRotation;
 	bool bOriginalUseControllerRotationYaw;
 
-	virtual void ApplyPossessionParameters(bool bShouldEnable);
+	UPROPERTY()
+	bool bShouldDropOrbs = true;
+	
+	virtual void ApplyPossessionParameters(bool bShouldEnable) {};
 
 	// --- AI Controllers & Blackboard ---
 	UPROPERTY(EditAnywhere)
@@ -244,10 +239,13 @@ protected:
 	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Save System", meta = (DisplayName = "Unique Save ID"))
 	FName UniqueSaveID;
 
+	UPROPERTY()
 	AAIController* AIController;
 
+	UPROPERTY()
 	class AEnemyAIController* EnemyAIController;
 
+	UPROPERTY()
 	class UBlackboardComponent* BBComponent;
 
 	// --- Timers ---

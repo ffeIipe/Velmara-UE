@@ -3,7 +3,6 @@
 #include "Components/SpectralWeaponComponent.h"
 #include "Components/CharacterStateComponent.h"
 #include <SceneEvents/NewGameStateBase.h>
-#include <Kismet/GameplayStatics.h>
 #include "Tutorial/PromptWidgetComponent.h"
 
 void ASpectralWeaponItem::Use(ACharacter* Character)

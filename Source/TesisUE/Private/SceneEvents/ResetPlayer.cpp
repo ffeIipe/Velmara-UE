@@ -1,13 +1,7 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "SceneEvents/ResetPlayer.h"
-#include "Components/BoxComponent.h"
 #include "Kismet/GameplayStatics.h"
-#include "GameFramework/GameModeBase.h"
 #include "Player/PlayerMain.h"
 #include "GameFramework/PlayerStart.h"
-#include "Components/MementoComponent.h"
 #include "Entities/Entity.h"
 #include <SceneEvents/NewGameInstance.h>
 
@@ -30,22 +24,9 @@ void AResetPlayer::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent
             }
         }
 
-       /* APlayerController* PlayerController = UGameplayStatics::GetPlayerController(this, 0);
-        if (Cast<APlayerController>(OverlappingActor->GetController()) == PlayerController)
-      *//*{
-            OverlappingActor->SetActorTransform(OverlappingActor->GetMementoComponent()->GetLastSavedTransform());
-        }*/
-
-        UNewGameInstance* GameInst = GetGameInstance<UNewGameInstance>();
-        if (GameInst)
+        if (UNewGameInstance* GameInst = GetGameInstance<UNewGameInstance>())
         {
             GameInst->LoadPlayerProgress(GameInst->ActiveSaveSlotIndex);
         }
-
-		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("ResetPlayer: Overlapping actor!"));
     }
-    else if (GEngine) 
-    {
-        GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("ResetPlayer: Overlapping actor is not an Entity!"));
-	}
 }

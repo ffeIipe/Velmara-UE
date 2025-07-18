@@ -81,13 +81,13 @@ public:
 	FOnEntityShieldTakeDamage OnShieldTakeDamage;
 
 	// --- Interface Implementations ---
-	virtual void GetHit_Implementation(
-		AActor* DamageCauser,
+	virtual void GetHit_Implementation(AEntity* DamageCauser,
 		const FVector& ImpactPoint, FDamageEvent const& DamageEvent,
 		const float DamageReceived) override;
 
 	virtual bool CanBeFinished_Implementation() override;
 
+	virtual bool IsLaunchable_Implementation() override;
 	// --- Gameplay Actions ---
 	UFUNCTION(BlueprintCallable, Category = "Combat | Weapon")
 	virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
@@ -139,7 +139,8 @@ protected:
 	UAnimMontage* EquipPistolMontage;
 
 	// --- Inherited Data ---
-	AActor* LastDamageCauser;
+	UPROPERTY()
+	AEntity* LastDamageCauser;
 
 	UPROPERTY(Transient)
 	class APlayerController* PlayerControllerRef = nullptr;
@@ -192,6 +193,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Input | Actions")
 	UInputAction* InputAction_Block;
 
+	UPROPERTY()
+	TArray<AActor*> IgnoreActors;
+	
 private:
 	// --- SFX & VFX ---
 	UPROPERTY(EditDefaultsOnly, Category = "Effects | SFX")
@@ -223,8 +227,6 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Stats | Stun")
 	float StunMaxWalkSpeed;
-
-	TArray<AActor*> IgnoreActors;
 
 	// --- Components ---
 	UPROPERTY(VisibleAnywhere, BlueprintGetter = GetCombatComponent, Category = "Components | Combat")

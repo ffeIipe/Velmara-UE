@@ -3,20 +3,18 @@
 #include "BehaviorTree/BlackboardComponent.h"
 
 #include "Components/AttributeComponent.h"
-#include "Components/CombatComponent.h"
 #include "Components/SphereComponent.h"
-#include "Components/SpawnPointComponent.h"
-#include "Components/TimelineComponent.h"
 #include "Curves/CurveFloat.h"
 #include "SpectralTrapComponent.h"
-#include "Engine/DamageEvents.h"
-#include "DamageTypes/SpectralTrapDamageType.h"
-#include <Kismet/KismetMathLibrary.h>
 
 #include "Player/PlayerMain.h"
 #include <Kismet/GameplayStatics.h>
 #include <Player/PlayerHeroController.h>
 
+#include "Subsystems/EnemyPoolManager.h"
+
+
+class UEnemyPoolManager;
 
 APaladinBoss::APaladinBoss()
 {
@@ -25,6 +23,7 @@ APaladinBoss::APaladinBoss()
 
 	AuraMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("AuraMesh"));
 	AuraMeshComponent->SetupAttachment(GetRootComponent());
+	bShouldDropOrbs = false;
 }
 
 void APaladinBoss::BeginPlay()
@@ -33,7 +32,7 @@ void APaladinBoss::BeginPlay()
 
 	UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("SpawnPoint"), SpawnPoints);
 
-	GetAttributeComponent()->OnDettachShield.AddDynamic(this, &APaladinBoss::ShieldDettach);
+	GetAttributeComponent()->OnDettachShield.AddDynamic(this, &APaladinBoss::ShieldDetach);
 	
 	if (!BBComponent)
 	{
@@ -49,9 +48,10 @@ void APaladinBoss::BeginPlay()
 	}
 }
 
-void APaladinBoss::ShieldDettach()
+void APaladinBoss::ShieldDetach()
 {
 	SpectralTrapComponent2->FinishDamaging();
+	SpectralTrapComponent2->DestroyComponent();
 	AuraMeshComponent->DestroyComponent();
 }
 
@@ -67,7 +67,7 @@ float APaladinBoss::TakeDamage(float DamageAmount, FDamageEvent const& DamageEve
 	return DamageAmount;
 }	
 
-void APaladinBoss::GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived)
+void APaladinBoss::GetHit_Implementation(AEntity* DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived)
 {
 	if (BBComponent)
 	{
@@ -126,22 +126,20 @@ bool APaladinBoss::CanInvoke()
 
 void APaladinBoss::Invoke()
 {
-	UWorld* World = GetWorld();
+	const UWorld* World = GetWorld();
 	if (!World || !MinionToSpawnClass) return;
 
 	UEnemyPoolManager* PoolManager = World->GetSubsystem<UEnemyPoolManager>();
 	if (!PoolManager) return;
 
-	for (AActor* SpawnPoint : SpawnPoints)
+	for (const AActor* SpawnPoint : SpawnPoints)
 	{
 		if (SpawnPoint)
 		{
 			FVector SpawnLocation = SpawnPoint->GetActorLocation();
 			FRotator SpawnRotation = SpawnPoint->GetActorRotation();
 
-			AEnemy* EnemyFromPool = PoolManager->SpawnEnemyFromPool(MinionToSpawnClass, SpawnLocation, SpawnRotation, this, this);
-
-			if (EnemyFromPool)
+			if (AEnemy* EnemyFromPool = PoolManager->SpawnEnemyFromPool(MinionToSpawnClass, SpawnLocation, SpawnRotation, this, this))
 			{
 				EnemyFromPool->OnDeactivated.AddDynamic(this, &APaladinBoss::HandleMinionDeactivated);
 

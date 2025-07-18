@@ -59,12 +59,6 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Movement | Spectral Weapon State")
 	ECharacterSpectralStates SpectralState;
 
+	UPROPERTY()
 	USpectralWeaponComponent* SpectralWeaponComponent;
-
-protected:
-	UFUNCTION(BlueprintCallable)
-	float const CalculateWalkRight();
-	
-	UFUNCTION(BlueprintCallable)
-	float const CalculateWalkForward();
 };

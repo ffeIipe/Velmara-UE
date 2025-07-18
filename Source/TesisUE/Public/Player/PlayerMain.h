@@ -42,8 +42,7 @@ public:
 	virtual void PerformSpectralBarrier_Implementation() override;
 	virtual void ResetSpectralAttack_Implementation() override;
 
-	virtual void GetHit_Implementation(
-		AActor* DamageCauser,
+	virtual void GetHit_Implementation(AEntity* DamageCauser,
 		const FVector& ImpactPoint, FDamageEvent const& DamageEvent,
 		const float DamageReceived) override;
 
@@ -120,7 +119,7 @@ private:
 	// --- Life Cycle ---
 	void Die(UAnimMontage* DeathAnim, FName Section) override;
 	void Revive();
-	void LoadLastCheckpoint();
+	void LoadLastCheckpoint() const;
 	void OutOfEnergy() override;
 
 	// --- Weapon Management ---

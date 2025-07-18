@@ -1,9 +1,7 @@
 #include "SceneEvents/Checkpoint.h"
 #include "Entities/Entity.h"
-#include "Components/MementoComponent.h"
 #include "Components/PossessionComponent.h"
 #include "Kismet/GameplayStatics.h"
-#include "SceneEvents/NewGameStateBase.h"
 #include "SceneEvents/NewGameInstance.h"
 
 void ACheckpoint::OnSphereBeginOverlap(
@@ -16,23 +14,26 @@ void ACheckpoint::OnSphereBeginOverlap(
 {
     if (AEntity* OverlappingEntity = Cast<AEntity>(OtherActor))
     {
-        DisableCollision();
-
-        if (OverlappingEntity->GetPossessionComponent()->IsPossessed())
+        if (OverlappingEntity->GetController() == UGameplayStatics::GetPlayerController(GetWorld(), 0))
         {
-            OverlappingEntity->GetPossessionComponent()->GetPossessingEntity()->SetActorTransform(OverlappingEntity->GetActorTransform());
-        }
-
-        UNewGameInstance* GameInst = Cast<UNewGameInstance>(GetGameInstance());
-        if (GameInst)
-        {
-            if (GameInst->SavePlayerProgress(GameInst->ActiveSaveSlotIndex, OverlappingEntity))
+            DisableCollision();
+            
+            if (OverlappingEntity->GetPossessionComponent()->IsPossessed())
             {
-                if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Emerald, FString("Player progress saved via GameInstance."));
-                UE_LOG(LogTemp, Log, TEXT("ACheckpoint: Player progress saved via GameInstance. Slot: %d"), GameInst->ActiveSaveSlotIndex);
+                if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Red, FString("Saving from " + OverlappingEntity->GetName()));
+                OverlappingEntity->GetPossessionComponent()->GetPossessingEntity()->SetActorTransform(OverlappingEntity->GetActorTransform());
             }
-        }
+            
 
-        Destroy();
+            if (UNewGameInstance* GameInst = Cast<UNewGameInstance>(GetGameInstance()))
+            {
+                if (GameInst->SavePlayerProgress(GameInst->ActiveSaveSlotIndex, OverlappingEntity))
+                {
+                    if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Emerald, FString("Player progress saved via GameInstance."));
+                    UE_LOG(LogTemp, Log, TEXT("ACheckpoint: Player progress saved via GameInstance. Slot: %d"), GameInst->ActiveSaveSlotIndex);
+                }
+            }
+            Destroy();
+        }
     }
 }

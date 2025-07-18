@@ -1,8 +1,6 @@
 #include "Enemy/Spectre.h"
 #include "Components/AttributeComponent.h"
 #include "Components/CapsuleComponent.h"
-#include "Components/CombatComponent.h"
-#include "Kismet/GameplayStatics.h"
 
 #include "Engine/DamageEvents.h"
 #include "GameFramework/DamageType.h"
@@ -16,14 +14,13 @@ ASpectre::ASpectre()
 
 void ASpectre::PerformSpectralAttack()
 {
-	int RandomValue = UKismetMathLibrary::RandomIntegerInRange(0, SpectralAttackMontages.Max());
-	if (SpectralAttackMontages.IsValidIndex(RandomValue))
+	if (const int RandomValue = UKismetMathLibrary::RandomIntegerInRange(0, SpectralAttackMontages.Max()); SpectralAttackMontages.IsValidIndex(RandomValue))
 	{
 		PlayAnimMontage(SpectralAttackMontages[RandomValue]);
 	}
 }
 
-void ASpectre::HandleEnemyCollision(bool bEnable)
+void ASpectre::HandleEnemyCollision(const bool bEnable)
 {
 	Super::HandleEnemyCollision(bEnable);
 
@@ -38,7 +35,7 @@ void ASpectre::HandleEnemyCollision(bool bEnable)
 	}
 }
 
-float ASpectre::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+float ASpectre::TakeDamage(const float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	if (DamageEvent.DamageTypeClass == USpectralTrapDamageType::StaticClass())
 	{
@@ -47,12 +44,17 @@ float ASpectre::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, 
 	return DamageAmount;
 }
 
-bool ASpectre::IsLaunchable_Implementation(ACharacter* Character)
+bool ASpectre::IsLaunchable_Implementation()
 {
 	return true;
 }
 
 bool ASpectre::CanBeFinished_Implementation()
 {
-	return false; //no puede ser finisheada esta entidad
+	return false; //it cannot be finished this entity
+}
+
+void ASpectre::ApplyPossessionParameters(bool bShouldEnable)
+{
+	
 }
