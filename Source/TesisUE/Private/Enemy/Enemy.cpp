@@ -287,8 +287,7 @@ void AEnemy::BeginPlay()
 
 	if (UWorld* World = GetWorld())
 	{
-		ANewGameStateBase* GameState = World->GetGameState<ANewGameStateBase>();
-		if (GameState)
+		if (ANewGameStateBase* GameState = World->GetGameState<ANewGameStateBase>())
 		{
 			GameState->RequestEnemyStateReconciliation(this);
 		}
