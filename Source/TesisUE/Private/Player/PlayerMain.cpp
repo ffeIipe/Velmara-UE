@@ -31,7 +31,6 @@
 
 #include "Engine/DamageEvents.h"
 #include "DamageTypes/SpectralTrapDamageType.h"
-#include <SceneEvents/NewGameInstance.h>
 
 #include "Animation/AnimInstance.h"
 
@@ -46,8 +45,6 @@ APlayerMain::APlayerMain()
 	PlayerFormComponent = CreateDefaultSubobject<UPlayerFormComponent>(TEXT("PlayerFormComponent"));
 
 	SpectralWeaponComponent = CreateDefaultSubobject<USpectralWeaponComponent>(TEXT("SpectralWeapon"));
-
-	//GetCombatComponent()->SetAttackTokens(3);
 }
 
 void APlayerMain::PerformSpectralAttack_Implementation()

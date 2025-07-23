@@ -48,8 +48,8 @@ public:
 
 	virtual float TakeDamage(
 		float DamageAmount,
-		struct FDamageEvent const& DamageEvent,
-		class AController* EventInstigator,
+		FDamageEvent const& DamageEvent,
+		AController* EventInstigator,
 		AActor* DamageCauser) override;
 
 	// --- Components ---

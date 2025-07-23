@@ -8,6 +8,8 @@
 #include "Components/CharacterStateComponent.h"
 #include <NiagaraFunctionLibrary.h>
 
+#include "Subsystems/EffectsManager.h"
+
 ASword::ASword()
 {
 	BoxCollider->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
@@ -115,7 +117,7 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 	{
 		if (AActor* HitActor = Hit.GetActor())
 		{
-			if (IHitInterface* HitInterface = Cast<IHitInterface>(HitActor))
+			if (const IHitInterface* HitInterface = Cast<IHitInterface>(HitActor))
 			{
 				FDamageEvent DamageEvent(DamageTypeClass);
 				HitInterface->Execute_GetHit(HitActor, Cast<AEntity>(GetOwner()), Hit.ImpactPoint, DamageEvent, Damage);
@@ -131,12 +133,15 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 					);
 
 					//fx when the hit is true
-					CameraShake();
-					HitStop(.0006f, .01f);
-
+					if (UEffectsManager* EffectsManager = GetWorld()->GetSubsystem<UEffectsManager>())
+					{
+						EffectsManager->HitStop(EHitStopPreset::EHSP_SwordHit);
+						EffectsManager->CameraShake(ECameraShakePreset::ECSP_SwordHit, Hit.ImpactPoint);
+					}
+					
 					IgnoreActors.Add(HitActor);
 				}
-				else //else si no es hitteable (tengo que cambiar nombre de la funcion)
+				else //else if it is not hittable
 				{
 					if (SparksEffect)
 					{
@@ -166,12 +171,12 @@ float ASword::CalculateDamage()
 	{
 		return Damage * CriticalDamageMultiplier;
 	}
-	else return Damage;
+	return Damage;
 }
 
-void ASword::HitStop(float Duration, float TimeScale)
+void ASword::HitStop(const float Duration, const float TimeScale)
 {
-	if (UWorld* World = GetWorld())
+	if (const UWorld* World = GetWorld())
 	{
 		World->GetWorldSettings()->SetTimeDilation(TimeScale);
 
@@ -182,7 +187,7 @@ void ASword::HitStop(float Duration, float TimeScale)
 
 void ASword::ResetTimeDilation()
 {
-	if (UWorld* World = GetWorld())
+	if (const UWorld* World = GetWorld())
 	{
 		World->GetWorldSettings()->SetTimeDilation(1.0f);
 	}

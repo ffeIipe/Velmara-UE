@@ -36,8 +36,7 @@ void UCombatComponent::ResetState()
 		OwningCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
 	}
 
-	const TArray<ECharacterActions> CharacterActionsToCheck = { ECharacterActions::ECA_Block };
-	if (!CharacterStateComponent->IsActionEqualToAny(CharacterActionsToCheck))
+	if (const TArray<ECharacterActions> CharacterActionsToCheck = { ECharacterActions::ECA_Block }; !CharacterStateComponent->IsActionEqualToAny(CharacterActionsToCheck))
 	{
 		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Nothing);
 	}
@@ -48,7 +47,7 @@ void UCombatComponent::ResetState()
 
 	if (SpectralAttacks) SpectralAttacks->Execute_ResetSpectralAttack(GetOwner());
 
-	if (OnAttackEnd.IsBound()) OnAttackEnd.Broadcast(); //esto se llama desde AN_ResetState en el montage de ataque
+	if (OnAttackEnd.IsBound()) OnAttackEnd.Broadcast(); //this is called by AN_ResetState during the anim event
 
 	ExtraMovementComponent->bIsSaveDodge = false;
 }
@@ -87,7 +86,7 @@ void UCombatComponent::BeginPlay()
 	}
 }
 
-void UCombatComponent::LightAttack(int AttackIndex)
+void UCombatComponent::LightAttack(const int AttackIndex)
 {
 	if (CanAttack())
 	{
@@ -119,7 +118,7 @@ void UCombatComponent::LightAttack(int AttackIndex)
 	}
 }
 
-void UCombatComponent::JumpAttack(int AttackIndex)
+void UCombatComponent::JumpAttack(const int AttackIndex)
 {
 	if (CanAttack())
 	{
@@ -155,7 +154,7 @@ void UCombatComponent::JumpAttack(int AttackIndex)
 	}
 }
 
-void UCombatComponent::PerformComboStarter(int AttackIndex)
+void UCombatComponent::PerformComboStarter(const int AttackIndex)
 {
 	if (CanAttack())
 	{
@@ -173,7 +172,7 @@ void UCombatComponent::PerformComboStarter(int AttackIndex)
 	}
 }
 
-void UCombatComponent::PerformComboExtender(int AttackIndex)
+void UCombatComponent::PerformComboExtender(const int AttackIndex)
 {
 	if (CanAttack())
 	{
@@ -189,7 +188,7 @@ void UCombatComponent::PerformComboExtender(int AttackIndex)
 	}
 }
 
-void UCombatComponent::HeavyAttack(int AttackIndex)
+void UCombatComponent::HeavyAttack(const int AttackIndex)
 {
 	if (CanAttack())
 	{
@@ -239,17 +238,17 @@ void UCombatComponent::StopAttackBufferEvent()
 	}
 }
 
-void UCombatComponent::UpdateAttackBuffer(float Alpha)
+void UCombatComponent::UpdateAttackBuffer(const float Alpha)
 {
 	UpdateBuffer(Alpha, BufferAttackDistance);
 }
 
-void UCombatComponent::UpdateBuffer(float Alpha, float BufferDistance)
+void UCombatComponent::UpdateBuffer(const float Alpha, const float BufferDistance)
 {
-	FVector CurrentLocation = GetOwner()->GetActorLocation();
-	FVector ForwardVector = GetOwner()->GetActorForwardVector();
+	const FVector CurrentLocation = GetOwner()->GetActorLocation();
+	const FVector ForwardVector = GetOwner()->GetActorForwardVector();
 
-	FVector TargetLocation = FMath::Lerp(CurrentLocation, CurrentLocation + (ForwardVector * BufferDistance), Alpha);
+	const FVector TargetLocation = FMath::Lerp(CurrentLocation, CurrentLocation + (ForwardVector * BufferDistance), Alpha);
 
 	GetOwner()->SetActorLocation(TargetLocation, false);
 }
@@ -276,8 +275,8 @@ void UCombatComponent::SoftLockOn()
 {
 	if (OwningCharacter)
 	{
-		FVector Start = GetOwner()->GetActorLocation();
-		FVector End = (OwningCharacter->GetLastMovementInputVector() * SoftLockDistance) + GetOwner()->GetActorLocation();
+		const FVector Start = GetOwner()->GetActorLocation();
+		const FVector End = (OwningCharacter->GetLastMovementInputVector() * SoftLockDistance) + GetOwner()->GetActorLocation();
 
 		if (APaladin* Enemy = Cast<APaladin>(SphereTraceForEnemies(Start, End)))
 		{
@@ -304,24 +303,20 @@ void UCombatComponent::ValidateWall()
 	QueryParams.bTraceComplex = true;
 	QueryParams.bReturnPhysicalMaterial = false;
 
-	FVector Start = GetOwner()->GetActorLocation();
-	FVector End = Start + (GetOwner()->GetActorForwardVector() * 100.f);
+	const FVector Start = GetOwner()->GetActorLocation();
+	const FVector End = Start + (GetOwner()->GetActorForwardVector() * 100.f);
 
-	bool bHit = GetWorld()->LineTraceSingleByChannel(
+	const bool bHit = GetWorld()->LineTraceSingleByChannel(
 		Hit,
 		Start,
 		End,
-		ECollisionChannel::ECC_GameTraceChannel4,
+		ECC_GameTraceChannel4,
 		QueryParams
 	);
 
 	if (bHit)
 	{
-		AActor* HitActor = Hit.GetActor();
-		if (HitActor)
-		{
-			OnWallHit.Broadcast(Hit);
-		}
+		OnWallHit.Broadcast(Hit);
 	}
 
 	DrawDebugLine(
@@ -350,10 +345,10 @@ void UCombatComponent::RotationToTarget()
 
 void UCombatComponent::UpdateSoftLockOn(float Alpha)
 {
-	FVector Start = GetOwner()->GetActorLocation();
+	const FVector Start = GetOwner()->GetActorLocation();
 
 	if (!SoftLockTarget) return;
-	FVector End = SoftLockTarget->GetActorLocation();
+	const FVector End = SoftLockTarget->GetActorLocation();
 
 	FRotator NewRotation = FRotator(
 		GetOwner()->GetActorRotation().Pitch,
@@ -366,9 +361,9 @@ void UCombatComponent::UpdateSoftLockOn(float Alpha)
 	GetOwner()->SetActorRotation(NewRotation);
 }
 
-void UCombatComponent::UpdateLaunchCharacterUp(float Alpha)
+void UCombatComponent::UpdateLaunchCharacterUp(const float Alpha)
 {
-	FVector TargetLocation = FMath::Lerp(CurrentLocationLaunch, CurrentLocationLaunch + (UpVectorLaunch * 300.f), Alpha);
+	const FVector TargetLocation = FMath::Lerp(CurrentLocationLaunch, CurrentLocationLaunch + (UpVectorLaunch * 300.f), Alpha);
 	GetOwner()->SetActorLocation(TargetLocation, true);
 }
 
@@ -400,7 +395,6 @@ void UCombatComponent::Execute()
 
 	if (CharacterStateComponent->IsActionEqualToAny({ 
 		ECharacterActions::ECA_Dead,
-		/*ECharacterActions::ECA_Dodge, que pueda ser cancelable*/
 		ECharacterActions::ECA_Finish,
 		ECharacterActions::ECA_Stun
 		})) return;
@@ -415,9 +409,9 @@ void UCombatComponent::Execute()
 			{
 				CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Finish);
 
-				FVector Start = OwningCharacter->GetActorLocation();
-				FVector End = Enemy->GetActorLocation();
-				FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(Start, End);
+				const FVector Start = OwningCharacter->GetActorLocation();
+				const FVector End = Enemy->GetActorLocation();
+				const FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(Start, End);
 				OwningCharacter->SetActorRotation(LookAtRotation);
 
 				OwningCharacter->PlayAnimMontage(FinisherMontage, 1.0f);
@@ -440,8 +434,7 @@ void UCombatComponent::GetDirectionalReact(const FVector& ImpactPoint)
 
 	Angle = FMath::RadiansToDegrees(Angle);
 
-	const FVector CrossProduct = FVector::CrossProduct(Forward, ToHit);
-	if (CrossProduct.Z < 0)
+	if (const FVector CrossProduct = FVector::CrossProduct(Forward, ToHit); CrossProduct.Z < 0)
 	{
 		Angle *= -1.f;
 	}
@@ -476,9 +469,7 @@ void UCombatComponent::HitReactJumpToSection(FName Section)
 
 void UCombatComponent::LaunchCharacterUp()
 {
-	IHitInterface* Paladin = Cast<IHitInterface>(SoftLockTarget);
-
-	if (SoftLockTarget && Paladin->Execute_IsLaunchable(SoftLockTarget))
+	if (const IHitInterface* Paladin = Cast<IHitInterface>(SoftLockTarget); SoftLockTarget && Paladin->Execute_IsLaunchable(SoftLockTarget))
 	{
 		OwningCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
 		bIsLaunched = true;
@@ -503,8 +494,8 @@ void UCombatComponent::Crasher()
 	OwningCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
 	CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
 
-	FVector Start = GetOwner()->GetActorLocation();
-	FVector End = Start + FVector(0.f, 0.f, -100000.f);
+	const FVector Start = GetOwner()->GetActorLocation();
+	const FVector End = Start + FVector(0.f, 0.f, -100000.f);
 
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
 	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_WorldStatic));
@@ -515,7 +506,7 @@ void UCombatComponent::Crasher()
 
 	FHitResult Hit;
 
-	bool bHit = UKismetSystemLibrary::LineTraceSingleForObjects(
+	const bool bHit = UKismetSystemLibrary::LineTraceSingleForObjects(
 		GetWorld(),
 		Start,
 		End,
@@ -531,12 +522,12 @@ void UCombatComponent::Crasher()
 	{
 		OwningCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
 
-		FVector NewLocation = FVector(Hit.ImpactPoint.X, Hit.ImpactPoint.Y, Hit.ImpactPoint.Z + 50.f);
+		const FVector NewLocation = FVector(Hit.ImpactPoint.X, Hit.ImpactPoint.Y, Hit.ImpactPoint.Z + 50.f);
 		GetOwner()->SetActorLocation(NewLocation);
 	}
 }
 
-AEntity* UCombatComponent::SphereTraceForEnemies(FVector Start, FVector End)
+AEntity* UCombatComponent::SphereTraceForEnemies(const FVector& Start, const FVector& End)
 {
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
 	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
@@ -746,13 +737,13 @@ void UCombatComponent::ResetAttackSave()
 
 ASword* UCombatComponent::GetCurrentSword()
 {
-	if (APlayerMain* PlayerRef = Cast<APlayerMain>(GetOwner()))
+	if (const APlayerMain* PlayerRef = Cast<APlayerMain>(GetOwner()))
 	{
-		if (UInventoryComponent* InventoryComp = PlayerRef->GetComponentByClass<UInventoryComponent>())
+		if (const UInventoryComponent* InventoryComp = PlayerRef->GetComponentByClass<UInventoryComponent>())
 		{
 			return Cast<ASword>(InventoryComp->EquippedItem);
 		}
-		else return nullptr;
 	}
-	else return nullptr;
+	
+	return nullptr;
 }

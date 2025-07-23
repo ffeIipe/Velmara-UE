@@ -29,6 +29,7 @@
 #include "Tutorial/PromptWidgetComponent.h"
 #include "Player/PlayerHeroController.h"
 #include "Perception/AIPerceptionComponent.h"  
+#include "Subsystems/EffectsManager.h"
 
 AEnemy::AEnemy()
 {
@@ -499,20 +500,29 @@ void AEnemy::DropOrbs(const float DamageReceived, AEntity* DamageCauser) const
 
 void AEnemy::FinishedDamage()
 {
+	if (!CanBeFinished_Implementation()) return;
+	
 	if (GetCharacterStateComponent()->GetCurrentCharacterState().Action != ECharacterActions::ECA_Dead)
 	{
+		if (UEffectsManager* EffectsManager = GetWorld()->GetSubsystem<UEffectsManager>())
+		{
+			EffectsManager->TimeWarp(ETimeWarpPreset::ETWP_Finisher);
+			EffectsManager->CameraZoom(ECameraZoomPreset::ECZP_Finisher);
+		}
+		
 		GetCharacterStateComponent()->SetCharacterAction(ECharacterActions::ECA_Dead);
 		Die(nullptr, NAME_None);
-		StopAnimMontage();
-		PlayAnimMontage(FinisherDeathMontage);
 
 		if (PromptWidgetComponent && PromptWidgetComponent->GetWidget()) PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
 
-		FVector Start = GetActorLocation();
-		FVector End = LastDamageCauser ? LastDamageCauser->GetActorLocation() : Start + GetActorForwardVector();
-		FRotator NewRotation = UKismetMathLibrary::FindLookAtRotation(Start, End);
+		const FVector Start = GetActorLocation();
+		const FVector End = LastDamageCauser ? LastDamageCauser->GetActorLocation() : Start + GetActorForwardVector();
+		const FRotator NewRotation = UKismetMathLibrary::FindLookAtRotation(Start, End);
 		SetActorRotation(NewRotation);	
 	}
+
+	StopAnimMontage();
+	PlayAnimMontage(FinisherDeathMontage);
 }
 
 bool AEnemy::IsLaunchable_Implementation()
@@ -553,7 +563,7 @@ void AEnemy::HandleEnemyCollision(bool bEnable)
 		GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
 		GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block);
 
-		GetMesh()->SetCollisionResponseToAllChannels(ECR_Ignore);//
+		GetMesh()->SetCollisionResponseToAllChannels(ECR_Ignore);
 
 		GetAttributeComponent()->GetShieldMeshComponent()->SetCollisionResponseToAllChannels(ECR_Ignore);
 	}

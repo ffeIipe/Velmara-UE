@@ -81,7 +81,7 @@ public:
 	UFUNCTION()
 	void HitReactJumpToSection(FName Section);
 	UFUNCTION()
-	AEntity* SphereTraceForEnemies(FVector Start, FVector End);
+	AEntity* SphereTraceForEnemies(const FVector& Start, const FVector& End);
 
 	// --- Attack State Flags ---
 	UPROPERTY(VisibleAnywhere, Category = "Attack | LightAttack")
@@ -201,7 +201,7 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void UpdateBuffer(float Alpha, float BufferDistance);
 
-	UPROPERTY(EditAnywhere, Category = "Attack | Buffer")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack | Buffer")
 	float BufferAttackDistance;
 
 	// --- Animation Montages ---
@@ -238,6 +238,7 @@ protected:
 
 private:
 	// --- Internal State Variables ---
+	UPROPERTY()
 	ACharacter* OwningCharacter;
 
 	UPROPERTY(VisibleAnywhere, Category = "Attack | LightAttack")
