@@ -14,6 +14,8 @@
 #include "Items/Weapons/Sword.h"
 #include <SceneEvents/NewGameStateBase.h>
 
+#include "DataAssets/EntityData.h"
+
 UNewGameInstance::UNewGameInstance()
 {
     CurrentSettings = nullptr;
@@ -350,7 +352,7 @@ void UNewGameInstance::ApplyPendingLoadedDataToWorld()
 
         if (UInventoryComponent* PlayerInventory = PlayerCharacter->GetInventoryComponent())
         {
-            PlayerInventory->InventorySlots.Init(nullptr, PlayerInventory->MaxSlots);
+            PlayerInventory->InventorySlots.Init(nullptr, PlayerCharacter->EntityData->InventoryData.MaxSlots);
 
             FActorSpawnParameters SpawnParams;
             SpawnParams.Owner = PlayerCharacter;

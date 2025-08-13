@@ -6,6 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "ExtraMovementComponent.generated.h"
 
+struct FMovementData;
 class AEntity;
 struct FInputActionValue;
 
@@ -17,7 +18,9 @@ class TESISUE_API UExtraMovementComponent : public UActorComponent
 public:	
 	// Sets default values for this component's properties
 	UExtraMovementComponent();
-
+	
+	void InitializeValues(const FMovementData& MovementData);
+	
 	UPROPERTY(EditAnywhere, Category = "Montages | Dodge")
 	UAnimMontage* DodgeMontage;
 
@@ -58,34 +61,17 @@ public:
 	UPROPERTY()
 	class UTimelineComponent* BufferDodgeTimeline;
 
-	UPROPERTY(EditAnywhere, Category = "Stats | Buffer")
-	class UCurveFloat* BufferCurve;
-
-	UPROPERTY(EditAnywhere, Category = "Stats | Buffer")
-	float BufferDodgeDistance;
-
 	UFUNCTION(BlueprintCallable)
 	void DodgeBufferEvent(float BufferAmount);
 
 	UFUNCTION(BlueprintCallable)
-	void StopDodgeBufferEvent();
+	void StopDodgeBufferEvent() const;
 
 	UFUNCTION(BlueprintCallable)
 	void UpdateDodgeBuffer(float Alpha);
 
 	UFUNCTION(BlueprintCallable)
 	void UpdateBuffer(float Alpha, float BufferDistance);
-
-	UPROPERTY(EditAnywhere, Category = "Stats | DoubleJump")
-	float LaunchStrength = 800.f;
-
-	float DefaultWalkSpeed;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stats | Movement")
-	float MaxRunSpeed = 800.f;
-	
-	UPROPERTY(EditAnywhere, Category = "Stats | Movement")
-	float MaxStrafeSpeed = 650.f;
 
 	UPROPERTY()
 	class UCharacterStateComponent* OwnerCharacterStateComponent;
@@ -110,7 +96,7 @@ private:
 
 	UPROPERTY()
 	AEntity* EntityOwner;
-
+	
 	void UpdateAllowRunStrafe();
 
 	bool bAllowRun = true;
@@ -118,6 +104,16 @@ private:
 	bool bIsRunInputPressed = false;
 
 	FVector2D MoveVector;
-
 	FVector LastMovementInput;
+	
+	float LaunchStrength = 800.f;
+	float DefaultWalkSpeed;
+
+	UPROPERTY(BlueprintReadWrite, meta = (AllowPrivateAccess = true))
+	float MaxRunSpeed = 800.f;
+	float MaxStrafeSpeed = 650.f;
+	float BufferDodgeDistance;
+	
+	UPROPERTY()
+	UCurveFloat* DodgeCurve;
 };

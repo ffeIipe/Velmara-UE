@@ -28,6 +28,7 @@ class UNiagaraSystem;
 class ACameraActor;
 class USoundBase;
 class UCameraShakeBase;
+class UEntityData;
 
 // --- Delegates ---
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEntityDead);
@@ -42,6 +43,9 @@ class TESISUE_API AEntity : public ACharacter, public IHitInterface
 
 public:
 	AEntity();
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
+	TObjectPtr<UEntityData> EntityData;
 
 	// --- Getters ---
 	UFUNCTION(BlueprintPure, Category = "Components | Combat")
@@ -88,6 +92,7 @@ public:
 	virtual bool CanBeFinished_Implementation() override;
 
 	virtual bool IsLaunchable_Implementation() override;
+	
 	// --- Gameplay Actions ---
 	UFUNCTION(BlueprintCallable, Category = "Combat | Weapon")
 	virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
@@ -112,6 +117,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	void OnConstruction(const FTransform &Transform) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void Landed(const FHitResult& Hit) override;
 	virtual void Jump() override;

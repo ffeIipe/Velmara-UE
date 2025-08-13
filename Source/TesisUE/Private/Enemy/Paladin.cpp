@@ -172,7 +172,7 @@ void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 	}
 }
 
-void APaladin::ApplyPossessionParameters(bool bShouldEnable)
+void APaladin::ApplyPossessionParameters(const bool bShouldEnable)
 {
 	Super::ApplyPossessionParameters(bShouldEnable);
 	if (bShouldEnable)

@@ -4,6 +4,8 @@
 #include "Components/ActorComponent.h"
 #include "CombatComponent.generated.h"
 
+struct FCombatData;
+class UEntityData;
 class UTimelineComponent;
 class UCurveFloat;
 class IFormInterface;
@@ -28,6 +30,7 @@ public:
 
 	UCombatComponent();
 
+	void InitializeValues(const FCombatData& CombatData);
 	// --- Getters & Setters ---
 	UFUNCTION(BlueprintCallable, Category = "SoftLock")
 	FORCEINLINE AActor* GetSoftLockTarget() const { return SoftLockTarget; }
@@ -41,13 +44,14 @@ public:
 
 	// --- Component References ---
 	IFormInterface* SpectralAttacks;
+
+	UPROPERTY()
 	UCharacterStateComponent* CharacterStateComponent;
+
+	UPROPERTY()
 	UExtraMovementComponent* ExtraMovementComponent;
 
 	// --- Finisher Locations ---
-	UPROPERTY(EditAnywhere, Category = "Attack | Finisher")
-	USceneComponent* FinisherLocation;
-
 	UPROPERTY(EditAnywhere, Category = "Attack | Finisher")
 	USceneComponent* CameraFinisherLocation;
 
@@ -76,10 +80,13 @@ public:
 
 	// --- Combat Utility Functions ---
 	void StartLaunchingUp();
+
 	UFUNCTION()
 	void GetDirectionalReact(const FVector& ImpactPoint);
+
 	UFUNCTION()
 	void HitReactJumpToSection(FName Section);
+
 	UFUNCTION()
 	AEntity* SphereTraceForEnemies(const FVector& Start, const FVector& End);
 
@@ -92,7 +99,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-
+	
 	// --- Attack Logic Functions ---
 	UFUNCTION(BlueprintCallable, Category = "Attack | LightAttack")
 	void LightAttack(int AttackIndex);
@@ -134,7 +141,7 @@ protected:
 	UFUNCTION()
 	void ReleaseBlock();
 
-	// --- Soft Lock Targetting ---
+	// --- Soft Lock Targeting ---
 	UFUNCTION(BlueprintCallable, Category = "SoftLock")
 	void SoftLockOn();
 
@@ -155,15 +162,6 @@ protected:
 	UPROPERTY(BlueprintReadWrite, Category = "SoftLock")
 	AActor* SoftLockTarget = nullptr;
 
-	UPROPERTY(EditAnywhere, Category = "SoftLock")
-	float SoftLockDistance;
-
-	UPROPERTY(EditAnywhere, Category = "SoftLock")
-	float SoftLockRadius;
-
-	UPROPERTY(EditAnywhere, Category = "SoftLock")
-	float TrackTargetRadius;
-
 	// --- Launch Character Properties ---
 	UPROPERTY(BlueprintReadOnly, Category = "LaunchCharacter")
 	FVector CurrentLocationLaunch;
@@ -181,13 +179,6 @@ protected:
 	UPROPERTY()
 	UTimelineComponent* BufferAttackTimeline;
 
-	// --- Curves ---
-	UPROPERTY(EditAnywhere, Category = "SoftLock")
-	UCurveFloat* SoftLockCurve;
-
-	UPROPERTY(EditAnywhere, Category = "Buffer")
-	UCurveFloat* BufferCurve;
-
 	// --- Buffer Attack ---
 	UFUNCTION(BlueprintCallable)
 	void StartAttackBufferEvent(float BufferAmount);
@@ -201,59 +192,26 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void UpdateBuffer(float Alpha, float BufferDistance);
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack | Buffer")
-	float BufferAttackDistance;
-
+	UPROPERTY(BlueprintReadWrite, Category = "Stats")
+	float BufferMultiplier;
+	
 	// --- Animation Montages ---
-	UPROPERTY(EditDefaultsOnly, Category = "Montages | LightAttack")
-	TArray<UAnimMontage*> LightAttackCombo;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Montages | JumpAttack")
-	TArray<UAnimMontage*> JumpAttackCombo;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Montages | HeavyAttack")
-	TArray<UAnimMontage*> HeavyAttackCombo;
-
 	UPROPERTY(EditDefaultsOnly, Category = "Montages | ComboAttack")
 	TArray<UAnimMontage*> ComboStarterAttack;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Montages | ComboAttack")
 	TArray<UAnimMontage*> ComboExtenderAttack;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Montages | Block")
-	UAnimMontage* BlockMontage;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Montages | Finisher")
-	UAnimMontage* FinisherMontage;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Montages | Crasher")
-	UAnimMontage* CrasherMontage;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Montages | Launch")
-	UAnimMontage* LaunchMontage;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Montages | HitReact")
-	UAnimMontage* HitReactMontage;
-
-
 private:
 	// --- Internal State Variables ---
 	UPROPERTY()
 	ACharacter* OwningCharacter;
-
-	UPROPERTY(VisibleAnywhere, Category = "Attack | LightAttack")
+	
 	int LightAttackIndex = 0;
-
-	UPROPERTY(VisibleAnywhere, Category = "Attack | JumpAttack")
 	int JumpAttackIndex = 0;
-
-	UPROPERTY(VisibleAnywhere, Category = "Attack | HeavyAttack")
 	int HeavyAttackIndex = 0;
-
-	UPROPERTY(VisibleAnywhere, Category = "Attack | ComboAttack")
 	int ComboExtenderIndex = 0;
 
-	UPROPERTY(VisibleAnywhere, Category = "Attack | HeavyAttack")
 	bool bIsSaveHeavyAttack;
 
 	// --- Internal Utility Functions ---
@@ -272,5 +230,33 @@ private:
 	// --- Component References ---
 	ASword* GetCurrentSword();
 
+	UPROPERTY()
 	AEntity* EntityOwner;
+	
+	// --- Stats Assigned By Data Asset ---
+	float SoftLockDistance;
+	float SoftLockRadius;
+	float TrackTargetRadius;
+	float BufferAttackDistance;
+	
+	UPROPERTY()
+	UCurveFloat* SoftLockCurve;
+	UPROPERTY()
+	UCurveFloat* BufferCurve;
+	UPROPERTY()
+	TArray<UAnimMontage*> LightAttackCombo;
+	UPROPERTY()
+	TArray<UAnimMontage*> JumpAttackCombo;
+	UPROPERTY()
+	TArray<UAnimMontage*> HeavyAttackCombo;
+	UPROPERTY()
+	UAnimMontage* BlockMontage;
+	UPROPERTY()
+	UAnimMontage* FinisherMontage;
+	UPROPERTY()
+	UAnimMontage* CrasherMontage;
+	UPROPERTY()
+	UAnimMontage* LaunchMontage;
+	UPROPERTY()
+	UAnimMontage* HitReactMontage;
 };

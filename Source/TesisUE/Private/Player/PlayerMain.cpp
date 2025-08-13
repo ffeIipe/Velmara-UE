@@ -106,7 +106,7 @@ void APlayerMain::BeginPlay()
 		PC->SetViewTargetWithBlend(FollowCamera, 1.f);
 	}
 
-	if (APlayerController* PlayerController = CastChecked<APlayerController>(GetController()))
+	if (const APlayerController* PlayerController = CastChecked<APlayerController>(GetController()))
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 			Subsystem->AddMappingContext(CharacterContext, 0);
 
@@ -139,12 +139,10 @@ void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 void APlayerMain::SearchTarget()
 {
-	FVector Start = GetActorLocation();
-	FVector End = GetActorLocation() + GetViewRotation().Vector() * TrackTargetDistance;
+	const FVector Start = GetActorLocation();
+	const FVector End = GetActorLocation() + GetViewRotation().Vector() * TrackTargetDistance;
 
-	AActor* Enemy = GetCombatComponent()->SphereTraceForEnemies(Start, End);
-
-	if (Enemy)
+	if (AActor* Enemy = GetCombatComponent()->SphereTraceForEnemies(Start, End))
 	{
 		SpectralTarget = Cast<ASpectre>(Enemy);
 	}
@@ -166,11 +164,9 @@ float APlayerMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEven
 	return DamageAmount;
 }
 
-void APlayerMain::Equipping(bool bIsSwordBeingEquipped)
+void APlayerMain::Equipping(const bool bIsSwordBeingEquipped)
 {
-	ECharacterForm ActualForm = GetCharacterStateComponent()->GetCurrentCharacterState().Form;
-
-	if (ActualForm == ECharacterForm::ECF_Human) //si estoy en humano
+	if (const ECharacterForm ActualForm = GetCharacterStateComponent()->GetCurrentCharacterState().Form; ActualForm == ECharacterForm::ECF_Human) //si estoy en humano
 	{
 		/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Green, FString("Human form"));*/
 
@@ -288,7 +284,7 @@ void APlayerMain::OutOfEnergy()
 	PlayerFormComponent->ToggleForm();
 }
 
-void APlayerMain::Die(UAnimMontage* DeathAnim, FName Section)
+void APlayerMain::Die(UAnimMontage* DeathAnim, const FName Section)
 {
 	Super::Die(DeathAnim, Section);
 

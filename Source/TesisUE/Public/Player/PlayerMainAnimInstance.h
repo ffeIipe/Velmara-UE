@@ -19,7 +19,7 @@ public:
 
 	virtual void NativeInitializeAnimation() override;
 	virtual void NativeUpdateAnimation(float DeltaTime) override;
-
+	
 	UPROPERTY(BlueprintReadOnly)
 	APlayerMain* PlayerMain;
 

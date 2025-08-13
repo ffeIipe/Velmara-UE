@@ -6,6 +6,8 @@
 #include "Components/ActorComponent.h"
 #include "AttributeComponent.generated.h"
 
+struct FAttributeData;
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDettachShieldSignature);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEntityDeadSignature);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEntityOutOfEnergy);
@@ -17,6 +19,8 @@ class TESISUE_API UAttributeComponent : public UActorComponent
 
 public:
 	UAttributeComponent();
+
+	void InitializeValues(const FAttributeData& AttributeData);
 	
 	UPROPERTY(BlueprintAssignable)
 	FOnDettachShieldSignature OnDettachShield;
@@ -92,7 +96,7 @@ public:
 	void AttachShield(USceneComponent* InParent, FName SocketName);
 
 	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Shield")
-	void DettachShield();
+	void DetachShield();
 
 	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Shield")
 	bool IsShielded();
@@ -107,41 +111,29 @@ public:
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Actor Properties | Shield")
-	class UStaticMeshComponent* ShieldMeshComponent;
+	UStaticMeshComponent* ShieldMeshComponent;
 
 private:
-	UPROPERTY(EditAnywhere, Category = "Actor Properties | Health");
+	UPROPERTY(VisibleAnywhere)
 	float Health;
 
-	UPROPERTY(EditAnywhere, Category = "Actor Properties | Health");
+	UPROPERTY(VisibleAnywhere)
 	float MaxHealth;
-
-	UPROPERTY(EditAnywhere, Category = "Actor Properties | Energy")
 	float Energy;
-
-	UPROPERTY(EditAnywhere, Category = "Actor Properties | Energy")
 	float DrainTickValue = 2.f;
-
-	UPROPERTY(EditAnywhere, Category = "Actor Properties | Energy")
 	float RegenerateTickValue = .5f;
-
-	UPROPERTY(EditAnywhere, Category = "Actor Properties | Shield")
 	float MaxShieldHealth = 100.f;
-
-	UPROPERTY(EditAnywhere, Category = "Actor Properties | Shield")
 	float CurrentShieldHealth;
 
-	UPROPERTY(EditAnywhere, Category = "Actor Properties | Shield")
-	class UStaticMesh* ShieldMesh;
+	UPROPERTY()
+	UStaticMesh* ShieldMesh;
 
 	FTimerHandle EnergyDecreaseTimerHandle;
-
 	FTimerHandle EnergyRegenerateTimerHandle;
 
 	UPROPERTY()
 	bool bIsDraining;
 
 	void DrainTick();
-
 	void RegenerateEnergy();
 };

@@ -6,6 +6,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Components/CharacterStateComponent.h"
 #include "Components/ExtraMovementComponent.h"
+#include "DataAssets/EntityData.h"
 
 void UPlayerMainAnimInstance::NativeInitializeAnimation()
 {
@@ -16,8 +17,11 @@ void UPlayerMainAnimInstance::NativeInitializeAnimation()
 	{
 		PlayerMainCharacterMovement = PlayerMain->GetCharacterMovement();
 		SpectralWeaponComponent = PlayerMain->GetComponentByClass<USpectralWeaponComponent>();
-		MaxWalkSpeed = PlayerMainCharacterMovement->MaxWalkSpeed;	
-		MaxRunSpeed = PlayerMain->GetExtraMovementComponent()->MaxRunSpeed;
+		MaxWalkSpeed = PlayerMainCharacterMovement->MaxWalkSpeed;
+		if (PlayerMain->EntityData)
+		{
+			MaxRunSpeed = PlayerMain->EntityData->MovementData.MaxRunSpeed;	
+		}
 	}
 }
 

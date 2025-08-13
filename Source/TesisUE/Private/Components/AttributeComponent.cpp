@@ -1,5 +1,8 @@
 #include "Components/AttributeComponent.h"
 
+#include "DataAssets/EntityData.h"
+#include "Entities/Entity.h"
+
 UAttributeComponent::UAttributeComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
@@ -8,7 +11,21 @@ UAttributeComponent::UAttributeComponent()
 	ShieldMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ShieldMeshComponent"));
 	ShieldMeshComponent->SetCollisionProfileName(FName("Custom"));
 	ShieldMeshComponent->SetCollisionResponseToChannel(ECC_GameTraceChannel2, ECR_Block);
-	CurrentShieldHealth = MaxShieldHealth;
+}
+
+void UAttributeComponent::InitializeValues(const FAttributeData& AttributeData)
+{
+	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE,3.f,FColor::White,TEXT("Attributes assigned by Data Asset"));
+
+	Health = AttributeData.MaxHealth;
+
+	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE,3.f,FColor::White, FString::Printf(TEXT("Health: %f"), Health));
+	MaxHealth = AttributeData.MaxHealth;
+	CurrentShieldHealth = AttributeData.MaxShieldHealth;
+	MaxShieldHealth = AttributeData.MaxShieldHealth;
+	Energy = AttributeData.Energy;
+	DrainTickValue = AttributeData.DrainTickValue;
+	RegenerateTickValue = AttributeData.RegenerateTickValue;
 }
 
 void UAttributeComponent::ReceiveDamage(float Damage)
@@ -35,10 +52,7 @@ bool UAttributeComponent::IsAlive()
 	{
 		return false;
 	}
-	else
-	{
-		return true;
-	}
+	return true;
 }
 
 float UAttributeComponent::GetEnergyPercent()
@@ -62,12 +76,12 @@ bool UAttributeComponent::ItHasFullEnergy()
 	return Energy >= 99.9f;
 }
 
-void UAttributeComponent::AttachShield(USceneComponent* InParent, FName SocketName)
+void UAttributeComponent::AttachShield(USceneComponent* InParent, const FName SocketName)
 {
 	ShieldMeshComponent->SetupAttachment(InParent, SocketName);
 }
 
-void UAttributeComponent::DettachShield()
+void UAttributeComponent::DetachShield()
 {
 	if (ShieldMeshComponent && !bIsDisarmed)
 	{
@@ -91,11 +105,8 @@ bool UAttributeComponent::IsShielded()
 		bIsDisarmed = false;
 		return true;
 	}
-	else
-	{
-		DettachShield();
-		return false;
-	}
+	DetachShield();
+	return false;
 }
 
 void UAttributeComponent::ResetAttributes()
@@ -175,6 +186,6 @@ void UAttributeComponent::ReceiveShieldDamage(float Damage)
 
 	if (CurrentShieldHealth <= 0.f)
 	{
-		DettachShield();
+		DetachShield();
 	}
 }

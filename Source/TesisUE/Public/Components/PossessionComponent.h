@@ -4,6 +4,7 @@
 #include "Components/ActorComponent.h"
 #include "PossessionComponent.generated.h"
 
+struct FPossessionData;
 class AEntity;
 class APlayerController;
 
@@ -19,7 +20,8 @@ class TESISUE_API UPossessionComponent : public UActorComponent
 
 public:
     UPossessionComponent();
-
+    void InitializeValues(const FPossessionData& PossessionData);
+    
     void AttemptPossession();
     void ReleasePossession();
     void EjectPossessor();
@@ -61,15 +63,6 @@ private:
     void OnPossessionReleased();
     AEntity* FindPossessionVictim() const;
 
-    UPROPERTY(EditDefaultsOnly, Category = "Possession")
-    float PossessDistance = 1500.f;
-
-    UPROPERTY(EditDefaultsOnly, Category = "Possession")
-    float PossessRadius = 50.f;
-
-    UPROPERTY(EditDefaultsOnly, Category = "Possession")
-    float ReleaseAndExecuteEnergyTax = 25.f;
-
     UPROPERTY()
     AEntity* OwnerEntity;
 
@@ -81,4 +74,8 @@ private:
 
     UPROPERTY()
     AEntity* PossessedByEntity = nullptr;
+
+    float PossessDistance = 1500.f;
+    float PossessRadius = 50.f;
+    float ReleaseAndExecuteEnergyTax = 25.f;
 };

@@ -7,7 +7,9 @@
 #include "Engine/World.h"
 #include "GameFramework/WorldSettings.h"
 #include "HUD/Inventory.h"
-#include <Items/Weapons/Sword.h>
+
+#include "DataAssets/EntityData.h"
+#include "Entities/Entity.h"
 
 UInventoryComponent::UInventoryComponent()
 {
@@ -18,10 +20,15 @@ UInventoryComponent::UInventoryComponent()
 void UInventoryComponent::BeginPlay()
 {
     Super::BeginPlay();
-
+    
     PlayerControllerRef = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 
     InitializeInventoryWidget();
+}
+
+void UInventoryComponent::InitializeValues(const FInventoryData& InventoryData)
+{
+    MaxSlots = InventoryData.MaxSlots;
 }
 
 void UInventoryComponent::ChangeWeapon(int32 SlotIndex)

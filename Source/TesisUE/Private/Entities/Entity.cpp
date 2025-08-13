@@ -3,7 +3,6 @@
 //Enhanced Input
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
-#include "InputActionValue.h"
 
 //Components
 #include "Components/CombatComponent.h"
@@ -25,6 +24,7 @@
 #include <NiagaraFunctionLibrary.h>
 #include "Engine/DamageEvents.h"
 #include "Camera/CameraActor.h"
+#include "DataAssets/EntityData.h"
 
 AEntity::AEntity()
 {
@@ -37,22 +37,12 @@ AEntity::AEntity()
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 
 	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("Combat"));
-	CombatComponent->FinisherLocation = CreateDefaultSubobject<USceneComponent>(TEXT("FinisherLocation"));
-	CombatComponent->FinisherLocation->SetupAttachment(GetMesh());
-	CombatComponent->FinisherLocation->SetRelativeLocation(FVector(-8.f, 80.f, 0.f));
-
 	AttributeComponent = CreateDefaultSubobject<UAttributeComponent>(TEXT("Attribute"));
-	
 	CharacterStateComponent = CreateDefaultSubobject<UCharacterStateComponent>(TEXT("CharacterState"));
-	
 	ExtraMovementComponent = CreateDefaultSubobject<UExtraMovementComponent>(TEXT("ExtraMovement"));
-	
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("Inventory"));
-	
 	MementoComponent = CreateDefaultSubobject<UMementoComponent>(TEXT("Memento"));
-	
 	PossessionComponent = CreateDefaultSubobject<UPossessionComponent>(TEXT("Possession"));
-
 	SpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("Spring Arm"));
 	SpringArmComponent->SetupAttachment(GetRootComponent());
 	SpringArmComponent->bUsePawnControlRotation = true;
@@ -98,7 +88,7 @@ void AEntity::GetHit_Implementation(AEntity* DamageCauser, const FVector& Impact
 	}
 }
 
-void AEntity::PlayCameraShake(const FVector& Epicenter, float InnerRadius, float OuterRadius)
+void AEntity::PlayCameraShake(const FVector& Epicenter, const float InnerRadius, const float OuterRadius)
 {
 	UGameplayStatics::PlayWorldCameraShake(this, CameraShake, Epicenter, InnerRadius, OuterRadius);
 }
@@ -109,12 +99,14 @@ bool AEntity::CanBeFinished_Implementation()
 	{
 		if (OnCanBeFinished.IsBound())
 		{
+			if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red,
+				"Can be Finished" + FString::SanitizeFloat(GetAttributeComponent()->GetHealth()));
 			OnCanBeFinished.Broadcast();
 		}
 
 		return true;
 	}
-	else return false;
+	return false;
 }
 
 bool AEntity::IsLaunchable_Implementation()
@@ -122,15 +114,13 @@ bool AEntity::IsLaunchable_Implementation()
 	return false;
 }
 
-void AEntity::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled)
+void AEntity::SetWeaponCollisionEnabled(const ECollisionEnabled::Type CollisionEnabled)
 {
 	if (InventoryComponent)
 	{
-		AItem* CurrentItem = InventoryComponent->GetEquippedItem();
-		if (CurrentItem)
+		if (AItem* CurrentItem = InventoryComponent->GetEquippedItem())
 		{
-			UPrimitiveComponent* ItemCollisionComponent = CurrentItem->GetCollisionComponent();
-			if (ItemCollisionComponent)
+			if (UPrimitiveComponent* ItemCollisionComponent = CurrentItem->GetCollisionComponent())
 			{
 				ItemCollisionComponent->SetCollisionEnabled(CollisionEnabled);
 				if (ASword* Sword = Cast<ASword>(CurrentItem))
@@ -152,6 +142,20 @@ void AEntity::BeginPlay()
 	PlayerControllerRef = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 
 	GetMementoComponent()->SaveState();
+}
+
+void AEntity::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
+
+	if (EntityData)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("On Construction"));
+		GetCombatComponent()->InitializeValues(EntityData->CombatData);
+		GetExtraMovementComponent()->InitializeValues(EntityData->MovementData);
+		GetAttributeComponent()->InitializeValues(EntityData->AttributeData);
+		GetPossessionComponent()->InitializeValues(EntityData->PossessionData);
+	}
 }
 
 void AEntity::AttachFollowCamera(USpringArmComponent* AttachTarget)
@@ -224,15 +228,15 @@ void AEntity::Interact(const FInputActionValue& Value)
 	FRotator CameraRotation;
 	Controller->GetPlayerViewPoint(TraceStart, CameraRotation);
 
-	FVector TraceDirection = CameraRotation.Vector();
-	FVector TraceEnd = TraceStart + (TraceDirection * InteractTraceLenght);
+	const FVector TraceDirection = CameraRotation.Vector();
+	const FVector TraceEnd = TraceStart + (TraceDirection * InteractTraceLenght);
 
 	TArray<AActor*> ActorsToIgnore;
 	ActorsToIgnore.Add(GetOwner());
 
 	FHitResult ResultHit;
 
-	bool bHit = UKismetSystemLibrary::SphereTraceSingle(
+	const bool bHit = UKismetSystemLibrary::SphereTraceSingle(
 		GetWorld(),
 		TraceStart,
 		TraceEnd,
@@ -294,7 +298,7 @@ bool AEntity::IsEquipping()
 		|| GetCharacterStateComponent()->GetCurrentCharacterState().State == ECharacterStates::ECS_EquippingSword;
 }
 
-float AEntity::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+float AEntity::TakeDamage(const float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	LastDamageCauser = Cast<AEntity>(DamageCauser);
 

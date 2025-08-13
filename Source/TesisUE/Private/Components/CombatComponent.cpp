@@ -3,6 +3,7 @@
 #include "Components/InventoryComponent.h"
 #include "Components/ExtraMovementComponent.h"
 #include "Curves/CurveFloat.h"
+#include "DataAssets/EntityData.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
@@ -29,6 +30,29 @@ UCombatComponent::UCombatComponent()
 	LaunchCharacterTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("LaunchCharacterTimeline"));
 }
 
+void UCombatComponent::InitializeValues(const FCombatData& CombatData)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Combat Component values assigned by CombatData"));
+
+	SoftLockDistance = CombatData.SoftLockDistance;
+	SoftLockRadius = CombatData.SoftLockRadius;
+	TrackTargetRadius = CombatData.TrackTargetRadius;
+	SoftLockCurve = CombatData.SoftLockCurve;
+
+	BufferAttackDistance = CombatData.BufferAttackDistance;
+	BufferCurve = CombatData.BufferCurve;
+	
+	LightAttackCombo = CombatData.LightAttackCombo;
+	JumpAttackCombo = CombatData.JumpAttackCombo;
+	HeavyAttackCombo = CombatData.HeavyAttackCombo;
+	
+	BlockMontage = CombatData.BlockMontage;
+	FinisherMontage = CombatData.FinisherMontage;
+	CrasherMontage = CombatData.CrasherMontage;
+	LaunchMontage = CombatData.LaunchMontage;
+	HitReactMontage = CombatData.HitReactMontage;
+}
+
 void UCombatComponent::ResetState()
 {
 	if (OwningCharacter->GetCharacterMovement()->IsFlying())
@@ -52,13 +76,12 @@ void UCombatComponent::ResetState()
 	ExtraMovementComponent->bIsSaveDodge = false;
 }
 
-
 void UCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
+	
 	EntityOwner = Cast<AEntity>(GetOwner());
-
+	
 	OwningCharacter = Cast<ACharacter>(GetOwner());
 
 	SpectralAttacks = Cast<IFormInterface>(GetOwner());
@@ -123,7 +146,6 @@ void UCombatComponent::JumpAttack(const int AttackIndex)
 	if (CanAttack())
 	{
 		StopAttackBufferEvent();
-		StartAttackBufferEvent(BufferAttackDistance);
 		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
 		SoftLockOn();
 
@@ -240,7 +262,7 @@ void UCombatComponent::StopAttackBufferEvent()
 
 void UCombatComponent::UpdateAttackBuffer(const float Alpha)
 {
-	UpdateBuffer(Alpha, BufferAttackDistance);
+	UpdateBuffer(Alpha, BufferAttackDistance * BufferMultiplier);
 }
 
 void UCombatComponent::UpdateBuffer(const float Alpha, const float BufferDistance)
@@ -545,7 +567,7 @@ AEntity* UCombatComponent::SphereTraceForEnemies(const FVector& Start, const FVe
 		ObjectTypes,
 		false,
 		ActorsToIgnore,
-		EDrawDebugTrace::None,
+		EDrawDebugTrace::ForDuration,
 		ResultHit,
 		true
 	);

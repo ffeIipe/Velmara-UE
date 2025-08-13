@@ -4,6 +4,7 @@
 #include "Components/ActorComponent.h"
 #include "InventoryComponent.generated.h"
 
+struct FInventoryData;
 class AItem;
 class UInventory;
 class APlayerController;
@@ -17,9 +18,6 @@ class TESISUE_API UInventoryComponent : public UActorComponent
 public:
     UInventoryComponent();
 
-    UPROPERTY(EditDefaultsOnly, Category = "Inventory")
-    int32 MaxSlots = 2;
-
     UPROPERTY(VisibleAnywhere, Category = "Inventory", Transient)
     int32 EquippedSlotIndex = -1;
 
@@ -29,6 +27,8 @@ public:
 protected:
     virtual void BeginPlay() override;
 
+    void InitializeValues(const FInventoryData& InventoryData);
+    
     UPROPERTY(EditDefaultsOnly, Category = "Inventory UI")
     TSubclassOf<UUserWidget> InventoryWidgetClass;
 
@@ -41,7 +41,7 @@ protected:
     bool bIsInventoryOpen = false;
 
 public:
-    UPROPERTY(EditAnywhere, Category = "Inventory", Transient) // Transient si no necesita guardarse
+    UPROPERTY(EditAnywhere, Category = "Inventory", Transient) //transient if it isn't needed to be saved 
     TArray<AItem*> InventorySlots;
 
     UFUNCTION(BlueprintPure, Category = "Inventory")
@@ -55,8 +55,7 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "Inventory")
     void DropItemFromSlot(int32 SlotIndex);
-
-    // Funciones nuevas
+    
     UFUNCTION(BlueprintCallable, Category = "Inventory")
     void ShowInventory();
 
@@ -87,4 +86,7 @@ private:
 
     UPROPERTY(EditDefaultsOnly, Category = "Inventory")
     FName HandSocketName = FName("RightHandSocket");
+    
+    // --- Stats Assigned By Data Asset ---
+    int32 MaxSlots = 2;
 };

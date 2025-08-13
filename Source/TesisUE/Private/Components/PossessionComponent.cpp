@@ -2,6 +2,7 @@
 #include "Components/CharacterStateComponent.h"
 #include "Components/AttributeComponent.h"
 #include "Components/InventoryComponent.h"
+#include "DataAssets/EntityData.h"
 #include "Items/Item.h"
 #include "Entities/Entity.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -10,6 +11,13 @@
 UPossessionComponent::UPossessionComponent(): OwnerEntity(nullptr), PlayerController(nullptr)
 {
     PrimaryComponentTick.bCanEverTick = false;
+}
+
+void UPossessionComponent::InitializeValues(const FPossessionData& PossessionData)
+{
+    PossessDistance = PossessionData.PossessDistance;
+    PossessRadius = PossessionData.PossessRadius;
+    ReleaseAndExecuteEnergyTax = PossessionData.ReleaseAndExecuteEnergyTax;
 }
 
 void UPossessionComponent::BeginPlay()

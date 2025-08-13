@@ -6,6 +6,7 @@
 #include <Components/CombatComponent.h>
 #include <Entities/Entity.h>
 #include "InputAction.h"
+#include "DataAssets/EntityData.h"
 
 
 UExtraMovementComponent::UExtraMovementComponent()
@@ -13,6 +14,15 @@ UExtraMovementComponent::UExtraMovementComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 
 	BufferDodgeTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("BufferDodgeTimeline"));
+}
+
+void UExtraMovementComponent::InitializeValues(const FMovementData& MovementData)
+{
+	LaunchStrength = MovementData.LaunchStrength;
+	MaxRunSpeed = MovementData.MaxRunSpeed;
+	MaxStrafeSpeed = MovementData.MaxStrafeSpeed;
+	BufferDodgeDistance = MovementData.BufferDodgeDistance;
+	DodgeCurve = MovementData.DodgeCurve;
 }
 
 void UExtraMovementComponent::CustomInitialize(AEntity* NewEntity, UCharacterStateComponent* NewOwnerCharStateComp)
@@ -26,14 +36,15 @@ void UExtraMovementComponent::BeginPlay()
 	Super::BeginPlay();
 
 	EntityOwner = Cast<AEntity>(GetOwner());
-	OwnerCharacterStateComponent = EntityOwner ? EntityOwner->GetCharacterStateComponent() : nullptr;
 	DefaultWalkSpeed = EntityOwner->GetCharacterMovement()->MaxWalkSpeed;
+	OwnerCharacterStateComponent = EntityOwner ? EntityOwner->GetCharacterStateComponent() : nullptr;
+	
 
-	if (BufferCurve)
+	if (DodgeCurve)
 	{
 		FOnTimelineFloat ProgressDodgeFunction;
 		ProgressDodgeFunction.BindUFunction(this, FName("UpdateDodgeBuffer"));
-		BufferDodgeTimeline->AddInterpFloat(BufferCurve, ProgressDodgeFunction);
+		BufferDodgeTimeline->AddInterpFloat(DodgeCurve, ProgressDodgeFunction);
 	}
 }
 
@@ -115,7 +126,7 @@ void UExtraMovementComponent::DodgeBufferEvent(float BufferAmount)
 	}
 }
 
-void UExtraMovementComponent::StopDodgeBufferEvent()
+void UExtraMovementComponent::StopDodgeBufferEvent() const
 {
 	if (BufferDodgeTimeline)
 	{
@@ -123,17 +134,17 @@ void UExtraMovementComponent::StopDodgeBufferEvent()
 	}
 }
 
-void UExtraMovementComponent::UpdateDodgeBuffer(float Alpha)
+void UExtraMovementComponent::UpdateDodgeBuffer(const float Alpha)
 {
 	UpdateBuffer(Alpha, BufferDodgeDistance);
 }
 
-void UExtraMovementComponent::UpdateBuffer(float Alpha, float BufferDistance)
+void UExtraMovementComponent::UpdateBuffer(const float Alpha, const float BufferDistance)
 {
-	FVector CurrentLocation = GetOwner()->GetActorLocation();
-	FVector ForwardVector = EntityOwner->GetLastMovementInputVector();
+	const FVector CurrentLocation = GetOwner()->GetActorLocation();
+	const FVector ForwardVector = EntityOwner->GetLastMovementInputVector();
 
-	FVector TargetLocation = FMath::Lerp(CurrentLocation, CurrentLocation + (ForwardVector * BufferDistance), Alpha);
+	const FVector TargetLocation = FMath::Lerp(CurrentLocation, CurrentLocation + (ForwardVector * BufferDistance), Alpha);
 
 	GetOwner()->SetActorLocation(TargetLocation, true);
 }
