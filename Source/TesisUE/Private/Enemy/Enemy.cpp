@@ -485,9 +485,11 @@ void AEnemy::GetHit_Implementation(AEntity* DamageCauser, const FVector& ImpactP
 			DropOrbs(DamageReceived, DamageCauser);
 		}
 		NotifyDamageTakenToBlackboard(DamageCauser);
-	}
 
-	HitFlash(.1f,.75f);
+		ReturnAttackTokenToTarget();
+		
+		HitFlash(.1f,.75f);
+	}
 }
 
 void AEnemy::DropOrbs(const float DamageReceived, AEntity* DamageCauser) const
