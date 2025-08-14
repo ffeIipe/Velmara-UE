@@ -90,7 +90,7 @@ void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Sti
     else
     {
         PerceptionComponent->ForgetActor(Actor);
-        // BlackboardComponent->ClearValue(FName("TargetActor"));
+        BlackboardComponent->ClearValue(FName("TargetActor"));
         if (bHasReservedAttackToken)
         {
             bHasReservedAttackToken = false;

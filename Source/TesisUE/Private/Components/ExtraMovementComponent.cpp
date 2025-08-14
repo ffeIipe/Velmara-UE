@@ -81,14 +81,20 @@ void UExtraMovementComponent::PerformDodge()
 	{
 		EntityOwner->GetCombatComponent()->RemoveSoftLockTarget();
 
-		FVector MovementInput = EntityOwner->GetLastMovementInputVector();
-		if (!MovementInput.IsNearlyZero())
+		if (const FVector MovementInput = EntityOwner->GetLastMovementInputVector(); !MovementInput.IsNearlyZero())
 		{
-			FRotator LookRotation = MovementInput.Rotation();
+			const FRotator LookRotation = MovementInput.Rotation();
 			GetOwner()->SetActorRotation(FRotator(0.f, LookRotation.Yaw, 0.f));
 		}
 
-		DodgeAnimBasedOnInput();
+		if (!EntityOwner->bUseControllerRotationYaw)
+		{
+			EntityOwner->PlayAnimMontage(DodgeMontage, 1.f, "Default");
+		}
+		else
+		{
+			DodgeAnimBasedOnInput();	
+		}
 
 		StopDodgeBufferEvent();
 		DodgeBufferEvent(BufferDodgeDistance);

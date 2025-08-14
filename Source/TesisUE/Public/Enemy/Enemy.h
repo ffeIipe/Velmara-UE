@@ -127,8 +127,7 @@ protected:
 
 	UFUNCTION()
 	void PerformDead();
-
-
+	
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	// --- AI ---
@@ -189,13 +188,22 @@ protected:
 	class UTimelineComponent* DissolveTimeline;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Effects | Dissolve")
-	class UCurveFloat* DissolveCurve;
+	UCurveFloat* DissolveCurve;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Effects | Dissolve")
 	UNiagaraComponent* DissolveParticleComponent;
 
 	UFUNCTION()
 	void UpdateDissolveEffect(float Value);
+	
+	// --- HitFlash Effect ---
+	void HitFlash(float Duration, float Amount);
+
+	void DeactivateHitFlash();
+
+	UPROPERTY()
+	FTimerHandle HitFlashTimerHandle;
+	
 
 	// --- Enemy Properties ---
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "EnemyType")
@@ -255,9 +263,6 @@ protected:
 	virtual void HandleEnemyCollision(bool bEnable);
 
 private:
-	UPROPERTY()
-	FTimerHandle HitFlashTimerHandle;
-
 	UFUNCTION()
 	void GetExecuted();
 };

@@ -567,7 +567,7 @@ AEntity* UCombatComponent::SphereTraceForEnemies(const FVector& Start, const FVe
 		ObjectTypes,
 		false,
 		ActorsToIgnore,
-		EDrawDebugTrace::ForDuration,
+		EDrawDebugTrace::None,
 		ResultHit,
 		true
 	);

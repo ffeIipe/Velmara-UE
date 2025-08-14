@@ -197,7 +197,7 @@ void AEnemy::Die(UAnimMontage* DeathAnim, FName Section)
 	DissolveTimeline->PlayFromStart();
 
 	//save data de que murio
-	if (UWorld* World = GetWorld())
+	if (const UWorld* World = GetWorld())
 	{
 		if (ANewGameStateBase* GameState = World->GetGameState<ANewGameStateBase>())
 		{
@@ -240,7 +240,7 @@ void AEnemy::RequestReturnToPool()
 {
 	DeactivateEnemy();
 
-	if (UWorld* World = GetWorld())
+	if (const UWorld* World = GetWorld())
 	{
 		if (UEnemyPoolManager* PoolManager = World->GetSubsystem<UEnemyPoolManager>())
 		{
@@ -286,7 +286,7 @@ void AEnemy::BeginPlay()
 		}
 	}
 
-	if (UWorld* World = GetWorld())
+	if (const UWorld* World = GetWorld())
 	{
 		if (ANewGameStateBase* GameState = World->GetGameState<ANewGameStateBase>())
 		{
@@ -312,7 +312,7 @@ void AEnemy::BeginPlay()
 
 	if (GetMesh())
 	{
-		TArray<UMaterialInterface*> TempArray = GetMesh()->GetMaterials();
+		const TArray<UMaterialInterface*> TempArray = GetMesh()->GetMaterials();
 
 		for (int32 MatIndex = 0; MatIndex < TempArray.Num(); MatIndex++)
 		{
@@ -332,7 +332,7 @@ void AEnemy::PerformDead()
 
 void AEnemy::ReturnAttackTokenToTarget()
 {
-	if (UWorld* World = GetWorld())
+	if (const UWorld* World = GetWorld())
 	{
 		if (UEnemyTokenManager* TokenManager = World->GetSubsystem<UEnemyTokenManager>())
 		{
@@ -411,8 +411,7 @@ void AEnemy::OnUnpossessed()
 	ApplyPossessionParameters(false);
 	GetExtraMovementComponent()->CustomInitialize(this, GetCharacterStateComponent());
 
-	IGenericTeamAgentInterface* OtherTeamAgent = Cast<IGenericTeamAgentInterface>(GetController());
-	if (OtherTeamAgent)
+	if (IGenericTeamAgentInterface* OtherTeamAgent = Cast<IGenericTeamAgentInterface>(GetController()))
 	{
 		OtherTeamAgent->SetGenericTeamId(FGenericTeamId(0));
 	}
@@ -436,6 +435,29 @@ void AEnemy::UpdateDissolveEffect(float Value)
 	}
 }
 
+void AEnemy::HitFlash(const float Duration, const float Amount)
+{
+	for (UMaterialInstanceDynamic* DissolveMaterial : DissolveMaterials)
+	{
+		if (DissolveMaterial)
+		{
+			DissolveMaterial->SetScalarParameterValue(FName("HitFlashAmount"), Amount);
+			GetWorldTimerManager().SetTimer(HitFlashTimerHandle, this,&AEnemy::DeactivateHitFlash, Duration, false);
+		}
+	}
+}
+
+void AEnemy::DeactivateHitFlash()
+{
+	for (UMaterialInstanceDynamic* DissolveMaterial : DissolveMaterials)
+	{
+		if (DissolveMaterial)
+		{
+			DissolveMaterial->SetScalarParameterValue(FName("HitFlashAmount"), 0);
+		}
+	}
+}
+
 void AEnemy::ResetEnemy()
 {
 	bIsLaunched = false;
@@ -449,9 +471,9 @@ void AEnemy::GetHit_Implementation(AEntity* DamageCauser, const FVector& ImpactP
 	
 	if (DamageEvent.DamageTypeClass)
 	{
-		if (UDamageTypeMain* MainDamageTypeClass = Cast<UDamageTypeMain>(DamageEvent.DamageTypeClass->GetDefaultObject()))
+		if (const UDamageTypeMain* MainDamageTypeClass = Cast<UDamageTypeMain>(DamageEvent.DamageTypeClass->GetDefaultObject()))
 		{
-			EMainDamageTypes MainDamageType = MainDamageTypeClass->DamageType;
+			const EMainDamageTypes MainDamageType = MainDamageTypeClass->DamageType;
 			ReactToDamage(MainDamageType, ImpactPoint);
 		}
 	}
@@ -464,6 +486,8 @@ void AEnemy::GetHit_Implementation(AEntity* DamageCauser, const FVector& ImpactP
 		}
 		NotifyDamageTakenToBlackboard(DamageCauser);
 	}
+
+	HitFlash(.1f,.75f);
 }
 
 void AEnemy::DropOrbs(const float DamageReceived, AEntity* DamageCauser) const
@@ -689,9 +713,7 @@ TArray<AEnemy*> AEnemy::GenerateSphereOverlapToDetectOtherEnemies(const FVector&
 	{
 		for (AActor* Actor : OverlappedActors)
 		{
-			AEnemy* EnemyActor = Cast<AEnemy>(Actor);
-
-			if (EnemyActor)
+			if (AEnemy* EnemyActor = Cast<AEnemy>(Actor))
 			{
 				EnemiesFound.Add(EnemyActor);
 			}
@@ -703,10 +725,9 @@ TArray<AEnemy*> AEnemy::GenerateSphereOverlapToDetectOtherEnemies(const FVector&
 
 void AEnemy::NotifyDamageTakenToBlackboard(AEntity* DamageCauser)
 {
-	AEnemy* IsEnemyDamageCauser = Cast<AEnemy>(DamageCauser);
-	APlayerMain* IsPlayerDamageCauser = Cast<APlayerMain>(DamageCauser);
-	
-	if (IsEnemyDamageCauser && IsEnemyDamageCauser->GetPossessionComponent()->IsPossessed() || IsPlayerDamageCauser)
+	const AEnemy* IsEnemyDamageCauser = Cast<AEnemy>(DamageCauser);
+
+	if (const APlayerMain* IsPlayerDamageCauser = Cast<APlayerMain>(DamageCauser); IsEnemyDamageCauser && IsEnemyDamageCauser->GetPossessionComponent()->IsPossessed() || IsPlayerDamageCauser)
 	{
 		if (AIController)
 		{
