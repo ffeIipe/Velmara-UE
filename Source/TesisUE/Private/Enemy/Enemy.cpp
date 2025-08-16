@@ -690,7 +690,7 @@ TArray<AEnemy*> AEnemy::GenerateSphereOverlapToDetectOtherEnemies(const FVector&
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
 	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
 
-	bool bOverlapOccurred = UKismetSystemLibrary::SphereOverlapActors(
+	const bool bOverlapOccurred = UKismetSystemLibrary::SphereOverlapActors(
 		GetWorld(),
 		Origin,
 		RadiusToNotifyAllies,
@@ -700,15 +700,15 @@ TArray<AEnemy*> AEnemy::GenerateSphereOverlapToDetectOtherEnemies(const FVector&
 		OverlappedActors
 	);
 
-	DrawDebugSphere(
-		GetWorld(),
-		Origin,
-		RadiusToNotifyAllies,
-		24,
-		FColor::Yellow,
-		false,
-		5.0f
-	);
+	// DrawDebugSphere(
+	// 	GetWorld(),
+	// 	Origin,
+	// 	RadiusToNotifyAllies,
+	// 	24,
+	// 	FColor::Yellow,
+	// 	false,
+	// 	5.0f
+	// );
 
 	TArray<AEnemy*> EnemiesFound;
 	if (bOverlapOccurred)

@@ -142,20 +142,28 @@ void AEntity::BeginPlay()
 	PlayerControllerRef = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 
 	GetMementoComponent()->SaveState();
+
+	InitializeComponentsData();
+}
+
+void AEntity::InitializeComponentsData() const
+{
+	if (EntityData)
+	{
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "On Construction");
+		
+		GetCombatComponent()->InitializeValues(EntityData->CombatData);
+		GetExtraMovementComponent()->InitializeValues(EntityData->MovementData);
+		GetAttributeComponent()->InitializeValues(EntityData->AttributeData);
+		GetPossessionComponent()->InitializeValues(EntityData->PossessionData);
+	}
 }
 
 void AEntity::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
 
-	if (EntityData)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("On Construction"));
-		GetCombatComponent()->InitializeValues(EntityData->CombatData);
-		GetExtraMovementComponent()->InitializeValues(EntityData->MovementData);
-		GetAttributeComponent()->InitializeValues(EntityData->AttributeData);
-		GetPossessionComponent()->InitializeValues(EntityData->PossessionData);
-	}
+	InitializeComponentsData();
 }
 
 void AEntity::AttachFollowCamera(USpringArmComponent* AttachTarget)

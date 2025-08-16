@@ -161,17 +161,21 @@ void UCombatComponent::JumpAttack(const int AttackIndex)
 				bIsLaunched = false;
 			}
 		}
-		else
+		else if (!JumpAttackCombo.IsEmpty())
 		{
 			OwningCharacter->PlayAnimMontage(JumpAttackCombo[AttackIndex]);
 			JumpAttackIndex++;
 
-			if (LightAttackIndex >= JumpAttackCombo.Num())
+			if (JumpAttackIndex >= JumpAttackCombo.Num())
 			{
 				JumpAttackIndex = 0;
 				OwningCharacter->PlayAnimMontage(CrasherMontage, 1.f);
 				bIsLaunched = false;
 			}
+		}
+		else
+		{
+			if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE,3.f,FColor::Red,"Jump Animations not valid!");
 		}
 	}
 }
@@ -272,7 +276,7 @@ void UCombatComponent::UpdateBuffer(const float Alpha, const float BufferDistanc
 
 	const FVector TargetLocation = FMath::Lerp(CurrentLocation, CurrentLocation + (ForwardVector * BufferDistance), Alpha);
 
-	GetOwner()->SetActorLocation(TargetLocation, false);
+	GetOwner()->SetActorLocation(TargetLocation, true);
 }
 
 void UCombatComponent::ResetLightAttackStats()
@@ -336,7 +340,7 @@ void UCombatComponent::ValidateWall()
 		QueryParams
 	);
 
-	if (bHit)
+	if (bHit && OnWallHit.IsBound())
 	{
 		OnWallHit.Broadcast(Hit);
 	}

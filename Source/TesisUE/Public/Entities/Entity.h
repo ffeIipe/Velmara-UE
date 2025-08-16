@@ -117,6 +117,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	void InitializeComponentsData() const;
 	void OnConstruction(const FTransform &Transform) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void Landed(const FHitResult& Hit) override;

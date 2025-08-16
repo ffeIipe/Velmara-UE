@@ -83,7 +83,7 @@ struct FZoomEffectParameters : public FEffectProgressParameters
     float TargetFOV;
 
     FZoomEffectParameters()
-        : InitialFOV(0.0f)
+        : InitialFOV(90.0f)
         , TargetFOV(0.0f)
     {}
 
