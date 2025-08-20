@@ -132,7 +132,7 @@ protected:
 
 	// --- AI ---
 	UPROPERTY(EditAnywhere)
-	float RadiusToNotifyAllies = 2500.f;
+	float RadiusToNotifyAllies = 1700.f;
 
 	UFUNCTION()
 	void ReturnAttackTokenToTarget();
@@ -140,7 +140,7 @@ protected:
 	UFUNCTION()
 	void NotifyIsNotShieldedToBlackboard();
 
-	TArray<AEnemy*> GenerateSphereOverlapToDetectOtherEnemies(const FVector& Origin, AActor* HitEnemyToExclude);
+	TArray<AEnemy*> GenerateSphereOverlapToDetectOtherEnemies(const FVector& Origin, float Radius, AActor* HitEnemyToExclude);
 
 	// --- Combat & Damage ---
 	UFUNCTION()

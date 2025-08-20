@@ -72,6 +72,9 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Components | Camera")
 	FORCEINLINE USpringArmComponent* GetSpringArmComponent() const { return SpringArmComponent; }
 
+	UFUNCTION()
+	FORCEINLINE ACameraActor* GetFollowCamera() const {return FollowCamera;}
+	
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE ACharacter* GetCharacter() { return this; }
 

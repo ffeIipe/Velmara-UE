@@ -676,7 +676,7 @@ void AEnemy::EnableAI()
 	EnemyAIController->CustomInitialize(this, BBComponent, GetCharacterStateComponent());
 }
 
-TArray<AEnemy*> AEnemy::GenerateSphereOverlapToDetectOtherEnemies(const FVector& Origin, AActor* HitEnemyToExclude)
+TArray<AEnemy*> AEnemy::GenerateSphereOverlapToDetectOtherEnemies(const FVector& Origin, float Radius, AActor* HitEnemyToExclude)
 {
 	TArray<AActor*> ActorsToIgnoreForSphere;
 	ActorsToIgnoreForSphere.Add(this);
@@ -693,7 +693,7 @@ TArray<AEnemy*> AEnemy::GenerateSphereOverlapToDetectOtherEnemies(const FVector&
 	const bool bOverlapOccurred = UKismetSystemLibrary::SphereOverlapActors(
 		GetWorld(),
 		Origin,
-		RadiusToNotifyAllies,
+		Radius,
 		ObjectTypes,
 		AEnemy::StaticClass(),
 		ActorsToIgnoreForSphere,
@@ -742,7 +742,7 @@ void AEnemy::NotifyDamageTakenToBlackboard(AEntity* DamageCauser)
 			EnemyAIController->DamageCauser = DamageCauser;
 		}
 
-		for (AEnemy* Enemy : GenerateSphereOverlapToDetectOtherEnemies(GetActorLocation(), this))
+		for (AEnemy* Enemy : GenerateSphereOverlapToDetectOtherEnemies(GetActorLocation(), RadiusToNotifyAllies, this))
 		{
 			Enemy->NotifyThreat(DamageCauser);
 		}

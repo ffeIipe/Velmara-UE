@@ -6,6 +6,7 @@
 #include "Components/SpectralWeaponComponent.h"
 #include "PlayerMainAnimInstance.generated.h"
 
+class UCombatComponent;
 class APlayerMain;
 class UCharacterMovementComponent;
 class UPlayerFormComponent;
@@ -50,6 +51,9 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Movement")
 	float MaxRunSpeed;
 
+	UPROPERTY(BlueprintReadWrite, Category = "Combat")
+	bool bIsLocking;
+	
 	UPROPERTY(BlueprintReadOnly, Category = "Movement | Character State")
 	ECharacterStates CharacterState;
 	
@@ -61,4 +65,7 @@ public:
 
 	UPROPERTY()
 	USpectralWeaponComponent* SpectralWeaponComponent;
+
+	UPROPERTY()
+	UCombatComponent* CombatComponent;
 };

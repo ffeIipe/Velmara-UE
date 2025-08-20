@@ -1,4 +1,6 @@
 #include "Components/CombatComponent.h"
+
+#include "Camera/CameraActor.h"
 #include "Components/TimelineComponent.h"
 #include "Components/InventoryComponent.h"
 #include "Components/ExtraMovementComponent.h"
@@ -21,7 +23,7 @@
 
 UCombatComponent::UCombatComponent()
 {
-	PrimaryComponentTick.bCanEverTick = false;
+	PrimaryComponentTick.bCanEverTick = true;
 
 	BufferAttackTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("BufferAttackTimeline"));
 
@@ -79,6 +81,8 @@ void UCombatComponent::ResetState()
 void UCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	PrimaryComponentTick.bStartWithTickEnabled = bIsLocking;
 	
 	EntityOwner = Cast<AEntity>(GetOwner());
 	
@@ -90,6 +94,8 @@ void UCombatComponent::BeginPlay()
 
 	ExtraMovementComponent = GetOwner()->GetComponentByClass<UExtraMovementComponent>();
 
+	OwnerController = EntityOwner->GetController();
+	
 	if (BufferCurve)
 	{
 		FOnTimelineFloat ProgressAttackFunction;
@@ -277,6 +283,24 @@ void UCombatComponent::UpdateBuffer(const float Alpha, const float BufferDistanc
 	const FVector TargetLocation = FMath::Lerp(CurrentLocation, CurrentLocation + (ForwardVector * BufferDistance), Alpha);
 
 	GetOwner()->SetActorLocation(TargetLocation, true);
+}
+
+void UCombatComponent::TickComponent(const float DeltaTime, const ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	if (bIsLocking && IsValid(CurrentHardLockTarget))
+	{
+		OwnerController->SetControlRotation(UKismetMathLibrary::RInterpTo(
+			OwnerController->GetControlRotation(),
+			UKismetMathLibrary::FindLookAtRotation(
+				EntityOwner->GetFollowCamera()->GetActorLocation(),
+				CurrentHardLockTarget->GetActorLocation() + FVector(0.0f, 0.0f, 50.0f)
+				),
+			DeltaTime,
+			25.f
+			));
+	}
 }
 
 void UCombatComponent::ResetLightAttackStats()
@@ -551,6 +575,65 @@ void UCombatComponent::Crasher()
 		const FVector NewLocation = FVector(Hit.ImpactPoint.X, Hit.ImpactPoint.Y, Hit.ImpactPoint.Z + 50.f);
 		GetOwner()->SetActorLocation(NewLocation);
 	}
+}
+
+void UCombatComponent::ToggleHardLock()
+{
+	bIsLocking = !bIsLocking;
+
+	if (bIsLocking)
+	{
+		PickHardLockTarget(HardLockTargets);
+	}
+	else
+	{
+		HardLockTargets.Empty();
+	}
+		
+	SetComponentTickEnabled(bIsLocking);
+}
+
+void UCombatComponent::PickHardLockTarget(TArray<AActor*> Targets)
+{
+	Targets = GetHardLockTargets(HardLockRadius);
+	
+	if (Targets.Num() > 0)
+	{
+		HardLockTargets = Targets;
+		CurrentHardLockTarget = HardLockTargets[HardLockTargetIndex];
+	}
+	else CurrentHardLockTarget = nullptr;
+	
+}
+
+void UCombatComponent::ChangeHardLockTarget()
+{
+	if (GetHardLockTargets(HardLockRadius).Num() > 0)
+	{
+		HardLockTargetIndex++;
+	}
+	else HardLockTargetIndex = 0;
+}
+
+TArray<AActor*> UCombatComponent::GetHardLockTargets(const float Radius)
+{
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
+
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.Add(GetOwner());
+	
+	UKismetSystemLibrary::SphereOverlapActors(
+		GetWorld(),
+		GetOwner()->GetActorLocation(),
+		Radius,
+		ObjectTypes,
+		AEntity::StaticClass(),
+		ActorsToIgnore,
+		HardLockTargets
+		);
+	
+	return HardLockTargets;
 }
 
 AEntity* UCombatComponent::SphereTraceForEnemies(const FVector& Start, const FVector& End)

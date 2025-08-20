@@ -14,11 +14,11 @@ void UEffectsManager::Initialize(FSubsystemCollectionBase& Collection)
 	TEXT("/Game/Blueprints/DataAssets/DA_EffectsManagerDataAsset.DA_EffectsManagerDataAsset")));
 	if (Data)
 	{
-		UE_LOG(LogTemp, Log, TEXT("EffectsManager Data Asset loaded successfully (synchronous)."));
+		UE_LOG(LogTemp, Log, TEXT("EffectsManager Data Asset loaded successfully."));
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("Failed to load EffectsManager Data Asset (synchronous). Please check the path."));
+		UE_LOG(LogTemp, Error, TEXT("Failed to load EffectsManager Data Asset. Please check the path."));
 	}
 	
 	bHasActiveTickableEffects = false;
@@ -93,7 +93,7 @@ TStatId UEffectsManager::GetStatId() const
 	RETURN_QUICK_DECLARE_CYCLE_STAT(UEffectsManager, STATGROUP_Tickables);
 }
 
-bool UEffectsManager::IsTickable() const
+bool UEffectsManager::IsTickable() const //manages tick enable and disable
 {
 	return GetWorld() != nullptr && !GetWorld()->IsPaused() && bHasActiveTickableEffects;
 }

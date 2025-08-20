@@ -28,6 +28,9 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Collision")
 	FOnWallHitSignature OnWallHit;
 
+	UPROPERTY()
+	AController* OwnerController;
+
 	UCombatComponent();
 
 	void InitializeValues(const FCombatData& CombatData);
@@ -75,6 +78,9 @@ public:
 	UFUNCTION()
 	void Execute();
 
+	UFUNCTION()
+	void ToggleHardLock();
+	
 	UPROPERTY(BlueprintAssignable)
 	FOnAttackEnd OnAttackEnd;
 
@@ -96,7 +102,8 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attack | JumpAttack")
 	bool bIsLaunched = false;
-
+	
+	bool bIsLocking = false;
 protected:
 	virtual void BeginPlay() override;
 	
@@ -130,7 +137,16 @@ protected:
 
 	UFUNCTION(BlueprintCallable, Category = "Attack | JumpAttack")
 	void Crasher();
+	
+	UFUNCTION()
+	void PickHardLockTarget(TArray<AActor*> Targets);
 
+	UFUNCTION()
+	void ChangeHardLockTarget();
+	
+	UFUNCTION()
+	TArray<AActor*> GetHardLockTargets(const float Radius);
+	
 	// --- Blocking ---
 	UFUNCTION()
 	void Block();
@@ -202,6 +218,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Montages | ComboAttack")
 	TArray<UAnimMontage*> ComboExtenderAttack;
 
+	// --- Tick Events ---
+	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) override;
+	
 private:
 	// --- Internal State Variables ---
 	UPROPERTY()
@@ -214,6 +233,15 @@ private:
 
 	bool bIsSaveHeavyAttack;
 
+	int HardLockTargetIndex = 0;
+	float HardLockRadius = 1000.f;
+
+	UPROPERTY()
+	AActor* CurrentHardLockTarget;
+	
+	UPROPERTY()
+	TArray<AActor*> HardLockTargets;
+	
 	// --- Internal Utility Functions ---
 	bool CanAttack();
 

@@ -5,6 +5,7 @@
 #include "Components/SpectralWeaponComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Components/CharacterStateComponent.h"
+#include "Components/CombatComponent.h"
 #include "Components/ExtraMovementComponent.h"
 #include "DataAssets/EntityData.h"
 
@@ -18,6 +19,8 @@ void UPlayerMainAnimInstance::NativeInitializeAnimation()
 		PlayerMainCharacterMovement = PlayerMain->GetCharacterMovement();
 		SpectralWeaponComponent = PlayerMain->GetComponentByClass<USpectralWeaponComponent>();
 		MaxWalkSpeed = PlayerMainCharacterMovement->MaxWalkSpeed;
+		CombatComponent = PlayerMain->GetCombatComponent();		
+		
 		if (PlayerMain->EntityData)
 		{
 			MaxRunSpeed = PlayerMain->EntityData->MovementData.MaxRunSpeed;	
@@ -34,12 +37,14 @@ void UPlayerMainAnimInstance::NativeUpdateAnimation(float DeltaTime)
 		GroundSpeed = UKismetMathLibrary::VSizeXY(PlayerMainCharacterMovement->Velocity);
 		IsFalling = PlayerMainCharacterMovement->IsFalling();
 
-		bHasAcceleration = PlayerMainCharacterMovement->GetCurrentAcceleration().SizeSquared2D() > 0.f;
+		bHasAcceleration = PlayerMainCharacterMovement->GetCurrentAcceleration().SizeSquared2D() > SMALL_NUMBER;
 
 		CharacterState = PlayerMain->GetCharacterStateComponent()->GetCurrentCharacterState().State;
 		CharacterForm = PlayerMain->GetCharacterStateComponent()->GetCurrentCharacterState().Form;
 		SpectralState = PlayerMain->GetCharacterStateComponent()->GetCurrentCharacterState().SpectralState;
-
+		
+		bIsLocking = CombatComponent->bIsLocking;
+		
 		Direction = UKismetAnimationLibrary::CalculateDirection(PlayerMain->GetVelocity(), PlayerMain->GetActorRotation());
 	}
 }
