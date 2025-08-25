@@ -55,7 +55,7 @@ void AEntity::GetHit_Implementation(AEntity* DamageCauser, const FVector& Impact
 	if (GetCharacterStateComponent()->IsActionEqualToAny({ ECharacterActions::ECA_Dead })) return;
 
 	LastDamageCauser = DamageCauser;
-
+	
 	if (ReceiveDamageSFX)
 	{
 		UGameplayStatics::PlaySoundAtLocation(
@@ -73,11 +73,11 @@ void AEntity::GetHit_Implementation(AEntity* DamageCauser, const FVector& Impact
 			ImpactPoint
 		);
 	}
-	if (NiagaraSystem)
+	if (ReceiveDamageFX)
 	{
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			GetWorld(),
-			NiagaraSystem,
+			ReceiveDamageFX,
 			ImpactPoint
 		);
 	}
@@ -194,6 +194,7 @@ void AEntity::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 		EnhancedInputComponent->BindAction(InputAction_HeavyAttack, ETriggerEvent::Started, GetCombatComponent(), &UCombatComponent::Input_HeavyAttack);
 		EnhancedInputComponent->BindAction(InputAction_Launch, ETriggerEvent::Started, GetCombatComponent(), &UCombatComponent::Input_Launch);
 		EnhancedInputComponent->BindAction(InputAction_Inventory, ETriggerEvent::Started, GetCombatComponent(), &UCombatComponent::ToggleHardLock);
+		EnhancedInputComponent->BindAction(InputAction_ChangeHardLockTarget, ETriggerEvent::Started, GetCombatComponent(), &UCombatComponent::ChangeHardLockTarget);
 	}
 }
 

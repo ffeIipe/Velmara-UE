@@ -153,7 +153,7 @@ protected:
 	AEntity* LastDamageCauser;
 
 	UPROPERTY(Transient)
-	class APlayerController* PlayerControllerRef = nullptr;
+	APlayerController* PlayerControllerRef = nullptr;
 
 	// --- Input Mapping Context ---
 	UPROPERTY(EditAnywhere, Category = "Input | Mapping")
@@ -203,6 +203,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Input | Actions")
 	UInputAction* InputAction_Block;
 
+	UPROPERTY(EditAnywhere, Category = "Input | Actions")
+	UInputAction* InputAction_ChangeHardLockTarget;
+	
 	UPROPERTY()
 	TArray<AActor*> IgnoreActors;
 	
@@ -221,7 +224,7 @@ private:
 	USoundBase* ShieldImpactSFX;
 
 	UPROPERTY(EditAnywhere, Category = "Effects | VFX")
-	UNiagaraSystem* NiagaraSystem;
+	UNiagaraSystem* ReceiveDamageFX;
 
 	UPROPERTY(EditAnywhere, Category = "Effects | CameraShake")
 	TSubclassOf<UCameraShakeBase> CameraShake;

@@ -1,6 +1,7 @@
 #include "Components/CombatComponent.h"
 
 #include "Camera/CameraActor.h"
+#include "Components/AttributeComponent.h"
 #include "Components/TimelineComponent.h"
 #include "Components/InventoryComponent.h"
 #include "Components/ExtraMovementComponent.h"
@@ -20,6 +21,7 @@
 
 #include "Player/PlayerMain.h"
 #include "Items/Weapons/Sword.h"
+#include "Subsystems/EffectsManager.h"
 
 UCombatComponent::UCombatComponent()
 {
@@ -82,7 +84,8 @@ void UCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	PrimaryComponentTick.bStartWithTickEnabled = bIsLocking;
+	PrimaryComponentTick.bStartWithTickEnabled = false;
+	SetComponentTickEnabled(false);
 	
 	EntityOwner = Cast<AEntity>(GetOwner());
 	
@@ -289,8 +292,11 @@ void UCombatComponent::TickComponent(const float DeltaTime, const ELevelTick Tic
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	if (bIsLocking && IsValid(CurrentHardLockTarget))
+	if (GEngine) GEngine->AddOnScreenDebugMessage(46,-1.f, FColor::Green, FString("Combat Component is ticking..."));
+	
+	if (bIsHardLocking && !CurrentHardLockTarget->IsHidden() && CurrentHardLockTarget->GetAttributeComponent()->IsAlive())
 	{
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE,-1.f, FColor::Purple, FString("Valid Hard Lock Target"));
 		OwnerController->SetControlRotation(UKismetMathLibrary::RInterpTo(
 			OwnerController->GetControlRotation(),
 			UKismetMathLibrary::FindLookAtRotation(
@@ -298,9 +304,15 @@ void UCombatComponent::TickComponent(const float DeltaTime, const ELevelTick Tic
 				CurrentHardLockTarget->GetActorLocation() + FVector(0.0f, 0.0f, 50.0f)
 				),
 			DeltaTime,
-			25.f
+			50.f
 			));
+
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE,-1.f, FColor::Cyan, FString::SanitizeFloat(HardLockTargetIndex));
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE,-1.f, FColor::Emerald, FString::SanitizeFloat(HardLockTargets.Num()));
+		
+		//RotateTowardsHardLockTarget(CurrentHardLockTarget, DeltaTime);
 	}
+	else PickHardLockTarget();
 }
 
 void UCombatComponent::ResetLightAttackStats()
@@ -323,7 +335,9 @@ void UCombatComponent::ResetHeavyAttackStats()
 
 void UCombatComponent::SoftLockOn()
 {
-	if (OwningCharacter)
+	if (!OwningCharacter) return;
+
+	if (!bIsHardLocking)
 	{
 		const FVector Start = GetOwner()->GetActorLocation();
 		const FVector End = (OwningCharacter->GetLastMovementInputVector() * SoftLockDistance) + GetOwner()->GetActorLocation();
@@ -335,9 +349,12 @@ void UCombatComponent::SoftLockOn()
 				SoftLockTarget = Enemy;
 				RotationToTarget();
 			}
-			else SoftLockTarget = nullptr;
 		}
 		else SoftLockTarget = nullptr;
+	}
+	else
+	{
+		SoftLockTarget = CurrentHardLockTarget;
 	}
 }
 
@@ -468,7 +485,6 @@ void UCombatComponent::Execute()
 
 				Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->SetEnemiesAIEnabled(false);
 			}
-			else return;
 		}
 	}
 }
@@ -526,7 +542,12 @@ void UCombatComponent::LaunchCharacterUp()
 
 		StartLaunchingUp();
 
-		Paladin->Execute_LaunchUp(SoftLockTarget, FVector(GetOwner()->GetActorLocation())); 
+		Paladin->Execute_LaunchUp(SoftLockTarget, FVector(GetOwner()->GetActorLocation()));
+
+		if (UEffectsManager* EffectsManager = GetWorld()->GetSubsystem<UEffectsManager>())
+		{
+			EffectsManager->TimeWarp(ETimeWarpPreset::ETWP_Crasher);
+		}
 	}
 }
 
@@ -579,49 +600,77 @@ void UCombatComponent::Crasher()
 
 void UCombatComponent::ToggleHardLock()
 {
-	bIsLocking = !bIsLocking;
-
-	if (bIsLocking)
+	if (bIsHardLocking)
 	{
-		PickHardLockTarget(HardLockTargets);
+		bIsHardLocking = false;
+		SetComponentTickEnabled(bIsHardLocking);
+		return;
 	}
-	else
-	{
-		HardLockTargets.Empty();
-	}
-		
-	SetComponentTickEnabled(bIsLocking);
+	
+	PickHardLockTarget() ? bIsHardLocking = true : bIsHardLocking = false;
+	SetComponentTickEnabled(bIsHardLocking);
 }
 
-void UCombatComponent::PickHardLockTarget(TArray<AActor*> Targets)
+bool UCombatComponent::PickHardLockTarget()
 {
-	Targets = GetHardLockTargets(HardLockRadius);
-	
-	if (Targets.Num() > 0)
+	if (HardLockTargets = GetHardLockTargets(HardLockRadius); HardLockTargets.Num() > 0)
 	{
-		HardLockTargets = Targets;
+		HardLockTargetIndex = 0;
 		CurrentHardLockTarget = HardLockTargets[HardLockTargetIndex];
+
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE,3.f, FColor::Yellow, FString("Target picked..."));
+		return true;
 	}
-	else CurrentHardLockTarget = nullptr;
+
+	bIsHardLocking = false;
+	HardLockTargets.Empty();
+	CurrentHardLockTarget = nullptr;
+	SoftLockTarget = nullptr; //I could use one variable to handle this, I mean this can use one target var and be used by both (soft & hard lock target system)
+	SetComponentTickEnabled(false);
 	
+	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE,3.f, FColor::Red, FString("Failed to pick target..."));
+	return false;
 }
 
 void UCombatComponent::ChangeHardLockTarget()
 {
-	if (GetHardLockTargets(HardLockRadius).Num() > 0)
+	if (!bIsHardLocking) return;
+
+	if (HardLockTargets.Num() > 0)
 	{
 		HardLockTargetIndex++;
+		if (HardLockTargetIndex >= HardLockTargets.Num())
+		{
+			HardLockTargetIndex = 0;
+		}
+		
+		CurrentHardLockTarget = HardLockTargets[HardLockTargetIndex];
 	}
 	else HardLockTargetIndex = 0;
 }
 
-TArray<AActor*> UCombatComponent::GetHardLockTargets(const float Radius)
+bool UCombatComponent::IsValidAndAlive(const AEntity* TargetToCheck)
+{
+	if (TargetToCheck != nullptr)
+	{
+		if (!TargetToCheck->GetAttributeComponent()->IsAlive() || TargetToCheck->IsHidden())
+		{
+			return PickHardLockTarget();
+		}
+	}
+	
+	return false;
+}
+
+TArray<AEntity*> UCombatComponent::GetHardLockTargets(const float Radius) const
 {
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
 	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
 
 	TArray<AActor*> ActorsToIgnore;
 	ActorsToIgnore.Add(GetOwner());
+
+	TArray<AActor*> Hits;
 	
 	UKismetSystemLibrary::SphereOverlapActors(
 		GetWorld(),
@@ -630,10 +679,40 @@ TArray<AActor*> UCombatComponent::GetHardLockTargets(const float Radius)
 		ObjectTypes,
 		AEntity::StaticClass(),
 		ActorsToIgnore,
-		HardLockTargets
+		Hits
 		);
+
+	TArray<AEntity*> FinalEntities;
+	if (Hits.Num() > 0)
+	{
+		for (AActor* Target : Hits)
+		{
+			if (AEntity* Entity = Cast<AEntity>(Target); !Entity->IsHidden() && Entity->GetAttributeComponent()->IsAlive())
+			{
+				FinalEntities.Add(Entity);
+			}
+		}
+	}
 	
-	return HardLockTargets;
+	return FinalEntities;
+}
+
+void UCombatComponent::RotateTowardsHardLockTarget(const AEntity* HardLockTarget, float DeltaTime) const
+{
+	const FVector Start = GetOwner()->GetActorLocation();
+
+	if (!HardLockTarget) return;
+	const FVector End = HardLockTarget->GetActorLocation();
+
+	FRotator NewRotation = FRotator(
+		GetOwner()->GetActorRotation().Pitch,
+		UKismetMathLibrary::FindLookAtRotation(Start, End).Yaw,
+		UKismetMathLibrary::FindLookAtRotation(Start, End).Roll
+	);
+
+	NewRotation = FMath::Lerp(GetOwner()->GetActorRotation(), NewRotation, DeltaTime);
+	
+	GetOwner()->SetActorRotation(NewRotation);
 }
 
 AEntity* UCombatComponent::SphereTraceForEnemies(const FVector& Start, const FVector& End)

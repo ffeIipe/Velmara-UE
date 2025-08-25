@@ -65,7 +65,6 @@ void UAttributeComponent::IncreaseEnergy(float Amount)
 	Energy += Amount;
 }
 
-
 bool UAttributeComponent::ItHasEnergy()
 {
 	return Energy > 1.f;

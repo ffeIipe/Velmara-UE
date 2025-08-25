@@ -43,7 +43,7 @@ void UPlayerMainAnimInstance::NativeUpdateAnimation(float DeltaTime)
 		CharacterForm = PlayerMain->GetCharacterStateComponent()->GetCurrentCharacterState().Form;
 		SpectralState = PlayerMain->GetCharacterStateComponent()->GetCurrentCharacterState().SpectralState;
 		
-		bIsLocking = CombatComponent->bIsLocking;
+		bIsLocking = CombatComponent->bIsHardLocking;
 		
 		Direction = UKismetAnimationLibrary::CalculateDirection(PlayerMain->GetVelocity(), PlayerMain->GetActorRotation());
 	}

@@ -64,10 +64,12 @@ public:
 	void Input_Launch();
 	void Input_Block();
 	void Input_ReleaseBlock();
-
-	UFUNCTION()
+	void ChangeHardLockTarget();
+	void ToggleHardLock();
+	
+	UFUNCTION() //ufunction bc its called by an event that executes when you cant possess
 	void Input_Execute();
-
+	
 	// --- Attack Events ---
 	UFUNCTION()
 	void LightAttackEvent();
@@ -77,9 +79,6 @@ public:
 
 	UFUNCTION()
 	void Execute();
-
-	UFUNCTION()
-	void ToggleHardLock();
 	
 	UPROPERTY(BlueprintAssignable)
 	FOnAttackEnd OnAttackEnd;
@@ -96,14 +95,23 @@ public:
 	UFUNCTION()
 	AEntity* SphereTraceForEnemies(const FVector& Start, const FVector& End);
 
+	// --- Buffer Distance ---
+	UFUNCTION(BlueprintCallable)
+	void StartAttackBufferEvent(float BufferAmount);
+
+	UFUNCTION(BlueprintCallable)
+	void StopAttackBufferEvent();
+	
 	// --- Attack State Flags ---
 	UPROPERTY(VisibleAnywhere, Category = "Attack | LightAttack")
 	bool bIsSaveLightAttack;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attack | JumpAttack")
 	bool bIsLaunched = false;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Attack | HardLock")
+	bool bIsHardLocking = false;
 	
-	bool bIsLocking = false;
 protected:
 	virtual void BeginPlay() override;
 	
@@ -139,13 +147,16 @@ protected:
 	void Crasher();
 	
 	UFUNCTION()
-	void PickHardLockTarget(TArray<AActor*> Targets);
+	bool PickHardLockTarget();
 
 	UFUNCTION()
-	void ChangeHardLockTarget();
+	bool IsValidAndAlive(const AEntity* TargetToCheck);
 	
 	UFUNCTION()
-	TArray<AActor*> GetHardLockTargets(const float Radius);
+	TArray<AEntity*> GetHardLockTargets(const float Radius) const;
+
+	UFUNCTION()
+	void RotateTowardsHardLockTarget(const AEntity* HardLockTarget, float DeltaTime) const;
 	
 	// --- Blocking ---
 	UFUNCTION()
@@ -197,12 +208,6 @@ protected:
 
 	// --- Buffer Attack ---
 	UFUNCTION(BlueprintCallable)
-	void StartAttackBufferEvent(float BufferAmount);
-
-	UFUNCTION(BlueprintCallable)
-	void StopAttackBufferEvent();
-
-	UFUNCTION(BlueprintCallable)
 	void UpdateAttackBuffer(float Alpha);
 
 	UFUNCTION(BlueprintCallable)
@@ -234,13 +239,13 @@ private:
 	bool bIsSaveHeavyAttack;
 
 	int HardLockTargetIndex = 0;
-	float HardLockRadius = 1000.f;
+	float HardLockRadius = 1500.f;
 
 	UPROPERTY()
-	AActor* CurrentHardLockTarget;
+	AEntity* CurrentHardLockTarget;
 	
 	UPROPERTY()
-	TArray<AActor*> HardLockTargets;
+	TArray<AEntity*> HardLockTargets;
 	
 	// --- Internal Utility Functions ---
 	bool CanAttack();

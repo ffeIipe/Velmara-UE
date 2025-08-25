@@ -65,11 +65,11 @@ void ASword::AttachMeshToSocket(USceneComponent* InParent, const FName& InSocket
 	ItemMesh->AttachToComponent(InParent, TransformRules, InSocketName);
 }
 
-void ASword::EnableSwordState(bool bEnable)
+void ASword::EnableSwordState(const bool bEnable)
 {
 	if (CharacterStateComponent)
 	{
-		ECharacterStates NewState = bEnable ? ECharacterStates::ECS_EquippedSword : ECharacterStates::ECS_Unequipped;
+		const ECharacterStates NewState = bEnable ? ECharacterStates::ECS_EquippedSword : ECharacterStates::ECS_Unequipped;
 		CharacterStateComponent->SetCharacterState(NewState);
 	}
 }
@@ -137,6 +137,18 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 					{
 						EffectsManager->HitStop(EHitStopPreset::EHSP_SwordHit);
 						EffectsManager->CameraShake(ECameraShakePreset::ECSP_SwordHit, Hit.ImpactPoint);
+					}
+
+					if (HitEffect)
+					{
+						UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+							GetWorld(),
+							HitEffect,
+							Hit.ImpactPoint,
+							Hit.ImpactNormal.Rotation(),
+							FVector(1.f),
+							true
+						);
 					}
 					
 					IgnoreActors.Add(HitActor);

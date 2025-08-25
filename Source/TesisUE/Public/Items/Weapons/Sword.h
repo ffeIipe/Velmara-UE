@@ -6,6 +6,7 @@
 #include "Items/Item.h"
 #include "Sword.generated.h"
 
+class UNiagaraSystem;
 class UBoxComponent;
 class ICharacterState;
 class UCharacterStateComponent;
@@ -30,6 +31,7 @@ public:
 	
 	FORCEINLINE UBoxComponent* GetWeaponBox() const { return WeaponBox; }
 
+	UPROPERTY()
 	TArray<AActor*> IgnoreActors;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Damage")
@@ -82,9 +84,12 @@ protected:
 private:
 	UPROPERTY(EditAnywhere, Category = "Weapon Properties | FX | SFX")
 	USoundBase* ShieldImpactSFX;
+
+	UPROPERTY(EditAnywhere, Category = "Weapon Properties | FX | SFX")
+	UNiagaraSystem* HitEffect;
 	
 	UPROPERTY(EditAnywhere, Category = "Weapon Properties | FX | VFX")
-	class UNiagaraSystem* SparksEffect;
+	UNiagaraSystem* SparksEffect;
 	
 	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Mesh | Attachment Socket")
 	FName CustomInSocketName;
