@@ -73,6 +73,7 @@ void AEntity::GetHit_Implementation(AEntity* DamageCauser, const FVector& Impact
 			ImpactPoint
 		);
 	}
+	
 	if (ReceiveDamageFX)
 	{
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(

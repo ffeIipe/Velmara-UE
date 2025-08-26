@@ -125,4 +125,10 @@ private:
 	// --- Weapon Management ---
 	void ChangePrimaryWeapon();
 	void ChangeSecondaryWeapon();
+
+	UFUNCTION()
+	void ApplyHumanMode();
+
+	UFUNCTION()
+	void ApplySpectralEffect();
 };

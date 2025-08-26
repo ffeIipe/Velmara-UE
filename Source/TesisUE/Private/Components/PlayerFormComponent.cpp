@@ -38,9 +38,7 @@ void UPlayerFormComponent::BeginPlay()
     Super::BeginPlay();
 
     EntityOwner = Cast<AEntity>(GetOwner());
-
-    CharacterStateComponent = EntityOwner->GetCharacterStateComponent();
-    CharacterStateComponent->SetCharacterForm(ECharacterForm::ECF_Human);
+    EntityOwner->GetCharacterStateComponent()->SetCharacterForm(ECharacterForm::ECF_Human);
 
     if (SpectralCurve)
     {
@@ -52,10 +50,10 @@ void UPlayerFormComponent::BeginPlay()
 
 void UPlayerFormComponent::ToggleForm()
 {
-    float CurrentTime = GetWorld()->GetTimeSeconds();
+    const float CurrentTime = GetWorld()->GetTimeSeconds();
     if (CurrentTime - LastTransformationTime < TransformationCooldown) return;
 
-    if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Human)
+    if (EntityOwner->GetCharacterStateComponent()->GetCurrentCharacterState().Form == ECharacterForm::ECF_Human)
     {
         ApplySpectralEffects();
     }
@@ -74,8 +72,6 @@ void UPlayerFormComponent::ApplySpectralEffects()
 		/*if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, FString("PlayerController: Set Generic Team ID to 0"));*/
 		PlayerController->SetGenericTeamId(FGenericTeamId(0));
     }
-
-    CharacterStateComponent->SetCharacterForm(ECharacterForm::ECF_Spectral);
     SpectralEffectTimeline->PlayFromStart();
     UGameplayStatics::PlaySound2D(GetWorld(), EnableSpectralModeSFX);
 
@@ -83,18 +79,7 @@ void UPlayerFormComponent::ApplySpectralEffects()
     {
         OnSpectralEffectApplied.Broadcast();
     }
-
-    if (EntityOwner->GetAttributeComponent()->ItHasEnergy())
-    {
-        EntityOwner->GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = true;
-        EntityOwner->GetAttributeComponent()->StartDecreaseEnergy();
-    }
-
-    if (APlayerMain* PlayerRef = Cast<APlayerMain>(EntityOwner))
-    {
-        PlayerRef->Equipping(false);
-    }
-
+    
     {
         //-------------------------------------------------------------
         //TODO: se puede mejorar con una suscripcion a una static class
@@ -115,34 +100,12 @@ void UPlayerFormComponent::ApplyHumanEffects()
         PlayerController->SetGenericTeamId(FGenericTeamId(2));
     }
     
-    CharacterStateComponent->SetCharacterForm(ECharacterForm::ECF_Human);
     SpectralEffectTimeline->Reverse();
     UGameplayStatics::PlaySound2D(GetWorld(), DisableSpectralModeSFX);
     
     if (OnHumanEffectApplied.IsBound())
     {
         OnHumanEffectApplied.Broadcast();
-    }
-
-    EntityOwner->GetAttributeComponent()->StopDecreaseEnergy();
-
-    EntityOwner->GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = false;
-
-    if (EntityOwner->GetInventoryComponent()->GetEquippedItem())
-    {
-        EntityOwner->GetInventoryComponent()->GetEquippedItem()->EnableVisuals(true);
-    }
-
-    if (EntityOwner->GetPossessionComponent()->GetPossessedEntity())
-    {
-        EntityOwner->GetPossessionComponent()->ReleasePossession();
-    }
-
-    EntityOwner->GetAttributeComponent()->RegenerateTick();
-
-    if (APlayerMain* PlayerRef = Cast<APlayerMain>(EntityOwner))
-    {
-        PlayerRef->Equipping(true);
     }
 
     {
@@ -161,10 +124,9 @@ void UPlayerFormComponent::UpdateSpectralEffect(float Value)
 {
     if (BloodSenseMaterialCollection)
     {
-        UMaterialParameterCollectionInstance* MaterialInstance = GetWorld()->GetParameterCollectionInstance(BloodSenseMaterialCollection);
-        if (MaterialInstance)
+        if (UMaterialParameterCollectionInstance* MaterialInstance = GetWorld()->GetParameterCollectionInstance(BloodSenseMaterialCollection))
         {
-            float ClampedValue = FMath::Clamp(Value, 0.0f, 1.0f);
+            const float ClampedValue = FMath::Clamp(Value, 0.0f, 1.0f);
             MaterialInstance->SetScalarParameterValue(FName("Alpha"), ClampedValue);
         }
     }

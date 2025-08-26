@@ -47,8 +47,6 @@ private:
     UPROPERTY(EditAnywhere, Category = "State | Forms | Cooldown")
     float LastTransformationTime;
 
-    UCharacterStateComponent* CharacterStateComponent;
-
     void ApplySpectralEffects();
 
     void ApplyHumanEffects();

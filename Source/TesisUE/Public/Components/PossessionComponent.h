@@ -9,6 +9,8 @@ class AEntity;
 class APlayerController;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPossessionAttemptFailed);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPossessionAttemptSucceed);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPossessionReleased);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPossessed);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPossessorEjected);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPossessorExecutedMeAndEjected);
@@ -27,11 +29,11 @@ public:
     void EjectPossessor();
     void EjectAndExecute();
 
-	///returns the entity that this one is possessing
+	///returns the entity that possesses
     UFUNCTION(BlueprintPure, Category = "Possession")
     AEntity* GetPossessedEntity() const { return CurrentlyPossessedEntity; }
 
-	///returns the entity that is possessing this one
+	///returns the entity that possesses this one
     UFUNCTION(BlueprintPure, Category = "Possession")
     AEntity* GetPossessingEntity() const { return PossessedByEntity; }
 
@@ -45,6 +47,12 @@ public:
 
     UPROPERTY(BlueprintAssignable)
     FOnPossessionAttemptFailed OnPossessionAttemptFailed;
+
+    UPROPERTY(BlueprintAssignable)
+    FOnPossessionAttemptSucceed OnPossessionAttemptSucceed;
+
+    UPROPERTY(BlueprintAssignable)
+    FOnPossessionReleased OnPossessionReleased;
     
     UPROPERTY(BlueprintAssignable)
     FOnPossessed OnPossessed;
@@ -60,7 +68,7 @@ protected:
 
 private:
     void OnPossessionReceived(AEntity* NewPossessor);
-    void OnPossessionReleased();
+    void ReleasingPossession();
     AEntity* FindPossessionVictim() const;
 
     UPROPERTY()

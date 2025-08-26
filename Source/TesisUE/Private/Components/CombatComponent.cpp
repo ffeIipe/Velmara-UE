@@ -537,6 +537,7 @@ void UCombatComponent::LaunchCharacterUp()
 {
 	if (const IHitInterface* Paladin = Cast<IHitInterface>(SoftLockTarget); SoftLockTarget && Paladin->Execute_IsLaunchable(SoftLockTarget))
 	{
+			
 		OwningCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
 		bIsLaunched = true;
 
@@ -748,6 +749,14 @@ bool UCombatComponent::CanAttack()
 			!CharacterStateComponent->IsFormEqualToAny({ECharacterForm::ECF_Spectral}));
 }
 
+bool UCombatComponent::CheckDistance(const FVector& Origin, const FVector& Target, const float DistanceToCheck)
+{
+	if (const float Distance = FVector::Distance(Target, Origin); Distance < DistanceToCheck)
+		return true;
+	
+	return false;
+}
+
 void UCombatComponent::Input_Attack()
 {
 	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }) || EntityOwner->IsEquipping()) return;
@@ -795,10 +804,10 @@ void UCombatComponent::Input_Launch()
 {
 	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }) || EntityOwner->IsEquipping()) return;
 
-	if (CanAttack())
+	if (CanAttack() && bIsHardLocking && EntityOwner->GetExtraMovementComponent()->IsMovingBackwards())
 	{
 		SoftLockOn();
-		if (SoftLockTarget)
+		if (SoftLockTarget && CheckDistance(GetOwner()->GetActorLocation(), SoftLockTarget->GetActorLocation(), 1000.f)) //cm
 		{
 			CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
 			OwningCharacter->PlayAnimMontage(LaunchMontage);

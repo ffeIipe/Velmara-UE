@@ -55,6 +55,11 @@ void UPossessionComponent::AttemptPossession()
             {
                 OwnerEntity->GetInventoryComponent()->GetEquippedItem()->SetActorHiddenInGame(true);
             }
+
+            if (OnPossessionAttemptSucceed.IsBound())
+            {
+                OnPossessionAttemptSucceed.Broadcast();
+            }
         }
     }
     else if (OnPossessionAttemptFailed.IsBound()) OnPossessionAttemptFailed.Broadcast();
@@ -81,7 +86,9 @@ void UPossessionComponent::ReleasePossession()
         OwnerEntity->GetInventoryComponent()->GetEquippedItem()->SetActorHiddenInGame(false);
     }
 
-    CurrentlyPossessedEntity->GetPossessionComponent()->OnPossessionReleased();
+    if (OnPossessionReleased.IsBound()) OnPossessionReleased.Broadcast();
+    
+    CurrentlyPossessedEntity->GetPossessionComponent()->ReleasingPossession();
     CurrentlyPossessedEntity = nullptr;
 }
 
@@ -109,12 +116,10 @@ void UPossessionComponent::OnPossessionReceived(AEntity* NewPossessor)
     OwnerEntity->GetAttributeComponent()->StartDecreaseEnergy();
 }
 
-void UPossessionComponent::OnPossessionReleased()
+void UPossessionComponent::ReleasingPossession()
 {
     OwnerEntity->AttachFollowCamera(PossessedByEntity->GetSpringArmComponent());
     PossessedByEntity = nullptr;
-
-    OwnerEntity->GetAttributeComponent()->StopDecreaseEnergy();
 
     if (OnPossessorEjected.IsBound()) OnPossessorEjected.Broadcast();
 }

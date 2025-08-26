@@ -1,7 +1,5 @@
 #include "Components/AttributeComponent.h"
-
 #include "DataAssets/EntityData.h"
-#include "Entities/Entity.h"
 
 UAttributeComponent::UAttributeComponent()
 {
@@ -65,7 +63,7 @@ void UAttributeComponent::IncreaseEnergy(float Amount)
 	Energy += Amount;
 }
 
-bool UAttributeComponent::ItHasEnergy()
+bool UAttributeComponent::HasEnergy()
 {
 	return Energy > 1.f;
 }
@@ -117,7 +115,7 @@ void UAttributeComponent::ResetAttributes()
 
 void UAttributeComponent::StartDecreaseEnergy()
 {
-	if (!bIsDraining)
+	if (!bIsDraining && HasEnergy())
 	{
 		StopRegenerateTick();
 
@@ -135,7 +133,7 @@ void UAttributeComponent::StopDecreaseEnergy()
 
 void UAttributeComponent::DrainTick()
 {
-	if (ItHasEnergy())
+	if (HasEnergy())
 	{
 		DecreaseEnergyBy(DrainTickValue / 10.f);
 	}

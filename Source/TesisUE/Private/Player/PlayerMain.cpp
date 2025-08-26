@@ -42,8 +42,16 @@ APlayerMain::APlayerMain()
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 	AutoPossessAI = EAutoPossessAI::Disabled;
 
+	GetAttributeComponent()->OnEntityDead.AddDynamic(this, &APlayerMain::PerformDead);
+	
+	GetPossessionComponent()->OnPossessionAttemptFailed.AddDynamic(GetCombatComponent(), &UCombatComponent::Input_Execute);
+	GetPossessionComponent()->OnPossessionAttemptSucceed.AddDynamic(GetAttributeComponent(), &UAttributeComponent::StartDecreaseEnergy);
+	GetPossessionComponent()->OnPossessionReleased.AddDynamic(GetAttributeComponent(), &UAttributeComponent::StopDecreaseEnergy);
+	
 	PlayerFormComponent = CreateDefaultSubobject<UPlayerFormComponent>(TEXT("PlayerFormComponent"));
-
+	PlayerFormComponent->OnHumanEffectApplied.AddDynamic(this, &APlayerMain::ApplyHumanMode);
+	PlayerFormComponent->OnSpectralEffectApplied.AddDynamic(this, &APlayerMain::ApplySpectralEffect);
+	
 	SpectralWeaponComponent = CreateDefaultSubobject<USpectralWeaponComponent>(TEXT("SpectralWeapon"));
 }
 
@@ -81,16 +89,12 @@ void APlayerMain::BeginPlay()
 {
 	Super::BeginPlay();
 
-	GetAttributeComponent()->RegenerateTick();
-	GetAttributeComponent()->OnEntityDead.AddDynamic(this, &APlayerMain::PerformDead);
-
 	if (!GetCombatComponent()->OnWallHit.IsBound())
 	{
 		GetCombatComponent()->OnWallHit.AddDynamic(this, &APlayerMain::OnWallCollision);
 	}
 	
-	GetPossessionComponent()->OnPossessionAttemptFailed.AddDynamic(GetCombatComponent(), &UCombatComponent::Input_Execute);
-
+	
 	GetCharacterStateComponent()->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral ?
 		SpectralWeaponComponent->EnableSpectralWeapon(true) : SpectralWeaponComponent->EnableSpectralWeapon(false);
 
@@ -347,4 +351,30 @@ void APlayerMain::ChangeSecondaryWeapon()
 
 	GetInventoryComponent()->ChangeWeapon(1);
 	Equipping(true);
+}
+
+void APlayerMain::ApplyHumanMode()
+{
+	GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = false;
+
+	if (GetInventoryComponent()->GetEquippedItem())
+	{
+		GetInventoryComponent()->GetEquippedItem()->EnableVisuals(true);
+	}
+
+	if (GetPossessionComponent()->GetPossessedEntity())
+	{
+		GetPossessionComponent()->ReleasePossession();
+	}
+
+	Equipping(true);
+
+	GetCharacterStateComponent()->SetCharacterForm(ECharacterForm::ECF_Human);
+}
+
+void APlayerMain::ApplySpectralEffect()
+{
+	GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = true;
+	Equipping(false);
+	GetCharacterStateComponent()->SetCharacterForm(ECharacterForm::ECF_Spectral);
 }

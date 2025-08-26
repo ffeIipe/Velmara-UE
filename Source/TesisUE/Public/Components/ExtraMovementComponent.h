@@ -91,6 +91,8 @@ public:
 
 	void CustomInitialize(AEntity* NewEntity, UCharacterStateComponent* NewOwnerCharStateComp);
 
+	bool IsMovingBackwards();
+		
 private:
 	virtual void BeginPlay() override;
 

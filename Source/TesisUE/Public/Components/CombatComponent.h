@@ -250,6 +250,8 @@ private:
 	// --- Internal Utility Functions ---
 	bool CanAttack();
 
+	bool CheckDistance(const FVector& Origin, const FVector& Target, float DistanceToCheck);
+	
 	// --- Save Attack Events ---
 	UFUNCTION(BlueprintCallable, Category = "Attack | LightAttack", meta = (AllowPrivateAccess = "true"))
 	void SaveLightAttackEvent();

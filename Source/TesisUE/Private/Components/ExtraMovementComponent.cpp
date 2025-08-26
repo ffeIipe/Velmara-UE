@@ -31,6 +31,14 @@ void UExtraMovementComponent::CustomInitialize(AEntity* NewEntity, UCharacterSta
 	OwnerCharacterStateComponent = NewOwnerCharStateComp;
 }
 
+bool UExtraMovementComponent::IsMovingBackwards()
+{
+	if (MoveVector.Y < 0)
+		return true;
+
+	return false;
+}
+
 void UExtraMovementComponent::BeginPlay()
 {
 	Super::BeginPlay();

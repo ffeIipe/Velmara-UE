@@ -67,7 +67,7 @@ public:
 	void StopDecreaseEnergy();
 
 	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Energy")
-	bool ItHasEnergy();
+	bool HasEnergy();
 
 	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Energy")
 	bool ItHasFullEnergy();
