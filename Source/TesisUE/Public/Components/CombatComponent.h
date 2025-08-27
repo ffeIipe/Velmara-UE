@@ -278,20 +278,28 @@ private:
 	UCurveFloat* SoftLockCurve;
 	UPROPERTY()
 	UCurveFloat* BufferCurve;
+	
 	UPROPERTY(EditAnywhere)
 	TArray<UAnimMontage*> LightAttackCombo;
+	
 	UPROPERTY(EditAnywhere)
 	TArray<UAnimMontage*> JumpAttackCombo;
+	
 	UPROPERTY(EditAnywhere)
 	TArray<UAnimMontage*> HeavyAttackCombo;
+	
 	UPROPERTY(EditAnywhere)
 	UAnimMontage* BlockMontage;
+	
 	UPROPERTY(EditAnywhere)
 	UAnimMontage* FinisherMontage;
+	
 	UPROPERTY(EditAnywhere)
 	UAnimMontage* CrasherMontage;
+	
 	UPROPERTY(EditAnywhere)
 	UAnimMontage* LaunchMontage;
+	
 	UPROPERTY(EditAnywhere)
 	UAnimMontage* HitReactMontage;
 };

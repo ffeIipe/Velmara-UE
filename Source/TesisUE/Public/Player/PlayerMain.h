@@ -90,7 +90,7 @@ public:
 
 	FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }
 
-	void Equipping(bool bIsSwordBeingEquipped);
+	// void Equipping(bool bIsSwordBeingEquipped);
 
 	// --- Camera ---
 	UFUNCTION(BlueprintCallable, Category = "Camera")

@@ -112,11 +112,14 @@ void UNewGameInstance::ApplyGraphicsSettings()
         UserSettings->SetScreenResolution(CurrentSettings->ScreenResolution);
         UserSettings->SetTextureQuality(CurrentSettings->TextureQuality);
         UserSettings->SetShadowQuality(CurrentSettings->ShadowQuality);
-        // UserSettings->SetAntiAliasingQuality(CurrentSettings->AntiAliasingQuality); 
-        // UserSettings->SetViewDistanceQuality(CurrentSettings->ViewDistanceQuality);
-        // UserSettings->SetPostProcessingQuality(CurrentSettings->PostProcessingQuality);
-        // UserSettings->SetVisualEffectQuality(CurrentSettings->VisualEffectQuality);
-        // UserSettings->SetFoliageQuality(CurrentSettings->FoliageQuality);
+        UserSettings->SetAntiAliasingQuality(CurrentSettings->AntiAliasingQuality); 
+        UserSettings->SetViewDistanceQuality(CurrentSettings->ViewDistanceQuality);
+        UserSettings->SetPostProcessingQuality(CurrentSettings->PostProcessingQuality);
+        UserSettings->SetVisualEffectQuality(CurrentSettings->VisualEffectQuality);
+        UserSettings->SetGlobalIlluminationQuality(CurrentSettings->GlobalIlluminationQuality);
+        UserSettings->SetShadingQuality(CurrentSettings->ShadingQuality);
+        UserSettings->SetFrameRateLimit(CurrentSettings->FrameRateLimit);
+        UserSettings->SetFoliageQuality(0);
 
         UserSettings->ApplySettings(false);
         UE_LOG(LogTemp, Log, TEXT("NewGameInstance: Graphics settings applied. Resolution: %s, TextureQ: %d, ShadowQ: %d"),
@@ -170,6 +173,82 @@ void UNewGameInstance::SetShadowQuality(int32 NewQuality)
     }
 }
 
+void UNewGameInstance::SetAntiAliasing(int32 NewQuality)
+{
+    if (CurrentSettings)
+    {
+        NewQuality = FMath::Clamp(NewQuality, 0, 3);
+        CurrentSettings->AntiAliasingQuality = NewQuality;
+        ApplyGraphicsSettings();
+        SaveGameSettings();
+    }
+}
+
+void UNewGameInstance::SetViewDistance(int32 NewQuality)
+{
+    if (CurrentSettings)
+    {
+        NewQuality = FMath::Clamp(NewQuality, 0, 3);
+        CurrentSettings->ViewDistanceQuality = NewQuality;
+        ApplyGraphicsSettings();
+        SaveGameSettings();
+    }
+}
+
+void UNewGameInstance::SetPostProcess(int32 NewQuality)
+{
+    if (CurrentSettings)
+    {
+        NewQuality = FMath::Clamp(NewQuality, 0, 3);
+        CurrentSettings->PostProcessingQuality = NewQuality;
+        ApplyGraphicsSettings();
+        SaveGameSettings();
+    }
+}
+
+void UNewGameInstance::SetVisualEffect(int32 NewQuality)
+{
+    if (CurrentSettings)
+    {
+        NewQuality = FMath::Clamp(NewQuality, 0, 3);
+        CurrentSettings->VisualEffectQuality = NewQuality;
+        ApplyGraphicsSettings();
+        SaveGameSettings();
+    }
+}
+
+void UNewGameInstance::SetGlobalIllumination(int32 NewQuality)
+{
+    if (CurrentSettings)
+    {
+        NewQuality = FMath::Clamp(NewQuality, 0, 3);
+        CurrentSettings->GlobalIlluminationQuality = NewQuality;
+        ApplyGraphicsSettings();
+        SaveGameSettings();
+    }
+}
+
+void UNewGameInstance::SetShadingQuality(int32 NewQuality)
+{
+    if (CurrentSettings)
+    {
+        NewQuality = FMath::Clamp(NewQuality, 0, 3);
+        CurrentSettings->ShadingQuality = NewQuality;
+        ApplyGraphicsSettings();
+        SaveGameSettings();
+    }
+}
+
+void UNewGameInstance::SetFrameRateLimit(int32 NewFrameRateLimit)
+{
+    if (CurrentSettings)
+    {
+        CurrentSettings->FrameRateLimit = NewFrameRateLimit;
+        ApplyGraphicsSettings();
+        SaveGameSettings();
+    }
+}
+
 FIntPoint UNewGameInstance::GetScreenResolution() const
 {
     return CurrentSettings ? CurrentSettings->ScreenResolution : FIntPoint(0, 0);
@@ -183,6 +262,41 @@ int32 UNewGameInstance::GetTextureQuality() const
 int32 UNewGameInstance::GetShadowQuality() const
 {
     return CurrentSettings ? CurrentSettings->ShadowQuality : 2;
+}
+
+int32 UNewGameInstance::GetAntiAliasingQuality() const
+{
+    return CurrentSettings ? CurrentSettings->AntiAliasingQuality : 2;
+}
+
+int32 UNewGameInstance::GetViewDistanceQuality() const
+{
+    return CurrentSettings ? CurrentSettings->AntiAliasingQuality : 2;
+}
+
+int32 UNewGameInstance::GetPostProcessQuality() const
+{
+    return CurrentSettings ? CurrentSettings->PostProcessingQuality : 2;
+}
+
+int32 UNewGameInstance::GetGlobalIlluminationQuality() const
+{
+    return CurrentSettings ? CurrentSettings->GlobalIlluminationQuality : 2;
+}
+
+int32 UNewGameInstance::GetShadingQuality() const
+{
+    return CurrentSettings ? CurrentSettings->ShadingQuality : 2;
+}
+
+int32 UNewGameInstance::GetVisualEffectsQuality() const
+{
+    return CurrentSettings ? CurrentSettings->VisualEffectQuality : 2;
+}
+
+int32 UNewGameInstance::GetFrameRateLimit() const
+{
+    return CurrentSettings ? CurrentSettings->FrameRateLimit : 60;
 }
 
 void UNewGameInstance::CreateNewGame(int32 SlotIndex, FString StartLevelName)

@@ -10,11 +10,6 @@ void ASpectralWeaponItem::Use(ACharacter* Character)
     Super::Use(Character);
 
     APlayerMain* PlayerReference = Cast<APlayerMain>(Character);
-    if (PlayerReference->GetCharacterStateComponent()->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
-    {
-        PlayerReference->Equipping(false);
-    }
-    
     if (PlayerReference && PlayerReference->SpectralWeaponComponent)
     {
         FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, true);

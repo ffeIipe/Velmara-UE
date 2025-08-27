@@ -29,6 +29,27 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Settings")
     void SetShadowQuality(int32 NewQuality);
 
+    UFUNCTION(BlueprintCallable, Category = "Settings")
+    void SetAntiAliasing(int32 NewQuality);
+
+    UFUNCTION(BlueprintCallable, Category = "Settings")
+    void SetViewDistance(int32 NewQuality);
+	
+    UFUNCTION(BlueprintCallable, Category = "Settings")
+    void SetPostProcess(int32 NewQuality);
+	
+    UFUNCTION(BlueprintCallable, Category = "Settings")
+    void SetVisualEffect(int32 NewQuality);
+	
+    UFUNCTION(BlueprintCallable, Category = "Settings")
+    void SetGlobalIllumination(int32 NewQuality);
+
+    UFUNCTION(BlueprintCallable, Category = "Settings")
+    void SetShadingQuality(int32 NewQuality);
+
+    UFUNCTION(BlueprintCallable, Category = "Settings")
+    void SetFrameRateLimit(int32 NewFrameRateLimit);
+
     UFUNCTION(BlueprintPure, Category = "Settings")
     FIntPoint GetScreenResolution() const;
 
@@ -37,7 +58,28 @@ public:
 
     UFUNCTION(BlueprintPure, Category = "Settings")
     int32 GetShadowQuality() const;
+    
+    UFUNCTION(BlueprintPure, Category = "Settings")
+    int32 GetAntiAliasingQuality() const;
 
+    UFUNCTION(BlueprintPure, Category = "Settings")
+    int32 GetViewDistanceQuality() const;
+
+    UFUNCTION(BlueprintPure, Category = "Settings")
+    int32 GetPostProcessQuality() const;
+
+    UFUNCTION(BlueprintPure, Category = "Settings")
+    int32 GetGlobalIlluminationQuality() const;
+
+    UFUNCTION(BlueprintPure, Category = "Settings")
+    int32 GetShadingQuality() const;
+
+    UFUNCTION(BlueprintPure, Category = "Settings")
+    int32 GetVisualEffectsQuality() const;
+
+    UFUNCTION(BlueprintPure, Category = "Settings")
+    int32 GetFrameRateLimit() const;
+    
     UFUNCTION(BlueprintCallable, Category = "Settings")
     void SaveGameSettings();
 

@@ -168,104 +168,104 @@ float APlayerMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEven
 	return DamageAmount;
 }
 
-void APlayerMain::Equipping(const bool bIsSwordBeingEquipped)
-{
-	if (const ECharacterForm ActualForm = GetCharacterStateComponent()->GetCurrentCharacterState().Form; ActualForm == ECharacterForm::ECF_Human) //si estoy en humano
-	{
-		/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Green, FString("Human form"));*/
-
-		if (bIsSwordBeingEquipped) //y estoy equipando una espada
-		{
-			if (GetInventoryComponent()->GetEquippedItem())
-			{
-				if (SpectralWeaponComponent->bWasInitialized && GetCharacterStateComponent()->GetCurrentCharacterState().SpectralState == ECharacterSpectralStates::ECSS_EquippedPistol)
-				{
-					PlayAnimMontage(EquipPistolMontage, 1.f, FName("BackToSword"));
-					
-				}
-				else
-				{
-					/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Red, FString("Equipping sword"));*/
-
-					PlayAnimMontage(EquipSwordMontage, 1.f, FName("Equip"));
-					GetCharacterStateComponent()->SetCharacterState(ECharacterStates::ECS_EquippingSword);
-				}
-			}
-			else
-			{
-				if (SpectralWeaponComponent->bWasInitialized)
-				{
-					PlayAnimMontage(EquipPistolMontage, 1.f, FName("Unequip"));
-					GetCharacterStateComponent()->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
-				}
-				/*else GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Cyan, FString("No equipped item, so none animation will be played..."));*/
-			}
-		}
-		else //o estoy equipando una pistola
-		{
-			if (!GetInventoryComponent()->GetEquippedItem()) //si no tengo espada
-			{
-				/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Orange, FString("Only pick pistol"));*/
-
-				PlayAnimMontage(EquipPistolMontage, 1.f, FName("Unequip"));
-				GetCharacterStateComponent()->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
-			}
-			else
-			{
-				//si tengo espada equipada
-				/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Green, FString("Unequip sword and equip pistol"));*/
-
-				PlayAnimMontage(EquipSwordMontage, 1.f, FName("PickPistol"));
-				GetCharacterStateComponent()->SetCharacterState(ECharacterStates::ECS_EquippingSword);
-			}
-		}
-	}
-	else //si no estoy en humano
-	{
-		/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Purple, FString("Spectral form"));*/
-
-		if (!bIsSwordBeingEquipped)
-		{
-			if (GetInventoryComponent()->GetEquippedItem())
-			{
-				if (SpectralWeaponComponent->bWasInitialized)
-				{
-					if (GetCharacterStateComponent()->GetCurrentCharacterState().State == ECharacterStates::ECS_EquippedSword)
-					{
-						/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Cyan, FString("Has sword equipped"));*/
-
-						PlayAnimMontage(EquipSwordMontage, 1.f, FName("SwitchToPistol"));
-						GetCharacterStateComponent()->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
-					}
-					else
-					{
-						/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Blue, FString("Sword it's on the back"));*/
-
-						PlayAnimMontage(EquipPistolMontage, 1.f, FName("Equip"));
-						GetCharacterStateComponent()->SetCharacterState(ECharacterStates::ECS_Unequipped);
-						GetCharacterStateComponent()->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
-					}
-				}
-				else
-				{
-					PlayAnimMontage(EquipSwordMontage, 1.f, FName("Unequip"));
-					GetCharacterStateComponent()->SetCharacterState(ECharacterStates::ECS_EquippingSword);
-				}
-			}
-			else
-			{
-				if (SpectralWeaponComponent->bWasInitialized)
-				{
-					/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Blue, FString("Sword not equipped"));*/
-
-					PlayAnimMontage(EquipPistolMontage, 1.f, FName("Equip"));
-					GetCharacterStateComponent()->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
-				}
-			}
-			
-		}
-	}	
-}
+// void APlayerMain::Equipping(const bool bIsSwordBeingEquipped)
+// {
+// 	if (const ECharacterForm ActualForm = GetCharacterStateComponent()->GetCurrentCharacterState().Form; ActualForm == ECharacterForm::ECF_Human) //si estoy en humano
+// 	{
+// 		/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Green, FString("Human form"));*/
+//
+// 		if (bIsSwordBeingEquipped) //y estoy equipando una espada
+// 		{
+// 			if (GetInventoryComponent()->GetEquippedItem())
+// 			{
+// 				if (SpectralWeaponComponent->bWasInitialized && GetCharacterStateComponent()->GetCurrentCharacterState().SpectralState == ECharacterSpectralStates::ECSS_EquippedPistol)
+// 				{
+// 					PlayAnimMontage(EquipPistolMontage, 1.f, FName("BackToSword"));
+// 					
+// 				}
+// 				else
+// 				{
+// 					/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Red, FString("Equipping sword"));*/
+//
+// 					PlayAnimMontage(EquipSwordMontage, 1.f, FName("Equip"));
+// 					GetCharacterStateComponent()->SetCharacterState(ECharacterStates::ECS_EquippingSword);
+// 				}
+// 			}
+// 			else
+// 			{
+// 				if (SpectralWeaponComponent->bWasInitialized)
+// 				{
+// 					PlayAnimMontage(EquipPistolMontage, 1.f, FName("Unequip"));
+// 					GetCharacterStateComponent()->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
+// 				}
+// 				/*else GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Cyan, FString("No equipped item, so none animation will be played..."));*/
+// 			}
+// 		}
+// 		else //o estoy equipando una pistola
+// 		{
+// 			if (!GetInventoryComponent()->GetEquippedItem()) //si no tengo espada
+// 			{
+// 				/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Orange, FString("Only pick pistol"));*/
+//
+// 				PlayAnimMontage(EquipPistolMontage, 1.f, FName("Unequip"));
+// 				GetCharacterStateComponent()->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
+// 			}
+// 			else
+// 			{
+// 				//si tengo espada equipada
+// 				/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Green, FString("Unequip sword and equip pistol"));*/
+//
+// 				PlayAnimMontage(EquipSwordMontage, 1.f, FName("PickPistol"));
+// 				GetCharacterStateComponent()->SetCharacterState(ECharacterStates::ECS_EquippingSword);
+// 			}
+// 		}
+// 	}
+// 	else //si no estoy en humano
+// 	{
+// 		/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Purple, FString("Spectral form"));*/
+//
+// 		if (!bIsSwordBeingEquipped)
+// 		{
+// 			if (GetInventoryComponent()->GetEquippedItem())
+// 			{
+// 				if (SpectralWeaponComponent->bWasInitialized)
+// 				{
+// 					if (GetCharacterStateComponent()->GetCurrentCharacterState().State == ECharacterStates::ECS_EquippedSword)
+// 					{
+// 						/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Cyan, FString("Has sword equipped"));*/
+//
+// 						PlayAnimMontage(EquipSwordMontage, 1.f, FName("SwitchToPistol"));
+// 						GetCharacterStateComponent()->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
+// 					}
+// 					else
+// 					{
+// 						/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Blue, FString("Sword it's on the back"));*/
+//
+// 						PlayAnimMontage(EquipPistolMontage, 1.f, FName("Equip"));
+// 						GetCharacterStateComponent()->SetCharacterState(ECharacterStates::ECS_Unequipped);
+// 						GetCharacterStateComponent()->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
+// 					}
+// 				}
+// 				else
+// 				{
+// 					PlayAnimMontage(EquipSwordMontage, 1.f, FName("Unequip"));
+// 					GetCharacterStateComponent()->SetCharacterState(ECharacterStates::ECS_EquippingSword);
+// 				}
+// 			}
+// 			else
+// 			{
+// 				if (SpectralWeaponComponent->bWasInitialized)
+// 				{
+// 					/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Blue, FString("Sword not equipped"));*/
+//
+// 					PlayAnimMontage(EquipPistolMontage, 1.f, FName("Equip"));
+// 					GetCharacterStateComponent()->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
+// 				}
+// 			}
+// 			
+// 		}
+// 	}	
+// }
 
 void APlayerMain::ToggleForm()
 {

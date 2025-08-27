@@ -207,7 +207,7 @@ void USpectralWeaponComponent::Fire(bool bIsPrimary)
                     Hit,
                     OwnerController,                            //who cause the dmg?
                     GetOwner(),                                 //what cause the dmg?
-                    USpectralTrapDamageType::StaticClass()      //type of dmg
+                    UDamageType::StaticClass()      //type of dmg
                 );
 
                 if (IHitInterface* Entity = Cast<IHitInterface>(HitActor))
