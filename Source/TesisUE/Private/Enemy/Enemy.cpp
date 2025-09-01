@@ -21,6 +21,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Misc/Guid.h"
 #include "NiagaraComponent.h"
+#include "Components/CharacterStateComponent.h"
 #include "Player/PlayerMain.h"
 #include "SceneEvents/NewGameModeBase.h"
 #include "SceneEvents/NewGameStateBase.h"
@@ -29,6 +30,7 @@
 #include "Tutorial/PromptWidgetComponent.h"
 #include "Player/PlayerHeroController.h"
 #include "Perception/AIPerceptionComponent.h"  
+#include "Player/CharacterHumanStates.h"
 #include "Subsystems/EffectsManager.h"
 
 AEnemy::AEnemy()
@@ -122,7 +124,7 @@ void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 
 	if (GetCharacterStateComponent())
 	{
-		GetCharacterStateComponent()->SetCharacterAction(ECharacterActions::ECA_Nothing);
+		GetCharacterStateComponent()->SetAction(ECharacterActions::ECA_Nothing);
 	}
 
 	bUseControllerRotationYaw = bOriginalUseControllerRotationYaw;
@@ -236,6 +238,34 @@ void AEnemy::Die(UAnimMontage* DeathAnim, FName Section)
 	GetWorldTimerManager().SetTimer(ReturnToPoolTimerHandle, this, &AEnemy::RequestReturnToPool, 5.0f, false);
 }
 
+void AEnemy::GetHit(TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint,
+	FDamageEvent const& DamageEvent, const float DamageReceived)
+{
+	Super::GetHit(DamageCauser, ImpactPoint, DamageEvent, DamageReceived);
+
+	if (DamageEvent.DamageTypeClass)
+	{
+		if (const UDamageTypeMain* MainDamageTypeClass = Cast<UDamageTypeMain>(DamageEvent.DamageTypeClass->GetDefaultObject()))
+		{
+			const EMainDamageTypes MainDamageType = MainDamageTypeClass->DamageType;
+			ReactToDamage(MainDamageType, ImpactPoint);
+		}
+	}
+
+	if (DamageCauser)
+	{
+		if (bShouldDropOrbs)
+		{
+			DropOrbs(DamageReceived, DamageCauser);
+		}
+		NotifyDamageTakenToBlackboard(DamageCauser);
+
+		ReturnAttackTokenToTarget();
+		
+		HitFlash(.1f,.75f);
+	}
+}
+
 void AEnemy::RequestReturnToPool()
 {
 	DeactivateEnemy();
@@ -263,7 +293,7 @@ void AEnemy::BeginPlay()
 
 	if (GetCharacterStateComponent())
 	{
-		GetCharacterStateComponent()->SetCharacterState(ECharacterStates::ECS_EquippedSword);
+		GetCharacterStateComponent()->SetHumanState(ECharacterHumanStates::ECHS_EquippedSword);
 	}
 
 	if (DissolveCurve)
@@ -376,7 +406,7 @@ void AEnemy::EnableFinisherWidget()
 	}
 }
 
-void AEnemy::NotifyThreat(AEntity* ThreatActor)
+void AEnemy::NotifyThreat(const TScriptInterface<ICombatTargetInterface>& ThreatActor) const
 {
 	if (!ThreatActor)
 	{
@@ -390,10 +420,10 @@ void AEnemy::NotifyThreat(AEntity* ThreatActor)
 
 	if (AIController && AIController->GetBlackboardComponent())
 	{
-		AIController->GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), ThreatActor);
+		AIController->GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), ThreatActor.GetObject());
 	}
 
-	// una func con un forget?
+	// a function that could forget the current target?
 }
 
 void AEnemy::OnPossessed()
@@ -401,7 +431,7 @@ void AEnemy::OnPossessed()
 	ReturnAttackTokenToTarget();
 	DisableAI();
 	ApplyPossessionParameters(true);
-	GetExtraMovementComponent()->CustomInitialize(this, GetCharacterStateComponent());
+	GetExtraMovementComponent()->CustomInitialize(this);
 }
 
 void AEnemy::OnUnpossessed()
@@ -409,7 +439,7 @@ void AEnemy::OnUnpossessed()
 	ReturnAttackTokenToTarget();
 	EnableAI();
 	ApplyPossessionParameters(false);
-	GetExtraMovementComponent()->CustomInitialize(this, GetCharacterStateComponent());
+	GetExtraMovementComponent()->CustomInitialize(this);
 
 	if (IGenericTeamAgentInterface* OtherTeamAgent = Cast<IGenericTeamAgentInterface>(GetController()))
 	{
@@ -465,41 +495,12 @@ void AEnemy::ResetEnemy()
 	EnableAI();
 }
 
-void AEnemy::GetHit_Implementation(AEntity* DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived)
-{
-	Super::GetHit_Implementation(DamageCauser, ImpactPoint, DamageEvent, DamageReceived);
-	
-	if (DamageEvent.DamageTypeClass)
-	{
-		if (const UDamageTypeMain* MainDamageTypeClass = Cast<UDamageTypeMain>(DamageEvent.DamageTypeClass->GetDefaultObject()))
-		{
-			const EMainDamageTypes MainDamageType = MainDamageTypeClass->DamageType;
-			ReactToDamage(MainDamageType, ImpactPoint);
-		}
-	}
-
-	if (DamageCauser)
-	{
-		if (bShouldDropOrbs)
-		{
-			DropOrbs(DamageReceived, DamageCauser);
-		}
-		NotifyDamageTakenToBlackboard(DamageCauser);
-
-		ReturnAttackTokenToTarget();
-		
-		HitFlash(.1f,.75f);
-	}
-}
-
-void AEnemy::DropOrbs(const float DamageReceived, AEntity* DamageCauser) const
+void AEnemy::DropOrbs(const float DamageReceived, const TScriptInterface<ICombatTargetInterface>& DamageCauser) const
 {
 	const float Percentage = DamageReceived / EnergyDivider;
 	const int32 Orbs = FMath::RoundToInt(Percentage) / 5;
-
-	if (const APlayerMain* PlayerRef = Cast<APlayerMain>(DamageCauser))
 	{
-		PlayerRef->GetAttributeComponent()->IncreaseEnergy(Percentage);
+		DamageCauser->IncreaseEnergy(Percentage);
 
 		if (OnDamaged.IsBound())
 		{
@@ -509,26 +510,15 @@ void AEnemy::DropOrbs(const float DamageReceived, AEntity* DamageCauser) const
 			}
 		}
 	}
-
-	if (const AEnemy* EnemyRef = Cast<AEnemy>(DamageCauser))
-	{
-		if (EnemyRef->GetPossessionComponent()->IsPossessed())
-		{
-			EnemyRef->GetAttributeComponent()->IncreaseEnergy(Percentage);
-
-			for (int32 i = 0; i < Orbs; i++)
-			{
-				OnDamaged.Broadcast();
-			}
-		}
-	}
+	
+	// if (EnemyRef->GetPossessionComponent()->IsPossessed())
 }
 
 void AEnemy::FinishedDamage()
 {
-	if (!CanBeFinished_Implementation()) return;
+	if (!CanBeFinished()) return;
 	
-	if (GetCharacterStateComponent()->GetCurrentCharacterState().Action != ECharacterActions::ECA_Dead)
+	if (IsAlive())
 	{
 		if (UEffectsManager* EffectsManager = GetWorld()->GetSubsystem<UEffectsManager>())
 		{
@@ -536,13 +526,13 @@ void AEnemy::FinishedDamage()
 			EffectsManager->CameraZoom(ECameraZoomPreset::ECZP_Finisher);
 		}
 		
-		GetCharacterStateComponent()->SetCharacterAction(ECharacterActions::ECA_Dead);
+		GetCharacterStateComponent()->SetAction(ECharacterActions::ECA_Dead);
 		Die(nullptr, NAME_None);
 
 		if (PromptWidgetComponent && PromptWidgetComponent->GetWidget()) PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
 
-		const FVector Start = GetActorLocation();
-		const FVector End = LastDamageCauser ? LastDamageCauser->GetActorLocation() : Start + GetActorForwardVector();
+		const FVector Start = GetTargetActorLocation();
+		const FVector End = LastDamageCauser ? LastDamageCauser->GetTargetActorLocation() : Start + GetActorForwardVector();
 		const FRotator NewRotation = UKismetMathLibrary::FindLookAtRotation(Start, End);
 		SetActorRotation(NewRotation);	
 	}
@@ -551,7 +541,7 @@ void AEnemy::FinishedDamage()
 	PlayAnimMontage(FinisherDeathMontage);
 }
 
-bool AEnemy::IsLaunchable_Implementation()
+bool AEnemy::IsLaunchable()
 {
 	return !GetAttributeComponent()->IsShielded() && GetAttributeComponent()->IsAlive();
 }
@@ -725,16 +715,14 @@ TArray<AEnemy*> AEnemy::GenerateSphereOverlapToDetectOtherEnemies(const FVector&
 	return EnemiesFound;
 }
 
-void AEnemy::NotifyDamageTakenToBlackboard(AEntity* DamageCauser)
+void AEnemy::NotifyDamageTakenToBlackboard(TScriptInterface<ICombatTargetInterface> DamageCauser)
 {
-	const AEnemy* IsEnemyDamageCauser = Cast<AEnemy>(DamageCauser);
-
-	if (const APlayerMain* IsPlayerDamageCauser = Cast<APlayerMain>(DamageCauser); IsEnemyDamageCauser && IsEnemyDamageCauser->GetPossessionComponent()->IsPossessed() || IsPlayerDamageCauser)
+	if (DamageCauser->IsPossessed())
 	{
 		if (AIController)
 		{
 			AIController->GetBlackboardComponent()->SetValueAsBool(FName("DamageTakenRecently"), true);
-			AIController->GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), DamageCauser);
+			AIController->GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), DamageCauser.GetObject());
 		}
 
 		if (EnemyAIController)
@@ -742,14 +730,14 @@ void AEnemy::NotifyDamageTakenToBlackboard(AEntity* DamageCauser)
 			EnemyAIController->DamageCauser = DamageCauser;
 		}
 
-		for (AEnemy* Enemy : GenerateSphereOverlapToDetectOtherEnemies(GetActorLocation(), RadiusToNotifyAllies, this))
+		for (AEnemy* Enemy : GenerateSphereOverlapToDetectOtherEnemies(GetTargetActorLocation(), RadiusToNotifyAllies, this))
 		{
 			Enemy->NotifyThreat(DamageCauser);
 		}
 	}
 }
 
-void AEnemy::LaunchUp_Implementation(const FVector& InstigatorLocation)
+void AEnemy::LaunchUp(const FVector& InstigatorLocation)
 {
 	GetCombatComponent()->StartLaunchingUp();
 }

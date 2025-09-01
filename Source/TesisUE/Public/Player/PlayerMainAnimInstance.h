@@ -1,9 +1,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Animation/AnimInstance.h"
-#include "CharacterStates.h"
+#include "CharacterHumanStates.h"
 #include "Components/SpectralWeaponComponent.h"
+#include "Entities/EntityAnimInstance.h"
 #include "PlayerMainAnimInstance.generated.h"
 
 class UCombatComponent;
@@ -12,60 +12,8 @@ class UCharacterMovementComponent;
 class UPlayerFormComponent;
 
 UCLASS()
-class TESISUE_API UPlayerMainAnimInstance : public UAnimInstance
+class TESISUE_API UPlayerMainAnimInstance : public UEntityAnimInstance
 {
 	GENERATED_BODY()
 
-public:
-
-	virtual void NativeInitializeAnimation() override;
-	virtual void NativeUpdateAnimation(float DeltaTime) override;
-	
-	UPROPERTY(BlueprintReadOnly)
-	APlayerMain* PlayerMain;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Movement")
-	UCharacterMovementComponent* PlayerMainCharacterMovement;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Movement")
-	float GroundSpeed;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Movement")
-	bool IsFalling;
-	
-	UPROPERTY(BlueprintReadOnly, Category = "Movement")
-	bool bHasAcceleration;
-
-	UPROPERTY(BlueprintReadWrite, Category = "Movement")
-	float Direction;
-	
-	UPROPERTY(BlueprintReadWrite, Category = "Movement")
-	float WalkRight;
-	
-	UPROPERTY(BlueprintReadWrite, Category = "Movement")
-	float WalkForward;
-	
-	UPROPERTY(BlueprintReadWrite, Category = "Movement")
-	float MaxWalkSpeed;
-	
-	UPROPERTY(BlueprintReadWrite, Category = "Movement")
-	float MaxRunSpeed;
-
-	UPROPERTY(BlueprintReadWrite, Category = "Combat")
-	bool bIsLocking;
-	
-	UPROPERTY(BlueprintReadOnly, Category = "Movement | Character State")
-	ECharacterStates CharacterState;
-	
-	UPROPERTY(BlueprintReadOnly, Category = "Movement | Character Form")
-	ECharacterForm CharacterForm;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Movement | Spectral Weapon State")
-	ECharacterSpectralStates SpectralState;
-
-	UPROPERTY()
-	USpectralWeaponComponent* SpectralWeaponComponent;
-
-	UPROPERTY()
-	UCombatComponent* CombatComponent;
 };

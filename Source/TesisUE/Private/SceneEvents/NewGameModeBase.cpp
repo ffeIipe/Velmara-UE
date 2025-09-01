@@ -25,7 +25,7 @@ void ANewGameModeBase::SetEnemiesAIEnabled(bool bEnabled)
 {
 	for (AEnemy* Enemy : RegisteredEnemies)
 	{
-		if (Enemy && Enemy->GetCharacterStateComponent()->GetCurrentCharacterState().Action != ECharacterActions::ECA_Dead)
+		if (Enemy && Enemy->IsAlive())
 		{
 			bEnabled ? Enemy->EnableAI() : Enemy->DisableAI();
 		}
@@ -36,8 +36,7 @@ void ANewGameModeBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-	UNewGameInstance* NewGameInstance = Cast<UNewGameInstance>(GetGameInstance());
-	if (NewGameInstance)
+	if (UNewGameInstance* NewGameInstance = Cast<UNewGameInstance>(GetGameInstance()))
 	{
 		NewGameInstance->ApplyPendingLoadedDataToWorld();
 	}

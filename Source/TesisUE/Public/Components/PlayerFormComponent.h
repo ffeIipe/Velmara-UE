@@ -4,9 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "Player/CharacterStates.h"
+#include "Player/CharacterHumanStates.h"
 #include "PlayerFormComponent.generated.h"
 
+class ICharacterStateProvider;
+class IOwnerUtilsInterface;
 class UMaterialParameterCollection;
 class UTimelineComponent;
 class UCurveFloat;
@@ -65,7 +67,9 @@ private:
     UFUNCTION()
     void UpdateSpectralEffect(float Value);
 
-    class AEntity* EntityOwner;
+    TScriptInterface<IOwnerUtilsInterface> OwnerUtils;
+
+    TScriptInterface<ICharacterStateProvider> CharacterStateProvider;
 
     UPROPERTY(EditDefaultsOnly)
     UAnimMontage* EquipMontage;

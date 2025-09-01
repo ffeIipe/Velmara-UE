@@ -4,6 +4,7 @@
 #include "Components/ActorComponent.h"
 #include "InventoryComponent.generated.h"
 
+class IWeaponInterface;
 struct FInventoryData;
 class AItem;
 class UInventory;
@@ -22,7 +23,7 @@ public:
     int32 EquippedSlotIndex = -1;
 
     UPROPERTY(VisibleAnywhere, Category = "Inventory", Transient)
-    AItem* EquippedItem = nullptr;
+    TScriptInterface<IWeaponInterface> EquippedWeapon;
 
 protected:
     virtual void BeginPlay() override;
@@ -45,16 +46,16 @@ public:
     TArray<AItem*> InventorySlots;
 
     UFUNCTION(BlueprintPure, Category = "Inventory")
-    AItem* GetEquippedItem() const { return EquippedItem; }
+    TScriptInterface<IWeaponInterface> GetWeaponEquipped() const { return EquippedWeapon; }
 
     UFUNCTION(BlueprintCallable, Category = "Inventory")
-    bool TryAddItem(AItem* ItemToAdd);
+    bool TryAddWeapon(AItem* ItemToAdd);
 
     UFUNCTION(BlueprintCallable, Category = "Inventory")
-    void EquipItemFromSlot(int32 SlotIndex);
+    void EquipWeaponFromSlot(int32 SlotIndex);
 
     UFUNCTION(BlueprintCallable, Category = "Inventory")
-    void DropItemFromSlot(int32 SlotIndex);
+    void DropWeaponFromSlot(int32 SlotIndex);
     
     UFUNCTION(BlueprintCallable, Category = "Inventory")
     void ShowInventory();
@@ -77,9 +78,11 @@ public:
     UPROPERTY(EditDefaultsOnly, Category = "Inventory | Inputs")
     UInputAction* Slot2_InventoryAction;
 
-    void UnequipCurrentItem();
+    void UnequipCurrentWeapon();
     
     void UpdateInventoryUI();
+    
+    void Interact();
 
 private:
     void InitializeInventoryWidget();
@@ -89,4 +92,6 @@ private:
     
     // --- Stats Assigned By Data Asset ---
     int32 MaxSlots = 2;
+
+    AController* OwnerController = nullptr;
 };

@@ -41,38 +41,18 @@ void AItem::BeginPlay()
 	}
 }
 
-void AItem::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwner, APawn* NewInstigator)
-{
-	DisableCollision();
-	PromptWidget->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
-	if (!bWasOpened)
-	{
-		bWasOpened = true;
-		if (UWorld* World = GetWorld())
-		{
-			if (ANewGameStateBase* GameState = World->GetGameState<ANewGameStateBase>())
-			{
-				FInteractedItemSaveData SaveData;
-				SaveData.UniqueSaveID = GetUniqueSaveID();
-				SaveData.bWasOpened = bWasOpened;
-				GameState->UpdateInteractedItemState(SaveData);
-			}
-		}
-	}
-}
-
 void AItem::Use(ACharacter* TargetCharacter)
 {	
-	if (!bWasOpened)
+	if (!bWasUsed)
 	{
-		bWasOpened = true;
+		bWasUsed = true;
 		if (UWorld* World = GetWorld())
 		{
 			if (ANewGameStateBase* GameState = World->GetGameState<ANewGameStateBase>())
 			{
 				FInteractedItemSaveData SaveData;
 				SaveData.UniqueSaveID = GetUniqueSaveID();
-				SaveData.bWasOpened = bWasOpened;
+				SaveData.bWasOpened = bWasUsed;
 				GameState->UpdateInteractedItemState(SaveData);
 			}
 		}
@@ -97,7 +77,7 @@ void AItem::ApplySavedState(const FInteractedItemSaveData* SavedData)
 	{
 		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Item has been used... So restoring..."));
 		Use(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
-		bWasOpened = true;
+		bWasUsed = true;
 		
 		Destroy();
 	}

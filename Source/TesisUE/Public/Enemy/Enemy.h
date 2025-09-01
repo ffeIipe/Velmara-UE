@@ -66,25 +66,22 @@ public:
 	// --- Combat & Damage ---
 	virtual void Die(UAnimMontage* DeathAnim, FName Section) override;
 
-	virtual void GetHit_Implementation(AEntity* DamageCauser, const FVector& ImpactPoint, FDamageEvent const&  DamageEvent, const float DamageReceived) override;
-
-	void DropOrbs(const float DamageReceived, AEntity* DamageCauser) const;
+	virtual void GetHit(TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived) override;
+	
+	void DropOrbs(const float DamageReceived, const TScriptInterface<ICombatTargetInterface>& DamageCauser) const;
 
 	void FinishedDamage();
 
-	virtual bool IsLaunchable_Implementation() override;
+	virtual bool IsLaunchable() override;
 
-	void NotifyDamageTakenToBlackboard(AEntity* DamageCauser);
+	void NotifyDamageTakenToBlackboard(TScriptInterface<ICombatTargetInterface> DamageCauser);
 
-	virtual void LaunchUp_Implementation(const FVector& InstigatorLocation) override;
+	virtual void LaunchUp(const FVector& InstigatorLocation) override;
 
 	// --- AI & State ---
 	FORCEINLINE EEnemyType GetEnemyType() const { return EnemyType; }
 
 	FORCEINLINE EEnemyState GetEnemyState() const { return EnemyState; }
-
-	UFUNCTION(BlueprintCallable, Category = "Enemy|Combat")
-	FORCEINLINE AActor* GetDamageCauserActor() const { return LastDamageCauser; }
 
 	UFUNCTION(BlueprintCallable)
 	EEnemyState SetEnemyState(EEnemyState NewState);
@@ -97,7 +94,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void EnableAI();
 
-	void NotifyThreat(AEntity * ThreatActor);
+	void NotifyThreat(const TScriptInterface<ICombatTargetInterface>& ThreatActor) const;
 
 	AAIController* GetAIController() const { return AIController; };
 
@@ -172,9 +169,6 @@ protected:
 	float EnergyDivider = 2.f;
 
 	// --- Animation Montages ---
-	UPROPERTY(EditDefaultsOnly, Category = "Montages");
-	UAnimMontage* HitReactMontage;
-
 	UPROPERTY(EditDefaultsOnly, Category = "Montages");
 	UAnimMontage* FinisherDeathMontage;
 

@@ -1,11 +1,11 @@
 #pragma once
 
 UENUM(BlueprintType)
-enum class ECharacterStates : uint8
+enum class ECharacterHumanStates : uint8
 {
-	ECS_Unequipped UMETA(DisplayName = "Unequipped"),
-	ECS_EquippedSword UMETA(DisplayName = "EquippedSword"),
-	ECS_EquippingSword UMETA(DisplayName = "EquippingSword")
+	ECHS_Unequipped UMETA(DisplayName = "Unequipped"),
+	ECHS_EquippedSword UMETA(DisplayName = "EquippedSword"),
+	ECHS_EquippingSword UMETA(DisplayName = "EquippingSword")
 };
 
 UENUM(BlueprintType)
@@ -29,9 +29,9 @@ enum class ECharacterActions : uint8
 };
 
 UENUM(BlueprintType)
-enum class ECharacterForm : uint8
+enum class ECharacterMode : uint8
 {
-	ECF_Human UMETA(DisplayName = "Human"),
-	ECF_Spectral UMETA(DisplayName = "Spectral"),
-	ECF_Possessing UMETA(DisplayName = "Possessing")
+	ECM_Human UMETA(DisplayName = "Human"),
+	ECM_Spectral UMETA(DisplayName = "Spectral"),
+	ECM_Possessing UMETA(DisplayName = "Possessing")
 };

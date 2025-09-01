@@ -29,7 +29,7 @@ private:
 		UPrimitiveComponent* OtherComp,
 		int32 OtherBodyIndex) override;
 
-	void ApplyTrapDamage(FVector ImpactPoint);
+	void ApplyTrapDamage(const FVector& ImpactPoint);
 
 	UPROPERTY(EditAnywhere, Category = "Stats | Trap")
 	float Damage = 10.0f;

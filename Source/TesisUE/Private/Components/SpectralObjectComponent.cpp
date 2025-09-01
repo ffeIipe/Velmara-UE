@@ -5,14 +5,14 @@ USpectralObjectComponent::USpectralObjectComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 
-	VisibleTo = ECharacterForm::ECF_Spectral;
+	VisibleTo = ECharacterMode::ECM_Spectral;
 }
 
 void USpectralObjectComponent::SetSpectralVisibility(bool bIsVisible)
 {
 	if (SpectralMaterial.Num() == 0) return;
 
-	bool bShouldBeVisible = (VisibleTo == ECharacterForm::ECF_Spectral) ? bIsVisible : !bIsVisible;
+	bool bShouldBeVisible = (VisibleTo == ECharacterMode::ECM_Spectral) ? bIsVisible : !bIsVisible;
 
 	float AlphaValue = bShouldBeVisible ? 1.0f : 0.3f;
 

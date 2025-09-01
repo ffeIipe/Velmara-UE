@@ -19,10 +19,6 @@
 #include "Curves/CurveFloat.h"
 
 #include "Camera/CameraActor.h"
-#include "Enemy/Spectre.h"
-#include "Enemy/Enemy.h"
-
-#include "Items/Weapons/Sword.h"
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -31,9 +27,7 @@
 
 #include "Engine/DamageEvents.h"
 #include "DamageTypes/SpectralTrapDamageType.h"
-
-#include "Animation/AnimInstance.h"
-
+#include "Interfaces/Weapon/WeaponInterface.h"
 
 APlayerMain::APlayerMain()
 {
@@ -55,35 +49,36 @@ APlayerMain::APlayerMain()
 	SpectralWeaponComponent = CreateDefaultSubobject<USpectralWeaponComponent>(TEXT("SpectralWeapon"));
 }
 
-void APlayerMain::PerformSpectralAttack_Implementation()
+void APlayerMain::GetHit(TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint,
+	FDamageEvent const& DamageEvent, const float DamageReceived)
 {
-	if (IsEquipping() || GetCharacterStateComponent()->GetCurrentCharacterState().SpectralState == ECharacterSpectralStates::ECSS_Unequipped) return;
-
-	SpectralWeaponComponent->PrimaryFire();
-}
-
-void APlayerMain::PerformSpectralBarrier_Implementation()
-{
-	if (IsEquipping() || GetCharacterStateComponent()->GetCurrentCharacterState().SpectralState == ECharacterSpectralStates::ECSS_Unequipped) return;
-
-	SpectralWeaponComponent->SecondaryFire();
-}
-
-void APlayerMain::ResetSpectralAttack_Implementation()
-{
-	SpectralAttackIndex = 0;
-	GetCombatComponent()->bIsSaveLightAttack = false;
-}
-
-void APlayerMain::GetHit_Implementation(AEntity* DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived)
-{
-	Super::GetHit_Implementation(DamageCauser, ImpactPoint, DamageEvent, DamageReceived);
+	Super::GetHit(DamageCauser, ImpactPoint, DamageEvent, DamageReceived);
 
 	if (DamageEvent.DamageTypeClass == USpectralTrapDamageType::StaticClass())
 	{
 		StunBehavior();
 	}	
 }
+
+// void APlayerMain::PerformSpectralAttack_Implementation()
+// {
+// 	if (IsEquipping() || GetCharacterStateComponent()->GetCurrentCharacterState().SpectralState == ECharacterSpectralStates::ECSS_Unequipped) return;
+//
+// 	SpectralWeaponComponent->PrimaryFire();
+// }
+//
+// void APlayerMain::PerformSpectralBarrier_Implementation()
+// {
+// 	if (IsEquipping() || GetCharacterStateComponent()->GetCurrentCharacterState().SpectralState == ECharacterSpectralStates::ECSS_Unequipped) return;
+//
+// 	SpectralWeaponComponent->SecondaryFire();
+// }
+//
+// void APlayerMain::ResetSpectralAttack_Implementation()
+// {
+// 	SpectralAttackIndex = 0;
+// 	GetCombatComponent()->bIsSaveLightAttack = false;
+// }
 
 void APlayerMain::BeginPlay()
 {
@@ -95,7 +90,7 @@ void APlayerMain::BeginPlay()
 	}
 	
 	
-	GetCharacterStateComponent()->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral ?
+	GetCharacterStateComponent()->CurrentStates.Mode == ECharacterMode::ECM_Spectral ?
 		SpectralWeaponComponent->EnableSpectralWeapon(true) : SpectralWeaponComponent->EnableSpectralWeapon(false);
 
 	for (TActorIterator<ACameraActor> It(GetWorld()); It; ++It)
@@ -141,19 +136,7 @@ void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	}
 }
 
-void APlayerMain::SearchTarget()
-{
-	const FVector Start = GetActorLocation();
-	const FVector End = GetActorLocation() + GetViewRotation().Vector() * TrackTargetDistance;
-
-	if (AActor* Enemy = GetCombatComponent()->SphereTraceForEnemies(Start, End))
-	{
-		SpectralTarget = Cast<ASpectre>(Enemy);
-	}
-	else SpectralTarget = nullptr;
-}
-
-float APlayerMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+float APlayerMain::TakeDamage(const float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	if (!bCanReceiveDamage) return 0.f;
 
@@ -168,104 +151,10 @@ float APlayerMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEven
 	return DamageAmount;
 }
 
-// void APlayerMain::Equipping(const bool bIsSwordBeingEquipped)
-// {
-// 	if (const ECharacterForm ActualForm = GetCharacterStateComponent()->GetCurrentCharacterState().Form; ActualForm == ECharacterForm::ECF_Human) //si estoy en humano
-// 	{
-// 		/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Green, FString("Human form"));*/
-//
-// 		if (bIsSwordBeingEquipped) //y estoy equipando una espada
-// 		{
-// 			if (GetInventoryComponent()->GetEquippedItem())
-// 			{
-// 				if (SpectralWeaponComponent->bWasInitialized && GetCharacterStateComponent()->GetCurrentCharacterState().SpectralState == ECharacterSpectralStates::ECSS_EquippedPistol)
-// 				{
-// 					PlayAnimMontage(EquipPistolMontage, 1.f, FName("BackToSword"));
-// 					
-// 				}
-// 				else
-// 				{
-// 					/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Red, FString("Equipping sword"));*/
-//
-// 					PlayAnimMontage(EquipSwordMontage, 1.f, FName("Equip"));
-// 					GetCharacterStateComponent()->SetCharacterState(ECharacterStates::ECS_EquippingSword);
-// 				}
-// 			}
-// 			else
-// 			{
-// 				if (SpectralWeaponComponent->bWasInitialized)
-// 				{
-// 					PlayAnimMontage(EquipPistolMontage, 1.f, FName("Unequip"));
-// 					GetCharacterStateComponent()->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
-// 				}
-// 				/*else GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Cyan, FString("No equipped item, so none animation will be played..."));*/
-// 			}
-// 		}
-// 		else //o estoy equipando una pistola
-// 		{
-// 			if (!GetInventoryComponent()->GetEquippedItem()) //si no tengo espada
-// 			{
-// 				/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Orange, FString("Only pick pistol"));*/
-//
-// 				PlayAnimMontage(EquipPistolMontage, 1.f, FName("Unequip"));
-// 				GetCharacterStateComponent()->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
-// 			}
-// 			else
-// 			{
-// 				//si tengo espada equipada
-// 				/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Green, FString("Unequip sword and equip pistol"));*/
-//
-// 				PlayAnimMontage(EquipSwordMontage, 1.f, FName("PickPistol"));
-// 				GetCharacterStateComponent()->SetCharacterState(ECharacterStates::ECS_EquippingSword);
-// 			}
-// 		}
-// 	}
-// 	else //si no estoy en humano
-// 	{
-// 		/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Purple, FString("Spectral form"));*/
-//
-// 		if (!bIsSwordBeingEquipped)
-// 		{
-// 			if (GetInventoryComponent()->GetEquippedItem())
-// 			{
-// 				if (SpectralWeaponComponent->bWasInitialized)
-// 				{
-// 					if (GetCharacterStateComponent()->GetCurrentCharacterState().State == ECharacterStates::ECS_EquippedSword)
-// 					{
-// 						/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Cyan, FString("Has sword equipped"));*/
-//
-// 						PlayAnimMontage(EquipSwordMontage, 1.f, FName("SwitchToPistol"));
-// 						GetCharacterStateComponent()->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
-// 					}
-// 					else
-// 					{
-// 						/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Blue, FString("Sword it's on the back"));*/
-//
-// 						PlayAnimMontage(EquipPistolMontage, 1.f, FName("Equip"));
-// 						GetCharacterStateComponent()->SetCharacterState(ECharacterStates::ECS_Unequipped);
-// 						GetCharacterStateComponent()->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
-// 					}
-// 				}
-// 				else
-// 				{
-// 					PlayAnimMontage(EquipSwordMontage, 1.f, FName("Unequip"));
-// 					GetCharacterStateComponent()->SetCharacterState(ECharacterStates::ECS_EquippingSword);
-// 				}
-// 			}
-// 			else
-// 			{
-// 				if (SpectralWeaponComponent->bWasInitialized)
-// 				{
-// 					/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Blue, FString("Sword not equipped"));*/
-//
-// 					PlayAnimMontage(EquipPistolMontage, 1.f, FName("Equip"));
-// 					GetCharacterStateComponent()->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippingPistol);
-// 				}
-// 			}
-// 			
-// 		}
-// 	}	
-// }
+bool APlayerMain::IsPossessed()
+{
+	return true; //true by default, because it wouldn't be marked as a threat if not
+}
 
 void APlayerMain::ToggleForm()
 {
@@ -303,7 +192,7 @@ void APlayerMain::Die(UAnimMontage* DeathAnim, const FName Section)
 
 void APlayerMain::Revive()
 {
-	if (GetCharacterStateComponent()->GetCurrentCharacterState().Action == ECharacterActions::ECA_Dead)
+	if (GetCharacterStateComponent()->CurrentStates.Action == ECharacterActions::ECA_Dead)
 	{
 		StopAnimMontage();
 
@@ -313,7 +202,7 @@ void APlayerMain::Revive()
 		}
 
 		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
-		GetCharacterStateComponent()->SetCharacterAction(ECharacterActions::ECA_Nothing);
+		GetCharacterStateComponent()->SetAction(ECharacterActions::ECA_Nothing);
 	}
 }
 
@@ -321,7 +210,7 @@ void APlayerMain::ResetFollowCamera()
 {
 	if (FollowCamera && PlayerControllerRef)
 	{
-		GetCharacterStateComponent()->SetCharacterAction(ECharacterActions::ECA_Nothing);
+		GetCharacterStateComponent()->SetAction(ECharacterActions::ECA_Nothing);
 		FollowCamera->AttachToComponent(GetSpringArmComponent(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName("SpringEndpoint"));
 		PlayerControllerRef->EnableInput(PlayerControllerRef);
 		bCanReceiveDamage = true;
@@ -339,27 +228,25 @@ void APlayerMain::LoadLastCheckpoint() const
 
 void APlayerMain::ChangePrimaryWeapon()
 {
-	if (GetCharacterStateComponent()->IsFormEqualToAny({ ECharacterForm::ECF_Spectral })) return;
+	if (GetCharacterStateComponent()->IsModeEqualToAny({ ECharacterMode::ECM_Spectral })) return;
 
 	GetInventoryComponent()->ChangeWeapon(0);
-	Equipping(true);
 }
 
 void APlayerMain::ChangeSecondaryWeapon()
 {
-	if (GetCharacterStateComponent()->IsFormEqualToAny({ ECharacterForm::ECF_Spectral })) return;
+	if (GetCharacterStateComponent()->IsModeEqualToAny({ ECharacterMode::ECM_Spectral })) return;
 
 	GetInventoryComponent()->ChangeWeapon(1);
-	Equipping(true);
 }
 
 void APlayerMain::ApplyHumanMode()
 {
 	GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = false;
 
-	if (GetInventoryComponent()->GetEquippedItem())
+	if (GetWeaponEquipped())
 	{
-		GetInventoryComponent()->GetEquippedItem()->EnableVisuals(true);
+		GetWeaponEquipped()->EnableVisuals(true);
 	}
 
 	if (GetPossessionComponent()->GetPossessedEntity())
@@ -367,14 +254,11 @@ void APlayerMain::ApplyHumanMode()
 		GetPossessionComponent()->ReleasePossession();
 	}
 
-	Equipping(true);
-
-	GetCharacterStateComponent()->SetCharacterForm(ECharacterForm::ECF_Human);
+	GetCharacterStateComponent()->SetMode(ECharacterMode::ECM_Human);
 }
 
 void APlayerMain::ApplySpectralEffect()
 {
 	GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = true;
-	Equipping(false);
-	GetCharacterStateComponent()->SetCharacterForm(ECharacterForm::ECF_Spectral);
+	GetCharacterStateComponent()->SetMode(ECharacterMode::ECM_Spectral);
 }

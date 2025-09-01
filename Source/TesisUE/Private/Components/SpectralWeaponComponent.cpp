@@ -37,10 +37,10 @@ void USpectralWeaponComponent::InitializeSpectralWeaponComponent()
 {
     bWasInitialized = true;
 
-    if (UCharacterStateComponent* OwnerCharStateComp = GetOwner()->GetComponentByClass<UCharacterStateComponent>())
-    {
-        OwnerCharStateComp->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippedPistol);
-    }
+    // if (UCharacterStateComponent* OwnerCharStateComp = GetOwner()->GetComponentByClass<UCharacterStateComponent>())
+    // {
+    //     OwnerCharStateComp->SetCharacterSpectralState(ECharacterSpectralStates::ECSS_EquippedPistol);
+    // }
 }
 
 
@@ -213,7 +213,7 @@ void USpectralWeaponComponent::Fire(bool bIsPrimary)
                 if (IHitInterface* Entity = Cast<IHitInterface>(HitActor))
                 {
                     FDamageEvent DamageEvent(USpectralTrapDamageType::StaticClass());
-                    Entity->Execute_GetHit(Hit.GetActor(), Cast<AEntity>(OwnerCharacter), Hit.ImpactPoint, DamageEvent, BaseDamage);
+                    Entity->GetHit(Cast<AEntity>(OwnerCharacter), Hit.ImpactPoint, DamageEvent, BaseDamage);
 
                     if (SparksEffect)
                     {

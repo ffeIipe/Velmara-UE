@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include <Player/CharacterStates.h>
+#include <Player/CharacterHumanStates.h>
 #include "SpectralObjectComponent.generated.h"
 
 
@@ -18,7 +18,7 @@ public:
 	virtual void SetSpectralVisibility(bool bIsVisible);
 
 	UPROPERTY(EditAnywhere, Category = "Visibility")
-	ECharacterForm VisibleTo;
+	ECharacterMode VisibleTo;
 
 protected:
 	virtual void BeginPlay() override;

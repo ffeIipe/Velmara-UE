@@ -22,6 +22,8 @@
 #include "DamageTypes/SpectralTrapDamageType.h"
 #include <SpectralMode/Interfaces/SpectralInteractable.h>
 #include <NiagaraFunctionLibrary.h>
+#include <vector>
+
 #include "Engine/DamageEvents.h"
 #include "Camera/CameraActor.h"
 #include "DataAssets/EntityData.h"
@@ -48,9 +50,14 @@ AEntity::AEntity()
 	SpringArmComponent->bUsePawnControlRotation = true;
 
 	GetAttributeComponent()->OnOutOfEnergy.AddDynamic(this, &AEntity::OutOfEnergy);
+	
+	GetExtraMovementComponent()->OnDodgeStarted.AddDynamic(GetCombatComponent(), &UCombatComponent::RemoveCombatTarget);
+
+	GetPossessionComponent()->OnPossessed.AddDynamic(GetAttributeComponent(), &UAttributeComponent::StartDecreaseEnergy);
 }
 
-void AEntity::GetHit_Implementation(AEntity* DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived)
+void AEntity::GetHit(TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint,
+	FDamageEvent const& DamageEvent, const float DamageReceived)
 {
 	if (GetCharacterStateComponent()->IsActionEqualToAny({ ECharacterActions::ECA_Dead })) return;
 
@@ -61,7 +68,7 @@ void AEntity::GetHit_Implementation(AEntity* DamageCauser, const FVector& Impact
 		UGameplayStatics::PlaySoundAtLocation(
 			GetWorld(),
 			ReceiveDamageSFX,
-			GetActorLocation()
+			GetTargetActorLocation()
 		);
 	}
 
@@ -85,16 +92,114 @@ void AEntity::GetHit_Implementation(AEntity* DamageCauser, const FVector& Impact
 
 	if (!IsEquipping())
 	{
-		GetCombatComponent()->GetDirectionalReact(ImpactPoint);
+		GetDirectionalReact(ImpactPoint);
+	}	
+}
+
+void AEntity::GetFinished()
+{
+	
+}
+
+bool AEntity::IsHittable()
+{
+	return !GetAttributeComponent()->IsShielded() && IsAlive();
+}
+
+void AEntity::AttachFollowCamera()
+{
+}
+
+ECharacterHumanStates AEntity::SetHumanState(ECharacterHumanStates NewState)
+{
+	return  GetCharacterStateComponent()->SetHumanState(NewState);
+}
+
+ECharacterSpectralStates AEntity::SetSpectralState(ECharacterSpectralStates NewSpectralState)
+{
+	return GetCharacterStateComponent()->SetSpectralState(NewSpectralState);
+}
+
+ECharacterActions AEntity::SetAction(ECharacterActions NewAction)
+{
+	return GetCharacterStateComponent()->SetAction(NewAction);
+}
+
+ECharacterMode AEntity::SetMode(ECharacterMode NewForm)
+{
+	return GetCharacterStateComponent()->SetMode(NewForm);
+}
+
+bool AEntity::IsHumanStateEqualToAny(const TArray<ECharacterHumanStates>& StatesToCheck) const
+{
+	return GetCharacterStateComponent()->IsHumanStateEqualToAny(StatesToCheck);
+}
+
+bool AEntity::IsSpectralStateEqualToAny(const TArray<ECharacterSpectralStates>& SpectralStatesToCheck) const
+{
+	return GetCharacterStateComponent()->IsSpectralStateEqualToAny(SpectralStatesToCheck);
+}
+
+bool AEntity::IsActionEqualToAny(const TArray<ECharacterActions>& ActionsToCheck) const
+{
+	return GetCharacterStateComponent()->IsActionEqualToAny(ActionsToCheck);
+}
+
+bool AEntity::IsModeEqualToAny(const TArray<ECharacterMode>& FormsToCheck) const
+{
+	return GetCharacterStateComponent()->IsModeEqualToAny(FormsToCheck);
+}
+
+void AEntity::GetDirectionalReact(const FVector& ImpactPoint)
+{
+	const FVector Forward = GetOwner()->GetActorForwardVector();
+	const FVector ToHit = (ImpactPoint - GetOwner()->GetActorLocation()).GetSafeNormal();
+
+	const double CosAngle = FVector::DotProduct(Forward, ToHit);
+
+	double Angle = FMath::Acos(CosAngle);
+
+	Angle = FMath::RadiansToDegrees(Angle);
+
+	if (const FVector CrossProduct = FVector::CrossProduct(Forward, ToHit); CrossProduct.Z < 0)
+	{
+		Angle *= -1.f;
+	}
+
+	FName Section("FromBack");
+
+	if (Angle >= -45.f && Angle < 45.f)
+	{
+		Section = FName("FromFront");
+	}
+
+	else if (Angle >= -135.f && Angle < -45.f)
+	{
+		Section = FName("FromLeft");
+	}
+
+	else if (Angle >= 45.f && Angle < 135.f)
+	{
+		Section = FName("FromRight");
+	}
+
+	PlayAnimMontage(HitReactMontage, 1.f, Section);
+}
+
+void AEntity::HitReactJumpToSection(FName Section)
+{
+	if (HitReactMontage)
+	{
+		PlayAnimMontage(HitReactMontage, 1.f, Section);
 	}
 }
 
-void AEntity::PlayCameraShake(const FVector& Epicenter, const float InnerRadius, const float OuterRadius)
+bool AEntity::IsEquipped()
 {
-	UGameplayStatics::PlayWorldCameraShake(this, CameraShake, Epicenter, InnerRadius, OuterRadius);
+	return GetCharacterStateComponent()->IsHumanStateEqualToAny({ECharacterHumanStates::ECHS_EquippedSword});
 }
 
-bool AEntity::CanBeFinished_Implementation()
+bool AEntity::CanBeFinished()
 {
 	if (GetAttributeComponent()->GetHealthPercent() <= .2f)
 	{
@@ -110,7 +215,12 @@ bool AEntity::CanBeFinished_Implementation()
 	return false;
 }
 
-bool AEntity::IsLaunchable_Implementation()
+void AEntity::PlayCameraShake(const FVector& Epicenter, const float InnerRadius, const float OuterRadius)
+{
+	UGameplayStatics::PlayWorldCameraShake(this, CameraShake, Epicenter, InnerRadius, OuterRadius);
+}
+
+bool AEntity::IsLaunchable()
 {
 	return false;
 }
@@ -119,18 +229,13 @@ void AEntity::SetWeaponCollisionEnabled(const ECollisionEnabled::Type CollisionE
 {
 	if (InventoryComponent)
 	{
-		if (AItem* CurrentItem = InventoryComponent->GetEquippedItem())
+		if (InventoryComponent->GetWeaponEquipped())
 		{
-			if (UPrimitiveComponent* ItemCollisionComponent = CurrentItem->GetCollisionComponent())
+			GetWeaponEquipped()->SetWeaponCollisionEnabled(CollisionEnabled);
+			
+			if (CollisionEnabled != ECollisionEnabled::NoCollision)
 			{
-				ItemCollisionComponent->SetCollisionEnabled(CollisionEnabled);
-				if (ASword* Sword = Cast<ASword>(CurrentItem))
-				{
-					if (CollisionEnabled != ECollisionEnabled::NoCollision)
-					{
-						Sword->IgnoreActors.Empty();
-					}
-				}
+				GetWeaponEquipped()->ClearIgnoreActors();
 			}
 		}
 	}
@@ -147,7 +252,7 @@ void AEntity::BeginPlay()
 	InitializeComponentsData();
 }
 
-void AEntity::InitializeComponentsData() const
+void AEntity::InitializeComponentsData()
 {
 	if (EntityData)
 	{
@@ -160,13 +265,6 @@ void AEntity::InitializeComponentsData() const
 	}
 }
 
-void AEntity::OnConstruction(const FTransform& Transform)
-{
-	Super::OnConstruction(Transform);
-
-	InitializeComponentsData();
-}
-
 void AEntity::AttachFollowCamera(USpringArmComponent* AttachTarget)
 {
 	if (FollowCamera && PlayerControllerRef)
@@ -174,6 +272,13 @@ void AEntity::AttachFollowCamera(USpringArmComponent* AttachTarget)
 		FollowCamera->AttachToComponent(AttachTarget, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("SpringEndpoint"));
 		PlayerControllerRef->SetViewTargetWithBlend(FollowCamera, 1.f);
 	}
+}
+
+void AEntity::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
+	
+	InitializeComponentsData();
 }
 
 void AEntity::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -188,8 +293,6 @@ void AEntity::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 		EnhancedInputComponent->BindAction(InputAction_Move, ETriggerEvent::Triggered, GetExtraMovementComponent(), &UExtraMovementComponent::Input_Move);
 		EnhancedInputComponent->BindAction(InputAction_Dodge, ETriggerEvent::Started, GetExtraMovementComponent(), &UExtraMovementComponent::Input_Dodge);
 		EnhancedInputComponent->BindAction(InputAction_Look, ETriggerEvent::Triggered, GetExtraMovementComponent(), &UExtraMovementComponent::Input_Look);
-		EnhancedInputComponent->BindAction(InputAction_Block, ETriggerEvent::Triggered, GetExtraMovementComponent(), &UExtraMovementComponent::Input_Run);
-		EnhancedInputComponent->BindAction(InputAction_Block, ETriggerEvent::Completed, GetExtraMovementComponent(), &UExtraMovementComponent::Input_Run);
 
 		EnhancedInputComponent->BindAction(InputAction_Attack, ETriggerEvent::Started, GetCombatComponent(), &UCombatComponent::Input_Attack);
 		EnhancedInputComponent->BindAction(InputAction_HeavyAttack, ETriggerEvent::Started, GetCombatComponent(), &UCombatComponent::Input_HeavyAttack);
@@ -229,7 +332,7 @@ void AEntity::Jump()
 			GetExtraMovementComponent()->Input_DoubleJump();
 		}
 	}
-}
+}	
 
 void AEntity::Interact(const FInputActionValue& Value)
 {
@@ -263,31 +366,29 @@ void AEntity::Interact(const FInputActionValue& Value)
 
 	if (bHit && GetInventoryComponent())
 	{
-		if (ASword* HitSword = Cast<ASword>(ResultHit.GetActor()))
+		if (AItem* HitSword = Cast<AItem>(ResultHit.GetActor()))
 		{
-			if (GetCharacterStateComponent()->GetCurrentCharacterState().Form != ECharacterForm::ECF_Spectral)
+			if (GetCharacterStateComponent()->CurrentStates.Mode != ECharacterMode::ECM_Spectral)
 			{
-				if (GetInventoryComponent()->TryAddItem(HitSword))
+				if (GetInventoryComponent()->TryAddWeapon(HitSword))
 				{
 					ActorsToIgnore.Add(HitSword);
-					HitSword->OnWallHit.AddDynamic(this, &AEntity::OnWallCollision);
-
-					Equipping(true);
+					//HitSword->OnWallHit.AddDynamic(this, &AEntity::OnWallCollision);
 				}
 			}
 		}
 		else if (ISpectralInteractable* SpectralObjectInteractable = Cast<ISpectralInteractable>(ResultHit.GetActor()))
 		{
-			if (GetCharacterStateComponent()->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
+			if (GetCharacterStateComponent()->CurrentStates.Mode == ECharacterMode::ECM_Spectral)
 			{
 				SpectralObjectInteractable->Execute_SpectralInteract(ResultHit.GetActor(), this);
 			}
 		}
-		else if (AItem* HitItem = Cast<AItem>(ResultHit.GetActor()))
-		{
-			HitItem->Use(this);
-			Equipping(false);
-		}
+		// else if (AItem* HitItem = Cast<AItem>(ResultHit.GetActor()))
+		// {
+		// 	HitItem->Use(this);
+		// 	Equipping(false);
+		// }
 	}
 }
 
@@ -305,8 +406,8 @@ void AEntity::RemoveStunBehavior()
 
 bool AEntity::IsEquipping()
 {
-	return GetCharacterStateComponent()->GetCurrentCharacterState().SpectralState == ECharacterSpectralStates::ECSS_EquippingPistol
-		|| GetCharacterStateComponent()->GetCurrentCharacterState().State == ECharacterStates::ECS_EquippingSword;
+	return GetCharacterStateComponent()->CurrentStates.SpectralState == ECharacterSpectralStates::ECSS_EquippingPistol
+		|| GetCharacterStateComponent()->CurrentStates.HumanState == ECharacterHumanStates::ECHS_EquippingSword;
 }
 
 float AEntity::TakeDamage(const float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
@@ -326,7 +427,7 @@ float AEntity::TakeDamage(const float DamageAmount, FDamageEvent const& DamageEv
 	else
 	{
 		GetAttributeComponent()->ReceiveDamage(DamageAmount);
-		CanBeFinished_Implementation();
+		CanBeFinished();
 	}
 	return DamageAmount;
 }
@@ -341,9 +442,9 @@ void AEntity::OutOfEnergy()
 
 void AEntity::Die(UAnimMontage* DeathAnim, FName Section)
 {
-	if (GetCharacterStateComponent()->GetCurrentCharacterState().Action == ECharacterActions::ECA_Dead) return;
+	if (GetCharacterStateComponent()->CurrentStates.Action == ECharacterActions::ECA_Dead) return;
 
-	GetCharacterStateComponent()->SetCharacterAction(ECharacterActions::ECA_Dead);
+	GetCharacterStateComponent()->SetAction(ECharacterActions::ECA_Dead);
 
 	if (GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling || GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Flying)
 	{
@@ -360,5 +461,5 @@ void AEntity::Die(UAnimMontage* DeathAnim, FName Section)
 void AEntity::OnWallCollision(const FHitResult& HitResult)
 {
 	StopAnimMontage();
-	GetCombatComponent()->HitReactJumpToSection(FName("ReactToShield"));
+	HitReactJumpToSection(FName("ReactToShield"));
 }

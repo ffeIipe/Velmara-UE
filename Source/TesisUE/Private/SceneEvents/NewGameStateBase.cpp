@@ -87,7 +87,7 @@ void ANewGameStateBase::InitializeWorldInteractedItemsState(const TArray<FIntera
 				{
 					FInteractedItemSaveData InitialData;
 					InitialData.UniqueSaveID = WorldItem->GetUniqueSaveID();
-					InitialData.bWasOpened = WorldItem->bWasOpened;
+					InitialData.bWasOpened = WorldItem->bWasUsed;
 				}
 			}
 		}
@@ -116,7 +116,7 @@ void ANewGameStateBase::RequestInteractedItemStateReconciliation(AItem* ItemToRe
 	{
 		FInteractedItemSaveData InitialData;
 		InitialData.UniqueSaveID = ItemID;
-		InitialData.bWasOpened = ItemToReconcile->bWasOpened;
+		InitialData.bWasOpened = ItemToReconcile->bWasUsed;
 
 		if (!WorldInteractedItemsStates.Contains(ItemID))
 		{

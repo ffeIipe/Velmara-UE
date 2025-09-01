@@ -44,14 +44,9 @@ float ASpectre::TakeDamage(const float DamageAmount, FDamageEvent const& DamageE
 	return DamageAmount;
 }
 
-bool ASpectre::IsLaunchable_Implementation()
+bool ASpectre::IsLaunchable()
 {
 	return true;
-}
-
-bool ASpectre::CanBeFinished_Implementation()
-{
-	return false; //it cannot be finished this entity
 }
 
 void ASpectre::ApplyPossessionParameters(bool bShouldEnable)

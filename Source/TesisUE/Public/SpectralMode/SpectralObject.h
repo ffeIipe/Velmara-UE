@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Items/Item.h"
-#include "Player/CharacterStates.h"
+#include "Player/CharacterHumanStates.h"
 #include "SpectralObject.generated.h"
 
 class UBoxComponent;

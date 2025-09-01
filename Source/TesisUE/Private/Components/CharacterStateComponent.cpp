@@ -4,65 +4,55 @@ UCharacterStateComponent::UCharacterStateComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 
-	CharacterStates.State = ECharacterStates::ECS_Unequipped;
-	CharacterStates.Action = ECharacterActions::ECA_Nothing;
-	CharacterStates.Form = ECharacterForm::ECF_Human;
+	CurrentStates.HumanState = ECharacterHumanStates::ECHS_Unequipped;
+	CurrentStates.SpectralState = ECharacterSpectralStates::ECSS_Unequipped;
+	CurrentStates.Action = ECharacterActions::ECA_Nothing;
+	CurrentStates.Mode = ECharacterMode::ECM_Human;
 }
 
-const FCharacterStates& UCharacterStateComponent::GetCurrentCharacterState() const
+ECharacterHumanStates UCharacterStateComponent::SetHumanState(ECharacterHumanStates NewState)
 {
-	return CharacterStates;
+	CurrentStates.HumanState = NewState;
+	return CurrentStates.HumanState;
 }
 
-ECharacterStates UCharacterStateComponent::SetCharacterState(ECharacterStates NewState)
+ECharacterSpectralStates UCharacterStateComponent::SetSpectralState(ECharacterSpectralStates NewSpectralState)
 {
-	CharacterStates.State = NewState;
+	CurrentStates.SpectralState = NewSpectralState;
 
-	return CharacterStates.State;
+	return CurrentStates.SpectralState;
 }
 
-ECharacterSpectralStates UCharacterStateComponent::SetCharacterSpectralState(ECharacterSpectralStates NewSpectralState)
+ECharacterActions UCharacterStateComponent::SetAction(ECharacterActions NewAction)
 {
-	CharacterStates.SpectralState = NewSpectralState;
+	CurrentStates.Action = NewAction;
 
-	return CharacterStates.SpectralState;
+	return CurrentStates.Action;
 }
 
-ECharacterActions UCharacterStateComponent::SetCharacterAction(ECharacterActions NewAction)
+ECharacterMode UCharacterStateComponent::SetMode(ECharacterMode NewForm)
 {
-	CharacterStates.Action = NewAction;
+	CurrentStates.Mode = NewForm;
 
-	return CharacterStates.Action;
+	return CurrentStates.Mode;
 }
 
-ECharacterForm UCharacterStateComponent::SetCharacterForm(ECharacterForm NewForm)
+bool UCharacterStateComponent::IsHumanStateEqualToAny(const TArray<ECharacterHumanStates>& StatesToCheck) const
 {
-	CharacterStates.Form = NewForm;
-
-	return CharacterStates.Form;
-}
-
-bool UCharacterStateComponent::IsStateEqualToAny(const TArray<ECharacterStates>& StatesToCheck) const
-{
-	return StatesToCheck.Contains(CharacterStates.State);
+	return StatesToCheck.Contains(CurrentStates.HumanState);
 }
 
 bool UCharacterStateComponent::IsSpectralStateEqualToAny(const TArray<ECharacterSpectralStates>& SpectralStatesToCheck) const
 {
-	return SpectralStatesToCheck.Contains(CharacterStates.SpectralState);
+	return SpectralStatesToCheck.Contains(CurrentStates.SpectralState);
 }
 
 bool UCharacterStateComponent::IsActionEqualToAny(const TArray<ECharacterActions>& ActionsToCheck) const
 {
-	return ActionsToCheck.Contains(CharacterStates.Action);
+	return ActionsToCheck.Contains(CurrentStates.Action);
 }
 
-bool UCharacterStateComponent::IsFormEqualToAny(const TArray<ECharacterForm>& FormsToCheck) const
+bool UCharacterStateComponent::IsModeEqualToAny(const TArray<ECharacterMode>& FormsToCheck) const
 {
-	return FormsToCheck.Contains(CharacterStates.Form);
-}
-
-void UCharacterStateComponent::BeginPlay()
-{
-	Super::BeginPlay();
+	return FormsToCheck.Contains(CurrentStates.Mode);
 }

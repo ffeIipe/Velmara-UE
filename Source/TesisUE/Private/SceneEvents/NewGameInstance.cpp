@@ -15,6 +15,7 @@
 #include <SceneEvents/NewGameStateBase.h>
 
 #include "DataAssets/EntityData.h"
+#include "Player/CharacterHumanStates.h"
 
 UNewGameInstance::UNewGameInstance()
 {
@@ -359,7 +360,7 @@ bool UNewGameInstance::SavePlayerProgress(int32 SlotIndex, APawn* Entity)
         {
             SaveGameInstance->InventorySlotsData.Empty();
             const TArray<AItem*>& CurrentInventoryItems = PlayerInventory->GetInventoryItems();
-            AItem* CurrentlyEquippedItem = PlayerInventory->GetEquippedItem();
+            TScriptInterface<IWeaponInterface> CurrentlyEquippedItem = PlayerInventory->GetWeaponEquipped();
 
             for (AItem* ItemInSlot : CurrentInventoryItems)
             {
@@ -374,7 +375,7 @@ bool UNewGameInstance::SavePlayerProgress(int32 SlotIndex, APawn* Entity)
                 }
                 SaveGameInstance->InventorySlotsData.Add(ItemData);
             }
-            SaveGameInstance->EquippedSlotIndexInSave = CurrentInventoryItems.Find(CurrentlyEquippedItem);
+            SaveGameInstance->EquippedSlotIndexInSave = CurrentInventoryItems.Find(Cast<AItem>(CurrentlyEquippedItem.GetObject()));
         }
     }
 
@@ -480,14 +481,14 @@ void UNewGameInstance::ApplyPendingLoadedDataToWorld()
                 const FInventoryItemSaveData& SavedItemData = PendingGameDataToLoad->InventorySlotsData[i];
                 if (SavedItemData.ItemClass != nullptr)
                 {
-                    if (AItem* NewItem = GetWorld()->SpawnActor<AItem>(SavedItemData.ItemClass, PlayerCharacter->GetActorLocation(), PlayerCharacter->GetActorRotation(), SpawnParams))
+                    if (AItem* NewItem = GetWorld()->SpawnActor<AItem>(SavedItemData.ItemClass, PlayerCharacter->GetTargetActorLocation(), PlayerCharacter->GetActorRotation(), SpawnParams))
                     {
                         //GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Item reconciliated..."));
                         NewItem->SetOwner(PlayerCharacter);
 
-                        if (UCharacterStateComponent* PlayerCharStateComp = PlayerCharacter->GetComponentByClass<UCharacterStateComponent>())
+                        if (const TScriptInterface<ICharacterStateProvider> PlayerCharacterState = PlayerCharacter)
                         {
-                            PlayerCharStateComp->SetCharacterState(ECharacterStates::ECS_EquippedSword);
+                            PlayerCharacterState->SetHumanState(ECharacterHumanStates::ECHS_EquippedSword);
                         }
 
                         PlayerInventory->InventorySlots[i] = NewItem;
@@ -506,7 +507,7 @@ void UNewGameInstance::ApplyPendingLoadedDataToWorld()
 
             if (PendingGameDataToLoad->EquippedSlotIndexInSave != -1 && PlayerInventory->InventorySlots.IsValidIndex(PendingGameDataToLoad->EquippedSlotIndexInSave) && PlayerInventory->InventorySlots[PendingGameDataToLoad->EquippedSlotIndexInSave] != nullptr)
             {
-                PlayerInventory->EquipItemFromSlot(PendingGameDataToLoad->EquippedSlotIndexInSave);
+                PlayerInventory->EquipWeaponFromSlot(PendingGameDataToLoad->EquippedSlotIndexInSave);
             }
         }
     }

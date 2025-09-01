@@ -4,7 +4,7 @@
 #include "UObject/Interface.h"
 #include "HitInterface.generated.h"
 
-class AEntity;
+class ICombatTargetInterface;
 
 UINTERFACE(MinimalAPI)
 class UHitInterface : public UInterface
@@ -17,20 +17,9 @@ class TESISUE_API IHitInterface
 	GENERATED_BODY()
 
 public:
-	UFUNCTION(BlueprintNativeEvent)
-	void GetHit(AEntity* DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived);
+	virtual void GetHit(TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived) = 0;
 	
-	UFUNCTION(BlueprintNativeEvent)
-	void GetFinished();
-	
-	UFUNCTION(BlueprintNativeEvent)
-	bool CanBeFinished();
+	virtual void GetFinished() = 0;
 
-	UFUNCTION(BlueprintNativeEvent)
-	void LaunchUp(const FVector& InstigatorLocation);
-	
-	UFUNCTION(BlueprintNativeEvent)
-	bool IsLaunchable();
-
-
+	virtual bool IsHittable() = 0;
 };

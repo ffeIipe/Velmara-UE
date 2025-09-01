@@ -1,6 +1,5 @@
 #include "Components/InventoryComponent.h"
 #include "Items/Item.h"
-#include "GameFramework/Character.h"
 #include "Blueprint/UserWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerController.h"
@@ -9,7 +8,8 @@
 #include "HUD/Inventory.h"
 
 #include "DataAssets/EntityData.h"
-#include "Entities/Entity.h"
+#include "Interfaces/AnimatorProvider.h"
+#include "Interfaces/Weapon/WeaponInterface.h"
 
 UInventoryComponent::UInventoryComponent()
 {
@@ -35,7 +35,7 @@ void UInventoryComponent::ChangeWeapon(int32 SlotIndex)
 {
     if (InventorySlots.IsValidIndex(SlotIndex))
     {
-        EquipItemFromSlot(SlotIndex);
+        EquipWeaponFromSlot(SlotIndex);
     }
 }
 
@@ -52,7 +52,7 @@ void UInventoryComponent::InitializeInventoryWidget()
     }
 }
 
-bool UInventoryComponent::TryAddItem(AItem* ItemToAdd)
+bool UInventoryComponent::TryAddWeapon(AItem* ItemToAdd)
 {
     if (!IsValid(ItemToAdd))
     {
@@ -75,26 +75,22 @@ bool UInventoryComponent::TryAddItem(AItem* ItemToAdd)
     return false; // Inventario lleno
 }
 
-void UInventoryComponent::EquipItemFromSlot(int32 SlotIndex)
+void UInventoryComponent::EquipWeaponFromSlot(int32 SlotIndex)
 {
     if (!InventorySlots.IsValidIndex(SlotIndex) || InventorySlots[SlotIndex] == nullptr) return;
 
-    AItem* ItemToEquip = InventorySlots[SlotIndex];
+    TScriptInterface<IWeaponInterface> ItemToEquip = InventorySlots[SlotIndex];
+    UnequipCurrentWeapon();
 
-    UnequipCurrentItem();
-
-    ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
-
-    if (IsValid(OwnerCharacter) && IsValid(ItemToEquip))
+    if (ItemToEquip)
     {
-        USceneComponent* AttachParent = OwnerCharacter->GetMesh();
-        if (AttachParent)
+        if (const TScriptInterface<IAnimatorProvider> AnimatorProvider = GetOwner())
         {
-            ItemToEquip->Equip(AttachParent, HandSocketName, OwnerCharacter, OwnerCharacter);
+            ItemToEquip->Equip(AnimatorProvider->GetMesh(), HandSocketName, GetOwner(), Cast<APawn>(GetOwner()));
 
             //ItemToEquip->EnableVisuals(true);
 
-            EquippedItem = ItemToEquip;
+            EquippedWeapon = ItemToEquip;
             EquippedSlotIndex = SlotIndex;
         }
     }
@@ -102,46 +98,46 @@ void UInventoryComponent::EquipItemFromSlot(int32 SlotIndex)
     UpdateInventoryUI();
 }
 
-void UInventoryComponent::DropItemFromSlot(int32 SlotIndex)
+void UInventoryComponent::DropWeaponFromSlot(int32 SlotIndex)
 {
     if (!InventorySlots.IsValidIndex(SlotIndex) || InventorySlots[SlotIndex] == nullptr)
     {
         return;
     }
 
-    AItem* ItemToDrop = InventorySlots[SlotIndex];
-
-    if (ItemToDrop == EquippedItem)
+    TScriptInterface<IWeaponInterface> ItemToDrop = InventorySlots[SlotIndex];
+    ItemToDrop = EquippedWeapon;
+    
+    if (EquippedWeapon)
     {
-        UnequipCurrentItem();
+        UnequipCurrentWeapon();
     }
 
     InventorySlots[SlotIndex] = nullptr;
 
-    AActor* Owner = GetOwner();
-    if (Owner && GetWorld() && ItemToDrop)
-    {
-        ItemToDrop->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-
-        ItemToDrop->EnableVisuals(true);
-
-        FVector DropLocation = Owner->GetActorLocation() + Owner->GetActorForwardVector() * 150.0f + FVector(0, 0, 50.0f);
-        FRotator DropRotation = Owner->GetActorRotation();
-
-        ItemToDrop->TeleportTo(DropLocation, DropRotation, false, true);
-        // ItemToDrop->ItemState = EItemState::EIS_Hovering;
-    }
+    // if (GetOwner() && GetWorld() && ItemToDrop)
+    // {
+    //     ItemToDrop->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+    //
+    //     ItemToDrop->EnableVisuals(true);
+    //
+    //     FVector DropLocation = GetOwner()->GetActorLocation() + GetOwner()->GetActorForwardVector() * 150.0f + FVector(0, 0, 50.0f);
+    //     FRotator DropRotation = GetOwner()->GetActorRotation();
+    //
+    //     ItemToDrop->TeleportTo(DropLocation, DropRotation, false, true);
+    //     // ItemToDrop->ItemState = EItemState::EIS_Hovering;
+    // }
 
     UpdateInventoryUI();
 }
 
-void UInventoryComponent::UnequipCurrentItem()
+void UInventoryComponent::UnequipCurrentWeapon()
 {
-    if (IsValid(EquippedItem))
+    if (EquippedWeapon)
     {
         //EquippedItem->EnableVisuals(false);
         //ASword* SwordRef = Cast<ASword>(EquippedItem)->Set
-        EquippedItem = nullptr;
+        EquippedWeapon = nullptr;
         EquippedSlotIndex = -1;
     }
     else
@@ -201,3 +197,61 @@ void UInventoryComponent::UpdateInventoryUI()
         InventoryWidgetInstance->RefreshInventoryUI(InventorySlots);
     }
 }
+
+// void UInventoryComponent::Interact()
+// {
+//     if (IsInventoryOpen()) return;
+//
+//     FVector TraceStart;
+//     FRotator CameraRotation;
+//     Controller->GetPlayerViewPoint(TraceStart, CameraRotation);
+//
+//     const FVector TraceDirection = CameraRotation.Vector();
+//     const FVector TraceEnd = TraceStart + (TraceDirection * InteractTraceLenght);
+//
+//     TArray<AActor*> ActorsToIgnore;
+//     ActorsToIgnore.Add(GetOwner());
+//
+//     FHitResult ResultHit;
+//
+//     const bool bHit = UKismetSystemLibrary::SphereTraceSingle(
+//         GetWorld(),
+//         TraceStart,
+//         TraceEnd,
+//         InteractTargetRadius,
+//         ETraceTypeQuery::TraceTypeQuery1, //visibility trace
+//         false,
+//         ActorsToIgnore,
+//         EDrawDebugTrace::None,
+//         ResultHit,
+//         true
+//     );
+//
+//
+//     if (bHit && GetInventoryComponent())
+//     {
+//         if (AItem* HitSword = Cast<AItem>(ResultHit.GetActor()))
+//         {
+//             if (GetCharacterStateComponent()->GetCurrentCharacterState().Form != ECharacterForm::ECF_Spectral)
+//             {
+//                 if (GetInventoryComponent()->TryAddItem(HitSword))
+//                 {
+//                     ActorsToIgnore.Add(HitSword);
+//                     //HitSword->OnWallHit.AddDynamic(this, &AEntity::OnWallCollision);
+//                 }
+//             }
+//         }
+//         else if (ISpectralInteractable* SpectralObjectInteractable = Cast<ISpectralInteractable>(ResultHit.GetActor()))
+//         {
+//             if (GetCharacterStateComponent()->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
+//             {
+//                 SpectralObjectInteractable->Execute_SpectralInteract(ResultHit.GetActor(), this);
+//             }
+//         }
+//         // else if (AItem* HitItem = Cast<AItem>(ResultHit.GetActor()))
+//         // {
+//         // 	HitItem->Use(this);
+//         // 	Equipping(false);
+//         // }
+//     }
+// }

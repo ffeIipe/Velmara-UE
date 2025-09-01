@@ -10,8 +10,6 @@ void AEnergyItem::Use(ACharacter* TargetCharacter)
 
 	bWasUsed = true;
 
-	User = TargetCharacter;
-
 	AEntity* UserEntity = Cast<AEntity>(TargetCharacter);
 
 	if (UserEntity && UserEntity->GetAttributeComponent())

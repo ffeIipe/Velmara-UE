@@ -8,7 +8,6 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/BoxComponent.h"
 #include "Components/AttributeComponent.h"
-#include "Components/CombatComponent.h"
 #include "Components/CharacterStateComponent.h"
 #include "Components/PossessionComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -79,7 +78,7 @@ void APaladin::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 
 	if (GetCharacterStateComponent())
 	{
-		GetCharacterStateComponent()->SetCharacterState(ECharacterStates::ECS_EquippedSword);
+		GetCharacterStateComponent()->SetHumanState(ECharacterHumanStates::ECHS_EquippedSword);
 	}
 
 	SetWeaponCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -92,9 +91,16 @@ void APaladin::DeactivateEnemy()
 	Super::DeactivateEnemy();
 }
 
-bool APaladin::IsLaunchable_Implementation()
+bool APaladin::IsLaunchable()
 {
 	return !GetAttributeComponent()->IsShielded(); //returns false if it has shield equipped or not detached yet.
+}
+
+void APaladin::LaunchUp(const FVector& InstigatorLocation)
+{
+	Super::LaunchUp(InstigatorLocation);
+
+	LaunchEnemyUp(InstigatorLocation);
 }
 
 void APaladin::Die(UAnimMontage* DeathAnim, const FName Section)
@@ -148,7 +154,7 @@ void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 	{
 		if (bHitOccurred && Hit.GetActor() && !IgnoreActors.Contains(Hit.GetActor()))
 		{
-			if (const IHitInterface* Entity = Cast<IHitInterface>(Hit.GetActor()))
+			if (IHitInterface* Entity = Cast<IHitInterface>(Hit.GetActor()))
 			{
 				UGameplayStatics::ApplyDamage(
 					Hit.GetActor(),
@@ -163,7 +169,7 @@ void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 				AEntity* FinalDamageCauser = nullptr;	
 				if (GetPossessionComponent()->IsPossessed()) FinalDamageCauser =  this;
 				
-				Entity->Execute_GetHit(Hit.GetActor(), FinalDamageCauser, Hit.ImpactPoint, DamageEvent, Damage);
+				Entity->GetHit(FinalDamageCauser, Hit.ImpactPoint, DamageEvent, Damage);
 				
 				PlayCameraShake(SwordMesh->GetComponentLocation(), 0.f, 500.f);
 				IgnoreActors.Add(Hit.GetActor());
@@ -196,12 +202,6 @@ void APaladin::ShieldHit()
 	}
 }
 
-void APaladin::LaunchUp_Implementation(const FVector& InstigatorLocation)
-{
-	Super::LaunchUp_Implementation(InstigatorLocation);
-	LaunchEnemyUp(InstigatorLocation);
-}
-
 void APaladin::LaunchEnemyUp(const FVector& InstigatorLocation)
 {
 	if (bIsLaunched) return;
@@ -222,7 +222,7 @@ void APaladin::CrashDown()
 void APaladin::HitInAir()
 {
 	float PlayerLocationZ = UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->GetActorLocation().Z;
-	SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, PlayerLocationZ));
+	SetActorLocation(FVector(GetTargetActorLocation().X, GetTargetActorLocation().Y, PlayerLocationZ));
 	PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
 	DisableAI();
 }
@@ -256,18 +256,18 @@ void APaladin::ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactP
 		break;
 
 	case EMainDamageTypes::EMDT_None:
-		GetCombatComponent()->GetDirectionalReact(ImpactPoint);
+		GetDirectionalReact(ImpactPoint);
 		break;
 
 	default:
-		GetCombatComponent()->GetDirectionalReact(ImpactPoint);
+		GetDirectionalReact(ImpactPoint);
 		break;
 	}
 }
 
 void APaladin::Slash()
 {
-	FRotator DamageCauserLocation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), LastDamageCauser->GetActorLocation());
+	FRotator DamageCauserLocation = UKismetMathLibrary::FindLookAtRotation(GetTargetActorLocation(), LastDamageCauser->GetTargetActorLocation());
 
 	SetActorRotation(FRotator(0.f, DamageCauserLocation.Yaw, 0.f));
 

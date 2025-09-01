@@ -8,17 +8,18 @@
 #include "Components/CharacterStateComponent.h"
 #include <NiagaraFunctionLibrary.h>
 
+#include "Interfaces/AnimatorProvider.h"
 #include "Subsystems/EffectsManager.h"
 
 ASword::ASword()
 {
 	BoxCollider->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 
-	WeaponBox = CreateDefaultSubobject<UBoxComponent>(TEXT("Weapon Box"));
-	WeaponBox->SetupAttachment(GetRootComponent());
-	WeaponBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	WeaponBox->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
-	WeaponBox->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
+	WeaponDamageBox = CreateDefaultSubobject<UBoxComponent>(TEXT("Weapon Box"));
+	WeaponDamageBox->SetupAttachment(GetRootComponent());
+	WeaponDamageBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	WeaponDamageBox->SetCollisionResponseToAllChannels(ECR_Overlap);
+	WeaponDamageBox->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 
 	BoxTraceStart = CreateDefaultSubobject<USceneComponent>(TEXT("Box Trace Start"));
 	BoxTraceStart->SetupAttachment(GetRootComponent());
@@ -31,10 +32,10 @@ void ASword::BeginPlay()
 {
 	Super::BeginPlay();
 
-	WeaponBox->OnComponentBeginOverlap.AddDynamic(this, &ASword::OnBoxOverlap);
+	WeaponDamageBox->OnComponentBeginOverlap.AddDynamic(this, &ASword::OnBoxOverlap);
 }
 
-void ASword::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwner, APawn* NewInstigator)
+void ASword::Equip(USceneComponent* InParent, const FName InSocketName, AActor* NewOwner, APawn* NewInstigator)
 {
 	Super::Equip(InParent, InSocketName, NewOwner, NewInstigator);
 
@@ -45,48 +46,53 @@ void ASword::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwn
 
 	EnableSwordState(true);
 
-	if (AEntity* EntityRef = Cast<AEntity>(NewOwner))
+	OwnerCharacterState = NewOwner;
+	OwnerAnimator = NewOwner;
+	if (OwnerCharacterState)
 	{
-		EntityRef->GetCharacterStateComponent()->SetCharacterState(ECharacterStates::ECS_EquippedSword);
+		OwnerCharacterState->SetHumanState(ECharacterHumanStates::ECHS_EquippedSword);
 	}
 }
 
 void ASword::Unequip()
 {
-	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
 	EnableSwordState(false);
-	//la anim la pongo en el propio player al cambiar de arma
-	AttachMeshToSocket(OwnerCharacter->GetMesh(), FName("BackSocket"));
+	AttachMeshToSocket(OwnerAnimator->GetMesh(), FName("BackSocket"));
 }
 
-void ASword::AttachMeshToSocket(USceneComponent* InParent, const FName& InSocketName)
+void ASword::AttachMeshToSocket(USceneComponent* InParent, const FName& InSocketName) const
 {
 	FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, true);
 	ItemMesh->AttachToComponent(InParent, TransformRules, InSocketName);
 }
 
-void ASword::EnableSwordState(const bool bEnable)
+void ASword::EnableSwordState(const bool bEnable) const
 {
-	if (CharacterStateComponent)
+	if (OwnerCharacterState)
 	{
-		const ECharacterStates NewState = bEnable ? ECharacterStates::ECS_EquippedSword : ECharacterStates::ECS_Unequipped;
-		CharacterStateComponent->SetCharacterState(NewState);
+		const ECharacterHumanStates NewState = bEnable ? ECharacterHumanStates::ECHS_EquippedSword : ECharacterHumanStates::ECHS_Unequipped;
+		OwnerCharacterState->SetHumanState(NewState);
 	}
 }
 
 UPrimitiveComponent* ASword::GetCollisionComponent()
 {
-	return WeaponBox;
+	return WeaponDamageBox;
 }
 
-void ASword::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+int32 ASword::GetLightAttackComboMaxIndex()
 {
-	Super::OnSphereBeginOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
+	return LightAttackCombo.Num();
 }
 
-void ASword::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+int32 ASword::GetHeavyAttackComboMaxIndex()
 {
-	Super::OnSphereEndOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex);
+	return HeavyAttackCombo.Num();
+}
+
+int32 ASword::GetJumpAttackComboMaxIndex()
+{
+	return JumpAttackCombo.Num();
 }
 
 void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -117,12 +123,12 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 	{
 		if (AActor* HitActor = Hit.GetActor())
 		{
-			if (const IHitInterface* HitInterface = Cast<IHitInterface>(HitActor))
+			if (IHitInterface* HitInterface = Cast<IHitInterface>(HitActor))
 			{
 				FDamageEvent DamageEvent(DamageTypeClass);
-				HitInterface->Execute_GetHit(HitActor, Cast<AEntity>(GetOwner()), Hit.ImpactPoint, DamageEvent, Damage);
+				HitInterface->GetHit(GetOwner(), Hit.ImpactPoint, DamageEvent, Damage);
 
-				if (HitInterface->Execute_IsLaunchable(HitActor))
+				if (HitInterface->IsHittable())
 				{
 					UGameplayStatics::ApplyDamage(
 						HitActor,
@@ -153,7 +159,7 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 					
 					IgnoreActors.Add(HitActor);
 				}
-				else //else if it is not hittable
+				else
 				{
 					if (SparksEffect)
 					{
@@ -177,7 +183,13 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 	}
 }
 
-float ASword::CalculateDamage()
+void ASword::UsePrimaryAttack()
+{
+	// Super::UsePrimaryAttack();
+	
+}
+
+float ASword::CalculateDamage() const
 {
 	if (FMath::FRandRange(0.f, 1.f) <= CriticalChance)
 	{
@@ -186,21 +198,34 @@ float ASword::CalculateDamage()
 	return Damage;
 }
 
-void ASword::HitStop(const float Duration, const float TimeScale)
+void ASword::PerformLightAttack(const int32 ComboIndex)
 {
-	if (const UWorld* World = GetWorld())
-	{
-		World->GetWorldSettings()->SetTimeDilation(TimeScale);
-
-		FTimerHandle TimerHandle;
-		World->GetTimerManager().SetTimer(TimerHandle, this, &ASword::ResetTimeDilation, Duration, false);
-	}
+	OwnerAnimator = GetOwner();
+	if (OwnerAnimator)
+		if (ComboIndex <= LightAttackCombo.Num())
+			OwnerAnimator->PlayAnimMontage(LightAttackCombo[ComboIndex]);
 }
 
-void ASword::ResetTimeDilation()
+void ASword::PerformHeavyAttack(const int32 ComboIndex)
 {
-	if (const UWorld* World = GetWorld())
-	{
-		World->GetWorldSettings()->SetTimeDilation(1.0f);
-	}
+	OwnerAnimator = GetOwner();
+	if (OwnerAnimator)
+		if (ComboIndex <= HeavyAttackCombo.Num())
+			OwnerAnimator->PlayAnimMontage(HeavyAttackCombo[ComboIndex]);
+		
+}
+
+void ASword::PerformJumpAttack(const int32 ComboIndex)
+{
+	OwnerAnimator = GetOwner();
+	if (OwnerAnimator)
+		if (ComboIndex <= JumpAttackCombo.Num())
+			OwnerAnimator->PlayAnimMontage(JumpAttackCombo[ComboIndex]);
+}
+
+void ASword::SetWeaponCollisionEnabled(const ECollisionEnabled::Type CollisionEnabled)
+{
+	Super::SetWeaponCollisionEnabled(CollisionEnabled);
+
+	WeaponDamageBox->SetCollisionEnabled(CollisionEnabled);
 }

@@ -28,8 +28,8 @@ void AEnemySpectralProjectile::OnBoxOverlap(UPrimitiveComponent* OverlappedCompo
 				UDamageType::StaticClass()
 			);
 
-			FDamageEvent DamageEvent(UDamageType::StaticClass());
-			HitInterface->Execute_GetHit(OtherActor, Cast<AEntity>(GetOwner()), SweepResult.ImpactPoint, DamageEvent, Damage);
+			const FDamageEvent DamageEvent(UDamageType::StaticClass());
+			HitInterface->GetHit(GetOwner(), SweepResult.ImpactPoint, DamageEvent, Damage);
 
 			ActorsToIgnore.AddUnique(OtherActor);
 		}

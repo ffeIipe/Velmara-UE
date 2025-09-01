@@ -68,8 +68,8 @@ void USpectralTrapComponent::DealContinuousDamage()
 
 		if (IHitInterface* PlayerGetHit = Cast<IHitInterface>(OverlappingPlayer))
 		{
-			FDamageEvent DamageEvent(UDamageType::StaticClass());
-			PlayerGetHit->Execute_GetHit(OverlappingPlayer, Cast<AEntity>(GetOwner()), FVector::ZeroVector, DamageEvent, Damage);
+			const FDamageEvent DamageEvent(UDamageType::StaticClass());
+			PlayerGetHit->GetHit(GetOwner(), FVector::ZeroVector, DamageEvent, Damage);
 		}
 	}
 }

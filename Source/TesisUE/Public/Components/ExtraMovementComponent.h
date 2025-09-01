@@ -6,9 +6,14 @@
 #include "Components/ActorComponent.h"
 #include "ExtraMovementComponent.generated.h"
 
+class ICharacterStateProvider;
+class IAnimatorProvider;
+class IOwnerUtilsInterface;
 struct FMovementData;
 class AEntity;
 struct FInputActionValue;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDodgeStarted);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class TESISUE_API UExtraMovementComponent : public UActorComponent
@@ -16,7 +21,6 @@ class TESISUE_API UExtraMovementComponent : public UActorComponent
 	GENERATED_BODY()
 
 public:	
-	// Sets default values for this component's properties
 	UExtraMovementComponent();
 	
 	void InitializeValues(const FMovementData& MovementData);
@@ -32,28 +36,12 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Montages | DoubleJump")
 	UAnimMontage* DoubleJumpMontage;
-	
-	UPROPERTY(EditAnywhere, Category = "Montages | TurnInPlace")
-	UAnimMontage* TurnInPlaceMontage;
 
-	UPROPERTY(BlueprintReadWrite, Category = "Dodge")
 	bool bIsSaveDodge = false;
-	
-	UPROPERTY(BlueprintReadWrite, Category = "Dodge")
-	bool bIsTurningInPlace = false;
-
-	UFUNCTION(BlueprintCallable)
-	void PlayTurnInPlaceMontage(const FVector& DesiredInputDirection);
-	
-	FVector LastInputDirection;
-
-	/*UFUNCTION(BlueprintCallable)
-	void OnTurnMontageEnded(UAnimMontage* Montage, bool bInterrupted);*/
 
 	UFUNCTION(BlueprintCallable)
 	void DodgeSaveEvent();
 
-	UFUNCTION(BlueprintCallable, Category = "Dodge")
 	void PerformDodge();
 
 	void DodgeAnimBasedOnInput() const;
@@ -61,26 +49,17 @@ public:
 	UPROPERTY()
 	class UTimelineComponent* BufferDodgeTimeline;
 
-	UFUNCTION(BlueprintCallable)
-	void DodgeBufferEvent(float BufferAmount);
+	void DodgeBufferEvent(float BufferAmount) const;
 
-	UFUNCTION(BlueprintCallable)
 	void StopDodgeBufferEvent() const;
 
-	UFUNCTION(BlueprintCallable)
 	void UpdateDodgeBuffer(float Alpha);
 
-	UFUNCTION(BlueprintCallable)
-	void UpdateBuffer(float Alpha, float BufferDistance);
-
-	UPROPERTY()
-	class UCharacterStateComponent* OwnerCharacterStateComponent;
+	void UpdateBuffer(float Alpha, float BufferDistance) const;
 	
 	void Input_Move(const FInputActionValue& Value);
 	
 	void Input_Look(const FInputActionValue& Value);
-
-	void Input_Run(const FInputActionValue& Value);
 
 	void Input_DoubleJump();
 
@@ -89,31 +68,32 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	bool CanDoubleJump = true;
 
-	void CustomInitialize(AEntity* NewEntity, UCharacterStateComponent* NewOwnerCharStateComp);
+	void CustomInitialize(AEntity* NewEntity);
 
-	bool IsMovingBackwards();
+	bool IsMovingBackwards() const;
+
+	FOnDodgeStarted OnDodgeStarted;
 		
 private:
 	virtual void BeginPlay() override;
 
 	UPROPERTY()
-	AEntity* EntityOwner;
-	
-	void UpdateAllowRunStrafe();
+	TScriptInterface<IOwnerUtilsInterface> OwnerUtils;
 
-	bool bAllowRun = true;
-	bool bAllowRunStrafe = true;
-	bool bIsRunInputPressed = false;
+	UPROPERTY()
+	TScriptInterface<IAnimatorProvider> AnimatorProvider;
+
+	UPROPERTY()
+	TScriptInterface<ICharacterStateProvider> CharacterStateProvider;
+
+	UPROPERTY()
+	TScriptInterface<class ICharacterMovementProvider> CharacterMovementProvider;
 
 	FVector2D MoveVector;
-	FVector LastMovementInput;
 	
-	float LaunchStrength = 800.f;
-	float DefaultWalkSpeed;
+	float DoubleJumpStrength = 800.f;
 
 	UPROPERTY(BlueprintReadWrite, meta = (AllowPrivateAccess = true))
-	float MaxRunSpeed = 800.f;
-	float MaxStrafeSpeed = 650.f;
 	float BufferDodgeDistance;
 	
 	UPROPERTY()

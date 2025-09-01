@@ -18,11 +18,11 @@ public:
 
 	virtual void DeactivateEnemy() override;
 
-	virtual bool IsLaunchable_Implementation() override;
+	virtual bool IsLaunchable() override;
 	
-	virtual void LaunchUp_Implementation(const FVector& InstigatorLocation) override;
+	virtual void LaunchUp(const FVector& InstigatorLocation) override;
 
-	virtual void ShieldHit_Implementation() {};
+	virtual void ShieldHit_Implementation() {}
 	
 	virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled) override;
 

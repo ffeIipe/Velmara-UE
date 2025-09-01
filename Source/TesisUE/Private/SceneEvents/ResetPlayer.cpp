@@ -5,6 +5,8 @@
 #include "Entities/Entity.h"
 #include <SceneEvents/NewGameInstance.h>
 
+#include "Components/CharacterStateComponent.h"
+
 void AResetPlayer::BeginPlay()
 {
     Super::BeginPlay();
@@ -18,7 +20,7 @@ void AResetPlayer::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent
     {
         if (APlayerMain* PlayerRef = Cast<APlayerMain>(OverlappingActor))
         {
-            if (PlayerRef->GetCharacterStateComponent()->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
+            if (PlayerRef->GetCurrentCharacterState().Mode == ECharacterMode::ECM_Spectral)
             {
                 PlayerRef->ToggleForm();
             }

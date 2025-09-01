@@ -4,7 +4,22 @@
 #include "GameFramework/Character.h"
 
 // Interfaces
+#include "Components/AttributeComponent.h"
+#include "Components/CharacterStateComponent.h"
+#include "Components/CombatComponent.h"
+#include "Components/ExtraMovementComponent.h"
+#include "Components/InventoryComponent.h"
+#include "Components/PossessionComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "Interfaces/AttributeProvider.h"
 #include "Interfaces/HitInterface.h"
+#include "Interfaces/CameraProvider.h"
+#include "Interfaces/CharacterStateProvider.h"
+#include "Interfaces/CharacterMovementProvider.h"
+#include "Interfaces/OwnerUtilsInterface.h"
+#include "Interfaces/CombatTargetInterface.h"
+#include "Interfaces/ControllerProvider.h"
+#include "Interfaces/Weapon/WeaponProvider.h"
 
 #include "Entity.generated.h"
 
@@ -37,7 +52,16 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEntityCanBeFinished);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEntityShieldTakeDamage);
 
 UCLASS()
-class TESISUE_API AEntity : public ACharacter, public IHitInterface
+class TESISUE_API AEntity : public ACharacter,
+							public IHitInterface,
+							public ICameraProvider,
+							public IWeaponProvider,
+                            public ICharacterStateProvider,
+							public ICharacterMovementProvider,
+							public IOwnerUtilsInterface,
+							public ICombatTargetInterface,
+							public IControllerProvider,
+							public IAttributeProvider
 {
 	GENERATED_BODY()
 
@@ -47,9 +71,12 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
 	TObjectPtr<UEntityData> EntityData;
 
+	UPROPERTY()
+	UAnimMontage* HitReactMontage;
+
 	// --- Getters ---
 	UFUNCTION(BlueprintPure, Category = "Components | Combat")
-	FORCEINLINE UCombatComponent* GetCombatComponent() const { return CombatComponent; }
+	FORCEINLINE UCombatComponent* GetCombatComponent() const { return CombatComponent; };
 
 	UFUNCTION(BlueprintPure, Category = "Components | Attribute")
 	FORCEINLINE UAttributeComponent* GetAttributeComponent() const { return AttributeComponent; }
@@ -71,16 +98,7 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Components | Camera")
 	FORCEINLINE USpringArmComponent* GetSpringArmComponent() const { return SpringArmComponent; }
-
-	UFUNCTION()
-	FORCEINLINE ACameraActor* GetFollowCamera() const {return FollowCamera;}
 	
-	UFUNCTION(BlueprintCallable)
-	FORCEINLINE ACharacter* GetCharacter() { return this; }
-
-	UFUNCTION(BlueprintCallable)
-	AActor* GetLastDamageCauser() { return LastDamageCauser; }
-
 	UPROPERTY(BlueprintAssignable)
 	FOnEntityCanBeFinished OnCanBeFinished;
 
@@ -88,13 +106,62 @@ public:
 	FOnEntityShieldTakeDamage OnShieldTakeDamage;
 
 	// --- Interface Implementations ---
-	virtual void GetHit_Implementation(AEntity* DamageCauser,
-		const FVector& ImpactPoint, FDamageEvent const& DamageEvent,
-		const float DamageReceived) override;
+	virtual void GetHit(::TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint,
+	                    FDamageEvent const& DamageEvent, const float DamageReceived) override;
+	virtual void GetFinished() override;
+	virtual bool IsHittable() override;
 
-	virtual bool CanBeFinished_Implementation() override;
+	virtual ACameraActor* GetFollowCamera() override { return FollowCamera; }
+	virtual void AttachFollowCamera() override;
 
-	virtual bool IsLaunchable_Implementation() override;
+	virtual TScriptInterface<IWeaponInterface> GetWeaponEquipped() override { return GetInventoryComponent()->GetWeaponEquipped(); }
+
+	virtual const FCharacterStates& GetCurrentCharacterState() override { return GetCharacterStateComponent()->CurrentStates; }
+	virtual ECharacterHumanStates SetHumanState(ECharacterHumanStates NewState) override;
+	virtual ECharacterSpectralStates SetSpectralState(ECharacterSpectralStates NewSpectralState) override;
+	virtual ECharacterActions SetAction(ECharacterActions NewAction) override;
+	virtual ECharacterMode SetMode(ECharacterMode NewForm) override;
+	virtual bool IsHumanStateEqualToAny(const TArray<ECharacterHumanStates>& StatesToCheck) const override;
+	virtual bool IsSpectralStateEqualToAny(const TArray<ECharacterSpectralStates>& SpectralStatesToCheck) const override;
+	virtual bool IsActionEqualToAny(const TArray<ECharacterActions>& ActionsToCheck) const override;
+	virtual bool IsModeEqualToAny(const TArray<ECharacterMode>& FormsToCheck) const override;
+
+	virtual FVector GetLastMovementInputVector() override { return Super::GetLastMovementInputVector(); } 
+	virtual FRotator GetControlRotation() override { return Super::GetControlRotation(); }
+	virtual bool IsUsingControllerRotationYaw() override { return bUseControllerRotationYaw; }
+	virtual float GetMaxWalkSpeed() override { return GetCharacterMovement()->MaxWalkSpeed; }
+	virtual void AddMovementInput(const FVector& Vector, double X) override { Super::AddMovementInput(Vector, X); }
+	virtual void AddControllerPitchInput(double X) override { Super::AddControllerPitchInput(X); }
+	virtual void AddControllerYawInput(double X) override { Super::AddControllerPitchInput(X); }
+	virtual void LaunchCharacter(const FVector& Vector, bool bCond, bool bCond1) override { Super::LaunchCharacter(Vector, bCond, bCond1); }
+	virtual FVector GetVelocity() override { return Super::GetVelocity(); }
+	virtual FVector GetCurrentAcceleration() override { return GetCharacterMovement()->GetCurrentAcceleration(); }
+	
+	UFUNCTION(BlueprintCallable)
+	virtual TScriptInterface<ICombatTargetInterface> GetLastDamageCauser() override { return LastDamageCauser; }
+	virtual bool IsFalling() override { return GetCharacterMovement()->IsFalling(); }
+	virtual bool IsFlying() override { return GetCharacterMovement()->IsFlying(); }
+	virtual bool IsMovingBackwards() override { return GetExtraMovementComponent()->IsMovingBackwards(); }
+	virtual bool IsEquipped() override;
+	virtual bool IsLocking() override { return GetCombatComponent()->bIsHardLocking; }
+
+	virtual FVector GetTargetActorLocation() override { return GetActorLocation(); }
+	virtual bool IsAlive() override { return GetAttributeComponent()->IsAlive(); }
+	virtual void IncreaseEnergy(const float Percentage) override { GetAttributeComponent()->IncreaseEnergy(Percentage); }
+	virtual bool IsPossessed() override { return GetPossessionComponent()->IsPossessed(); }
+	virtual bool IsPossessing() override { return GetPossessionComponent()->IsPossessing(); }
+	virtual bool CanBeFinished() override;
+	virtual bool IsLaunchable() override;
+	virtual void GetDirectionalReact(const FVector& ImpactPoint) override; 
+	virtual void LaunchUp(const FVector& InstigatorLocation) override {}
+
+	virtual AController* GetEntityController() override {return GetController();}
+
+	virtual bool RequiresEnergy(const float X) override { return GetAttributeComponent()->RequiresEnergy(X); }
+	virtual void SetEnergy(const float EnergyFromPossessor) override { GetAttributeComponent()->SetEnergy(EnergyFromPossessor); }
+	virtual void IncreaseHealth(const float X) override { GetAttributeComponent()->IncreaseHealth(X); }
+	
+	void HitReactJumpToSection(FName Section);
 	
 	// --- Gameplay Actions ---
 	UFUNCTION(BlueprintCallable, Category = "Combat | Weapon")
@@ -120,22 +187,20 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-	void InitializeComponentsData() const;
-	void OnConstruction(const FTransform &Transform) override;
+	void InitializeComponentsData();
+	virtual void OnConstruction(const FTransform &Transform) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void Landed(const FHitResult& Hit) override;
 	virtual void Jump() override;
-
+	
 	// --- Input Handling ---
 	virtual void Interact(const FInputActionValue& Value);
 
 	// --- Damage & Equipping ---
-	virtual void Equipping(bool bIsSwordBeingEquipped) {};
-
 	virtual float TakeDamage(
 		float DamageAmount,
-		struct FDamageEvent const& DamageEvent,
-		class AController* EventInstigator,
+		FDamageEvent const& DamageEvent,
+		AController* EventInstigator,
 		AActor* DamageCauser) override;
 
 	// --- Montages ---
@@ -150,7 +215,7 @@ protected:
 
 	// --- Inherited Data ---
 	UPROPERTY()
-	AEntity* LastDamageCauser;
+	TScriptInterface<ICombatTargetInterface> LastDamageCauser;
 
 	UPROPERTY(Transient)
 	APlayerController* PlayerControllerRef = nullptr;

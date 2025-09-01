@@ -23,32 +23,17 @@ class TESISUE_API AItem : public ATrigger
 	GENERATED_BODY()
 
 public:	
-
 	AItem();
 
 	UPROPERTY(BlueprintAssignable)
 	FOnItemUsed OnUsed;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	bool bWasOpened = false;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Properties")
-	FText ItemDisplayName = FText::FromString("Item");
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (MultiLine = true))
-	FText ItemDescription = FText::FromString("Default item description.");
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Properties")
-	UTexture2D* ItemIcon = nullptr;
+	bool bWasUsed = false;
 
 	virtual void BeginPlay() override;
-
-	virtual void Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwner, APawn* NewInstigator);
 	
-	UFUNCTION(BlueprintCallable)
-	virtual void Unequip() {};
-	
-	virtual void Use(class ACharacter* TargetCharacter);
+	virtual void Use(ACharacter* TargetCharacter);
 	
 	virtual void EnableVisuals(bool bEnable);
 	
@@ -59,7 +44,6 @@ public:
 	FName GetUniqueSaveID() const { return UniqueSaveID; }
 
 protected:
-
 	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Save System")
 	FName UniqueSaveID;
 
@@ -69,8 +53,25 @@ protected:
 		FImage Image;
 	};
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Properties")
+	FText ItemDisplayName = FText::FromString("Item");
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (MultiLine = true))
+	FText ItemDescription = FText::FromString("Default item description.");
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Properties")
+	UTexture2D* ItemIcon = nullptr;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Weapon Properties")
 	UStaticMeshComponent* ItemMesh;
+	
+	EItemState ItemState = EItemState::EIS_Hovering;
+	
+	UPROPERTY(VisibleAnywhere)
+	UPromptWidgetComponent* PromptWidget;
+
+	// UPROPERTY(BlueprintReadWrite)
+	// ACharacter* User;
 
 	virtual void OnSphereBeginOverlap(
 		UPrimitiveComponent* OverlappedComponent,
@@ -85,11 +86,4 @@ protected:
 		UPrimitiveComponent* OtherComp,
 		int32 OtherBodyIndex) override;
 
-	EItemState ItemState = EItemState::EIS_Hovering;
-	
-	UPROPERTY(VisibleAnywhere)
-	UPromptWidgetComponent* PromptWidget;
-
-	UPROPERTY(BlueprintReadWrite)
-	ACharacter* User;
 };

@@ -4,11 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "Entities/Entity.h"
-#include "CharacterStates.h" // Assuming this is a custom enum or struct
-#include "Interfaces/FormInterface.h"
-#include "Interfaces/HitInterface.h"
-#include "Interfaces/CharacterState.h"
-#include "Interfaces/MementoEntity.h"
+// #include "Interfaces/FormInterface.h"
+// #include "Interfaces/CharacterState.h"
 #include "PlayerMain.generated.h"
 
 class UInputMappingContext;
@@ -30,7 +27,7 @@ class UDamageType;
 class USoundBase;
 
 UCLASS()
-class TESISUE_API APlayerMain : public AEntity, public IFormInterface
+class TESISUE_API APlayerMain : public AEntity //, public IFormInterface
 {
 	GENERATED_BODY()
 
@@ -38,20 +35,20 @@ public:
 	APlayerMain();
 
 	// --- Interfaces ---
-	virtual void PerformSpectralAttack_Implementation() override;
-	virtual void PerformSpectralBarrier_Implementation() override;
-	virtual void ResetSpectralAttack_Implementation() override;
-
-	virtual void GetHit_Implementation(AEntity* DamageCauser,
-		const FVector& ImpactPoint, FDamageEvent const& DamageEvent,
-		const float DamageReceived) override;
-
+	// virtual void PerformSpectralAttack_Implementation() override;
+	// virtual void PerformSpectralBarrier_Implementation() override;
+	// virtual void ResetSpectralAttack_Implementation() override;
+	
+	virtual void GetHit(TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived) override;
+	
 	virtual float TakeDamage(
 		float DamageAmount,
 		FDamageEvent const& DamageEvent,
 		AController* EventInstigator,
 		AActor* DamageCauser) override;
-
+	
+	virtual bool IsPossessed() override;
+	
 	// --- Components ---
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components | Forms")
 	UPlayerFormComponent* PlayerFormComponent;
@@ -80,9 +77,6 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Gameplay | SpectralMode | SpectralAttack")
 	FORCEINLINE AEnemy* GetSpectralTarget() const { return SpectralTarget; }
-
-	UFUNCTION(BlueprintCallable, Category = "Gameplay | SpectralMode | SpectralAttack")
-	void SearchTarget();
 
 	// --- State & Interaction ---
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "State | Damage")

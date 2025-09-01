@@ -4,6 +4,12 @@
 #include "Components/ActorComponent.h"
 #include "PossessionComponent.generated.h"
 
+class IWeaponProvider;
+class IAnimatorProvider;
+class ICameraProvider;
+class IAttributeProvider;
+class ICharacterStateProvider;
+class IOwnerUtilsInterface;
 struct FPossessionData;
 class AEntity;
 class APlayerController;
@@ -72,7 +78,12 @@ private:
     AEntity* FindPossessionVictim() const;
 
     UPROPERTY()
-    AEntity* OwnerEntity;
+    TScriptInterface<IOwnerUtilsInterface> OwnerUtils;
+    TScriptInterface<ICharacterStateProvider> CharacterStateProvider;
+    TScriptInterface<IAttributeProvider> AttributeProvider;
+    TScriptInterface<ICameraProvider> CameraProvider;
+    TScriptInterface<IAnimatorProvider> AnimatorProvider;
+    TScriptInterface<IWeaponProvider> WeaponProvider;
 
     UPROPERTY()
     APlayerController* PlayerController;

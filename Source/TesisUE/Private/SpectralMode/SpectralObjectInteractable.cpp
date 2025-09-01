@@ -4,7 +4,7 @@
 
 ASpectralObjectInteractable::ASpectralObjectInteractable()
 {
-	SpectralObjectComponent->VisibleTo = ECharacterForm::ECF_Spectral;
+	SpectralObjectComponent->VisibleTo = ECharacterMode::ECM_Spectral;
 }
 
 void ASpectralObjectInteractable::Use(ACharacter* Character)

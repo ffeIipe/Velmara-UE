@@ -37,8 +37,8 @@ void UPlayerFormComponent::BeginPlay()
 {
     Super::BeginPlay();
 
-    EntityOwner = Cast<AEntity>(GetOwner());
-    EntityOwner->GetCharacterStateComponent()->SetCharacterForm(ECharacterForm::ECF_Human);
+    OwnerUtils = GetOwner();
+    CharacterStateProvider->SetMode(ECharacterMode::ECM_Human);
 
     if (SpectralCurve)
     {
@@ -53,7 +53,7 @@ void UPlayerFormComponent::ToggleForm()
     const float CurrentTime = GetWorld()->GetTimeSeconds();
     if (CurrentTime - LastTransformationTime < TransformationCooldown) return;
 
-    if (EntityOwner->GetCharacterStateComponent()->GetCurrentCharacterState().Form == ECharacterForm::ECF_Human)
+    if (CharacterStateProvider->IsModeEqualToAny({ECharacterMode::ECM_Human}))
     {
         ApplySpectralEffects();
     }

@@ -65,17 +65,20 @@ float APaladinBoss::TakeDamage(float DamageAmount, FDamageEvent const& DamageEve
 	}
 
 	return DamageAmount;
-}	
+}
 
-void APaladinBoss::GetHit_Implementation(AEntity* DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived)
+void APaladinBoss::GetHit(TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint,
+	FDamageEvent const& DamageEvent, const float DamageReceived)
 {
+	Super::GetHit(DamageCauser, ImpactPoint, DamageEvent, DamageReceived);
+
 	if (BBComponent)
 	{
 		if (BBComponent->GetValueAsBool(FName("CanReceiveDamage")))
 		{
-			Super::GetHit_Implementation(DamageCauser, ImpactPoint, DamageEvent, DamageReceived);
+			Super::GetHit(DamageCauser, ImpactPoint, DamageEvent, DamageReceived);
 
-			float DamageAccumulated = BBComponent->GetValueAsFloat(FName("DamageAccumulated"));
+			const float DamageAccumulated = BBComponent->GetValueAsFloat(FName("DamageAccumulated"));
 			BBComponent->SetValueAsFloat(FName("DamageAccumulated"), DamageAccumulated + DamageReceived);
 		}
 	}
@@ -93,9 +96,9 @@ void APaladinBoss::GetHit_Implementation(AEntity* DamageCauser, const FVector& I
 
 		if (BBComponent->GetValueAsBool(FName("CanReceiveDamage")))
 		{
-			Super::GetHit_Implementation(DamageCauser, ImpactPoint, DamageEvent, DamageReceived);
+			Super::GetHit(DamageCauser, ImpactPoint, DamageEvent, DamageReceived);
 
-			float DamageAccumulated = BBComponent->GetValueAsFloat(FName("DamageAccumulated"));
+			const float DamageAccumulated = BBComponent->GetValueAsFloat(FName("DamageAccumulated"));
 			BBComponent->SetValueAsFloat(FName("DamageAccumulated"), DamageAccumulated + DamageReceived);
 		}
 	}
