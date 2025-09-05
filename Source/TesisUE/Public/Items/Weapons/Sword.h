@@ -8,12 +8,9 @@
 #include "Items/Item.h"
 #include "Sword.generated.h"
 
-class IAnimatorProvider;
-class ICharacterStateProvider;
+class UMeleeDamage;
 class UNiagaraSystem;
 class UBoxComponent;
-class ICharacterState;
-class UCharacterStateComponent;
 
 UCLASS()
 class TESISUE_API ASword : public AWeapon, public IMeleeWeapon
@@ -29,9 +26,6 @@ public:
 	ASword();
 
 	virtual void BeginPlay() override;
-
-	UFUNCTION(BlueprintCallable)
-	void AttachMeshToSocket(USceneComponent* InParent, const FName& InSocketName) const;
 	
 	UBoxComponent* GetWeaponDamageBox() const { return WeaponDamageBox; }
 
@@ -39,17 +33,14 @@ public:
 	TArray<AActor*> IgnoreActors;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Damage")
-	TSubclassOf<UDamageType> DamageTypeClass;
+	TSubclassOf<UMeleeDamage> DamageTypeClass;
 
-	virtual void Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwner, APawn* NewInstigator) override;
+	/*virtual void Pick(AActor* NewOwner) override;*/
 	
 	virtual void Unequip() override;
-
-	UFUNCTION(BlueprintCallable)
-	void EnableSwordState(bool bEnable) const;
 	
 	virtual UPrimitiveComponent* GetCollisionComponent() override;
-
+	
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon Properties | LightAttackAnims")
 	TArray<UAnimMontage*> LightAttackCombo;
 
@@ -91,10 +82,6 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Mesh | Attachment Socket")
 	FName CustomInSocketName;
 
-	TScriptInterface<ICharacterStateProvider> OwnerCharacterState;
-	
-	TScriptInterface<IAnimatorProvider> OwnerAnimator;
-
 	UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
 	UBoxComponent* WeaponDamageBox;
 
@@ -103,9 +90,6 @@ private:
 
 	UPROPERTY(VisibleAnywhere)
 	USceneComponent* BoxTraceEnd;
-
-	UPROPERTY(EditAnywhere, Category = "Damage")
-	float Damage;
 	
 	UPROPERTY(EditAnywhere, Category = "Damage")
 	float CriticalChance = .15f;
@@ -122,5 +106,5 @@ private:
 	virtual void PerformJumpAttack(int32 ComboIndex) override;
 
 	virtual void ClearIgnoreActors() override { IgnoreActors.Empty(); }
-	virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled) override;
+	virtual void SetWeaponCollisionEnabled_Implementation(ECollisionEnabled::Type CollisionEnabled) override;
 };

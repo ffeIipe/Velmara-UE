@@ -22,8 +22,9 @@ class TESISUE_API IAnimatorProvider
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-	virtual void PlayAnimMontage(UAnimMontage* Montage, float Rate = 1.f, FName Section = "Default") = 0;
-	virtual void StopAnimMontage() = 0;
-	virtual USceneComponent* GetMesh() = 0;
+	virtual float PlayAnimMontage(UAnimMontage* Montage, float Rate = 1.f, FName Section = "Default") = 0;
+	virtual void StopAnimMontage(UAnimMontage* MontageToStop = nullptr) = 0;
+	virtual USceneComponent* GetMeshComponent() = 0;
 	virtual void PauseAnims(bool bEnable) = 0;
+	virtual void ChangeWeaponAnimationState() = 0;
 };

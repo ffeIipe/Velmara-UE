@@ -90,4 +90,5 @@ void ATrigger::DisableCollision()
 		BoxCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		BoxCollider->SetCollisionResponseToAllChannels(ECR_Ignore);
 	}
+	SetActorEnableCollision(false);
 }

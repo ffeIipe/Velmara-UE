@@ -1,21 +1,15 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "Player/PlayerHeroController.h"
 #include "Blueprint/UserWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundMix.h"
-
-#include "EnhancedInputComponent.h"
-#include "EnhancedInputSubsystems.h"
-#include "InputActionValue.h"
 
 #include "HUD/PlayerMainHUD.h"
 #include "HUD/PlayerMainWidget.h"
 #include "HUD/PaladinBossHealthBar.h"
 #include <Player/PlayerMain.h>
 
-#include "Player/CharacterHumanStates.h"
 
 APlayerHeroController::APlayerHeroController()
 {
@@ -152,14 +146,14 @@ void APlayerHeroController::ToggleInput(const bool Bool)
     {
         if (CharacterStateProvider)
         {
-            CharacterStateProvider->SetAction(ECharacterActions::ECA_Nothing);
+            CharacterStateProvider->SetAction(ECharacterActionsStates::ECAS_Nothing);
         }
     }
     else
     {
         if (CharacterStateProvider)
         {
-            CharacterStateProvider->SetAction(ECharacterActions::ECA_Stun);
+            CharacterStateProvider->SetAction(ECharacterActionsStates::ECAS_Stun);
         }
     }
 }

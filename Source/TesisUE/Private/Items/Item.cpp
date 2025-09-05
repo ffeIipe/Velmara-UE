@@ -3,7 +3,6 @@
 #include "Components/BoxComponent.h"
 #include "Tutorial/PromptWidgetComponent.h"
 #include <SceneEvents/NewGameStateBase.h>
-#include <Kismet/GameplayStatics.h>
 
 
 AItem::AItem()
@@ -13,7 +12,6 @@ AItem::AItem()
 	ItemMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Item Mesh"));
 	RootComponent = ItemMesh;
 	ItemMesh->SetCollisionResponseToAllChannels(ECR_Ignore);
-	ItemMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 
 	BoxCollider->SetupAttachment(GetRootComponent());
 	BoxCollider->SetCollisionResponseToAllChannels(ECR_Ignore);
@@ -27,12 +25,15 @@ void AItem::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (PromptWidget && PromptWidget->GetWidget())
+	if (PromptWidget)
 	{
-		PromptWidget->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
+		if (PromptWidget->GetWidget())
+		{
+			PromptWidget->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
+		}
 	}
 	
-	if (UWorld* World = GetWorld())
+	if (const UWorld* World = GetWorld())
 	{
 		if (ANewGameStateBase* GameState = World->GetGameState<ANewGameStateBase>())
 		{
@@ -41,12 +42,16 @@ void AItem::BeginPlay()
 	}
 }
 
-void AItem::Use(ACharacter* TargetCharacter)
-{	
+void AItem::Pick(AActor* NewOwner)
+{
+	SetOwner(NewOwner);
+	SetInstigator(Cast<APawn>(NewOwner));
+	AttributeProvider = NewOwner;
+	
 	if (!bWasUsed)
 	{
 		bWasUsed = true;
-		if (UWorld* World = GetWorld())
+		if (const UWorld* World = GetWorld())
 		{
 			if (ANewGameStateBase* GameState = World->GetGameState<ANewGameStateBase>())
 			{
@@ -59,9 +64,9 @@ void AItem::Use(ACharacter* TargetCharacter)
 	}
 }
 
-void AItem::EnableVisuals(bool bEnable)
+void AItem::EnableVisuals(const bool bEnable)
 {
-	//SetActorHiddenInGame(!bEnable);
+	SetActorHiddenInGame(!bEnable);
 	SetActorEnableCollision(bEnable);
 	PromptWidget->EnablePromptWidget(false);
 }
@@ -76,7 +81,7 @@ void AItem::ApplySavedState(const FInteractedItemSaveData* SavedData)
 	if (SavedData && SavedData->bWasOpened)
 	{
 		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Item has been used... So restoring..."));
-		Use(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
+		/*Pick(SavedData.OldOwner);*/
 		bWasUsed = true;
 		
 		Destroy();

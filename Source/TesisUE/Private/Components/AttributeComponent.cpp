@@ -13,14 +13,15 @@ UAttributeComponent::UAttributeComponent()
 
 void UAttributeComponent::InitializeValues(const FAttributeData& AttributeData)
 {
-	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE,3.f,FColor::White,TEXT("Attributes assigned by Data Asset"));
+	/*if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE,3.f,FColor::White,TEXT("Attributes assigned by Data Asset"));*/
 
 	Health = AttributeData.MaxHealth;
 
-	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE,3.f,FColor::White, FString::Printf(TEXT("Health: %f"), Health));
+	/*if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE,3.f,FColor::White, FString::Printf(TEXT("Health: %f"), Health));*/
 	MaxHealth = AttributeData.MaxHealth;
 	CurrentShieldHealth = AttributeData.MaxShieldHealth;
 	MaxShieldHealth = AttributeData.MaxShieldHealth;
+	MaxEnergy = AttributeData.MaxEnergy;
 	Energy = AttributeData.Energy;
 	DrainTickValue = AttributeData.DrainTickValue;
 	RegenerateTickValue = AttributeData.RegenerateTickValue;
@@ -60,7 +61,7 @@ float UAttributeComponent::GetEnergyPercent()
 
 void UAttributeComponent::IncreaseEnergy(float Amount)
 {
-	Energy += Amount;
+	Energy = FMath::Clamp(Energy + Amount, 0.f, MaxEnergy);
 }
 
 bool UAttributeComponent::HasEnergy()

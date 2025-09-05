@@ -24,7 +24,10 @@ public:
 	UExtraMovementComponent();
 	
 	void InitializeValues(const FMovementData& MovementData);
-	
+
+	UFUNCTION()
+	void ResetDodge() { bIsSaveDodge = false; }
+
 	UPROPERTY(EditAnywhere, Category = "Montages | Dodge")
 	UAnimMontage* DodgeMontage;
 
@@ -36,8 +39,6 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Montages | DoubleJump")
 	UAnimMontage* DoubleJumpMontage;
-
-	bool bIsSaveDodge = false;
 
 	UFUNCTION(BlueprintCallable)
 	void DodgeSaveEvent();
@@ -79,16 +80,15 @@ private:
 
 	UPROPERTY()
 	TScriptInterface<IOwnerUtilsInterface> OwnerUtils;
-
 	UPROPERTY()
 	TScriptInterface<IAnimatorProvider> AnimatorProvider;
-
 	UPROPERTY()
 	TScriptInterface<ICharacterStateProvider> CharacterStateProvider;
-
 	UPROPERTY()
 	TScriptInterface<class ICharacterMovementProvider> CharacterMovementProvider;
 
+	bool bIsSaveDodge = false;
+	
 	FVector2D MoveVector;
 	
 	float DoubleJumpStrength = 800.f;

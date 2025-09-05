@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "Player/CharacterHumanStates.h"
+#include "Player/CharacterWeaponStates.h"
 #include "CharacterStateComponent.generated.h"
 
 USTRUCT(BlueprintType)
@@ -11,22 +11,18 @@ struct TESISUE_API FCharacterStates
 	GENERATED_BODY();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character States | Character State")
-	ECharacterHumanStates HumanState;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character States | Character Spectral State")
-	ECharacterSpectralStates SpectralState;
+	ECharacterWeaponStates WeaponState;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character States | Character Action")
-	ECharacterActions Action;
+	ECharacterActionsStates Action;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character States | Character Form")
-	ECharacterMode Mode;
+	ECharacterModeStates Mode;
 	
 	FCharacterStates()
-		: HumanState(ECharacterHumanStates::ECHS_Unequipped)
-		, SpectralState(ECharacterSpectralStates::ECSS_Unequipped)
-		, Action(ECharacterActions::ECA_Nothing)
-		, Mode(ECharacterMode::ECM_Human)
+		: WeaponState(ECharacterWeaponStates::ECWS_Unequipped)
+		, Action(ECharacterActionsStates::ECAS_Nothing)
+		, Mode(ECharacterModeStates::ECMS_Human)
 	{
 	}
 };
@@ -37,33 +33,26 @@ class TESISUE_API UCharacterStateComponent : public UActorComponent
 	GENERATED_BODY()	
 
 public:
-
 	UCharacterStateComponent();
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character States")
 	FCharacterStates CurrentStates;
 
 	UFUNCTION(BlueprintCallable, Category = "Character States | Character State")
-	ECharacterHumanStates SetHumanState(ECharacterHumanStates NewState);
-	
-	UFUNCTION(BlueprintCallable, Category = "Character States | Character Spectral State")
-	ECharacterSpectralStates SetSpectralState(ECharacterSpectralStates NewSpectralState);
+	ECharacterWeaponStates SetHumanState(ECharacterWeaponStates NewState);
 
 	UFUNCTION(BlueprintCallable, Category = "Character States | Character Action")
-	ECharacterActions SetAction(ECharacterActions NewAction);
+	ECharacterActionsStates SetAction(ECharacterActionsStates NewAction);
 
 	UFUNCTION(BlueprintCallable, Category = "Character States | Character Form")
-	ECharacterMode SetMode(ECharacterMode NewForm);
+	ECharacterModeStates SetMode(ECharacterModeStates NewForm);
 
 	UFUNCTION(BlueprintCallable, Category = "Character States | Character Action")
-	bool IsHumanStateEqualToAny(const TArray<ECharacterHumanStates>& StatesToCheck) const;
-	
-	UFUNCTION(BlueprintCallable, Category = "Character States | Character Spectral State")
-	bool IsSpectralStateEqualToAny(const TArray<ECharacterSpectralStates>& SpectralStatesToCheck) const;
+	bool IsHumanStateEqualToAny(const TArray<ECharacterWeaponStates>& StatesToCheck) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Character States | Character Action")
-	bool IsActionEqualToAny(const TArray<ECharacterActions>& ActionsToCheck) const;
+	bool IsActionEqualToAny(const TArray<ECharacterActionsStates>& ActionsToCheck) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Character States | Character Form")
-	bool IsModeEqualToAny(const TArray<ECharacterMode>& FormsToCheck) const;
+	bool IsModeEqualToAny(const TArray<ECharacterModeStates>& FormsToCheck) const;
 };

@@ -4,6 +4,7 @@
 #include "GameFramework/Character.h"
 
 // Interfaces
+#include "Camera/CameraComponent.h"
 #include "Components/AttributeComponent.h"
 #include "Components/CharacterStateComponent.h"
 #include "Components/CombatComponent.h"
@@ -11,6 +12,7 @@
 #include "Components/InventoryComponent.h"
 #include "Components/PossessionComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Interfaces/AnimatorProvider.h"
 #include "Interfaces/AttributeProvider.h"
 #include "Interfaces/HitInterface.h"
 #include "Interfaces/CameraProvider.h"
@@ -23,6 +25,7 @@
 
 #include "Entity.generated.h"
 
+class UCameraComponent;
 /*
  * ----------Forward Declarations----------
  */
@@ -61,7 +64,8 @@ class TESISUE_API AEntity : public ACharacter,
 							public IOwnerUtilsInterface,
 							public ICombatTargetInterface,
 							public IControllerProvider,
-							public IAttributeProvider
+							public IAttributeProvider,
+							public IAnimatorProvider
 {
 	GENERATED_BODY()
 
@@ -98,6 +102,9 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Components | Camera")
 	FORCEINLINE USpringArmComponent* GetSpringArmComponent() const { return SpringArmComponent; }
+
+	UFUNCTION(BlueprintPure, Category = "Components | Camera")
+	FORCEINLINE UCameraComponent* GetCameraComponent() const { return CameraComponent; }
 	
 	UPROPERTY(BlueprintAssignable)
 	FOnEntityCanBeFinished OnCanBeFinished;
@@ -111,55 +118,63 @@ public:
 	virtual void GetFinished() override;
 	virtual bool IsHittable() override;
 
-	virtual ACameraActor* GetFollowCamera() override { return FollowCamera; }
+	virtual UCameraComponent* GetEntityCamera() override { return GetCameraComponent(); }
+	virtual FVector GetCameraLocation() override { return GetCameraComponent()->GetComponentLocation(); }
 	virtual void AttachFollowCamera() override;
 
+	UFUNCTION(BlueprintPure)
 	virtual TScriptInterface<IWeaponInterface> GetWeaponEquipped() override { return GetInventoryComponent()->GetWeaponEquipped(); }
 
 	virtual const FCharacterStates& GetCurrentCharacterState() override { return GetCharacterStateComponent()->CurrentStates; }
-	virtual ECharacterHumanStates SetHumanState(ECharacterHumanStates NewState) override;
-	virtual ECharacterSpectralStates SetSpectralState(ECharacterSpectralStates NewSpectralState) override;
-	virtual ECharacterActions SetAction(ECharacterActions NewAction) override;
-	virtual ECharacterMode SetMode(ECharacterMode NewForm) override;
-	virtual bool IsHumanStateEqualToAny(const TArray<ECharacterHumanStates>& StatesToCheck) const override;
-	virtual bool IsSpectralStateEqualToAny(const TArray<ECharacterSpectralStates>& SpectralStatesToCheck) const override;
-	virtual bool IsActionEqualToAny(const TArray<ECharacterActions>& ActionsToCheck) const override;
-	virtual bool IsModeEqualToAny(const TArray<ECharacterMode>& FormsToCheck) const override;
+	virtual ECharacterWeaponStates SetWeaponState(ECharacterWeaponStates NewState) override;
+	virtual ECharacterActionsStates SetAction(ECharacterActionsStates NewAction) override;
+	virtual ECharacterModeStates SetMode(ECharacterModeStates NewForm) override;
+	virtual bool IsWeaponStateEqualToAny(const TArray<ECharacterWeaponStates>& StatesToCheck) const override;
+	virtual bool IsActionStateEqualToAny(const TArray<ECharacterActionsStates>& ActionsToCheck) const override;
+	virtual bool IsModeStateEqualToAny(const TArray<ECharacterModeStates>& FormsToCheck) const override;
 
 	virtual FVector GetLastMovementInputVector() override { return Super::GetLastMovementInputVector(); } 
 	virtual FRotator GetControlRotation() override { return Super::GetControlRotation(); }
 	virtual bool IsUsingControllerRotationYaw() override { return bUseControllerRotationYaw; }
 	virtual float GetMaxWalkSpeed() override { return GetCharacterMovement()->MaxWalkSpeed; }
 	virtual void AddMovementInput(const FVector& Vector, double X) override { Super::AddMovementInput(Vector, X); }
-	virtual void AddControllerPitchInput(double X) override { Super::AddControllerPitchInput(X); }
-	virtual void AddControllerYawInput(double X) override { Super::AddControllerPitchInput(X); }
-	virtual void LaunchCharacter(const FVector& Vector, bool bCond, bool bCond1) override { Super::LaunchCharacter(Vector, bCond, bCond1); }
+	virtual void AddControllerPitchInput(const double X) override { Super::AddControllerPitchInput(X); }
+	virtual void AddControllerYawInput(const double X) override { Super::AddControllerYawInput(X); }
+	virtual void LaunchCharacter(const FVector& Vector, const bool bCond, const bool bCond1) override { Super::LaunchCharacter(Vector, bCond, bCond1); }
 	virtual FVector GetVelocity() override { return Super::GetVelocity(); }
 	virtual FVector GetCurrentAcceleration() override { return GetCharacterMovement()->GetCurrentAcceleration(); }
 	
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintPure)
 	virtual TScriptInterface<ICombatTargetInterface> GetLastDamageCauser() override { return LastDamageCauser; }
 	virtual bool IsFalling() override { return GetCharacterMovement()->IsFalling(); }
 	virtual bool IsFlying() override { return GetCharacterMovement()->IsFlying(); }
 	virtual bool IsMovingBackwards() override { return GetExtraMovementComponent()->IsMovingBackwards(); }
 	virtual bool IsEquipped() override;
 	virtual bool IsLocking() override { return GetCombatComponent()->bIsHardLocking; }
+	virtual void SetMovementMode(const EMovementMode MovementMode) override { GetCharacterMovement()->SetMovementMode(MovementMode); }
 
 	virtual FVector GetTargetActorLocation() override { return GetActorLocation(); }
 	virtual bool IsAlive() override { return GetAttributeComponent()->IsAlive(); }
-	virtual void IncreaseEnergy(const float Percentage) override { GetAttributeComponent()->IncreaseEnergy(Percentage); }
 	virtual bool IsPossessed() override { return GetPossessionComponent()->IsPossessed(); }
 	virtual bool IsPossessing() override { return GetPossessionComponent()->IsPossessing(); }
+	virtual bool IsBlocking() override { return GetCombatComponent()->IsBlocking(); }
 	virtual bool CanBeFinished() override;
 	virtual bool IsLaunchable() override;
 	virtual void GetDirectionalReact(const FVector& ImpactPoint) override; 
-	virtual void LaunchUp(const FVector& InstigatorLocation) override {}
+	virtual void LaunchUp() override { GetCombatComponent()->StartLaunchingUp(); }
 
-	virtual AController* GetEntityController() override {return GetController();}
+	virtual AController* GetEntityController() override { return GetController(); }
 
+	virtual void IncreaseEnergy(const float Percentage) override { GetAttributeComponent()->IncreaseEnergy(Percentage); }
 	virtual bool RequiresEnergy(const float X) override { return GetAttributeComponent()->RequiresEnergy(X); }
 	virtual void SetEnergy(const float EnergyFromPossessor) override { GetAttributeComponent()->SetEnergy(EnergyFromPossessor); }
 	virtual void IncreaseHealth(const float X) override { GetAttributeComponent()->IncreaseHealth(X); }
+
+	virtual float PlayAnimMontage(UAnimMontage* Montage, const float Rate = 1.f, const FName Section = "Default") override { return Super::PlayAnimMontage(Montage, Rate, Section); }
+	virtual void StopAnimMontage(UAnimMontage* MontageToStop = nullptr) override { Super::StopAnimMontage(MontageToStop); }
+    virtual USceneComponent* GetMeshComponent() override { return GetMesh(); }
+    virtual void PauseAnims(const bool bEnable) override { GetMesh()->bPauseAnims = bEnable; }
+	virtual void ChangeWeaponAnimationState() override; 
 	
 	void HitReactJumpToSection(FName Section);
 	
@@ -183,19 +198,16 @@ public:
 
 	void PlayCameraShake(const FVector& Epicenter, float InnerRadius, float OuterRadius);
 
-	bool IsEquipping();
+	bool IsEquipping() const;
 
 protected:
 	virtual void BeginPlay() override;
-	void InitializeComponentsData();
+	void InitializeComponentsData() const;
 	virtual void OnConstruction(const FTransform &Transform) override;
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void Landed(const FHitResult& Hit) override;
 	virtual void Jump() override;
 	
-	// --- Input Handling ---
-	virtual void Interact(const FInputActionValue& Value);
-
 	// --- Damage & Equipping ---
 	virtual float TakeDamage(
 		float DamageAmount,
@@ -270,6 +282,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Input | Actions")
 	UInputAction* InputAction_ChangeHardLockTarget;
+
+	UPROPERTY(EditAnywhere, Category = "Input | Actions")
+	const UInputAction* InputAction_ToggleWeapon;
 	
 	UPROPERTY()
 	TArray<AActor*> IgnoreActors;
@@ -330,4 +345,7 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintGetter = GetSpringArmComponent, Category = "Components | Camera")
 	USpringArmComponent* SpringArmComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintGetter = GetCameraComponent, Category = "Components | Camera")
+	UCameraComponent* CameraComponent;
 };

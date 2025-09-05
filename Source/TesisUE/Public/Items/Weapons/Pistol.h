@@ -4,19 +4,30 @@
 
 #include "CoreMinimal.h"
 #include "Weapon.h"
+#include "Interfaces/Weapon/RangedWeapon.h"
 #include "Pistol.generated.h"
 
-class ICharacterStateProvider;
-class IControllerProvider;
 class UNiagaraSystem;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnFire);
+
 UCLASS()
-class TESISUE_API APistol : public AWeapon
+class TESISUE_API APistol : public AWeapon, public IRangedWeapon
 {
 	GENERATED_BODY()
 	
 protected:
+	APistol();
 	virtual void BeginPlay() override;
+
+	virtual void UsePrimaryAttack() override;
+	virtual void UseSecondaryAttack() override;
+
+	virtual void PrimaryShoot() override;
+
+	virtual void SecondaryShoot() override;
+
+	FOnFire OnFire;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | VFX")
 	UNiagaraSystem* MuzzleFlash;
@@ -25,20 +36,20 @@ protected:
 	UNiagaraSystem* SparksEffect;
 
 	UPROPERTY(EditAnywhere, Category = "Weapon Properties | SFX");
+	USoundBase* ShootSound;
+
+	UPROPERTY(EditAnywhere, Category = "Weapon Properties | SFX");
 	USoundBase* OutOfBlood;
 
 	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Montages");
+	UAnimMontage* PrimaryFireMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Montages");
+	UAnimMontage* SecondaryFireMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Montages");
 	UAnimMontage* ReloadMontage;
-
-	UPROPERTY()
-	AController* OwnerController;
-	TScriptInterface<IControllerProvider> ControllerProvider;
 	
-	TScriptInterface<ICharacterStateProvider> CharacterStateProvider;
-
-	void AttachMeshToSocket(USceneComponent* InParent, FName InSocketName) const;
-	virtual void Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwner, APawn* NewInstigator) override;
-
 private:
 	//--- Basic Functions ---
 	void Fire();
@@ -48,12 +59,13 @@ private:
 	void Reload();
 	
 	void FinishReload();
+
 	void SetTimer(FTimerHandle TimerHandle, float Time, void (APistol::*InTimerMethod)());
 
-	// --- Stats ---
-	UPROPERTY(EditAnywhere, Category = "Weapon Properties")
-	float Damage;
+	UFUNCTION()
+	void PlayEffects();
 
+	// --- Stats ---
 	UPROPERTY(EditAnywhere, Category = "Weapon Properties")
 	int32 MaxAmmo;
 
@@ -71,6 +83,9 @@ private:
 	
 	UPROPERTY(EditAnywhere, Category = "Weapon Properties")
 	bool bIsReloading = false;
+
+	UPROPERTY(EditAnywhere, Category = "Weapon Properties")
+	float EnergyToDecrease = 10.f;
 	
 	FTimerHandle TimerHandle_Reload;
 	FTimerHandle TimerHandle_BetweenShots;

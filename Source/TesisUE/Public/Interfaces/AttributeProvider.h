@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Items/EnergyItem.h"
 #include "UObject/Interface.h"
 #include "AttributeProvider.generated.h"
 
@@ -27,4 +28,5 @@ public:
 	virtual void SetEnergy(float EnergyFromPossessor) = 0;
 	// virtual void StartDecreaseEnergy() = 0;
 	virtual void IncreaseHealth(float X) = 0;
+	virtual void IncreaseEnergy(float EnergyToIncrease) = 0;
 };

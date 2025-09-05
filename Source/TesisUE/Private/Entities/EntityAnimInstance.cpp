@@ -5,19 +5,28 @@
 
 #include "KismetAnimationLibrary.h"
 #include "Components/CharacterStateComponent.h"
+#include "Entities/Entity.h"
 #include "Interfaces/CharacterMovementProvider.h"
 #include "Interfaces/CharacterStateProvider.h"
 #include "Interfaces/OwnerUtilsInterface.h"
+#include "Interfaces/Weapon/MeleeWeapon.h"
 #include "Kismet/KismetMathLibrary.h"
 
 void UEntityAnimInstance::NativeInitializeAnimation()
 {
 	Super::NativeInitializeAnimation();
 
-	Owner = TryGetPawnOwner();
-	OwnerUtils = Owner;
-	CharacterMovementProvider = Owner;
-	CharacterStateProvider = Owner;
+	SetAnimationState(nullptr);
+	
+	EntityOwner = Cast<AEntity>(TryGetPawnOwner());
+	OwnerUtils = EntityOwner;
+	CharacterMovementProvider = EntityOwner;
+	CharacterStateProvider = EntityOwner;
+	
+	if (CharacterMovementProvider)
+	{
+		MaxWalkSpeed = CharacterMovementProvider->GetMaxWalkSpeed();
+	}
 }
 
 void UEntityAnimInstance::NativeUpdateAnimation(const float DeltaTime)
@@ -31,12 +40,29 @@ void UEntityAnimInstance::NativeUpdateAnimation(const float DeltaTime)
 
 		bHasAcceleration = CharacterMovementProvider->GetCurrentAcceleration().SizeSquared2D() > SMALL_NUMBER;
 
-		CharacterHumanState = CharacterStateProvider->GetCurrentCharacterState().HumanState;
+		CharacterWeaponState = CharacterStateProvider->GetCurrentCharacterState().WeaponState;
 		CharacterMode = CharacterStateProvider->GetCurrentCharacterState().Mode;
-		SpectralState = CharacterStateProvider->GetCurrentCharacterState().SpectralState;
 		
 		bIsLocking = OwnerUtils->IsLocking();
 		
-		Direction = UKismetAnimationLibrary::CalculateDirection(CharacterMovementProvider->GetVelocity(),Owner->GetActorRotation());
+		Direction = UKismetAnimationLibrary::CalculateDirection(CharacterMovementProvider->GetVelocity(),EntityOwner->GetActorRotation());
 	}
+}
+
+void UEntityAnimInstance::SetAnimationState(const TScriptInterface<IWeaponInterface> WeaponEquipped)
+{
+	if (WeaponEquipped)
+	{
+		if (TScriptInterface<IMeleeWeapon> IsMeleeWeapon = WeaponEquipped.GetObject())
+		{
+			/*if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, "Is melee weapon");*/
+			bIsMeleeWeapon = true;
+		}
+		else
+		{
+			/*if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Orange, "Is not a melee weapon");*/
+			bIsMeleeWeapon = false;
+		}
+	}
+	else bIsMeleeWeapon = true;
 }

@@ -77,7 +77,7 @@ void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Sti
 {
     if (!CachedPlayerController) return;
     
-    if (EntityOwner->IsAlive()) return;
+    if (EntityOwner && !EntityOwner->IsAlive()) return;
 
     UEnemyTokenManager* TokenManager = GetWorld()->GetSubsystem<UEnemyTokenManager>();
     if (!TokenManager) return;

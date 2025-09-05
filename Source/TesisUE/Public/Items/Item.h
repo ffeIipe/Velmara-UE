@@ -4,8 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "SceneEvents/Trigger.h"
+#include "Interfaces/Pickable.h"
 #include "Item.generated.h"
 
+class IAttributeProvider;
 class UBoxComponent;
 class UPromptWidgetComponent;
 
@@ -18,7 +20,7 @@ enum class EItemState : uint8
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnItemUsed, ACharacter*, UserCharacter);
 
 UCLASS()
-class TESISUE_API AItem : public ATrigger
+class TESISUE_API AItem : public ATrigger, public IPickable
 {
 	GENERATED_BODY()
 
@@ -27,13 +29,13 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FOnItemUsed OnUsed;
-
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	bool bWasUsed = false;
 
 	virtual void BeginPlay() override;
 	
-	virtual void Use(ACharacter* TargetCharacter);
+	virtual void Pick(AActor* NewOwner) override;
 	
 	virtual void EnableVisuals(bool bEnable);
 	
@@ -86,4 +88,5 @@ protected:
 		UPrimitiveComponent* OtherComp,
 		int32 OtherBodyIndex) override;
 
+	TScriptInterface<IAttributeProvider> AttributeProvider;
 };

@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "Player/CharacterHumanStates.h"
 #include "PlayerFormComponent.generated.h"
 
 class ICharacterStateProvider;

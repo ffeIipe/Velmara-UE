@@ -1,5 +1,4 @@
 #include "Components/InventoryComponent.h"
-#include "Items/Item.h"
 #include "Blueprint/UserWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerController.h"
@@ -8,8 +7,14 @@
 #include "HUD/Inventory.h"
 
 #include "DataAssets/EntityData.h"
+#include "GameFramework/Character.h"
 #include "Interfaces/AnimatorProvider.h"
+#include "Interfaces/CharacterStateProvider.h"
 #include "Interfaces/Weapon/WeaponInterface.h"
+#include "Interfaces/ControllerProvider.h"
+#include "Interfaces/Pickable.h"
+#include "Player/CharacterWeaponStates.h"
+#include "SpectralMode/Interfaces/Spectral.h"
 
 UInventoryComponent::UInventoryComponent()
 {
@@ -22,6 +27,10 @@ void UInventoryComponent::BeginPlay()
     Super::BeginPlay();
     
     PlayerControllerRef = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+    OwnerController = PlayerControllerRef;
+    ControllerProvider = GetOwner();
+    CharacterStateProvider = GetOwner();
+    AnimatorProvider = GetOwner();
 
     InitializeInventoryWidget();
 }
@@ -29,14 +38,24 @@ void UInventoryComponent::BeginPlay()
 void UInventoryComponent::InitializeValues(const FInventoryData& InventoryData)
 {
     MaxSlots = InventoryData.MaxSlots;
+    InteractTraceLenght = InventoryData.InteractTraceLenght;
+    InteractTargetRadius = InventoryData.InteractTargetRadius;
 }
 
-void UInventoryComponent::ChangeWeapon(int32 SlotIndex)
+void UInventoryComponent::ChangeWeapon(const int32 SlotIndex)
 {
     if (InventorySlots.IsValidIndex(SlotIndex))
     {
         EquipWeaponFromSlot(SlotIndex);
     }
+}
+
+void UInventoryComponent::ToggleInventorySlot()
+{
+    EquippedSlotIndex++;
+    if (EquippedSlotIndex >= MaxSlots) EquippedSlotIndex = 0;
+    
+    ChangeWeapon(EquippedSlotIndex);
 }
 
 void UInventoryComponent::InitializeInventoryWidget()
@@ -52,18 +71,15 @@ void UInventoryComponent::InitializeInventoryWidget()
     }
 }
 
-bool UInventoryComponent::TryAddWeapon(AItem* ItemToAdd)
+bool UInventoryComponent::TryAddWeapon(const TScriptInterface<IWeaponInterface> WeaponToAdd)
 {
-    if (!IsValid(ItemToAdd))
-    {
-        return false;
-    }
+    if (!WeaponToAdd) return false;
 
     for (int32 i = 0; i < InventorySlots.Num(); ++i)
     {
         if (InventorySlots[i] == nullptr)
         {
-            InventorySlots[i] = ItemToAdd;
+            InventorySlots[i] = WeaponToAdd;
 
             ChangeWeapon(i);
 
@@ -75,40 +91,41 @@ bool UInventoryComponent::TryAddWeapon(AItem* ItemToAdd)
     return false; // Inventario lleno
 }
 
-void UInventoryComponent::EquipWeaponFromSlot(int32 SlotIndex)
+void UInventoryComponent::EquipWeaponFromSlot(const int32 SlotIndex)
 {
     if (!InventorySlots.IsValidIndex(SlotIndex) || InventorySlots[SlotIndex] == nullptr) return;
+    
+    //UnequipCurrentWeapon();
 
-    TScriptInterface<IWeaponInterface> ItemToEquip = InventorySlots[SlotIndex];
-    UnequipCurrentWeapon();
-
-    if (ItemToEquip)
+    if (InventorySlots[SlotIndex] != nullptr)
     {
-        if (const TScriptInterface<IAnimatorProvider> AnimatorProvider = GetOwner())
+        if (CurrentEquippedWeapon)
         {
-            ItemToEquip->Equip(AnimatorProvider->GetMesh(), HandSocketName, GetOwner(), Cast<APawn>(GetOwner()));
-
-            //ItemToEquip->EnableVisuals(true);
-
-            EquippedWeapon = ItemToEquip;
-            EquippedSlotIndex = SlotIndex;
+            CurrentEquippedWeapon->EnableVisuals(false);
         }
     }
 
+    if (const TScriptInterface<IPickable> Pickable = InventorySlots[SlotIndex].GetObject()) Pickable->Pick(GetOwner());
+    
+    CurrentEquippedWeapon = InventorySlots[SlotIndex];
+    EquippedSlotIndex = SlotIndex;
+
+    CurrentEquippedWeapon->EnableVisuals(true);
+
+    AnimatorProvider->ChangeWeaponAnimationState();
     UpdateInventoryUI();
 }
 
-void UInventoryComponent::DropWeaponFromSlot(int32 SlotIndex)
+void UInventoryComponent::DropWeaponFromSlot(const int32 SlotIndex)
 {
     if (!InventorySlots.IsValidIndex(SlotIndex) || InventorySlots[SlotIndex] == nullptr)
     {
         return;
     }
 
-    TScriptInterface<IWeaponInterface> ItemToDrop = InventorySlots[SlotIndex];
-    ItemToDrop = EquippedWeapon;
+    InventorySlots[SlotIndex] = CurrentEquippedWeapon;
     
-    if (EquippedWeapon)
+    if (CurrentEquippedWeapon)
     {
         UnequipCurrentWeapon();
     }
@@ -133,11 +150,10 @@ void UInventoryComponent::DropWeaponFromSlot(int32 SlotIndex)
 
 void UInventoryComponent::UnequipCurrentWeapon()
 {
-    if (EquippedWeapon)
+    if (CurrentEquippedWeapon)
     {
-        //EquippedItem->EnableVisuals(false);
-        //ASword* SwordRef = Cast<ASword>(EquippedItem)->Set
-        EquippedWeapon = nullptr;
+        CurrentEquippedWeapon->EnableVisuals(false);
+        CurrentEquippedWeapon = nullptr;
         EquippedSlotIndex = -1;
     }
     else
@@ -184,7 +200,7 @@ void UInventoryComponent::HideInventory()
 
     if (PlayerControllerRef)
     {
-        FInputModeGameOnly InputMode;
+        const FInputModeGameOnly InputMode;
         PlayerControllerRef->SetInputMode(InputMode);
         PlayerControllerRef->bShowMouseCursor = false;
     }
@@ -198,60 +214,50 @@ void UInventoryComponent::UpdateInventoryUI()
     }
 }
 
-// void UInventoryComponent::Interact()
-// {
-//     if (IsInventoryOpen()) return;
-//
-//     FVector TraceStart;
-//     FRotator CameraRotation;
-//     Controller->GetPlayerViewPoint(TraceStart, CameraRotation);
-//
-//     const FVector TraceDirection = CameraRotation.Vector();
-//     const FVector TraceEnd = TraceStart + (TraceDirection * InteractTraceLenght);
-//
-//     TArray<AActor*> ActorsToIgnore;
-//     ActorsToIgnore.Add(GetOwner());
-//
-//     FHitResult ResultHit;
-//
-//     const bool bHit = UKismetSystemLibrary::SphereTraceSingle(
-//         GetWorld(),
-//         TraceStart,
-//         TraceEnd,
-//         InteractTargetRadius,
-//         ETraceTypeQuery::TraceTypeQuery1, //visibility trace
-//         false,
-//         ActorsToIgnore,
-//         EDrawDebugTrace::None,
-//         ResultHit,
-//         true
-//     );
-//
-//
-//     if (bHit && GetInventoryComponent())
-//     {
-//         if (AItem* HitSword = Cast<AItem>(ResultHit.GetActor()))
-//         {
-//             if (GetCharacterStateComponent()->GetCurrentCharacterState().Form != ECharacterForm::ECF_Spectral)
-//             {
-//                 if (GetInventoryComponent()->TryAddItem(HitSword))
-//                 {
-//                     ActorsToIgnore.Add(HitSword);
-//                     //HitSword->OnWallHit.AddDynamic(this, &AEntity::OnWallCollision);
-//                 }
-//             }
-//         }
-//         else if (ISpectralInteractable* SpectralObjectInteractable = Cast<ISpectralInteractable>(ResultHit.GetActor()))
-//         {
-//             if (GetCharacterStateComponent()->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
-//             {
-//                 SpectralObjectInteractable->Execute_SpectralInteract(ResultHit.GetActor(), this);
-//             }
-//         }
-//         // else if (AItem* HitItem = Cast<AItem>(ResultHit.GetActor()))
-//         // {
-//         // 	HitItem->Use(this);
-//         // 	Equipping(false);
-//         // }
-//     }
-// }
+void UInventoryComponent::Interact()
+{
+    if (IsInventoryOpen()) return;
+    
+    FVector TraceStart;
+    FRotator CameraRotation;
+    OwnerController->GetPlayerViewPoint(TraceStart, CameraRotation);
+    const FVector TraceDirection = CameraRotation.Vector();
+    const FVector TraceEnd = TraceStart + (TraceDirection * InteractTraceLenght);
+    
+    TArray<AActor*> ActorsToIgnore;
+    ActorsToIgnore.Add(GetOwner());
+
+    FHitResult ResultHit;
+    
+    const bool bHit = UKismetSystemLibrary::SphereTraceSingle(
+        GetWorld(),
+        GetOwner()->GetActorLocation() + FVector(0.f, 100.f, 0.f),
+        TraceEnd,
+        InteractTargetRadius,
+        UEngineTypes::ConvertToTraceType(ECC_GameTraceChannel5), //item trace
+        false,
+        ActorsToIgnore,
+        EDrawDebugTrace::ForDuration,
+        ResultHit,
+        true
+    );
+    if (bHit)
+    {
+        if (const TScriptInterface<IPickable> Pickable = ResultHit.GetActor())
+        {
+            if (!CharacterStateProvider->IsModeStateEqualToAny({ ECharacterModeStates::ECMS_Spectral }))
+            {
+                if (const TScriptInterface<IWeaponInterface> WeaponReached = Pickable.GetObject(); TryAddWeapon(WeaponReached))
+                {
+                    ActorsToIgnore.Add(Cast<AActor>(WeaponReached.GetObject()));
+                    if (GEngine)
+                    {
+                        GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Emerald, FString(ResultHit.GetActor()->GetName()));
+                        GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Emerald, FString(ResultHit.GetComponent()->GetName()));
+                    }
+                    //HitSword->OnWallHit.AddDynamic(this, &AEntity::OnWallCollision);
+                }
+            }
+        }
+    }
+}

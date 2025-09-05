@@ -74,9 +74,7 @@ public:
 
 	virtual bool IsLaunchable() override;
 
-	void NotifyDamageTakenToBlackboard(TScriptInterface<ICombatTargetInterface> DamageCauser);
-
-	virtual void LaunchUp(const FVector& InstigatorLocation) override;
+	void NotifyDamageTakenToBlackboard(const TScriptInterface<ICombatTargetInterface>& DamageCauser);
 
 	// --- AI & State ---
 	FORCEINLINE EEnemyType GetEnemyType() const { return EnemyType; }
@@ -137,7 +135,8 @@ protected:
 	UFUNCTION()
 	void NotifyIsNotShieldedToBlackboard();
 
-	TArray<AEnemy*> GenerateSphereOverlapToDetectOtherEnemies(const FVector& Origin, float Radius, AActor* HitEnemyToExclude);
+	TArray<TScriptInterface<ICombatTargetInterface>> GenerateSphereOverlapToDetectOtherEnemies(
+		const FVector& Origin, float Radius, AActor* HitEnemyToExclude);
 
 	// --- Combat & Damage ---
 	UFUNCTION()
@@ -147,10 +146,10 @@ protected:
 	float DamageThreshold = 30.f;
 
 	UPROPERTY();
-	EMainDamageTypes LastDamageType;
+	EMeleeDamageTypes LastDamageType;
 
 	UFUNCTION(BlueprintCallable)
-	virtual void ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoint) {};
+	virtual void ReactToDamage(EMeleeDamageTypes DamageType, const FVector& ImpactPoint) {};
 
 	// --- Energy & Orbs ---
 	UPROPERTY(EditAnywhere, Category = "Energy | Energy Drop");
@@ -178,8 +177,8 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Effects | Dissolve")
 	TArray<UMaterialInstanceDynamic*> DissolveMaterials;
 
-	UPROPERTY(VisibleAnywhere)
-	class UTimelineComponent* DissolveTimeline;
+	UPROPERTY()
+	UTimelineComponent* DissolveTimeline;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Effects | Dissolve")
 	UCurveFloat* DissolveCurve;
@@ -230,7 +229,7 @@ protected:
 	bool bOriginalUseControllerRotationYaw;
 
 	UPROPERTY()
-	bool bShouldDropOrbs = true;
+	bool bShouldDropOrbs = true; //this is for inheritance xd
 	
 	virtual void ApplyPossessionParameters(bool bShouldEnable) {};
 

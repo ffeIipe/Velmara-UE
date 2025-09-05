@@ -3,7 +3,7 @@
 
 #include "Engine/DamageEvents.h"
 #include "GameFramework/DamageType.h"
-#include "DamageTypes/DamageTypeMain.h"
+#include "DamageTypes/MeleeDamage.h"
 
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/BoxComponent.h"
@@ -78,7 +78,7 @@ void APaladin::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 
 	if (GetCharacterStateComponent())
 	{
-		GetCharacterStateComponent()->SetHumanState(ECharacterHumanStates::ECHS_EquippedSword);
+		GetCharacterStateComponent()->SetHumanState(ECharacterWeaponStates::ECWS_EquippedWeapon);
 	}
 
 	SetWeaponCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -96,20 +96,26 @@ bool APaladin::IsLaunchable()
 	return !GetAttributeComponent()->IsShielded(); //returns false if it has shield equipped or not detached yet.
 }
 
-void APaladin::LaunchUp(const FVector& InstigatorLocation)
+void APaladin::LaunchUp()
 {
-	Super::LaunchUp(InstigatorLocation);
+	Super::LaunchUp();
+	
+	if (bIsLaunched) return;
 
-	LaunchEnemyUp(InstigatorLocation);
+	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, FString(this->GetName()));
+	bIsLaunched = true;
+	DisableAI();
+	PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
+	GetCharacterMovement()->SetMovementMode(MOVE_Flying);
 }
 
 void APaladin::Die(UAnimMontage* DeathAnim, const FName Section)
 {
 	Super::Die(DeathAnim, Section);
 
-	if (GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Flying || GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling)
+	if (IsFlying() || IsFalling())
 	{
-		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
 		LaunchCharacter(FVector(0.f, 0.f, -300.f), true, true);
 	}
 	
@@ -145,7 +151,7 @@ void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 		UEngineTypes::ConvertToTraceType(ECC_Pawn),
 		false,
 		IgnoreActors,
-		EDrawDebugTrace::None,
+		EDrawDebugTrace::ForDuration,
 		HitResults,
 		true
 	);
@@ -154,25 +160,27 @@ void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 	{
 		if (bHitOccurred && Hit.GetActor() && !IgnoreActors.Contains(Hit.GetActor()))
 		{
-			if (IHitInterface* Entity = Cast<IHitInterface>(Hit.GetActor()))
+			if (IHitInterface* HitInterface = Cast<IHitInterface>(Hit.GetActor()))
 			{
-				UGameplayStatics::ApplyDamage(
-					Hit.GetActor(),
-					Damage,
-					GetController(),
-					this,
-					UDamageType::StaticClass()
-				);
-
 				FDamageEvent DamageEvent(UDamageType::StaticClass());
 				
-				AEntity* FinalDamageCauser = nullptr;	
-				if (GetPossessionComponent()->IsPossessed()) FinalDamageCauser =  this;
+				if (HitInterface->IsHittable())
+				{
+					UGameplayStatics::ApplyDamage(Hit.GetActor(), Damage, GetController(), this, UDamageType::StaticClass());
+					
+					AEntity* FinalDamageCauser = nullptr;	
+					if (GetPossessionComponent()->IsPossessed()) FinalDamageCauser =  this;
 				
-				Entity->GetHit(FinalDamageCauser, Hit.ImpactPoint, DamageEvent, Damage);
+					HitInterface->GetHit(FinalDamageCauser, Hit.ImpactPoint, DamageEvent, Damage);
 				
-				PlayCameraShake(SwordMesh->GetComponentLocation(), 0.f, 500.f);
-				IgnoreActors.Add(Hit.GetActor());
+					PlayCameraShake(SwordMesh->GetComponentLocation(), 0.f, 500.f);
+					IgnoreActors.Add(Hit.GetActor());
+				}
+				else
+				{
+					HitInterface->GetHit(this, Hit.ImpactPoint, DamageEvent, Damage/2);
+					//GetCombatComponent()->ReceiveBlock();
+				}
 			}
 		}
 	}
@@ -202,16 +210,6 @@ void APaladin::ShieldHit()
 	}
 }
 
-void APaladin::LaunchEnemyUp(const FVector& InstigatorLocation)
-{
-	if (bIsLaunched) return;
-
-	bIsLaunched = true;
-	DisableAI();
-	PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
-	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
-}
-
 void APaladin::CrashDown()
 {
 	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
@@ -221,41 +219,44 @@ void APaladin::CrashDown()
 
 void APaladin::HitInAir()
 {
-	float PlayerLocationZ = UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->GetActorLocation().Z;
-	SetActorLocation(FVector(GetTargetActorLocation().X, GetTargetActorLocation().Y, PlayerLocationZ));
+	const float PlayerLocationHeight = UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->GetActorLocation().Z;
+	SetActorLocation(FVector(GetTargetActorLocation().X, GetTargetActorLocation().Y, PlayerLocationHeight));
 	PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
 	DisableAI();
 }
 
-void APaladin::ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoint)
+void APaladin::ReactToDamage(EMeleeDamageTypes DamageType, const FVector& ImpactPoint)
 {
 	switch (DamageType)
 	{
-	case EMainDamageTypes::EMDT_CrashDown:
+	case EMeleeDamageTypes::EMDT_CrashDown:
 		CrashDown();
 		break;
 
-	case EMainDamageTypes::EMDT_InAir:
+	case EMeleeDamageTypes::EMDT_InAir:
 		HitInAir();
 		break;
 
-	case EMainDamageTypes::EMDT_Finisher:
+	case EMeleeDamageTypes::EMDT_Finisher:
 		FinishedDamage();
 		break;
 
-	case EMainDamageTypes::EMDT_Slash:
+	case EMeleeDamageTypes::EMDT_Slash:
 		Slash();
 		break;
 
-	case EMainDamageTypes::EMDT_Puncture:
+	case EMeleeDamageTypes::EMDT_Puncture:
 		PlayAnimMontage(HitReactMontage, 1.f, FName("PunctureReact"));
 		break;
 
-	case EMainDamageTypes::EMDT_Impact:
+	case EMeleeDamageTypes::EMDT_Impact:
 		PlayAnimMontage(HitReactMontage, 1.f, FName("ImpactReact"));
 		break;
 
-	case EMainDamageTypes::EMDT_None:
+	/*case EMainDamageTypes::EMDT_Pistol:*/
+		
+		
+	case EMeleeDamageTypes::EMDT_None:
 		GetDirectionalReact(ImpactPoint);
 		break;
 
@@ -267,7 +268,7 @@ void APaladin::ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactP
 
 void APaladin::Slash()
 {
-	FRotator DamageCauserLocation = UKismetMathLibrary::FindLookAtRotation(GetTargetActorLocation(), LastDamageCauser->GetTargetActorLocation());
+	const FRotator DamageCauserLocation = UKismetMathLibrary::FindLookAtRotation(GetTargetActorLocation(), LastDamageCauser->GetTargetActorLocation());
 
 	SetActorRotation(FRotator(0.f, DamageCauserLocation.Yaw, 0.f));
 

@@ -1,8 +1,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "CharacterHumanStates.h"
-#include "Components/SpectralWeaponComponent.h"
 #include "Entities/EntityAnimInstance.h"
 #include "PlayerMainAnimInstance.generated.h"
 

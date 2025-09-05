@@ -4,6 +4,7 @@
 #include "Components/ActorComponent.h"
 #include "CombatComponent.generated.h"
 
+struct FInputActionValue;
 class ICharacterMovementProvider;
 class IAnimatorProvider;
 class IWeaponInterface;
@@ -39,9 +40,9 @@ public:
 
     // --- Component References ---
     UPROPERTY()
-    TScriptInterface<IControllerProvider> ControllerProvider;
-    UPROPERTY()
     AController* OwnerController;
+    UPROPERTY()
+    TScriptInterface<IControllerProvider> ControllerProvider;
     UPROPERTY()
     TScriptInterface<IWeaponProvider> WeaponProvider;
     UPROPERTY()
@@ -57,9 +58,6 @@ public:
     UPROPERTY()
     TScriptInterface<IAnimatorProvider> AnimatorProvider;
     
-    // UPROPERTY()
-    // UExtraMovementComponent* ExtraMovementComponent;
-    
     // --- Finisher Locations ---
     UPROPERTY(EditAnywhere, Category = "Attack | Finisher")
     USceneComponent* CameraFinisherLocation;
@@ -71,13 +69,16 @@ public:
     void ResetState();
     UFUNCTION()
     void RemoveCombatTarget() {CombatTarget = nullptr;}
+    UFUNCTION()
+    bool IsBlocking() const;
+    UFUNCTION()
+    void ReceiveBlock() const;
     
     // --- Input Functions ---
     void Input_Attack();
     void Input_HeavyAttack();
     void Input_Launch();
-    void Input_Block();
-    void Input_ReleaseBlock();
+    void Input_Block(const FInputActionValue& Value);
     void ChangeHardLockTarget();
     void ToggleHardLock();
     UFUNCTION() // ufunction bc it's called by an event that executes when you cant possess
@@ -85,7 +86,7 @@ public:
     
     // --- Attack Events ---
     UFUNCTION()
-    void LightAttackEvent();
+    void AttackEvent();
     UFUNCTION()
     void HeavyAttackEvent();
     UFUNCTION()
@@ -98,9 +99,16 @@ public:
     
     // --- Buffer Distance ---
     UFUNCTION(BlueprintCallable)
-    void StartAttackBufferEvent(float BufferAmount);
+    void StartAttackBufferEvent();
     UFUNCTION(BlueprintCallable)
     void StopAttackBufferEvent();
+
+    UFUNCTION()
+    void StartBufferBackwards();
+    UFUNCTION()
+    void StopBufferBackwards();
+    UFUNCTION()
+    void UpdateBufferBackwards(float Alpha);
     
     // --- Attack State Flags ---
     UPROPERTY(VisibleAnywhere, Category = "Attack | LightAttack")
@@ -118,12 +126,12 @@ public:
     
     // --- Buffer Attack ---
     UPROPERTY(BlueprintReadWrite, Category = "Stats")
-    float BufferMultiplier;
+    float BufferMultiplier = 1.f;
 
 protected:
     // --- Lifecycle Events ---
     virtual void BeginPlay() override;
-    virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+    virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
     
     // --- Attack Logic Functions ---
     UFUNCTION(BlueprintCallable, Category = "Attack | LightAttack")
@@ -159,11 +167,11 @@ protected:
     
     // --- Blocking ---
     UFUNCTION()
-    void Block();
-    UFUNCTION()
-    void ReceiveBlock();
-    UFUNCTION()
-    void ReleaseBlock();
+    void Block() const;
+    
+    UFUNCTION(BlueprintCallable, Category = "Block")
+    void ReleaseBlock() const;
+    
 
     // --- Soft Lock Targeting ---
     UFUNCTION(BlueprintCallable, Category = "SoftLock")
@@ -172,14 +180,17 @@ protected:
     void ValidateWall();
     UFUNCTION(BlueprintCallable, Category = "SoftLock")
     void RotationToTarget();
+    UFUNCTION()
     void UpdateSoftLockOn(float Alpha);
     
     // --- Launch Character Timeline ---
+    UFUNCTION()
     void UpdateLaunchCharacterUp(float Alpha);
     
     // --- Buffer Attack ---
-    void UpdateAttackBuffer(float Alpha);
-    void UpdateBuffer(float Alpha, float BufferDistance);
+    UFUNCTION()
+    void UpdateAttackBuffer(float Alpha) const;
+    void UpdateBuffer(float Alpha, float BufferDistance) const;
     
     // --- Animation Montages ---
     UPROPERTY(EditDefaultsOnly, Category = "Montages | ComboAttack")
@@ -231,6 +242,8 @@ private:
     UTimelineComponent* LaunchCharacterTimeline;
     UPROPERTY()
     UTimelineComponent* BufferAttackTimeline;
+    UPROPERTY()
+    UTimelineComponent* BufferBackwardsTimeline;
 
     // --- Stats Assigned By Data Asset ---
     float SoftLockDistance;
@@ -241,4 +254,10 @@ private:
     UCurveFloat* SoftLockCurve;
     UPROPERTY()
     UCurveFloat* BufferCurve;
+    
+    //TODO: Add trough DataAsset
+    // UPROPERTY()
+    // UCurveFloat* BufferLaunchUp;
+    // UPROPERTY()
+    // UCurveFloat* BufferBackwardsCurve;
 };

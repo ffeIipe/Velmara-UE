@@ -4,11 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "Animation/AnimInstance.h"
+#include "Interfaces/EntityAnimInstanceProvider.h"
 #include "EntityAnimInstance.generated.h"
 
-enum class ECharacterSpectralStates : uint8;
-enum class ECharacterMode : uint8;
-enum class ECharacterHumanStates : uint8;
+class AEntity;
+enum class ECharacterWeaponStates : uint8;
+enum class ECharacterModeStates : uint8;
 class ICharacterStateProvider;
 class ICharacterMovementProvider;
 class IOwnerUtilsInterface;
@@ -16,15 +17,15 @@ class IOwnerUtilsInterface;
  * 
  */
 UCLASS()
-class TESISUE_API UEntityAnimInstance : public UAnimInstance
+class TESISUE_API UEntityAnimInstance : public UAnimInstance, public IEntityAnimInstanceProvider
 {
 	GENERATED_BODY()
 public:
 	virtual void NativeInitializeAnimation() override;
 	virtual void NativeUpdateAnimation(float DeltaTime) override;
 
-	UPROPERTY()
-	APawn* Owner;
+	UPROPERTY(BlueprintReadOnly)
+	AEntity* EntityOwner;
 	
 	UPROPERTY(BlueprintReadOnly)
 	TScriptInterface<IOwnerUtilsInterface> OwnerUtils;
@@ -37,7 +38,7 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
 	float GroundSpeed;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	bool IsFalling;
 	
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
@@ -54,19 +55,18 @@ public:
 	
 	UPROPERTY(BlueprintReadWrite, Category = "Movement")
 	float MaxWalkSpeed;
-	
-	UPROPERTY(BlueprintReadWrite, Category = "Movement")
-	float MaxRunSpeed;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Combat")
 	bool bIsLocking;
 	
 	UPROPERTY(BlueprintReadOnly, Category = "Movement | Character State")
-	ECharacterHumanStates CharacterHumanState;
+	ECharacterWeaponStates CharacterWeaponState;
 	
 	UPROPERTY(BlueprintReadOnly, Category = "Movement | Character Form")
-	ECharacterMode CharacterMode;
+	ECharacterModeStates CharacterMode;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Movement | Spectral Weapon State")
-	ECharacterSpectralStates SpectralState;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Movement | Animation States")
+	bool bIsMeleeWeapon;
+	
+	virtual void SetAnimationState(TScriptInterface<IWeaponInterface> WeaponEquipped) override;
 };

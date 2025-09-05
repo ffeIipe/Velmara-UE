@@ -1,18 +1,30 @@
 #include "SpectralMode/SpectralObject.h"
 #include "Components/StaticMeshComponent.h"
-#include "Components/BoxComponent.h"
-#include "Components/SpectralObjectComponent.h"
-
-ASpectralObject::ASpectralObject()
-{
-    PrimaryActorTick.bCanEverTick = false;
-
-    ItemMesh->SetCollisionObjectType(ECC_GameTraceChannel1);
-
-    SpectralObjectComponent = CreateDefaultSubobject<USpectralObjectComponent>(TEXT("SpectralObjectComponent"));
-}
+#include "Subsystems/SpectralObjectsSubsystem.h"
 
 void ASpectralObject::BeginPlay()
 {
     Super::BeginPlay();
+
+    AddToSpectralObjects();
+}
+
+void ASpectralObject::ActivateVisiblity()
+{
+    SetActorEnableCollision(true);
+    SetActorHiddenInGame(false);   
+}
+
+void ASpectralObject::DeactivateVisibility()
+{
+    SetActorEnableCollision(false);
+    SetActorHiddenInGame(true);
+}
+
+void ASpectralObject::AddToSpectralObjects()
+{
+    if (USpectralObjectsSubsystem* SpectralObjectsSubsystem = GetWorld()->GetSubsystem<USpectralObjectsSubsystem>())
+    {
+        SpectralObjectsSubsystem->AddSpectralObject(this);
+    }
 }

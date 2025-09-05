@@ -1,6 +1,5 @@
 #include "Player/PlayerMain.h"
 
-#include "EngineUtils.h"
 #include "SceneEvents/NewGameModeBase.h"
 #include "SceneEvents/NewGameStateBase.h"
 #include "SceneEvents/NewGameInstance.h"
@@ -15,7 +14,6 @@
 #include "Components/InventoryComponent.h"
 #include "Components/CharacterStateComponent.h"
 #include "Components/PossessionComponent.h"
-#include "Components/SpectralWeaponComponent.h"
 #include "Curves/CurveFloat.h"
 
 #include "Camera/CameraActor.h"
@@ -45,8 +43,6 @@ APlayerMain::APlayerMain()
 	PlayerFormComponent = CreateDefaultSubobject<UPlayerFormComponent>(TEXT("PlayerFormComponent"));
 	PlayerFormComponent->OnHumanEffectApplied.AddDynamic(this, &APlayerMain::ApplyHumanMode);
 	PlayerFormComponent->OnSpectralEffectApplied.AddDynamic(this, &APlayerMain::ApplySpectralEffect);
-	
-	SpectralWeaponComponent = CreateDefaultSubobject<USpectralWeaponComponent>(TEXT("SpectralWeapon"));
 }
 
 void APlayerMain::GetHit(TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint,
@@ -60,26 +56,6 @@ void APlayerMain::GetHit(TScriptInterface<ICombatTargetInterface> DamageCauser, 
 	}	
 }
 
-// void APlayerMain::PerformSpectralAttack_Implementation()
-// {
-// 	if (IsEquipping() || GetCharacterStateComponent()->GetCurrentCharacterState().SpectralState == ECharacterSpectralStates::ECSS_Unequipped) return;
-//
-// 	SpectralWeaponComponent->PrimaryFire();
-// }
-//
-// void APlayerMain::PerformSpectralBarrier_Implementation()
-// {
-// 	if (IsEquipping() || GetCharacterStateComponent()->GetCurrentCharacterState().SpectralState == ECharacterSpectralStates::ECSS_Unequipped) return;
-//
-// 	SpectralWeaponComponent->SecondaryFire();
-// }
-//
-// void APlayerMain::ResetSpectralAttack_Implementation()
-// {
-// 	SpectralAttackIndex = 0;
-// 	GetCombatComponent()->bIsSaveLightAttack = false;
-// }
-
 void APlayerMain::BeginPlay()
 {
 	Super::BeginPlay();
@@ -89,27 +65,16 @@ void APlayerMain::BeginPlay()
 		GetCombatComponent()->OnWallHit.AddDynamic(this, &APlayerMain::OnWallCollision);
 	}
 	
-	
-	GetCharacterStateComponent()->CurrentStates.Mode == ECharacterMode::ECM_Spectral ?
-		SpectralWeaponComponent->EnableSpectralWeapon(true) : SpectralWeaponComponent->EnableSpectralWeapon(false);
+	// GetCharacterStateComponent()->CurrentStates.Mode == ECharacterMode::ECM_Spectral ?
+	// 	SpectralWeaponComponent->EnableSpectralWeapon(true) : SpectralWeaponComponent->EnableSpectralWeapon(false);
 
-	for (TActorIterator<ACameraActor> It(GetWorld()); It; ++It)
-	{
-		FollowCamera = *It;
-		break;
-	}
-
-	if (APlayerController* PC = Cast<APlayerController>(GetController()); FollowCamera && PC)
-	{
-		FollowCamera->AttachToComponent(GetSpringArmComponent(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName("SpringEndpoint"));
-		PC->SetViewTargetWithBlend(FollowCamera, 1.f);
-	}
+	AttachFollowCamera();
 
 	if (const APlayerController* PlayerController = CastChecked<APlayerController>(GetController()))
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 			Subsystem->AddMappingContext(CharacterContext, 0);
 
-	if (ANewGameModeBase* NewGameMode = Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
+	if (const ANewGameModeBase* NewGameMode = Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
 	{
 		if (ANewGameStateBase* NewGameStateBase = Cast<ANewGameStateBase>(NewGameMode->GameState))
 		{
@@ -161,11 +126,11 @@ void APlayerMain::ToggleForm()
 	if (IsEquipping()) return;
 
 	if (GetCharacterStateComponent()->IsActionEqualToAny({
-		ECharacterActions::ECA_Dead,
-		ECharacterActions::ECA_Block,
-		ECharacterActions::ECA_Finish,
-		ECharacterActions::ECA_Attack,
-		ECharacterActions::ECA_Stun })) return;
+		ECharacterActionsStates::ECAS_Dead,
+		ECharacterActionsStates::ECAS_Block,
+		ECharacterActionsStates::ECAS_Finish,
+		ECharacterActionsStates::ECAS_Attack,
+		ECharacterActionsStates::ECAS_Stun })) return;
 	
 	PlayerFormComponent->ToggleForm();
 }
@@ -192,7 +157,7 @@ void APlayerMain::Die(UAnimMontage* DeathAnim, const FName Section)
 
 void APlayerMain::Revive()
 {
-	if (GetCharacterStateComponent()->CurrentStates.Action == ECharacterActions::ECA_Dead)
+	if (GetCharacterStateComponent()->CurrentStates.Action == ECharacterActionsStates::ECAS_Dead)
 	{
 		StopAnimMontage();
 
@@ -202,7 +167,7 @@ void APlayerMain::Revive()
 		}
 
 		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
-		GetCharacterStateComponent()->SetAction(ECharacterActions::ECA_Nothing);
+		GetCharacterStateComponent()->SetAction(ECharacterActionsStates::ECAS_Nothing);
 	}
 }
 
@@ -210,7 +175,7 @@ void APlayerMain::ResetFollowCamera()
 {
 	if (FollowCamera && PlayerControllerRef)
 	{
-		GetCharacterStateComponent()->SetAction(ECharacterActions::ECA_Nothing);
+		GetCharacterStateComponent()->SetAction(ECharacterActionsStates::ECAS_Nothing);
 		FollowCamera->AttachToComponent(GetSpringArmComponent(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName("SpringEndpoint"));
 		PlayerControllerRef->EnableInput(PlayerControllerRef);
 		bCanReceiveDamage = true;
@@ -228,14 +193,14 @@ void APlayerMain::LoadLastCheckpoint() const
 
 void APlayerMain::ChangePrimaryWeapon()
 {
-	if (GetCharacterStateComponent()->IsModeEqualToAny({ ECharacterMode::ECM_Spectral })) return;
+	if (GetCharacterStateComponent()->IsModeEqualToAny({ ECharacterModeStates::ECMS_Spectral })) return;
 
 	GetInventoryComponent()->ChangeWeapon(0);
 }
 
 void APlayerMain::ChangeSecondaryWeapon()
 {
-	if (GetCharacterStateComponent()->IsModeEqualToAny({ ECharacterMode::ECM_Spectral })) return;
+	if (GetCharacterStateComponent()->IsModeEqualToAny({ ECharacterModeStates::ECMS_Spectral })) return;
 
 	GetInventoryComponent()->ChangeWeapon(1);
 }
@@ -254,11 +219,11 @@ void APlayerMain::ApplyHumanMode()
 		GetPossessionComponent()->ReleasePossession();
 	}
 
-	GetCharacterStateComponent()->SetMode(ECharacterMode::ECM_Human);
+	GetCharacterStateComponent()->SetMode(ECharacterModeStates::ECMS_Human);
 }
 
 void APlayerMain::ApplySpectralEffect()
 {
 	GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = true;
-	GetCharacterStateComponent()->SetMode(ECharacterMode::ECM_Spectral);
+	GetCharacterStateComponent()->SetMode(ECharacterModeStates::ECMS_Spectral);
 }

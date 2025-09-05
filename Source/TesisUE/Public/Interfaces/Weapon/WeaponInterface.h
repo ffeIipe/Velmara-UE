@@ -24,8 +24,11 @@ class TESISUE_API IWeaponInterface
 public:
 	virtual void UsePrimaryAttack() = 0;
 	virtual void UseSecondaryAttack() = 0;
-	virtual void Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwner, APawn* NewInstigator) = 0;
+	/*virtual void Pick(AActor* NewOwner) = 0;*/
 	virtual void EnableVisuals(bool Enable) = 0;
-	virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled) = 0;
+
+	UFUNCTION(BlueprintNativeEvent)
+	void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
 	virtual void ClearIgnoreActors() = 0;
+	virtual FName& GetUniqueSaveID() = 0;
 };

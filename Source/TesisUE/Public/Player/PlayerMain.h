@@ -4,8 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "Entities/Entity.h"
-// #include "Interfaces/FormInterface.h"
-// #include "Interfaces/CharacterState.h"
 #include "PlayerMain.generated.h"
 
 class UInputMappingContext;
@@ -21,7 +19,6 @@ class UCharacterStateComponent;
 class UPlayerFormComponent;
 class UCameraComponent;
 class USpringArmComponent;
-class USpectralWeaponComponent;
 class ACameraActor;
 class UDamageType;
 class USoundBase;
@@ -52,9 +49,6 @@ public:
 	// --- Components ---
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components | Forms")
 	UPlayerFormComponent* PlayerFormComponent;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components | Spectral Weapon")
-	USpectralWeaponComponent* SpectralWeaponComponent;
 
 	// --- Spectral Mode - Attack ---
 	UPROPERTY(BlueprintReadWrite, Category = "Gameplay | SpectralMode | SpectralAttack")

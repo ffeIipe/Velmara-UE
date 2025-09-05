@@ -2,62 +2,102 @@
 
 #include "Items/Weapons/Pistol.h"
 
-#include "Components/CharacterStateComponent.h"
+#include "NiagaraFunctionLibrary.h"
+#include "DamageTypes/PistolDamage.h"
 #include "Engine/DamageEvents.h"
 #include "Entities/Entity.h"
 #include "Interfaces/ControllerProvider.h"
 #include "Interfaces/HitInterface.h"
 #include "Kismet/GameplayStatics.h"
-#include "Player/CharacterHumanStates.h"
+#include "Subsystems/EffectsManager.h"
+
+APistol::APistol()
+{
+	OnFire.AddDynamic(this, &APistol::PlayEffects);
+}
 
 void APistol::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	CurrentAmmo = MaxAmmo;
 }
 
-void APistol::AttachMeshToSocket(USceneComponent* InParent, const FName InSocketName) const
+void APistol::UsePrimaryAttack()
 {
-	const FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, true);
-	ItemMesh->AttachToComponent(InParent, TransformRules, InSocketName);
+	Super::UsePrimaryAttack();
+	PrimaryShoot();
 }
 
-void APistol::Equip(USceneComponent* InParent, const FName InSocketName, AActor* NewOwner, APawn* NewInstigator)
+void APistol::UseSecondaryAttack()
 {
-	Super::Equip(InParent, InSocketName, NewOwner, NewInstigator);
+	Super::UseSecondaryAttack();
+	SecondaryShoot();
+}
 
-	AttachMeshToSocket(InParent, InSocketName);
-	SetOwner(NewOwner);
-	SetInstigator(NewInstigator);
-	ItemState = EItemState::EIS_Equipped;
+void APistol::PrimaryShoot()
+{
+	Fire();
+}
 
-	// EnableSwordState(true);
+void APistol::SecondaryShoot()
+{
+}
 
-	ControllerProvider = NewOwner;
-	OwnerController = ControllerProvider->GetEntityController();
-	
-	CharacterStateProvider = NewOwner;
-	
-	if (CharacterStateProvider)
+void APistol::PlayEffects()
+{
+	const FVector SocketLocation = ItemMesh->GetSocketLocation(FName("MuzzleFlashSocket"));
+	const FRotator SocketRotation = ItemMesh->GetSocketRotation(FName("MuzzleFlashSocket"));
+
+	if (MuzzleFlash)
 	{
-		CharacterStateProvider->SetHumanState(ECharacterHumanStates::ECHS_EquippedSword);
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(),
+			MuzzleFlash,
+			SocketLocation,
+			SocketRotation,
+			FVector(1)
+		);
+	}
+
+	if (ShootSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(
+			GetWorld(),
+			ShootSound,
+			SocketLocation,
+			SocketRotation,
+			1.f
+		);
+	}
+
+	if (UEffectsManager* EffectsManager = GetWorld()->GetSubsystem<UEffectsManager>())
+	{
+		EffectsManager->CameraShake(ECameraShakePreset::ECSP_ShotHit, SocketLocation);
 	}
 }
 
 void APistol::Fire()
 {
+	if (!AttributeProvider->RequiresEnergy(EnergyToDecrease)) return;
+
 	if (CurrentAmmo >= 1 && !bIsReloading && bIsFireEnabled)
 	{
+		/*if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, "Shooting");*/
 		bIsFireEnabled = false;
 		CurrentAmmo--;
-		SetTimer(TimerHandle_BetweenShots, .65f, &APistol::EnableFire);
+		SetTimer(TimerHandle_BetweenShots, FireEnableTime, &APistol::EnableFire);
+
+		if (OnFire.IsBound()) OnFire.Broadcast();
+
+		AttributeProvider->IncreaseEnergy(-EnergyToDecrease);
+		AnimatorProvider->PlayAnimMontage(PrimaryFireMontage);
 		
 		FVector TraceStart;
 		FRotator CameraRotation;
-		OwnerController->GetPlayerViewPoint(TraceStart, CameraRotation);
+		ControllerProvider->GetEntityController()->GetPlayerViewPoint(TraceStart, CameraRotation);
 
 		const FVector TraceDirection = CameraRotation.Vector();
-		const FVector TraceEnd = TraceStart + TraceDirection * 100000.f;
+		const FVector TraceEnd = TraceStart + TraceDirection * 1000000.f;
 
 		FCollisionQueryParams CollisionParams;
 		CollisionParams.AddIgnoredActor(GetOwner());
@@ -73,27 +113,23 @@ void APistol::Fire()
 			ECC_Visibility,
 			CollisionParams
 		);
-
-		if (bHit)
+		
+		if (!bHit) return;
+		
+		if (const TScriptInterface<IHitInterface> HitInterface = HitResult.GetActor())
 		{
-			if (AActor* HitActor = HitResult.GetActor())
-			{
-				UGameplayStatics::ApplyPointDamage(
-					HitActor,
-					Damage,
-					TraceDirection,
-					HitResult,
-					OwnerController,
-					GetOwner(),
-					UDamageType::StaticClass()
-					);
+			UGameplayStatics::ApplyPointDamage(
+			HitResult.GetActor(),
+			Damage,
+			TraceDirection,
+			HitResult,
+			ControllerProvider->GetEntityController(),
+			GetOwner(),
+			UPistolDamage::StaticClass()
+			);
 
-				if (IHitInterface* Entity = Cast<IHitInterface>(HitActor))
-				{
-					const FDamageEvent DamageEvent(UDamageType::StaticClass());
-					Entity->GetHit(GetOwner(), HitResult.ImpactPoint, DamageEvent, Damage);
-				}
-			}
+			const FDamageEvent DamageEvent(UDamageType::StaticClass());
+			HitInterface->GetHit(GetOwner(), HitResult.ImpactPoint, DamageEvent, Damage);
 		}
 	}
 	else if (CurrentAmmo <= 0)
@@ -109,12 +145,11 @@ void APistol::Reload()
 {
 	if (bIsReloading || CurrentAmmo == MaxAmmo) return;
 
+	/*if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, "Reloading");*/
 	bIsReloading = true;
-	if (ACharacter* CharacterOwner = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0))
-	{
-		CharacterOwner->PlayAnimMontage(ReloadMontage);
-		SetTimer(TimerHandle_Reload, 1.f, &APistol::FinishReload);
-	}
+	
+	AnimatorProvider->PlayAnimMontage(ReloadMontage);
+	SetTimer(TimerHandle_Reload, 1.f, &APistol::FinishReload);
 }
 
 void APistol::FinishReload()

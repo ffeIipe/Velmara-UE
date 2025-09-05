@@ -1,54 +1,53 @@
 #include "Enemy/Enemy.h"
-#include "AI/EnemyAIController.h"
 #include "AIController.h"
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
+#include "NiagaraComponent.h"
+#include "AI/EnemyAIController.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Components/AttributeComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/CharacterStateComponent.h"
 #include "Components/CombatComponent.h"
 #include "Components/ExtraMovementComponent.h"
 #include "Components/InputComponent.h"
 #include "Components/MementoComponent.h"
 #include "Components/PossessionComponent.h"
 #include "Components/TimelineComponent.h"
-#include "DamageTypes/DamageTypeMain.h"
+#include "DamageTypes/MeleeDamage.h"
 #include "Engine/DamageEvents.h"
-#include "EnhancedInputComponent.h"
-#include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/DamageType.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Misc/Guid.h"
-#include "NiagaraComponent.h"
-#include "Components/CharacterStateComponent.h"
+#include "Perception/AIPerceptionComponent.h"  
+#include "Player/PlayerHeroController.h"
 #include "Player/PlayerMain.h"
 #include "SceneEvents/NewGameModeBase.h"
 #include "SceneEvents/NewGameStateBase.h"
+#include "Subsystems/EffectsManager.h"
 #include "Subsystems/EnemyPoolManager.h"
 #include "Subsystems/EnemyTokenManager.h"
 #include "Tutorial/PromptWidgetComponent.h"
-#include "Player/PlayerHeroController.h"
-#include "Perception/AIPerceptionComponent.h"  
-#include "Player/CharacterHumanStates.h"
-#include "Subsystems/EffectsManager.h"
 
 AEnemy::AEnemy()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	
-	GetMesh()->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
-	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
-	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
-	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
-	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel3, ECollisionResponse::ECR_Block);
+	GetMesh()->SetCollisionObjectType(ECC_Pawn);
+	GetMesh()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+	GetMesh()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+	GetMesh()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+	GetMesh()->SetCollisionResponseToChannel(ECC_GameTraceChannel3, ECR_Block);
 	GetMesh()->SetGenerateOverlapEvents(true);
-	GetMesh()->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
+	GetMesh()->CanCharacterStepUpOn = ECB_No;
 	InitialMeshCollisionEnabled = GetMesh()->GetCollisionEnabled();
 
-	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 	GetCapsuleComponent()->SetGenerateOverlapEvents(true);
-	GetCapsuleComponent()->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
+	GetCapsuleComponent()->CanCharacterStepUpOn = ECB_No;
 	GetCapsuleComponent()->SetCapsuleRadius(45.f);
 	InitialCapsuleCollisionEnabled = GetCapsuleComponent()->GetCollisionEnabled();
 
@@ -124,7 +123,7 @@ void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 
 	if (GetCharacterStateComponent())
 	{
-		GetCharacterStateComponent()->SetAction(ECharacterActions::ECA_Nothing);
+		GetCharacterStateComponent()->SetAction(ECharacterActionsStates::ECAS_Nothing);
 	}
 
 	bUseControllerRotationYaw = bOriginalUseControllerRotationYaw;
@@ -238,32 +237,25 @@ void AEnemy::Die(UAnimMontage* DeathAnim, FName Section)
 	GetWorldTimerManager().SetTimer(ReturnToPoolTimerHandle, this, &AEnemy::RequestReturnToPool, 5.0f, false);
 }
 
-void AEnemy::GetHit(TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint,
+void AEnemy::GetHit(const TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint,
 	FDamageEvent const& DamageEvent, const float DamageReceived)
 {
 	Super::GetHit(DamageCauser, ImpactPoint, DamageEvent, DamageReceived);
 
 	if (DamageEvent.DamageTypeClass)
 	{
-		if (const UDamageTypeMain* MainDamageTypeClass = Cast<UDamageTypeMain>(DamageEvent.DamageTypeClass->GetDefaultObject()))
+		if (const UMeleeDamage* MainDamageTypeClass = Cast<UMeleeDamage>(DamageEvent.DamageTypeClass->GetDefaultObject()))
 		{
-			const EMainDamageTypes MainDamageType = MainDamageTypeClass->DamageType;
+			const EMeleeDamageTypes MainDamageType = MainDamageTypeClass->DamageType;
 			ReactToDamage(MainDamageType, ImpactPoint);
+
+			if (bShouldDropOrbs) DropOrbs(DamageReceived, DamageCauser);
 		}
 	}
-
-	if (DamageCauser)
-	{
-		if (bShouldDropOrbs)
-		{
-			DropOrbs(DamageReceived, DamageCauser);
-		}
-		NotifyDamageTakenToBlackboard(DamageCauser);
-
-		ReturnAttackTokenToTarget();
-		
-		HitFlash(.1f,.75f);
-	}
+	
+	NotifyDamageTakenToBlackboard(DamageCauser);
+	ReturnAttackTokenToTarget();
+	HitFlash(.1f,.75f);
 }
 
 void AEnemy::RequestReturnToPool()
@@ -293,7 +285,7 @@ void AEnemy::BeginPlay()
 
 	if (GetCharacterStateComponent())
 	{
-		GetCharacterStateComponent()->SetHumanState(ECharacterHumanStates::ECHS_EquippedSword);
+		GetCharacterStateComponent()->SetHumanState(ECharacterWeaponStates::ECWS_EquippedWeapon);
 	}
 
 	if (DissolveCurve)
@@ -491,12 +483,13 @@ void AEnemy::DeactivateHitFlash()
 void AEnemy::ResetEnemy()
 {
 	bIsLaunched = false;
-	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
+	GetCharacterMovement()->SetMovementMode(MOVE_Falling);
 	EnableAI();
 }
 
 void AEnemy::DropOrbs(const float DamageReceived, const TScriptInterface<ICombatTargetInterface>& DamageCauser) const
 {
+	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Drops orbs called");
 	const float Percentage = DamageReceived / EnergyDivider;
 	const int32 Orbs = FMath::RoundToInt(Percentage) / 5;
 	{
@@ -510,8 +503,6 @@ void AEnemy::DropOrbs(const float DamageReceived, const TScriptInterface<ICombat
 			}
 		}
 	}
-	
-	// if (EnemyRef->GetPossessionComponent()->IsPossessed())
 }
 
 void AEnemy::FinishedDamage()
@@ -526,7 +517,7 @@ void AEnemy::FinishedDamage()
 			EffectsManager->CameraZoom(ECameraZoomPreset::ECZP_Finisher);
 		}
 		
-		GetCharacterStateComponent()->SetAction(ECharacterActions::ECA_Dead);
+		GetCharacterStateComponent()->SetAction(ECharacterActionsStates::ECAS_Dead);
 		Die(nullptr, NAME_None);
 
 		if (PromptWidgetComponent && PromptWidgetComponent->GetWidget()) PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
@@ -587,9 +578,9 @@ void AEnemy::HandleEnemyCollision(bool bEnable)
 
 void AEnemy::GetExecuted()
 {
+	
 	Die(DeathMontage, FName("UnpossessDeath"));
-
-	DropOrbs(30.f, GetPossessionComponent()->GetPossessingEntity());
+	DropOrbs(30.f, GetPossessionComponent()->GetPossessor());
 }	
 
 FName AEnemy::SelectRandomDieAnim()
@@ -612,7 +603,7 @@ FName AEnemy::SelectRandomDieAnim()
 	}
 }
 
-EEnemyState AEnemy::SetEnemyState(EEnemyState NewState)
+EEnemyState AEnemy::SetEnemyState(const EEnemyState NewState)
 {
 	EnemyState = NewState;
 
@@ -666,7 +657,8 @@ void AEnemy::EnableAI()
 	EnemyAIController->CustomInitialize(this, BBComponent, GetCharacterStateComponent());
 }
 
-TArray<AEnemy*> AEnemy::GenerateSphereOverlapToDetectOtherEnemies(const FVector& Origin, float Radius, AActor* HitEnemyToExclude)
+TArray<TScriptInterface<ICombatTargetInterface>> AEnemy::GenerateSphereOverlapToDetectOtherEnemies(
+	const FVector& Origin, const float Radius, AActor* HitEnemyToExclude)
 {
 	TArray<AActor*> ActorsToIgnoreForSphere;
 	ActorsToIgnoreForSphere.Add(this);
@@ -693,21 +685,21 @@ TArray<AEnemy*> AEnemy::GenerateSphereOverlapToDetectOtherEnemies(const FVector&
 	// DrawDebugSphere(
 	// 	GetWorld(),
 	// 	Origin,
-	// 	RadiusToNotifyAllies,
+	// 	Radius,
 	// 	24,
 	// 	FColor::Yellow,
 	// 	false,
 	// 	5.0f
 	// );
 
-	TArray<AEnemy*> EnemiesFound;
+	TArray<TScriptInterface<ICombatTargetInterface>> EnemiesFound;
 	if (bOverlapOccurred)
 	{
 		for (AActor* Actor : OverlappedActors)
 		{
-			if (AEnemy* EnemyActor = Cast<AEnemy>(Actor))
+			if (TScriptInterface<ICombatTargetInterface> CombatTarget = Actor)
 			{
-				EnemiesFound.Add(EnemyActor);
+				EnemiesFound.Add(CombatTarget);
 			}
 		}
 	}
@@ -715,8 +707,10 @@ TArray<AEnemy*> AEnemy::GenerateSphereOverlapToDetectOtherEnemies(const FVector&
 	return EnemiesFound;
 }
 
-void AEnemy::NotifyDamageTakenToBlackboard(TScriptInterface<ICombatTargetInterface> DamageCauser)
+void AEnemy::NotifyDamageTakenToBlackboard(const TScriptInterface<ICombatTargetInterface>& DamageCauser)
 {
+	if (!DamageCauser) return;
+	
 	if (DamageCauser->IsPossessed())
 	{
 		if (AIController)
@@ -730,14 +724,9 @@ void AEnemy::NotifyDamageTakenToBlackboard(TScriptInterface<ICombatTargetInterfa
 			EnemyAIController->DamageCauser = DamageCauser;
 		}
 
-		for (AEnemy* Enemy : GenerateSphereOverlapToDetectOtherEnemies(GetTargetActorLocation(), RadiusToNotifyAllies, this))
+		for (TScriptInterface CombatTarget  : GenerateSphereOverlapToDetectOtherEnemies(GetTargetActorLocation(), RadiusToNotifyAllies, this))
 		{
-			Enemy->NotifyThreat(DamageCauser);
+			Cast<AEnemy>(CombatTarget.GetObject())->NotifyThreat(DamageCauser);
 		}
 	}
-}
-
-void AEnemy::LaunchUp(const FVector& InstigatorLocation)
-{
-	GetCombatComponent()->StartLaunchingUp();
 }

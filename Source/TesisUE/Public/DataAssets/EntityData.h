@@ -1,6 +1,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Components/AttributeComponent.h"
+#include "Components/InventoryComponent.h"
 #include "Engine/DataAsset.h"
 #include "EntityData.generated.h"
 
@@ -94,6 +96,9 @@ struct FAttributeData
     float Energy = 100.f;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Actor Properties | Energy")
+    float MaxEnergy = 100.f;
+    
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Actor Properties | Energy")
     float DrainTickValue = 2.f;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Actor Properties | Energy")
@@ -110,6 +115,12 @@ struct FInventoryData
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory")
     int32 MaxSlots = 2;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory")
+    float InteractTraceLenght;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory")
+    float InteractTargetRadius;
 };
 
 USTRUCT(BlueprintType)

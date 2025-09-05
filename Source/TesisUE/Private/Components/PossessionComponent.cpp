@@ -39,7 +39,7 @@ void UPossessionComponent::BeginPlay()
 
 void UPossessionComponent::AttemptPossession()
 {
-    if (IsPossessing() || CharacterStateProvider->IsModeEqualToAny({ECharacterMode::ECM_Spectral}))
+    if (IsPossessing() || CharacterStateProvider->IsModeStateEqualToAny({ECharacterModeStates::ECMS_Spectral}))
     {
         if (AttributeProvider->RequiresEnergy(10.f))
         {
@@ -52,7 +52,7 @@ void UPossessionComponent::AttemptPossession()
             PlayerController->Possess(Victim);
 
             CurrentlyPossessedEntity = Victim;
-            CharacterStateProvider->SetMode(ECharacterMode::ECM_Possessing);
+            CharacterStateProvider->SetMode(ECharacterModeStates::ECMS_Possessing);
 
             const TScriptInterface<ICameraProvider> VictimCameraProvider = Victim;
             VictimCameraProvider->AttachFollowCamera();
@@ -63,7 +63,10 @@ void UPossessionComponent::AttemptPossession()
 
             if (WeaponProvider)
             {
-                WeaponProvider->GetWeaponEquipped()->EnableVisuals(false);
+                if (WeaponProvider->GetWeaponEquipped())
+                {
+                    WeaponProvider->GetWeaponEquipped()->EnableVisuals(false);
+                }
             }
 
             if (OnPossessionAttemptSucceed.IsBound())
@@ -84,16 +87,19 @@ void UPossessionComponent::ReleasePossession()
 
     const FVector ReleaseLocation = CurrentlyPossessedEntity->GetTargetActorLocation() + CurrentlyPossessedEntity->GetActorForwardVector() * 100.f;
     
-    CameraProvider->AttachFollowCamera();
+    //CameraProvider->AttachFollowCamera(PossessedByEntity);
     GetOwner()->SetActorLocationAndRotation(ReleaseLocation, CurrentlyPossessedEntity->GetActorRotation(), true);
     GetOwner()->SetActorHiddenInGame(false);
     GetOwner()->SetActorEnableCollision(true);
     AnimatorProvider->PauseAnims(false);
-    CharacterStateProvider->SetMode(ECharacterMode::ECM_Spectral);
+    CharacterStateProvider->SetMode(ECharacterModeStates::ECMS_Spectral);
 
     if (WeaponProvider)
     {
-        WeaponProvider->GetWeaponEquipped()->EnableVisuals(false);
+        if (WeaponProvider->GetWeaponEquipped())
+        {
+            WeaponProvider->GetWeaponEquipped()->EnableVisuals(false);
+        }
     }
 
     if (OnPossessionReleased.IsBound()) OnPossessionReleased.Broadcast();
@@ -140,14 +146,14 @@ void UPossessionComponent::EjectAndExecute()
 
     if (PossessedByEntity->GetAttributeComponent()->RequiresEnergy(ReleaseAndExecuteEnergyTax))
     {
+        if (OnPossessorExecutedMeAndEjected.IsBound()) OnPossessorExecutedMeAndEjected.Broadcast();
+
         AttributeProvider->IncreaseHealth(20.f);
         
         PossessedByEntity->GetAttributeComponent()->SetEnergy(
             PossessedByEntity->GetAttributeComponent()->GetEnergy() - ReleaseAndExecuteEnergyTax);
 
         PossessedByEntity->GetPossessionComponent()->ReleasePossession();
-
-        if (OnPossessorExecutedMeAndEjected.IsBound()) OnPossessorExecutedMeAndEjected.Broadcast();
     }
 }
 

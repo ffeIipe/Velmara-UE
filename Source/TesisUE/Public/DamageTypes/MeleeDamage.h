@@ -4,10 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/DamageType.h"
-#include "DamageTypeMain.generated.h"
+#include "MeleeDamage.generated.h"
 
 UENUM(BlueprintType)
-enum class EMainDamageTypes : uint8
+enum class EMeleeDamageTypes : uint8
 {
 	EMDT_None UMETA(DisplayName = "None"),
 	EMDT_CrashDown UMETA(DisplayName = "CrashDown"),
@@ -19,11 +19,11 @@ enum class EMainDamageTypes : uint8
 };
 
 UCLASS()
-class TESISUE_API UDamageTypeMain : public UDamageType
+class TESISUE_API UMeleeDamage : public UDamageType
 {
 	GENERATED_BODY()
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	EMainDamageTypes DamageType;
+	EMeleeDamageTypes DamageType;
 };

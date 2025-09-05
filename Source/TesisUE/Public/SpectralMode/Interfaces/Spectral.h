@@ -4,11 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
-#include "SpectralInteractable.generated.h"
+#include "Spectral.generated.h"
 
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
-class USpectralInteractable : public UInterface
+class USpectral : public UInterface
 {
 	GENERATED_BODY()
 };
@@ -16,11 +16,12 @@ class USpectralInteractable : public UInterface
 /**
  * 
  */
-class TESISUE_API ISpectralInteractable
+class TESISUE_API ISpectral
 {
 	GENERATED_BODY()
 
 public:
-	UFUNCTION(BlueprintNativeEvent)
-	void SpectralInteract(ACharacter* Character);
+	virtual void AddToSpectralObjects() = 0;
+	virtual void ActivateVisiblity() = 0;
+	virtual void DeactivateVisibility() = 0;
 };

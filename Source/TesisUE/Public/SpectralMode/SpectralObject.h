@@ -2,33 +2,24 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Interfaces/Spectral.h"
 #include "Items/Item.h"
-#include "Player/CharacterHumanStates.h"
 #include "SpectralObject.generated.h"
 
-class UBoxComponent;
+enum class ECharacterModeStates : uint8;
 
 UCLASS()
-class TESISUE_API ASpectralObject : public AItem
+class TESISUE_API ASpectralObject : public AItem, public ISpectral
 {
     GENERATED_BODY()
 
 public:
-    ASpectralObject();
-
-   /* UFUNCTION()
-    virtual void SetSpectralVisibility(bool bIsVisible);*/
-
-    class USpectralObjectComponent* GetSpectralObjectComponent() { return SpectralObjectComponent; };
+    //ASpectralObject();
 
 protected:
-    void BeginPlay() override;
+    virtual void BeginPlay() override;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visibility")
-    USpectralObjectComponent* SpectralObjectComponent;
-
-    /*UMaterialInstanceDynamic* SpectralMaterial;
-
-    UPROPERTY(EditInstanceOnly, Category = "Visibility")
-    ECharacterForm VisibleTo;*/
+    virtual void AddToSpectralObjects() override;
+    virtual void ActivateVisiblity() override;
+    virtual void DeactivateVisibility() override;
 };

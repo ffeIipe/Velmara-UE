@@ -6,6 +6,7 @@
 #include "UObject/Interface.h"
 #include "CameraProvider.generated.h"
 
+class UCameraComponent;
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
 class UCameraProvider : public UInterface
@@ -22,6 +23,7 @@ class TESISUE_API ICameraProvider
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-	virtual ACameraActor* GetFollowCamera() = 0;
+	virtual UCameraComponent* GetEntityCamera() = 0;
+	virtual FVector GetCameraLocation() = 0;
 	virtual void AttachFollowCamera() = 0;
 };

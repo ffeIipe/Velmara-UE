@@ -31,4 +31,5 @@ public:
 
 	virtual TScriptInterface<ICombatTargetInterface> GetLastDamageCauser() = 0;
 	virtual bool IsLocking() = 0;
+	virtual void SetMovementMode(EMovementMode MovementMode) = 0;
 };

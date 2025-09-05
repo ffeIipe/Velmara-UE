@@ -5,9 +5,9 @@
 #include "Interfaces/HitInterface.h"
 #include "Engine/DamageEvents.h"
 #include "Player/PlayerMain.h"
-#include "Components/CharacterStateComponent.h"
 #include <NiagaraFunctionLibrary.h>
 
+#include "DamageTypes/MeleeDamage.h"
 #include "Interfaces/AnimatorProvider.h"
 #include "Subsystems/EffectsManager.h"
 
@@ -35,44 +35,10 @@ void ASword::BeginPlay()
 	WeaponDamageBox->OnComponentBeginOverlap.AddDynamic(this, &ASword::OnBoxOverlap);
 }
 
-void ASword::Equip(USceneComponent* InParent, const FName InSocketName, AActor* NewOwner, APawn* NewInstigator)
-{
-	Super::Equip(InParent, InSocketName, NewOwner, NewInstigator);
-
-	AttachMeshToSocket(InParent, InSocketName);
-	SetOwner(NewOwner);
-	SetInstigator(NewInstigator);
-	ItemState = EItemState::EIS_Equipped;
-
-	EnableSwordState(true);
-
-	OwnerCharacterState = NewOwner;
-	OwnerAnimator = NewOwner;
-	if (OwnerCharacterState)
-	{
-		OwnerCharacterState->SetHumanState(ECharacterHumanStates::ECHS_EquippedSword);
-	}
-}
-
 void ASword::Unequip()
 {
-	EnableSwordState(false);
-	AttachMeshToSocket(OwnerAnimator->GetMesh(), FName("BackSocket"));
-}
-
-void ASword::AttachMeshToSocket(USceneComponent* InParent, const FName& InSocketName) const
-{
-	FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, true);
-	ItemMesh->AttachToComponent(InParent, TransformRules, InSocketName);
-}
-
-void ASword::EnableSwordState(const bool bEnable) const
-{
-	if (OwnerCharacterState)
-	{
-		const ECharacterHumanStates NewState = bEnable ? ECharacterHumanStates::ECHS_EquippedSword : ECharacterHumanStates::ECHS_Unequipped;
-		OwnerCharacterState->SetHumanState(NewState);
-	}
+	EnableWeaponState(false);
+	/*AttachMeshToSocket(AnimatorProvider->GetMeshComponent());*/
 }
 
 UPrimitiveComponent* ASword::GetCollisionComponent()
@@ -111,7 +77,7 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 		End,
 		FVector(25.f, 25.f, 25.f),
 		BoxTraceStart->GetComponentRotation(),
-		UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_GameTraceChannel3),
+		UEngineTypes::ConvertToTraceType(ECC_GameTraceChannel3),
 		false,
 		IgnoreActors,
 		EDrawDebugTrace::None,
@@ -126,6 +92,7 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 			if (IHitInterface* HitInterface = Cast<IHitInterface>(HitActor))
 			{
 				FDamageEvent DamageEvent(DamageTypeClass);
+				/*DamageTypeClass.GetDefaultObject()->DamageType = */
 				HitInterface->GetHit(GetOwner(), Hit.ImpactPoint, DamageEvent, Damage);
 
 				if (HitInterface->IsHittable())
@@ -133,7 +100,7 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 					UGameplayStatics::ApplyDamage(
 						HitActor,
 						CalculateDamage(),
-						GetInstigator()->GetController(),
+						ControllerProvider->GetEntityController(),
 						GetOwner(),
 						DamageTypeClass
 					);
@@ -200,32 +167,28 @@ float ASword::CalculateDamage() const
 
 void ASword::PerformLightAttack(const int32 ComboIndex)
 {
-	OwnerAnimator = GetOwner();
-	if (OwnerAnimator)
-		if (ComboIndex <= LightAttackCombo.Num())
-			OwnerAnimator->PlayAnimMontage(LightAttackCombo[ComboIndex]);
+	if (AnimatorProvider)
+		if (ComboIndex < LightAttackCombo.Num())
+			AnimatorProvider->PlayAnimMontage(LightAttackCombo[ComboIndex]);
 }
 
 void ASword::PerformHeavyAttack(const int32 ComboIndex)
 {
-	OwnerAnimator = GetOwner();
-	if (OwnerAnimator)
-		if (ComboIndex <= HeavyAttackCombo.Num())
-			OwnerAnimator->PlayAnimMontage(HeavyAttackCombo[ComboIndex]);
+	if (AnimatorProvider)
+		if (ComboIndex < HeavyAttackCombo.Num())
+			AnimatorProvider->PlayAnimMontage(HeavyAttackCombo[ComboIndex]);
 		
 }
 
 void ASword::PerformJumpAttack(const int32 ComboIndex)
 {
-	OwnerAnimator = GetOwner();
-	if (OwnerAnimator)
-		if (ComboIndex <= JumpAttackCombo.Num())
-			OwnerAnimator->PlayAnimMontage(JumpAttackCombo[ComboIndex]);
+	if (AnimatorProvider)
+		if (ComboIndex < JumpAttackCombo.Num())
+			AnimatorProvider->PlayAnimMontage(JumpAttackCombo[ComboIndex]);
 }
 
-void ASword::SetWeaponCollisionEnabled(const ECollisionEnabled::Type CollisionEnabled)
+void ASword::SetWeaponCollisionEnabled_Implementation(const ECollisionEnabled::Type CollisionEnabled)
 {
-	Super::SetWeaponCollisionEnabled(CollisionEnabled);
-
+	Super::SetWeaponCollisionEnabled_Implementation(CollisionEnabled);
 	WeaponDamageBox->SetCollisionEnabled(CollisionEnabled);
 }

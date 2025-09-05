@@ -7,11 +7,9 @@
 #include "CharacterStateProvider.generated.h"
 
 struct FCharacterStates;
-class UCharacterStateComponent;
-enum class ECharacterHumanStates : uint8;
-enum class ECharacterSpectralStates : uint8;
-enum class ECharacterActions : uint8;
-enum class ECharacterMode : uint8;
+enum class ECharacterWeaponStates : uint8;
+enum class ECharacterActionsStates : uint8;
+enum class ECharacterModeStates : uint8;
 
 UINTERFACE(MinimalAPI)
 class UCharacterStateProvider : public UInterface
@@ -29,12 +27,10 @@ class TESISUE_API ICharacterStateProvider
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
 	virtual const FCharacterStates& GetCurrentCharacterState() = 0;
-	virtual ECharacterHumanStates SetHumanState(ECharacterHumanStates NewState) = 0;
-	virtual ECharacterSpectralStates SetSpectralState(ECharacterSpectralStates NewSpectralState) = 0;
-	virtual ECharacterActions SetAction(ECharacterActions NewAction) = 0;
-	virtual ECharacterMode SetMode(ECharacterMode NewForm) = 0;
-	virtual bool IsHumanStateEqualToAny(const TArray<ECharacterHumanStates>& StatesToCheck) const = 0;
-	virtual bool IsSpectralStateEqualToAny(const TArray<ECharacterSpectralStates>& SpectralStatesToCheck) const = 0;
-	virtual bool IsActionEqualToAny(const TArray<ECharacterActions>& ActionsToCheck) const = 0;
-	virtual bool IsModeEqualToAny(const TArray<ECharacterMode>& FormsToCheck) const = 0;
+	virtual ECharacterWeaponStates SetWeaponState(ECharacterWeaponStates NewState) = 0;
+	virtual ECharacterActionsStates SetAction(ECharacterActionsStates NewAction) = 0;
+	virtual ECharacterModeStates SetMode(ECharacterModeStates NewForm) = 0;
+	virtual bool IsWeaponStateEqualToAny(const TArray<ECharacterWeaponStates>& StatesToCheck) const = 0;
+	virtual bool IsActionStateEqualToAny(const TArray<ECharacterActionsStates>& ActionsToCheck) const = 0;
+	virtual bool IsModeStateEqualToAny(const TArray<ECharacterModeStates>& FormsToCheck) const = 0;
 };

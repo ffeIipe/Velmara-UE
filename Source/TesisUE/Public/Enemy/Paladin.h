@@ -20,7 +20,7 @@ public:
 
 	virtual bool IsLaunchable() override;
 	
-	virtual void LaunchUp(const FVector& InstigatorLocation) override;
+	virtual void LaunchUp() override;
 
 	virtual void ShieldHit_Implementation() {}
 	
@@ -71,15 +71,13 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* AttackAction;
 
-	void LaunchEnemyUp(const FVector& InstigatorLocation);
-
 	UFUNCTION(BlueprintCallable)
 	void CrashDown();
 	
 	UFUNCTION(BlueprintCallable)
 	void HitInAir();
 
-	virtual void ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoint) override;
+	virtual void ReactToDamage(EMeleeDamageTypes DamageType, const FVector& ImpactPoint) override;
 
 	void Slash();
 

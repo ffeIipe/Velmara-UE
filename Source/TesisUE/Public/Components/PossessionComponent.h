@@ -41,7 +41,7 @@ public:
 
 	///returns the entity that possesses this one
     UFUNCTION(BlueprintPure, Category = "Possession")
-    AEntity* GetPossessingEntity() const { return PossessedByEntity; }
+    AEntity* GetPossessor() const { return PossessedByEntity; }
 
 	///returns true if this entity is being possessed by another entity
     UFUNCTION(BlueprintPure, Category = "Possession")

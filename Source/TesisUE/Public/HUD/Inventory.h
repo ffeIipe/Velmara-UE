@@ -15,5 +15,5 @@ class TESISUE_API UInventory : public UUserWidget
 
 public:
 	UFUNCTION(BlueprintImplementableEvent)
-	void RefreshInventoryUI(const TArray<AItem*>& Items);
+	void RefreshInventoryUI(const TArray<TScriptInterface<IWeaponInterface>>& Items);
 };

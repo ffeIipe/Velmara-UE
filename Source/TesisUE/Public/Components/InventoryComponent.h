@@ -4,9 +4,11 @@
 #include "Components/ActorComponent.h"
 #include "InventoryComponent.generated.h"
 
+class IAnimatorProvider;
+class ICharacterStateProvider;
+class IControllerProvider;
 class IWeaponInterface;
 struct FInventoryData;
-class AItem;
 class UInventory;
 class APlayerController;
 class UInputAction;
@@ -23,12 +25,11 @@ public:
     int32 EquippedSlotIndex = -1;
 
     UPROPERTY(VisibleAnywhere, Category = "Inventory", Transient)
-    TScriptInterface<IWeaponInterface> EquippedWeapon;
-
-protected:
-    virtual void BeginPlay() override;
+    TScriptInterface<IWeaponInterface> CurrentEquippedWeapon;
 
     void InitializeValues(const FInventoryData& InventoryData);
+protected:
+    virtual void BeginPlay() override;
     
     UPROPERTY(EditDefaultsOnly, Category = "Inventory UI")
     TSubclassOf<UUserWidget> InventoryWidgetClass;
@@ -43,13 +44,13 @@ protected:
 
 public:
     UPROPERTY(EditAnywhere, Category = "Inventory", Transient) //transient if it isn't needed to be saved 
-    TArray<AItem*> InventorySlots;
+    TArray<TScriptInterface<IWeaponInterface>> InventorySlots;
 
     UFUNCTION(BlueprintPure, Category = "Inventory")
-    TScriptInterface<IWeaponInterface> GetWeaponEquipped() const { return EquippedWeapon; }
+    TScriptInterface<IWeaponInterface> GetWeaponEquipped() const { return CurrentEquippedWeapon; }
 
     UFUNCTION(BlueprintCallable, Category = "Inventory")
-    bool TryAddWeapon(AItem* ItemToAdd);
+    bool TryAddWeapon(TScriptInterface<IWeaponInterface> WeaponToAdd);
 
     UFUNCTION(BlueprintCallable, Category = "Inventory")
     void EquipWeaponFromSlot(int32 SlotIndex);
@@ -67,17 +68,13 @@ public:
     bool IsInventoryOpen() const { return bIsInventoryOpen; }
 
     UFUNCTION(BlueprintPure, Category = "Inventory")
-    const TArray<AItem*>& GetInventoryItems() const { return InventorySlots; }
+    const TArray<TScriptInterface<IWeaponInterface>>& GetInventoryItems() const { return InventorySlots; }
 
     UFUNCTION(BlueprintCallable, Category = "Inventory")
     void ChangeWeapon(int32 SlotIndex);
 
-    UPROPERTY(EditDefaultsOnly, Category = "Inventory | Inputs")
-    UInputAction* Slot1_InventoryAction;
-
-    UPROPERTY(EditDefaultsOnly, Category = "Inventory | Inputs")
-    UInputAction* Slot2_InventoryAction;
-
+    void ToggleInventorySlot();
+    
     void UnequipCurrentWeapon();
     
     void UpdateInventoryUI();
@@ -87,11 +84,17 @@ public:
 private:
     void InitializeInventoryWidget();
 
-    UPROPERTY(EditDefaultsOnly, Category = "Inventory")
-    FName HandSocketName = FName("RightHandSocket");
+    // UPROPERTY(EditDefaultsOnly, Category = "Inventory")
+    // FName HandSocketName = FName("RightHandSocket");
     
     // --- Stats Assigned By Data Asset ---
     int32 MaxSlots = 2;
-
+    float InteractTraceLenght;
+    float InteractTargetRadius;
+    
+    UPROPERTY()
     AController* OwnerController = nullptr;
+    TScriptInterface<IControllerProvider> ControllerProvider;
+    TScriptInterface<ICharacterStateProvider> CharacterStateProvider;
+    TScriptInterface<IAnimatorProvider> AnimatorProvider;
 };

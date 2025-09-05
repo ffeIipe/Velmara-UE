@@ -1,24 +1,15 @@
 #include "Components/PlayerFormComponent.h"
-#include "Components/SpectralObjectComponent.h"
-#include "Components/AttributeComponent.h"
-#include "Components/InventoryComponent.h"
-#include "Components/PossessionComponent.h"
-#include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Actor.h"
 #include "Engine/World.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/TimelineComponent.h"
 #include "Materials/MaterialParameterCollectionInstance.h"
 #include "Materials/MaterialParameterCollection.h"
-#include "Items/Weapons/Sword.h"
-#include "SpectralMode/SpectralObject.h"
-#include "EngineUtils.h"
 #include "Entities/Entity.h"
-#include "Player/PlayerMain.h"
-#include "GameFramework/Character.h"
 #include <Player/PlayerHeroController.h>
 
-//TODO: optimize the iterator that search for spectral objects, that in a future may cause an fps drop
+#include "Subsystems/SpectralObjectsSubsystem.h"
+
 
 UPlayerFormComponent::UPlayerFormComponent()
 {
@@ -38,7 +29,8 @@ void UPlayerFormComponent::BeginPlay()
     Super::BeginPlay();
 
     OwnerUtils = GetOwner();
-    CharacterStateProvider->SetMode(ECharacterMode::ECM_Human);
+    CharacterStateProvider = GetOwner();
+    CharacterStateProvider->SetMode(ECharacterModeStates::ECMS_Human);
 
     if (SpectralCurve)
     {
@@ -53,7 +45,7 @@ void UPlayerFormComponent::ToggleForm()
     const float CurrentTime = GetWorld()->GetTimeSeconds();
     if (CurrentTime - LastTransformationTime < TransformationCooldown) return;
 
-    if (CharacterStateProvider->IsModeEqualToAny({ECharacterMode::ECM_Human}))
+    if (CharacterStateProvider->IsModeStateEqualToAny({ECharacterModeStates::ECMS_Human}))
     {
         ApplySpectralEffects();
     }
@@ -69,8 +61,8 @@ void UPlayerFormComponent::ApplySpectralEffects()
 {
     if (APlayerHeroController* PlayerController = Cast<APlayerHeroController>(UGameplayStatics::GetPlayerController(GetWorld(), 0)))
     {
-		/*if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, FString("PlayerController: Set Generic Team ID to 0"));*/
-		PlayerController->SetGenericTeamId(FGenericTeamId(0));
+        /*if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, FString("PlayerController: Set Generic Team ID to 0"));*/
+        PlayerController->SetGenericTeamId(FGenericTeamId(0));
     }
     SpectralEffectTimeline->PlayFromStart();
     UGameplayStatics::PlaySound2D(GetWorld(), EnableSpectralModeSFX);
@@ -80,15 +72,9 @@ void UPlayerFormComponent::ApplySpectralEffects()
         OnSpectralEffectApplied.Broadcast();
     }
     
+    if (USpectralObjectsSubsystem* SpectralObjectsSubsystem = GetWorld()->GetSubsystem<USpectralObjectsSubsystem>())
     {
-        //-------------------------------------------------------------
-        //TODO: se puede mejorar con una suscripcion a una static class
-        for (TActorIterator<ASpectralObject> It(GetWorld()); It; ++It)
-        {
-            if (!It->GetSpectralObjectComponent())return;
-
-            It->GetSpectralObjectComponent()->SetSpectralVisibility(true);
-        }
+        SpectralObjectsSubsystem->ActivateSpectralObjects();
     }
 }
 
@@ -108,15 +94,9 @@ void UPlayerFormComponent::ApplyHumanEffects()
         OnHumanEffectApplied.Broadcast();
     }
 
+    if (USpectralObjectsSubsystem* SpectralObjectsSubsystem = GetWorld()->GetSubsystem<USpectralObjectsSubsystem>())
     {
-        //---------------------------------------------------------
-        //TODO: improve it with a subscription to an a static class
-        for (TActorIterator<ASpectralObject> It(GetWorld()); It; ++It)
-        {
-            if (!It || !It->GetSpectralObjectComponent()) return;
-
-            It->GetSpectralObjectComponent()->SetSpectralVisibility(false);
-        }
+        SpectralObjectsSubsystem->DeactivateSpectralObjects();
     }
 }
 

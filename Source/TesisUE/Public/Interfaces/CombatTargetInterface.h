@@ -29,10 +29,12 @@ public:
 
 	virtual bool IsPossessed() = 0;
 	virtual bool IsPossessing() = 0;
+
+	virtual bool IsBlocking() = 0;
 	
 	virtual bool CanBeFinished() = 0;
 	virtual bool IsLaunchable() = 0;
 
 	virtual void GetDirectionalReact(const FVector& ImpactPoint) = 0; 
-	virtual void LaunchUp(const FVector& InstigatorLocation) = 0;
+	virtual void LaunchUp() = 0;
 };

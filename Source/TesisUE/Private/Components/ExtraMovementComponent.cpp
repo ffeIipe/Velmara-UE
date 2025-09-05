@@ -31,9 +31,9 @@ void UExtraMovementComponent::CustomInitialize(AEntity* NewEntity)
 
 bool UExtraMovementComponent::IsMovingBackwards() const
 {
-	if (MoveVector.Y < 0)
+	if (MoveVector.Y < -0.1)
 		return true;
-
+	
 	return false;
 }
 
@@ -44,6 +44,7 @@ void UExtraMovementComponent::BeginPlay()
 	OwnerUtils = GetOwner();
 	AnimatorProvider = GetOwner();
 	CharacterStateProvider = GetOwner();
+	CharacterMovementProvider = GetOwner();
 	
 	if (DodgeCurve)
 	{
@@ -59,7 +60,7 @@ void UExtraMovementComponent::Input_Dodge()
 		OwnerUtils->IsFlying() /*||
 		EntityOwner->IsEquipping()*/) return;
 
-	if (CharacterStateProvider->IsActionEqualToAny({ ECharacterActions::ECA_Dodge }))
+	if (CharacterStateProvider->IsActionStateEqualToAny({ ECharacterActionsStates::ECAS_Dodge }))
 	{
 		bIsSaveDodge = true;
 	}
@@ -75,14 +76,14 @@ void UExtraMovementComponent::DodgeSaveEvent()
 	{
 		bIsSaveDodge = false;
 
-		CharacterStateProvider->SetAction(ECharacterActions::ECA_Nothing);
+		CharacterStateProvider->SetAction(ECharacterActionsStates::ECAS_Nothing);
 		PerformDodge();
 	}
 }
 
 void UExtraMovementComponent::PerformDodge()
 {
-	if (!CharacterStateProvider->IsActionEqualToAny({ ECharacterActions::ECA_Finish, ECharacterActions::ECA_Stun }))
+	if (!CharacterStateProvider->IsActionStateEqualToAny({ ECharacterActionsStates::ECAS_Finish, ECharacterActionsStates::ECAS_Stun }))
 	{
 		if (OnDodgeStarted.IsBound()) OnDodgeStarted.Broadcast();
 
@@ -103,7 +104,7 @@ void UExtraMovementComponent::PerformDodge()
 
 		StopDodgeBufferEvent();
 		DodgeBufferEvent(BufferDodgeDistance);
-		CharacterStateProvider->SetAction(ECharacterActions::ECA_Dodge);
+		CharacterStateProvider->SetAction(ECharacterActionsStates::ECAS_Dodge);
 	}
 }
 
@@ -163,18 +164,22 @@ void UExtraMovementComponent::UpdateBuffer(const float Alpha, const float Buffer
 
 void UExtraMovementComponent::Input_Move(const FInputActionValue& Value)
 {
-	if (!CharacterStateProvider->IsActionEqualToAny({ ECharacterActions::ECA_Block, ECharacterActions::ECA_Finish, ECharacterActions::ECA_Dead, ECharacterActions::ECA_Stun }))
+	if (CharacterStateProvider->IsActionStateEqualToAny({ ECharacterActionsStates::ECAS_Block, ECharacterActionsStates::ECAS_Finish, ECharacterActionsStates::ECAS_Dead, ECharacterActionsStates::ECAS_Stun })) return;
+	
+	MoveVector = Value.Get<FVector2D>();
+	
+	const FRotator ControlRotation = CharacterMovementProvider->GetControlRotation();
+	const FRotator YawRotation(0.f, ControlRotation.Yaw, 0.f);
+
+	const FVector DirectionForward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+	const FVector DirectionSideward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+
+	CharacterMovementProvider->AddMovementInput(DirectionForward, MoveVector.Y);
+	CharacterMovementProvider->AddMovementInput(DirectionSideward, MoveVector.X);
+
+	if (!Value.Get<bool>())
 	{
-		MoveVector = Value.Get<FVector2D>();
-
-		const FRotator ControlRotation = CharacterMovementProvider->GetControlRotation();
-		const FRotator YawRotation(0.f, ControlRotation.Yaw, 0.f);
-
-		const FVector DirectionForward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-		const FVector DirectionSideward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-
-		CharacterMovementProvider->AddMovementInput(DirectionForward, MoveVector.Y);
-		CharacterMovementProvider->AddMovementInput(DirectionSideward, MoveVector.X);
+		MoveVector = FVector2D::ZeroVector;
 	}
 }
 
@@ -188,7 +193,7 @@ void UExtraMovementComponent::Input_Look(const FInputActionValue& Value)
 
 void UExtraMovementComponent::Input_DoubleJump()
 {
-	if (!CharacterStateProvider->IsActionEqualToAny({ ECharacterActions::ECA_Block, ECharacterActions::ECA_Finish, ECharacterActions::ECA_Dead }))
+	if (!CharacterStateProvider->IsActionStateEqualToAny({ ECharacterActionsStates::ECAS_Block, ECharacterActionsStates::ECAS_Finish, ECharacterActionsStates::ECAS_Dead }))
 	{
 		AnimatorProvider->PlayAnimMontage(DoubleJumpMontage);
 		CharacterMovementProvider->LaunchCharacter(FVector(0.f, 0.f, DoubleJumpStrength), false, true);

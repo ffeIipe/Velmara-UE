@@ -21,7 +21,7 @@ void ACheckpoint::OnSphereBeginOverlap(
             if (OverlappingEntity->GetPossessionComponent()->IsPossessed())
             {
                 if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Red, FString("Saving from " + OverlappingEntity->GetName()));
-                OverlappingEntity->GetPossessionComponent()->GetPossessingEntity()->SetActorTransform(OverlappingEntity->GetActorTransform());
+                OverlappingEntity->GetPossessionComponent()->GetPossessor()->SetActorTransform(OverlappingEntity->GetActorTransform());
             }
             
 

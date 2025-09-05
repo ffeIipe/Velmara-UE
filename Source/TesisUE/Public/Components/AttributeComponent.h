@@ -119,6 +119,7 @@ private:
 
 	UPROPERTY(VisibleAnywhere)
 	float MaxHealth;
+	float MaxEnergy;
 	float Energy;
 	float DrainTickValue = 2.f;
 	float RegenerateTickValue = .5f;

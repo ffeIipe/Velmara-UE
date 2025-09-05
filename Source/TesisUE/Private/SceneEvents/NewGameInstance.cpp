@@ -15,7 +15,6 @@
 #include <SceneEvents/NewGameStateBase.h>
 
 #include "DataAssets/EntityData.h"
-#include "Player/CharacterHumanStates.h"
 
 UNewGameInstance::UNewGameInstance()
 {
@@ -337,7 +336,7 @@ bool UNewGameInstance::SavePlayerProgress(int32 SlotIndex, APawn* Entity)
     {
         if (AEnemy* EnemyRef = Cast<AEnemy>(Entity))
         {
-            PlayerCharacter = Cast<APlayerMain>(EnemyRef->GetPossessionComponent()->GetPossessingEntity());
+            PlayerCharacter = Cast<APlayerMain>(EnemyRef->GetPossessionComponent()->GetPossessor());
             //if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Magenta, FString("Player reference obtained from Enemy possessed."));
         }
         else
@@ -359,15 +358,15 @@ bool UNewGameInstance::SavePlayerProgress(int32 SlotIndex, APawn* Entity)
         if (PlayerInventory)
         {
             SaveGameInstance->InventorySlotsData.Empty();
-            const TArray<AItem*>& CurrentInventoryItems = PlayerInventory->GetInventoryItems();
-            TScriptInterface<IWeaponInterface> CurrentlyEquippedItem = PlayerInventory->GetWeaponEquipped();
+            const TArray<TScriptInterface<IWeaponInterface>>& CurrentInventoryItems = PlayerInventory->GetInventoryItems();
+            const TScriptInterface<IWeaponInterface> CurrentlyEquippedItem = PlayerInventory->GetWeaponEquipped();
 
-            for (AItem* ItemInSlot : CurrentInventoryItems)
+            for (TScriptInterface ItemInSlot : CurrentInventoryItems)
             {
                 FInventoryItemSaveData ItemData;
-                if (IsValid(ItemInSlot))
+                if (ItemInSlot)
                 {
-                    ItemData.ItemClass = ItemInSlot->GetClass();
+                    ItemData.ItemClass = ItemInSlot.GetObject()->GetClass();
                 }
                 else
                 {
@@ -389,9 +388,9 @@ bool UNewGameInstance::SavePlayerProgress(int32 SlotIndex, APawn* Entity)
         if (PlayerInventory)
         {
             TSet<FName> InventoryItemIDs;
-            for (AItem* ItemInInventory : PlayerInventory->GetInventoryItems())
+            for (TScriptInterface ItemInInventory : PlayerInventory->GetInventoryItems())
             {
-                if (IsValid(ItemInInventory))
+                if (ItemInInventory)
                 {
                     InventoryItemIDs.Add(ItemInInventory->GetUniqueSaveID());
                 }
@@ -488,16 +487,16 @@ void UNewGameInstance::ApplyPendingLoadedDataToWorld()
 
                         if (const TScriptInterface<ICharacterStateProvider> PlayerCharacterState = PlayerCharacter)
                         {
-                            PlayerCharacterState->SetHumanState(ECharacterHumanStates::ECHS_EquippedSword);
+                            PlayerCharacterState->SetWeaponState(ECharacterWeaponStates::ECWS_EquippedWeapon);
                         }
 
                         PlayerInventory->InventorySlots[i] = NewItem;
-                        if (ASword* Sword = Cast<ASword>(NewItem))
+                        if (const AWeapon* Weapon = Cast<AWeapon>(NewItem))
                         {
                             if (APlayerMain* Player = Cast<APlayerMain>(PlayerCharacter))
                             {
-                                Sword->EnableSwordState(true);
-                                Sword->OnWallHit.AddDynamic(Player, &APlayerMain::OnWallCollision);
+                                Weapon->EnableWeaponState(true);
+                                //Weapon->OnWallHit.AddDynamic(Player, &APlayerMain::OnWallCollision);
                             }
                         }
                     }
