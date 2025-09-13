@@ -11,6 +11,7 @@
 #include "Components/ExtraMovementComponent.h"
 #include "Components/InventoryComponent.h"
 #include "Components/PossessionComponent.h"
+#include "Components/TargetingComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Interfaces/AnimatorProvider.h"
 #include "Interfaces/AttributeProvider.h"
@@ -21,13 +22,18 @@
 #include "Interfaces/OwnerUtilsInterface.h"
 #include "Interfaces/CombatTargetInterface.h"
 #include "Interfaces/ControllerProvider.h"
+#include "Interfaces/StrategyInterface.h"
 #include "Interfaces/Weapon/WeaponProvider.h"
 
 #include "Entity.generated.h"
 
+class UMontagesData;
+class UEffectsData;
+class UInputData;
+class UTargetingComponent;
 class UCameraComponent;
 /*
- * ----------Forward Declarations----------
+ * =========-Forward Declarations=========-
  */
 class UCombatComponent;
 class UAttributeComponent;
@@ -48,7 +54,7 @@ class USoundBase;
 class UCameraShakeBase;
 class UEntityData;
 
-// --- Delegates ---
+// === Delegates ===
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEntityDead);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEntityDamaged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEntityCanBeFinished);
@@ -65,7 +71,8 @@ class TESISUE_API AEntity : public ACharacter,
 							public ICombatTargetInterface,
 							public IControllerProvider,
 							public IAttributeProvider,
-							public IAnimatorProvider
+							public IAnimatorProvider,
+							public IStrategyProvider
 {
 	GENERATED_BODY()
 
@@ -74,11 +81,17 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
 	TObjectPtr<UEntityData> EntityData;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
+	TObjectPtr<UInputData> InputsData;
 
-	UPROPERTY()
-	UAnimMontage* HitReactMontage;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
+	TObjectPtr<UEffectsData> EffectsData;
 
-	// --- Getters ---
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
+	TObjectPtr<UMontagesData> MontagesData;
+
+	// === Getters ===
 	UFUNCTION(BlueprintPure, Category = "Components | Combat")
 	FORCEINLINE UCombatComponent* GetCombatComponent() const { return CombatComponent; };
 
@@ -100,6 +113,9 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Components | Possession")
 	FORCEINLINE UPossessionComponent* GetPossessionComponent() const { return PossessionComponent; }
 
+	UFUNCTION(BlueprintPure, Category = "Components | Possession")
+	FORCEINLINE UTargetingComponent* GetTargetingComponent() const { return TargetingComponent; }
+
 	UFUNCTION(BlueprintPure, Category = "Components | Camera")
 	FORCEINLINE USpringArmComponent* GetSpringArmComponent() const { return SpringArmComponent; }
 
@@ -112,7 +128,7 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnEntityShieldTakeDamage OnShieldTakeDamage;
 
-	// --- Interface Implementations ---
+	// === Interface Implementations ===
 	virtual void GetHit(::TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint,
 	                    FDamageEvent const& DamageEvent, const float DamageReceived) override;
 	virtual void GetFinished() override;
@@ -120,18 +136,17 @@ public:
 
 	virtual UCameraComponent* GetEntityCamera() override { return GetCameraComponent(); }
 	virtual FVector GetCameraLocation() override { return GetCameraComponent()->GetComponentLocation(); }
-	virtual void AttachFollowCamera() override;
 
 	UFUNCTION(BlueprintPure)
-	virtual TScriptInterface<IWeaponInterface> GetWeaponEquipped() override { return GetInventoryComponent()->GetWeaponEquipped(); }
+	virtual TScriptInterface<IWeaponInterface> GetCurrentWeapon() override { return GetInventoryComponent()->GetCurrentWeapon(); }
 
 	virtual const FCharacterStates& GetCurrentCharacterState() override { return GetCharacterStateComponent()->CurrentStates; }
 	virtual ECharacterWeaponStates SetWeaponState(ECharacterWeaponStates NewState) override;
 	virtual ECharacterActionsStates SetAction(ECharacterActionsStates NewAction) override;
 	virtual ECharacterModeStates SetMode(ECharacterModeStates NewForm) override;
-	virtual bool IsWeaponStateEqualToAny(const TArray<ECharacterWeaponStates>& StatesToCheck) const override;
-	virtual bool IsActionStateEqualToAny(const TArray<ECharacterActionsStates>& ActionsToCheck) const override;
-	virtual bool IsModeStateEqualToAny(const TArray<ECharacterModeStates>& FormsToCheck) const override;
+	virtual bool IsWeaponStateEqualToAny(const TArray<ECharacterWeaponStates>& StatesToCheck) override;
+	virtual bool IsActionStateEqualToAny(const TArray<ECharacterActionsStates>& ActionsToCheck) override;
+	virtual bool IsModeStateEqualToAny(const TArray<ECharacterModeStates>& FormsToCheck) override;
 
 	virtual FVector GetLastMovementInputVector() override { return Super::GetLastMovementInputVector(); } 
 	virtual FRotator GetControlRotation() override { return Super::GetControlRotation(); }
@@ -148,204 +163,166 @@ public:
 	virtual TScriptInterface<ICombatTargetInterface> GetLastDamageCauser() override { return LastDamageCauser; }
 	virtual bool IsFalling() override { return GetCharacterMovement()->IsFalling(); }
 	virtual bool IsFlying() override { return GetCharacterMovement()->IsFlying(); }
-	virtual bool IsMovingBackwards() override { return GetExtraMovementComponent()->IsMovingBackwards(); }
+	virtual bool IsMovingBackwards() override { return ExtraMovementComponent->IsMovingBackwards(); }
 	virtual bool IsEquipped() override;
-	virtual bool IsLocking() override { return GetCombatComponent()->bIsHardLocking; }
+	virtual bool IsLocking() override { return GetTargetingComponent()->IsLocking(); }
 	virtual void SetMovementMode(const EMovementMode MovementMode) override { GetCharacterMovement()->SetMovementMode(MovementMode); }
 
 	virtual FVector GetTargetActorLocation() override { return GetActorLocation(); }
-	virtual bool IsAlive() override { return GetAttributeComponent()->IsAlive(); }
-	virtual bool IsPossessed() override { return GetPossessionComponent()->IsPossessed(); }
-	virtual bool IsPossessing() override { return GetPossessionComponent()->IsPossessing(); }
-	virtual bool IsBlocking() override { return GetCombatComponent()->IsBlocking(); }
+	UFUNCTION(BlueprintCallable)
+	virtual bool IsAlive() override { return AttributeComponent->IsAlive(); }
+	virtual bool IsPossessed() override { return PossessionComponent->IsPossessed(); }
+	virtual bool IsPossessing() override { return PossessionComponent->IsPossessing(); }
+	virtual bool IsBlocking() override { return CombatComponent->IsBlocking(); }
 	virtual bool CanBeFinished() override;
 	virtual bool IsLaunchable() override;
 	virtual void GetDirectionalReact(const FVector& ImpactPoint) override; 
-	virtual void LaunchUp() override { GetCombatComponent()->StartLaunchingUp(); }
+	virtual void LaunchUp() override { CombatComponent->StartLaunchingUp(); }
 
 	virtual AController* GetEntityController() override { return GetController(); }
 
-	virtual void IncreaseEnergy(const float Percentage) override { GetAttributeComponent()->IncreaseEnergy(Percentage); }
-	virtual bool RequiresEnergy(const float X) override { return GetAttributeComponent()->RequiresEnergy(X); }
-	virtual void SetEnergy(const float EnergyFromPossessor) override { GetAttributeComponent()->SetEnergy(EnergyFromPossessor); }
-	virtual void IncreaseHealth(const float X) override { GetAttributeComponent()->IncreaseHealth(X); }
+	virtual void IncreaseEnergy(const float Percentage) override { AttributeComponent->IncreaseEnergy(Percentage); }
+	virtual bool RequiresEnergy(const float X) override { return AttributeComponent->RequiresEnergy(X); }
+	virtual void SetEnergy(const float EnergyFromPossessor) override { AttributeComponent->SetEnergy(EnergyFromPossessor); }
+	virtual void IncreaseHealth(const float X) override { AttributeComponent->IncreaseHealth(X); }
 
 	virtual float PlayAnimMontage(UAnimMontage* Montage, const float Rate = 1.f, const FName Section = "Default") override { return Super::PlayAnimMontage(Montage, Rate, Section); }
 	virtual void StopAnimMontage(UAnimMontage* MontageToStop = nullptr) override { Super::StopAnimMontage(MontageToStop); }
     virtual USceneComponent* GetMeshComponent() override { return GetMesh(); }
     virtual void PauseAnims(const bool bEnable) override { GetMesh()->bPauseAnims = bEnable; }
 	virtual void ChangeWeaponAnimationState() override; 
+
+	virtual UCombatStrategy* GetCurrentStrategy() override { return CurrentStrategy; } 
 	
-	void HitReactJumpToSection(FName Section);
 	
-	// --- Gameplay Actions ---
+	// === Gameplay Actions ===
 	UFUNCTION(BlueprintCallable, Category = "Combat | Weapon")
 	virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
 
-	void AttachFollowCamera(USpringArmComponent* AttachTarget);
+	void HitReactJumpToSection(FName Section);
+	
+	/*void AttachFollowCamera(USpringArmComponent* AttachTarget);*/
 
 	virtual void StunBehavior();
 	virtual void RemoveStunBehavior();
 
 	UFUNCTION()
-	void OnWallCollision(const FHitResult& HitResult);
-
-	UFUNCTION()
-	virtual void OutOfEnergy();
-
-	UFUNCTION(BlueprintCallable)
-	virtual void Die(UAnimMontage* DeathAnim, FName Section = NAME_None);
-
-	void PlayCameraShake(const FVector& Epicenter, float InnerRadius, float OuterRadius);
-
+	void OnWallCollision();
+	
 	bool IsEquipping() const;
 
 protected:
+	// === Actor Functions ===
 	virtual void BeginPlay() override;
-	void InitializeComponentsData() const;
 	virtual void OnConstruction(const FTransform &Transform) override;
+
+	// === Input Setup ===
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+
+	// === Movement Inherited Functions ===
 	virtual void Landed(const FHitResult& Hit) override;
 	virtual void Jump() override;
 	
-	// --- Damage & Equipping ---
+	void SetCombatStrategy(ECharacterModeStates Mode);
+	void InitializeComponentsData() const;
+
+	// === Damage & Equipping ===
 	virtual float TakeDamage(
 		float DamageAmount,
 		FDamageEvent const& DamageEvent,
 		AController* EventInstigator,
 		AActor* DamageCauser) override;
 
-	// --- Montages ---
-	UPROPERTY(EditAnywhere, Category = "Animation | Montages | Death")
-	UAnimMontage* DeathMontage;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Inventory | Montages | Equip")
-	UAnimMontage* EquipSwordMontage;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Inventory | Montages | Equip")
-	UAnimMontage* EquipPistolMontage;
-
-	// --- Inherited Data ---
+	virtual void Die(UAnimMontage* DeathAnim, FName Section = NAME_None);
+	
+	// === Inherited Data ===
 	UPROPERTY()
 	TScriptInterface<ICombatTargetInterface> LastDamageCauser;
 
 	UPROPERTY(Transient)
 	APlayerController* PlayerControllerRef = nullptr;
 
-	// --- Input Mapping Context ---
+	// === Input Mapping Context ===
 	UPROPERTY(EditAnywhere, Category = "Input | Mapping")
 	UInputMappingContext* CharacterContext;
 
-	// --- Camera ---
+	// === Camera ===
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
 	ACameraActor* FollowCamera;
-
-	// --- Input Actions ---
-	UPROPERTY(EditAnywhere, Category = "Input | Movement")
-	UInputAction* InputAction_Move;
-
-	UPROPERTY(EditAnywhere, Category = "Input | Movement")
-	UInputAction* InputAction_Look;
-
-	UPROPERTY(EditAnywhere, Category = "Input | Movement")
-	UInputAction* InputAction_Crouch;
-
-	UPROPERTY(EditAnywhere, Category = "Input | Movement")
-	UInputAction* InputAction_Jump;
-
-	UPROPERTY(EditAnywhere, Category = "Input | Movement")
-	UInputAction* InputAction_Dodge;
-
-	UPROPERTY(EditAnywhere, Category = "Input | Actions")
-	UInputAction* InputAction_Interact;
-
-	UPROPERTY(EditAnywhere, Category = "Input | Actions")
-	UInputAction* InputAction_SwitchForm;
-
-	UPROPERTY(EditAnywhere, Category = "Input | Actions")
-	UInputAction* InputAction_Possess;
-
-	UPROPERTY(EditAnywhere, Category = "Input | Actions")
-	UInputAction* InputAction_Inventory;
-
-	UPROPERTY(EditAnywhere, Category = "Input | Actions")
-	UInputAction* InputAction_Attack;
-
-	UPROPERTY(EditAnywhere, Category = "Input | Actions")
-	UInputAction* InputAction_HeavyAttack;
-
-	UPROPERTY(EditAnywhere, Category = "Input | Actions")
-	UInputAction* InputAction_Launch;
-
-	UPROPERTY(EditAnywhere, Category = "Input | Actions")
-	UInputAction* InputAction_Block;
-
-	UPROPERTY(EditAnywhere, Category = "Input | Actions")
-	UInputAction* InputAction_ChangeHardLockTarget;
-
-	UPROPERTY(EditAnywhere, Category = "Input | Actions")
-	const UInputAction* InputAction_ToggleWeapon;
 	
 	UPROPERTY()
 	TArray<AActor*> IgnoreActors;
 	
+	// === Input Functions ===
+	void Input_Move(const FInputActionValue& Value);
+	
+	void Input_Look(const FInputActionValue& Value);
+
+	void Input_DoubleJump();
+
+	void Input_Dodge();
+
+	UFUNCTION()
+	void Input_PrimaryAttack(const FInputActionValue& Value);
+
+	UFUNCTION()
+	void Input_SecondaryAttack();
+
+	void Input_Block(const FInputActionValue& Value);
+
+	void Input_ChangeHardLockTarget();
+
+	void Input_ToggleHardLock();
+
+	UFUNCTION()
+	void Input_Execute();
+
+	void Input_Interact(const FInputActionValue& InputActionValue);
+	
 private:
-	// --- SFX & VFX ---
-	UPROPERTY(EditDefaultsOnly, Category = "Effects | SFX")
-	USoundBase* ErrorSFX;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Effects | SFX")
-	USoundBase* ReceiveDamageSFX;
-
-	UPROPERTY(EditAnywhere, Category = "Effects | SFX")
-	USoundBase* HitSound;
-
-	UPROPERTY(EditAnywhere, Category = "Effects | SFX")
-	USoundBase* ShieldImpactSFX;
-
-	UPROPERTY(EditAnywhere, Category = "Effects | VFX")
-	UNiagaraSystem* ReceiveDamageFX;
-
-	UPROPERTY(EditAnywhere, Category = "Effects | CameraShake")
-	TSubclassOf<UCameraShakeBase> CameraShake;
-
-	// --- Stats & Properties ---
-	UPROPERTY(EditAnywhere, Category = "Gameplay | Interact")
-	float InteractTraceLenght;
-
-	UPROPERTY(EditAnywhere, Category = "Gameplay | Interact")
-	float InteractTargetRadius;
-
-	float DefaultMaxWalkSpeed = 700.f;
-
-	UPROPERTY(EditAnywhere, Category = "Stats | Stun")
-	float StunMaxWalkSpeed;
-
-	// --- Components ---
-	UPROPERTY(VisibleAnywhere, BlueprintGetter = GetCombatComponent, Category = "Components | Combat")
+	// === Aux. Functions ===
+	UFUNCTION()
+	void PerformPrimaryAttack();
+	void OnPrimaryAttackStarted();
+	void OnPrimaryAttackCompleted();
+	
+	float TimeOfPrimaryAttackPressed;
+	
+	// === Components ===
+	UPROPERTY(BlueprintGetter = GetCombatComponent)
 	UCombatComponent* CombatComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintGetter = GetAttributeComponent, Category = "Components | Attribute")
+	UPROPERTY(BlueprintGetter = GetAttributeComponent)
 	UAttributeComponent* AttributeComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintGetter = GetCharacterStateComponent, Category = "Components | Character State")
+	UPROPERTY(BlueprintGetter = GetCharacterStateComponent)
 	UCharacterStateComponent* CharacterStateComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintGetter = GetExtraMovementComponent, Category = "Components | Extra Movement")
+	UPROPERTY(BlueprintGetter = GetExtraMovementComponent)
 	UExtraMovementComponent* ExtraMovementComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintGetter = GetInventoryComponent, Category = "Components | Inventory")
+	UPROPERTY(VisibleAnywhere, BlueprintGetter = GetInventoryComponent)
 	UInventoryComponent* InventoryComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintGetter = GetMementoComponent, Category = "Components | Memento")
+	UPROPERTY(BlueprintGetter = GetMementoComponent)
 	UMementoComponent* MementoComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintGetter = GetPossessionComponent, Category = "Components | Possession")
+	UPROPERTY(BlueprintGetter = GetPossessionComponent)
 	UPossessionComponent* PossessionComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintGetter = GetSpringArmComponent, Category = "Components | Camera")
+	UPROPERTY(BlueprintGetter = GetTargetingComponent)
+	UTargetingComponent* TargetingComponent;
+	
+	UPROPERTY(BlueprintGetter = GetSpringArmComponent)
 	USpringArmComponent* SpringArmComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintGetter = GetCameraComponent, Category = "Components | Camera")
+	UPROPERTY(BlueprintGetter = GetCameraComponent)
 	UCameraComponent* CameraComponent;
+	
+	UPROPERTY()
+	UCombatStrategy* CurrentStrategy;
+	UPROPERTY()
+	UCombatStrategy* HumanStrategyInstance;
+	UPROPERTY()
+	UCombatStrategy* SpectralStrategyInstance;
 };

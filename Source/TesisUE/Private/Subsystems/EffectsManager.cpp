@@ -11,7 +11,7 @@ void UEffectsManager::Initialize(FSubsystemCollectionBase& Collection)
 	Super::Initialize(Collection);
 
 	Data = Cast<UEffectsManagerData>(StaticLoadObject(UEffectsManagerData::StaticClass(), nullptr,
-	TEXT("/Game/Blueprints/DataAssets/DA_EffectsManagerDataAsset.DA_EffectsManagerDataAsset")));
+	TEXT("/Game/Blueprints/DataAssets/DA_EffectsManager.DA_EffectsManager")));
 	if (Data)
 	{
 		UE_LOG(LogTemp, Log, TEXT("EffectsManager Data Asset loaded successfully."));

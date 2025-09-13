@@ -4,6 +4,7 @@
 #include "Perception/AISenseConfig_Sight.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Components/CharacterStateComponent.h"
+#include "Interfaces/ControllerProvider.h"
 #include "Subsystems/EnemyTokenManager.h"
 #include <Kismet/GameplayStatics.h>
 

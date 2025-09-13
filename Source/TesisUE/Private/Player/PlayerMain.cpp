@@ -8,7 +8,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Components/InputComponent.h"
 #include "Components/AttributeComponent.h"
-#include "Components/PlayerFormComponent.h"
+#include "Components/ChangeModeComponent.h"
 #include "Components/MementoComponent.h"
 #include "Components/CombatComponent.h"
 #include "Components/InventoryComponent.h"
@@ -20,11 +20,14 @@
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "GenericTeamAgentInterface.h"
 
 #include "Kismet/GameplayStatics.h"
 
 #include "Engine/DamageEvents.h"
 #include "DamageTypes/SpectralTrapDamageType.h"
+#include "DataAssets/InputData.h"
+#include "DataAssets/MontagesData.h"
 #include "Interfaces/Weapon/WeaponInterface.h"
 
 APlayerMain::APlayerMain()
@@ -34,15 +37,16 @@ APlayerMain::APlayerMain()
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 	AutoPossessAI = EAutoPossessAI::Disabled;
 
+	ChangeModeComponent = CreateDefaultSubobject<UChangeModeComponent>(TEXT("ChangeModeComponent"));
+
 	GetAttributeComponent()->OnEntityDead.AddDynamic(this, &APlayerMain::PerformDead);
+	GetAttributeComponent()->OnOutOfEnergy.AddDynamic(this, &APlayerMain::ApplyHumanMode);
 	
-	GetPossessionComponent()->OnPossessionAttemptFailed.AddDynamic(GetCombatComponent(), &UCombatComponent::Input_Execute);
 	GetPossessionComponent()->OnPossessionAttemptSucceed.AddDynamic(GetAttributeComponent(), &UAttributeComponent::StartDecreaseEnergy);
 	GetPossessionComponent()->OnPossessionReleased.AddDynamic(GetAttributeComponent(), &UAttributeComponent::StopDecreaseEnergy);
-	
-	PlayerFormComponent = CreateDefaultSubobject<UPlayerFormComponent>(TEXT("PlayerFormComponent"));
-	PlayerFormComponent->OnHumanEffectApplied.AddDynamic(this, &APlayerMain::ApplyHumanMode);
-	PlayerFormComponent->OnSpectralEffectApplied.AddDynamic(this, &APlayerMain::ApplySpectralEffect);
+
+	ChangeModeComponent->OnHumanEffectApplied.AddDynamic(this, &APlayerMain::ApplyHumanMode);
+	ChangeModeComponent->OnSpectralEffectApplied.AddDynamic(this, &APlayerMain::ApplySpectralMode);
 }
 
 void APlayerMain::GetHit(TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint,
@@ -60,16 +64,9 @@ void APlayerMain::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (!GetCombatComponent()->OnWallHit.IsBound())
-	{
-		GetCombatComponent()->OnWallHit.AddDynamic(this, &APlayerMain::OnWallCollision);
-	}
+	ChangeModeComponent->OnHumanEffectApplied.AddDynamic(this, &APlayerMain::ApplyHumanMode);
+	ChangeModeComponent->OnSpectralEffectApplied.AddDynamic(this, &APlayerMain::ApplySpectralMode);
 	
-	// GetCharacterStateComponent()->CurrentStates.Mode == ECharacterMode::ECM_Spectral ?
-	// 	SpectralWeaponComponent->EnableSpectralWeapon(true) : SpectralWeaponComponent->EnableSpectralWeapon(false);
-
-	AttachFollowCamera();
-
 	if (const APlayerController* PlayerController = CastChecked<APlayerController>(GetController()))
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 			Subsystem->AddMappingContext(CharacterContext, 0);
@@ -88,7 +85,7 @@ void APlayerMain::BeginPlay()
 
 void APlayerMain::PerformDead()
 {
-	Die(DeathMontage, NAME_None);
+	Die(MontagesData->Montages.DeathMontage, NAME_None);
 }
 
 void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -96,8 +93,8 @@ void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		EnhancedInputComponent->BindAction(InputAction_SwitchForm, ETriggerEvent::Started, this, &APlayerMain::ToggleForm);
-		EnhancedInputComponent->BindAction(InputAction_Possess, ETriggerEvent::Started, GetPossessionComponent(), &UPossessionComponent::AttemptPossession);
+		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_SwitchForm, ETriggerEvent::Started, this, &APlayerMain::ToggleForm);
+		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_Possess, ETriggerEvent::Started, this, &APlayerMain::Input_Execute);
 	}
 }
 
@@ -111,20 +108,13 @@ float APlayerMain::TakeDamage(const float DamageAmount, FDamageEvent const& Dama
 	}
 	else
 	{
-		Die(DeathMontage, NAME_None);
+		Die(MontagesData->Montages.DeathMontage, NAME_None);
 	}
 	return DamageAmount;
 }
 
-bool APlayerMain::IsPossessed()
-{
-	return true; //true by default, because it wouldn't be marked as a threat if not
-}
-
 void APlayerMain::ToggleForm()
 {
-	if (IsEquipping()) return;
-
 	if (GetCharacterStateComponent()->IsActionEqualToAny({
 		ECharacterActionsStates::ECAS_Dead,
 		ECharacterActionsStates::ECAS_Block,
@@ -132,14 +122,7 @@ void APlayerMain::ToggleForm()
 		ECharacterActionsStates::ECAS_Attack,
 		ECharacterActionsStates::ECAS_Stun })) return;
 	
-	PlayerFormComponent->ToggleForm();
-}
-
-void APlayerMain::OutOfEnergy()
-{
-	Super::OutOfEnergy();
-
-	PlayerFormComponent->ToggleForm();
+	ChangeModeComponent->ToggleForm();
 }
 
 void APlayerMain::Die(UAnimMontage* DeathAnim, const FName Section)
@@ -191,27 +174,20 @@ void APlayerMain::LoadLastCheckpoint() const
 	}
 }
 
-void APlayerMain::ChangePrimaryWeapon()
-{
-	if (GetCharacterStateComponent()->IsModeEqualToAny({ ECharacterModeStates::ECMS_Spectral })) return;
-
-	GetInventoryComponent()->ChangeWeapon(0);
-}
-
-void APlayerMain::ChangeSecondaryWeapon()
-{
-	if (GetCharacterStateComponent()->IsModeEqualToAny({ ECharacterModeStates::ECMS_Spectral })) return;
-
-	GetInventoryComponent()->ChangeWeapon(1);
-}
-
 void APlayerMain::ApplyHumanMode()
 {
+	if (GetCharacterStateComponent()->IsModeEqualToAny({ECharacterModeStates::ECMS_Human})) return;
+	
+	if (const TScriptInterface<IGenericTeamAgentInterface> TeamAgent = GetController())
+	{
+		TeamAgent->SetGenericTeamId(FGenericTeamId(2));
+	}
+	
 	GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = false;
 
-	if (GetWeaponEquipped())
+	if (GetCurrentWeapon())
 	{
-		GetWeaponEquipped()->EnableVisuals(true);
+		GetCurrentWeapon()->EnableVisuals(true);
 	}
 
 	if (GetPossessionComponent()->GetPossessedEntity())
@@ -220,10 +196,25 @@ void APlayerMain::ApplyHumanMode()
 	}
 
 	GetCharacterStateComponent()->SetMode(ECharacterModeStates::ECMS_Human);
+
+	SetCombatStrategy(ECharacterModeStates::ECMS_Human);
+
+	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, "HUMAN");
 }
 
-void APlayerMain::ApplySpectralEffect()
+void APlayerMain::ApplySpectralMode()
 {
+	if (GetCharacterStateComponent()->IsModeEqualToAny({ECharacterModeStates::ECMS_Spectral})) return;
+	
+	if (const TScriptInterface<IGenericTeamAgentInterface> TeamAgent = GetController())
+	{
+		TeamAgent->SetGenericTeamId(FGenericTeamId(0));
+	}
 	GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = true;
 	GetCharacterStateComponent()->SetMode(ECharacterModeStates::ECMS_Spectral);
+
+	SetCombatStrategy(ECharacterModeStates::ECMS_Spectral);
+
+	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "VAMPIRE");
+	
 }

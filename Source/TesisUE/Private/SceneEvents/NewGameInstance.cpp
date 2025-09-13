@@ -359,7 +359,7 @@ bool UNewGameInstance::SavePlayerProgress(int32 SlotIndex, APawn* Entity)
         {
             SaveGameInstance->InventorySlotsData.Empty();
             const TArray<TScriptInterface<IWeaponInterface>>& CurrentInventoryItems = PlayerInventory->GetInventoryItems();
-            const TScriptInterface<IWeaponInterface> CurrentlyEquippedItem = PlayerInventory->GetWeaponEquipped();
+            const TScriptInterface<IWeaponInterface> CurrentlyEquippedItem = PlayerInventory->GetCurrentWeapon();
 
             for (TScriptInterface ItemInSlot : CurrentInventoryItems)
             {

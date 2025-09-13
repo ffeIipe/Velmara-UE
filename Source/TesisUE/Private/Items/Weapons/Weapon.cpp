@@ -6,6 +6,7 @@
 #include "LoadSystem/PlayerProgressSaveGame.h"
 #include "SceneEvents/NewGameStateBase.h"
 #include "Tutorial/PromptWidgetComponent.h"
+#include "Interfaces/ControllerProvider.h"
 
 void AWeapon::Pick(AActor* NewOwner)
 {
@@ -63,19 +64,12 @@ void AWeapon::EnableVisuals(const bool bEnable)
 {
 	Super::EnableVisuals(bEnable);
 
-	
 }
 
 void AWeapon::BeginPlay()
 {
 	Super::BeginPlay();
 	
-}
-
-void AWeapon::AttachMeshToSocket(USceneComponent* InParent)
-{
-	FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, true);
-	ItemMesh->AttachToComponent(InParent, TransformRules, InSocketName);
 }
 
 void AWeapon::EnableWeaponState(const bool bEnable) const

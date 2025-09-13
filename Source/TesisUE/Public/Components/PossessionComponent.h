@@ -2,11 +2,12 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Decoders/ADPCMAudioInfo.h"
+#include "Interfaces/CombatTargetInterface.h"
 #include "PossessionComponent.generated.h"
 
 class IWeaponProvider;
 class IAnimatorProvider;
-class ICameraProvider;
 class IAttributeProvider;
 class ICharacterStateProvider;
 class IOwnerUtilsInterface;
@@ -30,11 +31,12 @@ public:
     UPossessionComponent();
     void InitializeValues(const FPossessionData& PossessionData);
     
-    void AttemptPossession();
+    void AttemptPossession(AEntity* Victim);
     void ReleasePossession();
     void EjectPossessor();
     void EjectAndExecute();
-
+    AEntity* FindPossessionVictim(float PossessDistance, float PossessRadius) const;
+    
 	///returns the entity that possesses
     UFUNCTION(BlueprintPure, Category = "Possession")
     AEntity* GetPossessedEntity() const { return CurrentlyPossessedEntity; }
@@ -51,6 +53,9 @@ public:
     UFUNCTION(BlueprintPure, Category = "Possession")
     bool IsPossessing() const { return CurrentlyPossessedEntity != nullptr; }
 
+    UFUNCTION()
+    void TryReleasePossession();
+    
     UPROPERTY(BlueprintAssignable)
     FOnPossessionAttemptFailed OnPossessionAttemptFailed;
 
@@ -75,13 +80,11 @@ protected:
 private:
     void OnPossessionReceived(AEntity* NewPossessor);
     void ReleasingPossession();
-    AEntity* FindPossessionVictim() const;
 
     UPROPERTY()
     TScriptInterface<IOwnerUtilsInterface> OwnerUtils;
     TScriptInterface<ICharacterStateProvider> CharacterStateProvider;
     TScriptInterface<IAttributeProvider> AttributeProvider;
-    TScriptInterface<ICameraProvider> CameraProvider;
     TScriptInterface<IAnimatorProvider> AnimatorProvider;
     TScriptInterface<IWeaponProvider> WeaponProvider;
 
@@ -93,8 +96,6 @@ private:
 
     UPROPERTY()
     AEntity* PossessedByEntity = nullptr;
-
-    float PossessDistance = 1500.f;
-    float PossessRadius = 50.f;
+    
     float ReleaseAndExecuteEnergyTax = 25.f;
 };

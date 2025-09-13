@@ -7,7 +7,7 @@
 class UCombatComponent;
 class APlayerMain;
 class UCharacterMovementComponent;
-class UPlayerFormComponent;
+class UChangeModeComponent;
 
 UCLASS()
 class TESISUE_API UPlayerMainAnimInstance : public UEntityAnimInstance

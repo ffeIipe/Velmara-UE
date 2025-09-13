@@ -5,10 +5,11 @@
 #include "Interfaces/HitInterface.h"
 #include "Engine/DamageEvents.h"
 #include "Player/PlayerMain.h"
-#include <NiagaraFunctionLibrary.h>
+#include "NiagaraFunctionLibrary.h"
 
-#include "DamageTypes/MeleeDamage.h"
-#include "Interfaces/AnimatorProvider.h"
+#include "DamageTypes/MeleeDamage.h" //don't delete pls
+#include "DataAssets/Items/Weapons/SwordDataAsset.h"
+#include "Items/Weapons/Commands/ComboCommand.h"
 #include "Subsystems/EffectsManager.h"
 
 ASword::ASword()
@@ -20,19 +21,50 @@ ASword::ASword()
 	WeaponDamageBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	WeaponDamageBox->SetCollisionResponseToAllChannels(ECR_Overlap);
 	WeaponDamageBox->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+	WeaponDamageBox->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+	WeaponDamageBox->OnComponentBeginOverlap.AddDynamic(this, &ASword::OnBoxOverlap);
 
 	BoxTraceStart = CreateDefaultSubobject<USceneComponent>(TEXT("Box Trace Start"));
 	BoxTraceStart->SetupAttachment(GetRootComponent());
 
 	BoxTraceEnd = CreateDefaultSubobject<USceneComponent>(TEXT("Box Trace End"));
 	BoxTraceEnd->SetupAttachment(GetRootComponent());
+
 }
 
 void ASword::BeginPlay()
 {
 	Super::BeginPlay();
 
-	WeaponDamageBox->OnComponentBeginOverlap.AddDynamic(this, &ASword::OnBoxOverlap);
+	if (!SwordDataAsset)
+	{
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "MISSING! Data asset is nullptr.");
+		return;
+	}
+	
+	if (!LightCommandInstance)
+	{
+		if (SwordDataAsset->LightComboCommandClass) LightCommandInstance = NewObject<UCommand>(this, SwordDataAsset->LightComboCommandClass);
+		else if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5, FColor::Red, "MISSING Light Combo Command blueprint class in: " + GetName());
+	}
+
+	if (!JumpCommandInstance)
+	{
+		if (SwordDataAsset->JumpComboCommandClass) JumpCommandInstance = NewObject<UCommand>(this, SwordDataAsset->JumpComboCommandClass);
+		else if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5, FColor::Red, "MISSING Jump Combo Command blueprint class in: " + GetName());
+	}
+
+	if (!HeavyCommandInstance)
+	{
+		if (SwordDataAsset->HeavyComboCommandClass) HeavyCommandInstance = NewObject<UCommand>(this, SwordDataAsset->HeavyComboCommandClass);
+		else if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5, FColor::Red, "MISSING Heavy Combo Command blueprint class in: " + GetName());	
+	}
+
+	if (!HeavyJumpCommandInstance)
+	{
+		if (SwordDataAsset->HeavyJumpComboCommandClass) HeavyJumpCommandInstance = NewObject<UCommand>(this, SwordDataAsset->HeavyJumpComboCommandClass);
+		else if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5, FColor::Red, "MISSING Heavy Combo Command blueprint class in: " + GetName());	
+	}
 }
 
 void ASword::Unequip()
@@ -46,19 +78,19 @@ UPrimitiveComponent* ASword::GetCollisionComponent()
 	return WeaponDamageBox;
 }
 
-int32 ASword::GetLightAttackComboMaxIndex()
+void ASword::ResetMelee()
 {
-	return LightAttackCombo.Num();
+	LightCommandInstance->ResetCommand();
+	JumpCommandInstance->ResetCommand();
+	HeavyCommandInstance->ResetCommand();
 }
 
-int32 ASword::GetHeavyAttackComboMaxIndex()
+void ASword::AttachMeshToSocket(USceneComponent* InParent)
 {
-	return HeavyAttackCombo.Num();
-}
+	Super::AttachMeshToSocket(InParent);
 
-int32 ASword::GetJumpAttackComboMaxIndex()
-{
-	return JumpAttackCombo.Num();
+	const FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, true);
+	ItemMesh->AttachToComponent(InParent, TransformRules, SwordDataAsset->Effects.CustomInSocketName);
 }
 
 void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -87,108 +119,119 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 
 	for (const FHitResult& Hit : HitResults)
 	{
-		if (AActor* HitActor = Hit.GetActor())
+		if (const TScriptInterface<IHitInterface> HitInterface = Hit.GetActor())
 		{
-			if (IHitInterface* HitInterface = Cast<IHitInterface>(HitActor))
+			FDamageEvent DamageEvent(DamageTypeClass);
+
+			const bool bIsHittable = HitInterface->IsHittable();
+			
+			if (bIsHittable)
 			{
-				FDamageEvent DamageEvent(DamageTypeClass);
-				/*DamageTypeClass.GetDefaultObject()->DamageType = */
-				HitInterface->GetHit(GetOwner(), Hit.ImpactPoint, DamageEvent, Damage);
+				UGameplayStatics::ApplyDamage(
+					Hit.GetActor(),
+					CalculateDamage(),
+					ControllerProvider->GetEntityController(),
+					GetOwner(),
+					DamageTypeClass
+				);
 
-				if (HitInterface->IsHittable())
-				{
-					UGameplayStatics::ApplyDamage(
-						HitActor,
-						CalculateDamage(),
-						ControllerProvider->GetEntityController(),
-						GetOwner(),
-						DamageTypeClass
-					);
-
-					//fx when the hit is true
-					if (UEffectsManager* EffectsManager = GetWorld()->GetSubsystem<UEffectsManager>())
-					{
-						EffectsManager->HitStop(EHitStopPreset::EHSP_SwordHit);
-						EffectsManager->CameraShake(ECameraShakePreset::ECSP_SwordHit, Hit.ImpactPoint);
-					}
-
-					if (HitEffect)
-					{
-						UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-							GetWorld(),
-							HitEffect,
-							Hit.ImpactPoint,
-							Hit.ImpactNormal.Rotation(),
-							FVector(1.f),
-							true
-						);
-					}
+				HitInterface->GetHit(GetOwner(), Hit.ImpactPoint, DamageEvent, SwordDataAsset->Stats.BaseDamage);
 					
-					IgnoreActors.Add(HitActor);
-				}
-				else
-				{
-					if (SparksEffect)
-					{
-						UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-							GetWorld(),
-							SparksEffect,
-							Hit.ImpactPoint,
-							Hit.ImpactNormal.Rotation(),
-							FVector(1.f),
-							true
-						);
-					}
-
-					if (ShieldImpactSFX)
-					{
-						UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShieldImpactSFX, Hit.ImpactPoint);
-					}
-				}
+				IgnoreActors.Add(Hit.GetActor());
 			}
+			
+			ImpactEffects(Hit, bIsHittable);
 		}
 	}
 }
 
-void ASword::UsePrimaryAttack()
+void ASword::UsePrimaryAttack(const bool bIsInAir)
 {
-	// Super::UsePrimaryAttack();
-	
+	Super::UsePrimaryAttack(bIsInAir);
+	bIsInAir ? PerformBaseAttack(JumpCommandInstance) : PerformBaseAttack(LightCommandInstance);
+
+	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Yellow, FString("From Sword: Delegating attack call to a command."));
+
+}
+
+void ASword::UseSecondaryAttack(const bool bIsInAir)
+{
+	Super::UseSecondaryAttack(bIsInAir);
+	bIsInAir ? PerformBaseAttack(HeavyJumpCommandInstance) : PerformBaseAttack(HeavyCommandInstance);
 }
 
 float ASword::CalculateDamage() const
 {
-	if (FMath::FRandRange(0.f, 1.f) <= CriticalChance)
+	const float CriticalDamage = SwordDataAsset->Stats.BaseDamage;
+	
+	if (FMath::FRandRange(0.f, 1.f) <= SwordDataAsset->Stats.CriticalChance)
 	{
-		return Damage * CriticalDamageMultiplier;
+		return CriticalDamage * SwordDataAsset->Stats.CriticalDamageMultiplier;
 	}
-	return Damage;
+	return CriticalDamage;
 }
 
-void ASword::PerformLightAttack(const int32 ComboIndex)
+bool ASword::PerformBaseAttack(UCommand* CommToPlay) const
 {
-	if (AnimatorProvider)
-		if (ComboIndex < LightAttackCombo.Num())
-			AnimatorProvider->PlayAnimMontage(LightAttackCombo[ComboIndex]);
+	if (!CommToPlay)
+	{
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5, FColor::Yellow, "Missing Anim/Anims to play");
+		return false;
+	}
+	
+	CharacterStateProvider->SetAction(ECharacterActionsStates::ECAS_Attack);
+	CommToPlay->ExecuteCommand(AnimatorProvider);
+	if (OnWeaponUsed.IsBound()) OnWeaponUsed.Broadcast();
+	
+	return true;
 }
 
-void ASword::PerformHeavyAttack(const int32 ComboIndex)
+void ASword::SetWeaponCollisionEnabled(const ECollisionEnabled::Type CollisionEnabled)
 {
-	if (AnimatorProvider)
-		if (ComboIndex < HeavyAttackCombo.Num())
-			AnimatorProvider->PlayAnimMontage(HeavyAttackCombo[ComboIndex]);
-		
-}
-
-void ASword::PerformJumpAttack(const int32 ComboIndex)
-{
-	if (AnimatorProvider)
-		if (ComboIndex < JumpAttackCombo.Num())
-			AnimatorProvider->PlayAnimMontage(JumpAttackCombo[ComboIndex]);
-}
-
-void ASword::SetWeaponCollisionEnabled_Implementation(const ECollisionEnabled::Type CollisionEnabled)
-{
-	Super::SetWeaponCollisionEnabled_Implementation(CollisionEnabled);
+	Super::SetWeaponCollisionEnabled(CollisionEnabled);
+	
 	WeaponDamageBox->SetCollisionEnabled(CollisionEnabled);
+}
+
+void ASword::ImpactEffects(const FHitResult& Hit, const bool bIsHittable) const
+{
+	if (bIsHittable)
+	{
+		if (UEffectsManager* EffectsManager = GetWorld()->GetSubsystem<UEffectsManager>())
+		{
+			EffectsManager->HitStop(SwordDataAsset->Effects.HitStopPreset);
+			EffectsManager->CameraShake(SwordDataAsset->Effects.CameraShakePreset, Hit.ImpactPoint);
+		}
+
+		if (SwordDataAsset)
+		{
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+				GetWorld(),
+				SwordDataAsset->Effects.HitEffect,
+				Hit.ImpactPoint,
+				Hit.ImpactNormal.Rotation(),
+				FVector(1.f),
+				true
+			);
+		}
+	}
+	else
+	{
+		if (SwordDataAsset)
+		{
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+				GetWorld(),
+				SwordDataAsset->Effects.SparksEffect,
+				Hit.ImpactPoint,
+				Hit.ImpactNormal.Rotation(),
+				FVector(1.f),
+				true
+			);
+		}
+
+		if (SwordDataAsset)
+		{
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), SwordDataAsset->Effects.ShieldImpact, Hit.ImpactPoint);
+		}
+	}
 }

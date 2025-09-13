@@ -6,6 +6,8 @@
 #include "Components/ActorComponent.h"
 #include "ExtraMovementComponent.generated.h"
 
+class IStrategyProvider;
+class ICharacterMovementProvider;
 class ICharacterStateProvider;
 class IAnimatorProvider;
 class IOwnerUtilsInterface;
@@ -14,6 +16,7 @@ class AEntity;
 struct FInputActionValue;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDodgeStarted);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDoubleJumpStarted);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class TESISUE_API UExtraMovementComponent : public UActorComponent
@@ -25,15 +28,19 @@ public:
 	
 	void InitializeValues(const FMovementData& MovementData);
 
+	void SetCurrentStrategyValues(float DodgeDistance, float DoubleJumpForce, UAnimMontage* NewDodgeMontage);
+	
 	UFUNCTION()
 	void ResetDodge() { bIsSaveDodge = false; }
 
-	UPROPERTY(EditAnywhere, Category = "Montages | Dodge")
-	UAnimMontage* DodgeMontage;
+	void PerformDoubleJump();
+	void PerformMove(const FVector2D& MoveVector, bool bIsTriggered);
+	void PerformLook(const FVector2D& LookingVector) const;
+	void PerformDodge();
 
-	UPROPERTY(EditAnywhere, Category = "Montages | Dodge")
-	UAnimMontage* SpectralDodgeMontage;
-
+	UPROPERTY()
+	UAnimMontage* CurrentDodgeMontage = nullptr;
+	
 	UPROPERTY(EditAnywhere, Category = "Montages | Jump")
 	UAnimMontage* JumpMontage;
 
@@ -42,54 +49,37 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void DodgeSaveEvent();
-
-	void PerformDodge();
-
-	void DodgeAnimBasedOnInput() const;
-
-	UPROPERTY()
-	class UTimelineComponent* BufferDodgeTimeline;
-
-	void DodgeBufferEvent(float BufferAmount) const;
-
-	void StopDodgeBufferEvent() const;
-
-	void UpdateDodgeBuffer(float Alpha);
-
-	void UpdateBuffer(float Alpha, float BufferDistance) const;
 	
-	void Input_Move(const FInputActionValue& Value);
-	
-	void Input_Look(const FInputActionValue& Value);
-
-	void Input_DoubleJump();
-
-	void Input_Dodge();
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	bool CanDoubleJump = true;
 
 	void CustomInitialize(AEntity* NewEntity);
 
 	bool IsMovingBackwards() const;
+	
+	bool bIsSaveDodge = false;
 
 	FOnDodgeStarted OnDodgeStarted;
-		
+
+	FOnDoubleJumpStarted OnDoubleJumpStarted;
+	
 private:
 	virtual void BeginPlay() override;
-
-	UPROPERTY()
-	TScriptInterface<IOwnerUtilsInterface> OwnerUtils;
-	UPROPERTY()
-	TScriptInterface<IAnimatorProvider> AnimatorProvider;
-	UPROPERTY()
-	TScriptInterface<ICharacterStateProvider> CharacterStateProvider;
-	UPROPERTY()
-	TScriptInterface<class ICharacterMovementProvider> CharacterMovementProvider;
-
-	bool bIsSaveDodge = false;
 	
-	FVector2D MoveVector;
+	void PlayDodgeAnim() const;
+
+	void DodgeBufferEvent() const;
+
+	void StopDodgeBufferEvent() const;
+
+	void UpdateDodgeBuffer(float Alpha) const;
+
+	void UpdateBuffer(float Alpha, float BufferDistance) const;
+
+	void DodgeAnimBasedOnInput() const;
+
+	// === Stats ===
+	FVector2D CurrentMoveVector;
 	
 	float DoubleJumpStrength = 800.f;
 
@@ -98,4 +88,13 @@ private:
 	
 	UPROPERTY()
 	UCurveFloat* DodgeCurve;
+	
+	TScriptInterface<IOwnerUtilsInterface> OwnerUtils;
+	TScriptInterface<IAnimatorProvider> AnimatorProvider;
+	TScriptInterface<ICharacterStateProvider> CharacterStateProvider;
+	TScriptInterface<ICharacterMovementProvider> CharacterMovementProvider;
+	TScriptInterface<IStrategyProvider> StrategyProvider;
+
+	UPROPERTY()
+	class UTimelineComponent* BufferDodgeTimeline;
 };

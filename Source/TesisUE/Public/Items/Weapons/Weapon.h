@@ -13,15 +13,15 @@ class IControllerProvider;
 /**
  * 
  */
-UCLASS()
+UCLASS(Abstract)
 class TESISUE_API AWeapon : public AItem, public IWeaponInterface
 {
 	GENERATED_BODY()
 
 public:
-	virtual void UsePrimaryAttack() override {}
+	virtual void UsePrimaryAttack(const bool bIsInAir) override {}
 	
-	virtual void UseSecondaryAttack() override {}
+	virtual void UseSecondaryAttack(const bool bIsInAir) override {}
 	
 	virtual void Pick(AActor* NewOwner) override;
 
@@ -29,7 +29,7 @@ public:
 
 	virtual void EnableVisuals(bool bEnable) override;
 
-	virtual void SetWeaponCollisionEnabled_Implementation(ECollisionEnabled::Type CollisionEnabled) override {}
+	virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled) override {}
 
 	virtual void ClearIgnoreActors() override {}
 
@@ -40,14 +40,8 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	
-	UPROPERTY(EditAnywhere, Category = "Weapon Properties")
-	FName InSocketName;
-
-	UPROPERTY(EditAnywhere, Category = "Weapon Properties")
-	float Damage;
-	
 	UFUNCTION(BlueprintCallable)
-	virtual void AttachMeshToSocket(USceneComponent* InParent);
+	virtual void AttachMeshToSocket(USceneComponent* InParent) {}
 
 	UPROPERTY()
 	TScriptInterface<IControllerProvider> ControllerProvider;

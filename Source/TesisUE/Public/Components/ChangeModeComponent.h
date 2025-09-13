@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "PlayerFormComponent.generated.h"
+#include "ChangeModeComponent.generated.h"
 
 class ICharacterStateProvider;
 class IOwnerUtilsInterface;
@@ -18,13 +18,26 @@ class UCharacterStateComponent;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHumanEffectApplied);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSpectralEffectApplied);
 
+USTRUCT()
+struct FSpectralStats
+{
+    GENERATED_BODY()
+
+    UPROPERTY()
+    float SpectralMaxWalkSpeed;
+    UPROPERTY()
+    float SpectralMaxJumpDistance;
+    UPROPERTY()
+    float SpectralMaxDodgeDistance;
+};
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class TESISUE_API UPlayerFormComponent : public UActorComponent
+class TESISUE_API UChangeModeComponent : public UActorComponent
 {
     GENERATED_BODY()
 
 public:
-    UPlayerFormComponent();
+    UChangeModeComponent();
 
     UFUNCTION(BlueprintCallable)
     void ToggleForm();
@@ -43,7 +56,7 @@ private:
     USoundBase* DisableSpectralModeSFX;
 
     UPROPERTY(EditDefaultsOnly, Category = "Stats | Forms | Cooldown")
-    float TransformationCooldown = 1.f;
+    float TransformationCooldown = .8f;
 
     UPROPERTY(EditAnywhere, Category = "State | Forms | Cooldown")
     float LastTransformationTime;

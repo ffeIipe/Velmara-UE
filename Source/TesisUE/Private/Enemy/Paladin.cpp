@@ -21,6 +21,8 @@
 #include "AIController.h"
 #include <Kismet/KismetMathLibrary.h>
 
+#include "DataAssets/MontagesData.h"
+
 
 APaladin::APaladin()
 {
@@ -34,12 +36,12 @@ APaladin::APaladin()
 
 	SwordMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SwordMesh"));
 	SwordMesh->SetupAttachment(GetMesh(), TEXT("RightHandSocket"));
-	SwordMesh->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
+	SwordMesh->CanCharacterStepUpOn = ECB_No;
 	SwordMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	SwordCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("SwordBoxCollider"));
 	SwordCollider->SetupAttachment(SwordMesh);
-	SwordCollider->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
+	SwordCollider->CanCharacterStepUpOn = ECB_No;
 	SwordCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	SwordCollider->SetCollisionResponseToChannel(ECC_Camera, ECR_Overlap);
 
@@ -105,19 +107,13 @@ void APaladin::LaunchUp()
 	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, FString(this->GetName()));
 	bIsLaunched = true;
 	DisableAI();
-	PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
+	PlayAnimMontage(MontagesData->Montages.HitReactMontage, 1.f, FName("FromAir"));
 	GetCharacterMovement()->SetMovementMode(MOVE_Flying);
 }
 
 void APaladin::Die(UAnimMontage* DeathAnim, const FName Section)
 {
 	Super::Die(DeathAnim, Section);
-
-	if (IsFlying() || IsFalling())
-	{
-		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
-		LaunchCharacter(FVector(0.f, 0.f, -300.f), true, true);
-	}
 	
 	NotifyDamageTakenToBlackboard(LastDamageCauser);
 }
@@ -169,11 +165,11 @@ void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 					UGameplayStatics::ApplyDamage(Hit.GetActor(), Damage, GetController(), this, UDamageType::StaticClass());
 					
 					AEntity* FinalDamageCauser = nullptr;	
-					if (GetPossessionComponent()->IsPossessed()) FinalDamageCauser =  this;
+					if (IsPossessed()) FinalDamageCauser =  this;
 				
 					HitInterface->GetHit(FinalDamageCauser, Hit.ImpactPoint, DamageEvent, Damage);
 				
-					PlayCameraShake(SwordMesh->GetComponentLocation(), 0.f, 500.f);
+					//PlayCameraShake(SwordMesh->GetComponentLocation(), 0.f, 500.f);
 					IgnoreActors.Add(Hit.GetActor());
 				}
 				else
@@ -203,17 +199,17 @@ void APaladin::ApplyPossessionParameters(const bool bShouldEnable)
 
 void APaladin::ShieldHit()
 {
-	if (HitReactMontage)
+	if (MontagesData->Montages.HitReactMontage)
 	{
 		StopAnimMontage();
-		PlayAnimMontage(HitReactMontage, 1.f, FName("ShieldHit"));
+		PlayAnimMontage(MontagesData->Montages.HitReactMontage, 1.f, FName("ShieldHit"));
 	}
 }
 
 void APaladin::CrashDown()
 {
 	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
-	PlayAnimMontage(HitReactMontage, 1.f, FName("KnockDown"));
+	PlayAnimMontage(MontagesData->Montages.HitReactMontage, 1.f, FName("KnockDown"));
 	LaunchCharacter(FVector(0.f, 0.f, -100000.f), true, true);
 }
 
@@ -221,7 +217,7 @@ void APaladin::HitInAir()
 {
 	const float PlayerLocationHeight = UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->GetActorLocation().Z;
 	SetActorLocation(FVector(GetTargetActorLocation().X, GetTargetActorLocation().Y, PlayerLocationHeight));
-	PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
+	PlayAnimMontage(MontagesData->Montages.HitReactMontage, 1.f, FName("FromAir"));
 	DisableAI();
 }
 
@@ -246,11 +242,11 @@ void APaladin::ReactToDamage(EMeleeDamageTypes DamageType, const FVector& Impact
 		break;
 
 	case EMeleeDamageTypes::EMDT_Puncture:
-		PlayAnimMontage(HitReactMontage, 1.f, FName("PunctureReact"));
+		PlayAnimMontage(MontagesData->Montages.HitReactMontage, 1.f, FName("PunctureReact"));
 		break;
 
 	case EMeleeDamageTypes::EMDT_Impact:
-		PlayAnimMontage(HitReactMontage, 1.f, FName("ImpactReact"));
+		PlayAnimMontage(MontagesData->Montages.HitReactMontage, 1.f, FName("ImpactReact"));
 		break;
 
 	/*case EMainDamageTypes::EMDT_Pistol:*/
@@ -273,5 +269,5 @@ void APaladin::Slash()
 	SetActorRotation(FRotator(0.f, DamageCauserLocation.Yaw, 0.f));
 
 	StopAnimMontage();
-	PlayAnimMontage(HitReactMontage, 1.f, FName("FromFrontBig"));
+	PlayAnimMontage(MontagesData->Montages.HitReactMontage, 1.f, FName("FromFrontBig"));
 }

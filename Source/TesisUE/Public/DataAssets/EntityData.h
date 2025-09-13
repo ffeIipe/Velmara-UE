@@ -1,57 +1,38 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/AttributeComponent.h"
-#include "Components/InventoryComponent.h"
 #include "Engine/DataAsset.h"
 #include "EntityData.generated.h"
+
+class UInputAction;
+class UNiagaraSystem;
+class UCombatStrategy;
 
 USTRUCT(BlueprintType)
 struct FCombatData
 {
     GENERATED_BODY()
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SoftLock")
-    float SoftLockDistance;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SoftLock")
-    float SoftLockRadius;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SoftLock")
-    float TrackTargetRadius;
     
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SoftLock")
-    UCurveFloat* SoftLockCurve;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Buffer")
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stats")
     float BufferAttackDistance;
-    
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Buffer")
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Curves")
     UCurveFloat* BufferCurve;
 
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Montages | LightAttack")
-    TArray<UAnimMontage*> LightAttackCombo;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Curves")
+    UCurveFloat* LaunchUpCurve;
 
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Montages | JumpAttack")
-    TArray<UAnimMontage*> JumpAttackCombo;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Curves")
+    UCurveFloat* BufferBackwardsCurve;
+};
 
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Montages | HeavyAttack")
-    TArray<UAnimMontage*> HeavyAttackCombo;
+USTRUCT(BlueprintType)
+struct FTargetingData
+{
+    GENERATED_BODY()
 
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Montages")
-    UAnimMontage* BlockMontage;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Montages")
-    UAnimMontage* FinisherMontage;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Montages")
-    UAnimMontage* CrasherMontage;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Montages")
-    UAnimMontage* LaunchMontage;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Montages")
-    UAnimMontage* HitReactMontage;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Curves")
+    UCurveFloat* SoftLockCurve;
 };
 
 USTRUCT(BlueprintType)
@@ -59,29 +40,17 @@ struct FMovementData
 {
     GENERATED_BODY()
 
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stats | Movement")
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stats ")
     float MaxRunSpeed = 800.f;
     
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stats | Movement")
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stats")
     float MaxStrafeSpeed = 650.f;
-    
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stats | Dodge")
-    float BufferDodgeDistance;
 
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stats | Dodge")
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stats")
+    float StunMaxWalkSpeed;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Curve")
     UCurveFloat* DodgeCurve;
-    
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stats | DoubleJump")
-    float LaunchStrength = 800.f;
-    
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Montages | Dodge")
-    UAnimMontage* DodgeMontage;
-    
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Montages | Jump")
-    UAnimMontage* JumpMontage;
-    
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Montages | DoubleJump")
-    UAnimMontage* DoubleJumpMontage;
 };
 
 USTRUCT(BlueprintType)
@@ -89,22 +58,22 @@ struct FAttributeData
 {
     GENERATED_BODY()
 
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Actor Properties | Health")
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Health")
     float MaxHealth = 100.f;
     
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Actor Properties | Energy")
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Energy")
     float Energy = 100.f;
 
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Actor Properties | Energy")
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Energy")
     float MaxEnergy = 100.f;
     
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Actor Properties | Energy")
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Energy")
     float DrainTickValue = 2.f;
 
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Actor Properties | Energy")
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Energy")
     float RegenerateTickValue = .5f;
 
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Actor Properties | Shield")
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Shield")
     float MaxShieldHealth = 100.f;
 };
 
@@ -127,12 +96,6 @@ USTRUCT(BlueprintType)
 struct FPossessionData
 {
     GENERATED_BODY()
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Possession")
-    float PossessDistance = 1500.f;
-    
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Possession")
-    float PossessRadius = 50.f;
     
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Possession")
     float ReleaseAndExecuteEnergyTax = 25.f;
@@ -144,18 +107,27 @@ class TESISUE_API UEntityData : public UDataAsset
     GENERATED_BODY()
 
 public:
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Entity Data | Combat")
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EntityData")
     FCombatData CombatData;
 
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Entity Data | Movement")
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EntityData")
     FMovementData MovementData;
 
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Entity Data | Attributes")
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EntityData")
     FAttributeData AttributeData;
 
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Entity Data | Inventory")
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EntityData")
     FInventoryData InventoryData;
 
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Entity Data | Possession")
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EntityData")
     FPossessionData PossessionData;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EntityData")
+    FTargetingData TargetingData;
+    
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Strategy")
+    TSubclassOf<UCombatStrategy> FirstModeStrategyClass;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Strategy")
+    TSubclassOf<UCombatStrategy> SecondModeStrategyClass;
 };

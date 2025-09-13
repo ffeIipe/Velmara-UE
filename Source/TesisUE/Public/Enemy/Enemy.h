@@ -43,7 +43,7 @@ class TESISUE_API AEnemy : public AEntity
 public:
 	AEnemy();
 
-	// --- Pooling ---
+	// === Pooling ===
 	UFUNCTION(BlueprintCallable, Category = "Pooling")
 	virtual void ActivateEnemy(const FVector& Location, const FRotator& Rotation);
 
@@ -56,14 +56,14 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void RequestReturnToPool();
 
-	// --- Delegates ---
+	// === Delegates ===
 	UPROPERTY(BlueprintAssignable)
 	FOnEntityDead OnDead;
 
 	UPROPERTY(BlueprintAssignable)
 	FOnEntityDamaged OnDamaged;
 
-	// --- Combat & Damage ---
+	// === Combat & Damage ===
 	virtual void Die(UAnimMontage* DeathAnim, FName Section) override;
 
 	virtual void GetHit(TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived) override;
@@ -76,7 +76,7 @@ public:
 
 	void NotifyDamageTakenToBlackboard(const TScriptInterface<ICombatTargetInterface>& DamageCauser);
 
-	// --- AI & State ---
+	// === AI & State ===
 	FORCEINLINE EEnemyType GetEnemyType() const { return EnemyType; }
 
 	FORCEINLINE EEnemyState GetEnemyState() const { return EnemyState; }
@@ -102,30 +102,30 @@ public:
 	UFUNCTION()
 	void OnUnpossessed();
 
-	// --- Components ---
+	// === Components ===
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components | PromptWidgetComponent")
 	UPromptWidgetComponent* PromptWidgetComponent;
 
-	// --- Save System ---
+	// === Save System ===
 	UFUNCTION(BlueprintCallable, Category = "Save System")
 	FName GetUniqueSaveID() const { return UniqueSaveID; }
 
-	// --- Status Flags ---
+	// === Status Flags ===
 	bool bWasPossessed = false;
 
-	//---
+	//=== Implementable Events ===
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
 	void ResetKeyBool(float Duration, struct FBlackboardKeySelector Key, bool SetBool, APawn* TargetPawn);
 
 protected:
 	virtual void BeginPlay() override;
 
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 	void PerformDead();
 	
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	// --- AI ---
+	// === AI ===
 	UPROPERTY(EditAnywhere)
 	float RadiusToNotifyAllies = 1700.f;
 
@@ -138,7 +138,7 @@ protected:
 	TArray<TScriptInterface<ICombatTargetInterface>> GenerateSphereOverlapToDetectOtherEnemies(
 		const FVector& Origin, float Radius, AActor* HitEnemyToExclude);
 
-	// --- Combat & Damage ---
+	// === Combat & Damage ===
 	UFUNCTION()
 	void EnableFinisherWidget();
 
@@ -151,7 +151,7 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	virtual void ReactToDamage(EMeleeDamageTypes DamageType, const FVector& ImpactPoint) {};
 
-	// --- Energy & Orbs ---
+	// === Energy & Orbs ===
 	UPROPERTY(EditAnywhere, Category = "Energy | Energy Drop");
 	float MinEnergy = 1.f;
 
@@ -167,13 +167,13 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Energy | OnPossession")
 	float EnergyDivider = 2.f;
 
-	// --- Animation Montages ---
+	// === Animation Montages ===
 	UPROPERTY(EditDefaultsOnly, Category = "Montages");
 	UAnimMontage* FinisherDeathMontage;
 
 	static FName SelectRandomDieAnim();
 
-	// --- Dissolve Effect ---
+	// === Dissolve Effect ===
 	UPROPERTY(EditAnywhere, Category = "Effects | Dissolve")
 	TArray<UMaterialInstanceDynamic*> DissolveMaterials;
 
@@ -189,7 +189,7 @@ protected:
 	UFUNCTION()
 	void UpdateDissolveEffect(float Value);
 	
-	// --- HitFlash Effect ---
+	// === HitFlash Effect ===
 	void HitFlash(float Duration, float Amount);
 
 	void DeactivateHitFlash();
@@ -198,7 +198,7 @@ protected:
 	FTimerHandle HitFlashTimerHandle;
 	
 
-	// --- Enemy Properties ---
+	// === Enemy Properties ===
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "EnemyType")
 	EEnemyType EnemyType;
 
@@ -208,11 +208,11 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	bool bIsLaunched = false;
 
-	// --- Resetting & Defaults ---
+	// === Resetting & Defaults ===
 	UFUNCTION(BlueprintCallable)
 	void ResetEnemy();
 
-	// --- Initial Component States ---
+	// === Initial Component States ===
 	ECollisionEnabled::Type InitialMeshCollisionEnabled;
 	ECollisionEnabled::Type InitialCapsuleCollisionEnabled;
 	TMap<TEnumAsByte<ECollisionChannel>, ECollisionResponse> InitialMeshCollisionResponses;
@@ -233,7 +233,7 @@ protected:
 	
 	virtual void ApplyPossessionParameters(bool bShouldEnable) {};
 
-	// --- AI Controllers & Blackboard ---
+	// === AI Controllers & Blackboard ===
 	UPROPERTY(EditAnywhere)
 	UBehaviorTree* BTAsset;
 
@@ -249,7 +249,7 @@ protected:
 	UPROPERTY()
 	class UBlackboardComponent* BBComponent;
 
-	// --- Timers ---
+	// === Timers ===
 	FTimerHandle ReturnToPoolTimerHandle;
 
 	UFUNCTION(BlueprintCallable)

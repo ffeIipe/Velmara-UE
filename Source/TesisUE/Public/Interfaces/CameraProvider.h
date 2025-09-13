@@ -25,5 +25,4 @@ class TESISUE_API ICameraProvider
 public:
 	virtual UCameraComponent* GetEntityCamera() = 0;
 	virtual FVector GetCameraLocation() = 0;
-	virtual void AttachFollowCamera() = 0;
 };

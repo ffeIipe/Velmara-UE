@@ -48,7 +48,7 @@ public:
 	ECharacterModeStates SetMode(ECharacterModeStates NewForm);
 
 	UFUNCTION(BlueprintCallable, Category = "Character States | Character Action")
-	bool IsHumanStateEqualToAny(const TArray<ECharacterWeaponStates>& StatesToCheck) const;
+	bool IsWeaponStateEqualToAny(const TArray<ECharacterWeaponStates>& StatesToCheck) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Character States | Character Action")
 	bool IsActionEqualToAny(const TArray<ECharacterActionsStates>& ActionsToCheck) const;

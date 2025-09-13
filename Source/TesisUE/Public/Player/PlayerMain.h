@@ -16,7 +16,7 @@ class UMementoComponent;
 class UCombatComponent;
 class UInventoryComponent;
 class UCharacterStateComponent;
-class UPlayerFormComponent;
+class UChangeModeComponent;
 class UCameraComponent;
 class USpringArmComponent;
 class ACameraActor;
@@ -24,17 +24,12 @@ class UDamageType;
 class USoundBase;
 
 UCLASS()
-class TESISUE_API APlayerMain : public AEntity //, public IFormInterface
+class TESISUE_API APlayerMain : public AEntity
 {
 	GENERATED_BODY()
 
 public:
 	APlayerMain();
-
-	// --- Interfaces ---
-	// virtual void PerformSpectralAttack_Implementation() override;
-	// virtual void PerformSpectralBarrier_Implementation() override;
-	// virtual void ResetSpectralAttack_Implementation() override;
 	
 	virtual void GetHit(TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived) override;
 	
@@ -44,11 +39,11 @@ public:
 		AController* EventInstigator,
 		AActor* DamageCauser) override;
 	
-	virtual bool IsPossessed() override;
+	virtual bool IsPossessed() override { return true; } //true by default, because it wouldn't be marked as a threat if not
 	
 	// --- Components ---
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components | Forms")
-	UPlayerFormComponent* PlayerFormComponent;
+	UPROPERTY(BlueprintReadOnly, Category = "Components | Modes")
+	UChangeModeComponent* ChangeModeComponent;
 
 	// --- Spectral Mode - Attack ---
 	UPROPERTY(BlueprintReadWrite, Category = "Gameplay | SpectralMode | SpectralAttack")
@@ -108,15 +103,10 @@ private:
 	void Die(UAnimMontage* DeathAnim, FName Section) override;
 	void Revive();
 	void LoadLastCheckpoint() const;
-	void OutOfEnergy() override;
-
-	// --- Weapon Management ---
-	void ChangePrimaryWeapon();
-	void ChangeSecondaryWeapon();
 
 	UFUNCTION()
 	void ApplyHumanMode();
 
 	UFUNCTION()
-	void ApplySpectralEffect();
+	void ApplySpectralMode();
 };

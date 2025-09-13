@@ -2,8 +2,11 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Items/Weapons/Strategies/CombatStrategy.h"
 #include "CombatComponent.generated.h"
 
+class IStrategyProvider;
+enum class ECharacterModeStates : uint8;
 struct FInputActionValue;
 class ICharacterMovementProvider;
 class IAnimatorProvider;
@@ -24,80 +27,66 @@ class UExtraMovementComponent;
 class ASword;
 class AEntity;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAttackEnd);
-
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class TESISUE_API UCombatComponent : public UActorComponent
 {
     GENERATED_BODY()
 
 public:
-    // --- Delegates ---
+    // === Delegates ===
     DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWallHitSignature, const FHitResult&, HitResult);
+    DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAttackEnd);
+    DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLightAttack);
+    DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHeavyAttack);
+    DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSaveLightAttack);
+    DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSaveHeavyAttack);
+    
     FOnWallHitSignature OnWallHit;
     UPROPERTY(BlueprintAssignable)
-    FOnAttackEnd OnAttackEnd;
-
-    // --- Component References ---
-    UPROPERTY()
-    AController* OwnerController;
-    UPROPERTY()
-    TScriptInterface<IControllerProvider> ControllerProvider;
-    UPROPERTY()
-    TScriptInterface<IWeaponProvider> WeaponProvider;
-    UPROPERTY()
-    TScriptInterface<ICharacterStateProvider> CharacterStateProvider;
-    UPROPERTY()
-    TScriptInterface<IOwnerUtilsInterface> OwnerUtils;
-    UPROPERTY()
-    TScriptInterface<ICharacterMovementProvider> CharacterMovementProvider;
-    UPROPERTY()
-    TScriptInterface<ICombatTargetInterface> CombatTarget;
-    UPROPERTY()
-    TScriptInterface<ICameraProvider> CameraProvider;
-    UPROPERTY()
-    TScriptInterface<IAnimatorProvider> AnimatorProvider;
+    FOnAttackEnd OnResetState;
+    FOnLightAttack OnLightAttack;
+    FOnHeavyAttack OnHeavyAttack;
+    FOnSaveLightAttack OnSaveLightAttack;
+    FOnSaveHeavyAttack OnSaveHeavyAttack;
     
-    // --- Finisher Locations ---
+    // === Finisher Locations ===
     UPROPERTY(EditAnywhere, Category = "Attack | Finisher")
     USceneComponent* CameraFinisherLocation;
-    
-    // --- Public Functions ---
+
+    // === Public Functions ===
     UCombatComponent();
+
     void InitializeValues(const FCombatData& CombatData);
+
     UFUNCTION(BlueprintCallable, Category = "Attack")
     void ResetState();
-    UFUNCTION()
-    void RemoveCombatTarget() {CombatTarget = nullptr;}
+
     UFUNCTION()
     bool IsBlocking() const;
-    UFUNCTION()
-    void ReceiveBlock() const;
+
+    bool IsInAir() const;
     
-    // --- Input Functions ---
-    void Input_Attack();
-    void Input_HeavyAttack();
-    void Input_Launch();
-    void Input_Block(const FInputActionValue& Value);
-    void ChangeHardLockTarget();
-    void ToggleHardLock();
-    UFUNCTION() // ufunction bc it's called by an event that executes when you cant possess
-    void Input_Execute();
+    bool CanAttack() const;
     
-    // --- Attack Events ---
+    void PerformBlock(bool bIsTriggered, UAnimMontage* BlockMontage) const;
+
     UFUNCTION()
-    void AttackEvent();
-    UFUNCTION()
-    void HeavyAttackEvent();
-    UFUNCTION()
-    void Execute();
+    void ReceiveBlock(UAnimMontage* BlockMontage) const;
+
+    bool PerformLaunch(const TScriptInterface<ICombatTargetInterface>& TargetToCheck, float DistanceToCheck = 150.f, UAnimMontage* LaunchMontage = nullptr);
+     
+    // === Internal Utility Functions ===
+    bool CheckDistance(const TScriptInterface<ICombatTargetInterface>& TargetToCheck, float DistanceToCheck);
     
-    // --- Combat Utility Functions ---
+    
+    // === Attack Events ===
+    UFUNCTION()
+    void PerformExecute(const TScriptInterface<ICombatTargetInterface>& Target, UAnimMontage* FinisherMontage) const;
+    
+    // === Combat Utility Functions ===
     void StartLaunchingUp();
-    UFUNCTION()
-    TScriptInterface<ICombatTargetInterface> SearchCombatTarget(const FVector& Start, const FVector& End);
-    
-    // --- Buffer Distance ---
+   
+    // === Buffer Distance ===
     UFUNCTION(BlueprintCallable)
     void StartAttackBufferEvent();
     UFUNCTION(BlueprintCallable)
@@ -110,134 +99,102 @@ public:
     UFUNCTION()
     void UpdateBufferBackwards(float Alpha);
     
-    // --- Attack State Flags ---
+    // === Attack State Flags ===
     UPROPERTY(VisibleAnywhere, Category = "Attack | LightAttack")
     bool bIsSaveLightAttack;
+    UPROPERTY(VisibleAnywhere, Category = "Attack | LightAttack")
+    bool bIsSaveHeavyAttack;;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attack | JumpAttack")
     bool bIsLaunched = false;
-    UPROPERTY(BlueprintReadOnly, Category = "Attack | HardLock")
-    bool bIsHardLocking = false;
     
-    // --- Launch Character Properties ---
+    // === Launch Character Properties ===
     UPROPERTY(BlueprintReadOnly, Category = "LaunchCharacter")
     FVector CurrentLocationLaunch;
     UPROPERTY(BlueprintReadOnly, Category = "LaunchCharacter")
     FVector UpVectorLaunch;
     
-    // --- Buffer Attack ---
+    // === Buffer Attack ===
     UPROPERTY(BlueprintReadWrite, Category = "Stats")
     float BufferMultiplier = 1.f;
 
 protected:
-    // --- Lifecycle Events ---
+    // === Lifecycle Events ===
     virtual void BeginPlay() override;
-    virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
     
-    // --- Attack Logic Functions ---
-    UFUNCTION(BlueprintCallable, Category = "Attack | LightAttack")
-    void LightAttack(int AttackIndex);
-    UFUNCTION(BlueprintCallable, Category = "Attack | LightAttack")
-    void ResetLightAttackStats();
-    UFUNCTION(BlueprintCallable, Category = "Attack | JumpAttack")
-    void JumpAttack(int AttackIndex);
-    UFUNCTION(BlueprintCallable, Category = "Attack | JumpAttack")
-    void ResetJumpAttackStats();
-    UFUNCTION(BlueprintCallable, Category = "Attack | HeavyAttack")
-    void HeavyAttack(int AttackIndex);
-    UFUNCTION(BlueprintCallable, Category = "Attack | HeavyAttack")
-    void ResetHeavyAttackStats();
     UFUNCTION(BlueprintCallable, Category = "Attack | ComboAttack")
     void PerformComboStarter(int AttackIndex);
+    
     UFUNCTION(BlueprintCallable, Category = "Attack | ComboAttack")
     void PerformComboExtender(int AttackIndex);
-    UFUNCTION(BlueprintCallable, Category = "Attack | JumpAttack")
-    void LaunchCharacterUp();
-    UFUNCTION(BlueprintCallable, Category = "Attack | JumpAttack")
-    void Crasher();
     
-    // --- Targeting ---
-    UFUNCTION()
-    bool PickHardLockTarget();
-    UFUNCTION()
-    bool IsValidAndAlive(const TScriptInterface<ICombatTargetInterface>& TargetToCheck);
-    UFUNCTION()
-    TArray<TScriptInterface<ICombatTargetInterface>> GetCombatTargets(const float Radius) const;
-    UFUNCTION()
-    void RotateTowardsHardLockTarget(const TScriptInterface<ICombatTargetInterface>& HardLockTarget, float DeltaTime) const;
+    UFUNCTION(BlueprintCallable, Category = "Attack | JumpAttack")
+    void LaunchCharacterUp(TScriptInterface<ICombatTargetInterface> Target);
     
-    // --- Blocking ---
+    UFUNCTION(BlueprintCallable, Category = "Attack | JumpAttack")
+    void PerformCrasher();
+    
+    // === Blocking ===
     UFUNCTION()
-    void Block() const;
+    void Block(UAnimMontage* BlockMontage) const;
     
     UFUNCTION(BlueprintCallable, Category = "Block")
-    void ReleaseBlock() const;
+    void ReleaseBlock(UAnimMontage* BlockMontage) const;
     
-
-    // --- Soft Lock Targeting ---
-    UFUNCTION(BlueprintCallable, Category = "SoftLock")
-    void SoftLockOn();
+    // === Soft Lock Targeting ===
     UFUNCTION(BlueprintCallable, Category = "SoftLock")
     void ValidateWall();
-    UFUNCTION(BlueprintCallable, Category = "SoftLock")
-    void RotationToTarget();
-    UFUNCTION()
-    void UpdateSoftLockOn(float Alpha);
     
-    // --- Launch Character Timeline ---
+    // === Launch Character Timeline ===
     UFUNCTION()
     void UpdateLaunchCharacterUp(float Alpha);
-    
-    // --- Buffer Attack ---
+
+    // === Buffer Attack ===
     UFUNCTION()
     void UpdateAttackBuffer(float Alpha) const;
     void UpdateBuffer(float Alpha, float BufferDistance) const;
     
-    // --- Animation Montages ---
+    // === Animation Montages ===
     UPROPERTY(EditDefaultsOnly, Category = "Montages | ComboAttack")
     TArray<UAnimMontage*> ComboStarterAttack;
+    
     UPROPERTY(EditDefaultsOnly, Category = "Montages | ComboAttack")
     TArray<UAnimMontage*> ComboExtenderAttack;
-    UPROPERTY(EditAnywhere)
+    
+    /*UPROPERTY(EditAnywhere)
     UAnimMontage* BlockMontage;
+    
     UPROPERTY(EditAnywhere)
     UAnimMontage* FinisherMontage;
+    
     UPROPERTY(EditAnywhere)
     UAnimMontage* CrasherMontage;
+    
     UPROPERTY(EditAnywhere)
     UAnimMontage* LaunchMontage;
+    
     UPROPERTY(EditAnywhere)
-    UAnimMontage* HitReactMontage;
+    UAnimMontage* HitReactMontage;*/
     
 private:
-    // --- Internal State Variables ---
-    int LightAttackIndex = 0;
-    int JumpAttackIndex = 0;
-    int HeavyAttackIndex = 0;
+    // === Internal State Variables ===
     int ComboExtenderIndex = 0;
-    bool bIsSaveHeavyAttack;
-    int CombatTargetIndex = 0;
-    float HardLockRadius = 1500.f;
     UPROPERTY()
     TArray<TScriptInterface<ICombatTargetInterface>> CombatTargets;
     
-    // --- Internal Utility Functions ---
-    bool CanAttack() const;
-    bool CheckDistance(const FVector& Origin, const FVector& Target, float DistanceToCheck);
-    
-    // --- Save Attack Events ---
-    UFUNCTION(BlueprintCallable, Category = "Attack | LightAttack", meta = (AllowPrivateAccess = "true"))
+    // === Save Attack Events ===
+    UFUNCTION(BlueprintCallable)
     void SaveLightAttackEvent();
+    
     UFUNCTION(BlueprintCallable, Category = "Attack | HeavyAttack", meta = (AllowPrivateAccess = "true"))
     void SaveHeavyAttackEvent();
+    
     UFUNCTION(BlueprintCallable, Category = "Attack | SaveAttack", meta = (AllowPrivateAccess = "true"))
     void ResetAttackSave();
     
-    // --- Component References ---
+    // === Component References ===
     TScriptInterface<IWeaponInterface> GetCurrentWeapon();
     
-    // --- Timelines ---
-    UPROPERTY()
-    UTimelineComponent* SoftLockTimeline;
+    // === Timelines ===
     UPROPERTY()
     UTimelineComponent* LaunchCharacterTimeline;
     UPROPERTY()
@@ -245,19 +202,21 @@ private:
     UPROPERTY()
     UTimelineComponent* BufferBackwardsTimeline;
 
-    // --- Stats Assigned By Data Asset ---
-    float SoftLockDistance;
-    float SoftLockRadius;
-    float TrackTargetRadius;
+    // === Providers ===
+    TScriptInterface<IControllerProvider> ControllerProvider;
+    TScriptInterface<IWeaponProvider> WeaponProvider;
+    TScriptInterface<ICharacterStateProvider> CharacterStateProvider;
+    TScriptInterface<IOwnerUtilsInterface> OwnerUtils;
+    TScriptInterface<ICharacterMovementProvider> CharacterMovementProvider;
+    TScriptInterface<ICameraProvider> CameraProvider;
+    TScriptInterface<IAnimatorProvider> AnimatorProvider;
+    
+    // === Stats Assigned By Data Asset ===
     float BufferAttackDistance;
     UPROPERTY()
-    UCurveFloat* SoftLockCurve;
-    UPROPERTY()
     UCurveFloat* BufferCurve;
-    
-    //TODO: Add trough DataAsset
-    // UPROPERTY()
-    // UCurveFloat* BufferLaunchUp;
-    // UPROPERTY()
-    // UCurveFloat* BufferBackwardsCurve;
+    UPROPERTY()
+    UCurveFloat* LaunchUpCurve;
+    UPROPERTY()
+    UCurveFloat* BufferBackwardsCurve;
 };

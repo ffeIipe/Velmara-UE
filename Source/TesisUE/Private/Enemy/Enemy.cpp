@@ -16,6 +16,8 @@
 #include "Components/PossessionComponent.h"
 #include "Components/TimelineComponent.h"
 #include "DamageTypes/MeleeDamage.h"
+#include "DataAssets/InputData.h"
+#include "DataAssets/MontagesData.h"
 #include "Engine/DamageEvents.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/DamageType.h"
@@ -87,7 +89,7 @@ AEnemy::AEnemy()
 	GetPossessionComponent()->OnPossessorEjected.AddDynamic(this, &AEnemy::OnUnpossessed);
 	GetPossessionComponent()->OnPossessorExecutedMeAndEjected.AddDynamic(this, &AEnemy::GetExecuted);
 
-	GetCombatComponent()->OnAttackEnd.AddDynamic(this, &AEnemy::ReturnAttackTokenToTarget);
+	GetCombatComponent()->OnResetState.AddDynamic(this, &AEnemy::ReturnAttackTokenToTarget);
 
 	GetAttributeComponent()->OnEntityDead.AddDynamic(this, &AEnemy::PerformDead);
 	GetAttributeComponent()->OnDettachShield.AddDynamic(this, &AEnemy::NotifyIsNotShieldedToBlackboard);
@@ -120,11 +122,8 @@ void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 	{
 		GetAttributeComponent()->ResetAttributes();
 	}
-
-	if (GetCharacterStateComponent())
-	{
-		GetCharacterStateComponent()->SetAction(ECharacterActionsStates::ECAS_Nothing);
-	}
+	
+	SetAction(ECharacterActionsStates::ECAS_Nothing);
 
 	bUseControllerRotationYaw = bOriginalUseControllerRotationYaw;
 
@@ -282,12 +281,9 @@ void AEnemy::BeginPlay()
 	PlayerControllerRef = Cast<APlayerHeroController>(UGameplayStatics::GetPlayerController(this, 0));
 
 	HandleEnemyCollision(true);
-
-	if (GetCharacterStateComponent())
-	{
-		GetCharacterStateComponent()->SetHumanState(ECharacterWeaponStates::ECWS_EquippedWeapon);
-	}
-
+	
+	SetWeaponState(ECharacterWeaponStates::ECWS_EquippedWeapon);
+	
 	if (DissolveCurve)
 	{
 		FOnTimelineFloat ProgressFunction;
@@ -349,7 +345,7 @@ void AEnemy::BeginPlay()
 
 void AEnemy::PerformDead()
 {
-	Die(DeathMontage, SelectRandomDieAnim());
+	Die(MontagesData->Montages.DeathMontage, SelectRandomDieAnim());
 }
 
 void AEnemy::ReturnAttackTokenToTarget()
@@ -384,8 +380,8 @@ void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		EnhancedInputComponent->BindAction(InputAction_Possess, ETriggerEvent::Started, GetPossessionComponent(), &UPossessionComponent::EjectPossessor);
-		EnhancedInputComponent->BindAction(InputAction_SwitchForm, ETriggerEvent::Started, GetPossessionComponent(), &UPossessionComponent::EjectAndExecute);
+		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_Possess, ETriggerEvent::Started, GetPossessionComponent(), &UPossessionComponent::EjectPossessor);
+		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_SwitchForm, ETriggerEvent::Started, GetPossessionComponent(), &UPossessionComponent::EjectAndExecute);
 	}
 }
 
@@ -492,15 +488,14 @@ void AEnemy::DropOrbs(const float DamageReceived, const TScriptInterface<ICombat
 	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Drops orbs called");
 	const float Percentage = DamageReceived / EnergyDivider;
 	const int32 Orbs = FMath::RoundToInt(Percentage) / 5;
-	{
-		DamageCauser->IncreaseEnergy(Percentage);
+	
+	DamageCauser->IncreaseEnergy(Percentage);
 
-		if (OnDamaged.IsBound())
+	if (OnDamaged.IsBound())
+	{
+		for (int32 i = 0; i < Orbs; i++)
 		{
-			for (int32 i = 0; i < Orbs; i++)
-			{
-				OnDamaged.Broadcast();
-			}
+			OnDamaged.Broadcast();
 		}
 	}
 }
@@ -517,7 +512,7 @@ void AEnemy::FinishedDamage()
 			EffectsManager->CameraZoom(ECameraZoomPreset::ECZP_Finisher);
 		}
 		
-		GetCharacterStateComponent()->SetAction(ECharacterActionsStates::ECAS_Dead);
+		SetAction(ECharacterActionsStates::ECAS_Dead);
 		Die(nullptr, NAME_None);
 
 		if (PromptWidgetComponent && PromptWidgetComponent->GetWidget()) PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
@@ -578,8 +573,7 @@ void AEnemy::HandleEnemyCollision(bool bEnable)
 
 void AEnemy::GetExecuted()
 {
-	
-	Die(DeathMontage, FName("UnpossessDeath"));
+	Die(MontagesData->Montages.DeathMontage, FName("UnpossessDeath"));
 	DropOrbs(30.f, GetPossessionComponent()->GetPossessor());
 }	
 
@@ -641,7 +635,7 @@ void AEnemy::EnableAI()
 
 	if (!EnemyAIController) EnemyAIController = Cast<AEnemyAIController>(AIController);
 
-	if (!GetPossessionComponent()->IsPossessed())
+	if (!IsPossessed())
 	{
 		AIController->UnPossess();
 		AIController->Possess(this);

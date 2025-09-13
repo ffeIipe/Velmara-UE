@@ -23,5 +23,5 @@ class TESISUE_API IWeaponProvider
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-	virtual TScriptInterface<IWeaponInterface> GetWeaponEquipped() = 0;
+	virtual TScriptInterface<IWeaponInterface> GetCurrentWeapon() = 0;
 };

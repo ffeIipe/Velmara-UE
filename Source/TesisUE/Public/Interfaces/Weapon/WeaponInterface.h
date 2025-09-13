@@ -3,9 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Components/CombatComponent.h"
 #include "UObject/Interface.h"
 #include "WeaponInterface.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnWeaponUsed);
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
 class UWeaponInterface : public UInterface
@@ -22,13 +24,14 @@ class TESISUE_API IWeaponInterface
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-	virtual void UsePrimaryAttack() = 0;
-	virtual void UseSecondaryAttack() = 0;
-	/*virtual void Pick(AActor* NewOwner) = 0;*/
-	virtual void EnableVisuals(bool Enable) = 0;
+	FOnWeaponUsed OnWeaponUsed;
+	
+	virtual void UsePrimaryAttack(bool bIsInAir) = 0;
+	virtual void UseSecondaryAttack(bool bIsInAir) = 0;
 
-	UFUNCTION(BlueprintNativeEvent)
-	void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
+	virtual void EnableVisuals(bool Enable) = 0;
+	
+	virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled) = 0;
 	virtual void ClearIgnoreActors() = 0;
 	virtual FName& GetUniqueSaveID() = 0;
 };

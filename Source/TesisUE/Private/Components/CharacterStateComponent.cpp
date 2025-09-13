@@ -29,7 +29,7 @@ ECharacterModeStates UCharacterStateComponent::SetMode(ECharacterModeStates NewF
 	return CurrentStates.Mode;
 }
 
-bool UCharacterStateComponent::IsHumanStateEqualToAny(const TArray<ECharacterWeaponStates>& StatesToCheck) const
+bool UCharacterStateComponent::IsWeaponStateEqualToAny(const TArray<ECharacterWeaponStates>& StatesToCheck) const
 {
 	return StatesToCheck.Contains(CurrentStates.WeaponState);
 }

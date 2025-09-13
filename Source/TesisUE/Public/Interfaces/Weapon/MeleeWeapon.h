@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Components/CombatComponent.h"
 #include "UObject/Interface.h"
 #include "MeleeWeapon.generated.h"
 
@@ -22,12 +23,5 @@ class TESISUE_API IMeleeWeapon
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-	virtual void PerformLightAttack(int32 ComboIndex) = 0;
-	virtual int32 GetLightAttackComboMaxIndex() = 0;
-	
-	virtual void PerformHeavyAttack(int32 ComboIndex) = 0;
-	virtual int32 GetHeavyAttackComboMaxIndex() = 0;
-	
-	virtual void PerformJumpAttack(int32 ComboIndex) = 0;
-	virtual int32 GetJumpAttackComboMaxIndex() = 0;
+	/*virtual void PerformAttack(TWeakObjectPtr<UCombatComponent> CombComp) = 0;*/
 };

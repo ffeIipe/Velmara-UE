@@ -25,7 +25,7 @@ public:
     int32 EquippedSlotIndex = -1;
 
     UPROPERTY(VisibleAnywhere, Category = "Inventory", Transient)
-    TScriptInterface<IWeaponInterface> CurrentEquippedWeapon;
+    TScriptInterface<IWeaponInterface> CurrentWeapon;
 
     void InitializeValues(const FInventoryData& InventoryData);
 protected:
@@ -47,7 +47,7 @@ public:
     TArray<TScriptInterface<IWeaponInterface>> InventorySlots;
 
     UFUNCTION(BlueprintPure, Category = "Inventory")
-    TScriptInterface<IWeaponInterface> GetWeaponEquipped() const { return CurrentEquippedWeapon; }
+    TScriptInterface<IWeaponInterface> GetCurrentWeapon() const { return CurrentWeapon; }
 
     UFUNCTION(BlueprintCallable, Category = "Inventory")
     bool TryAddWeapon(TScriptInterface<IWeaponInterface> WeaponToAdd);
@@ -78,8 +78,8 @@ public:
     void UnequipCurrentWeapon();
     
     void UpdateInventoryUI();
-    
-    void Interact();
+
+    TScriptInterface<IWeaponInterface> PerformInteract();
 
 private:
     void InitializeInventoryWidget();
@@ -88,7 +88,7 @@ private:
     // FName HandSocketName = FName("RightHandSocket");
     
     // --- Stats Assigned By Data Asset ---
-    int32 MaxSlots = 2;
+    int32 MaxSlots;
     float InteractTraceLenght;
     float InteractTargetRadius;
     

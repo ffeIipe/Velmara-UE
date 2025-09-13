@@ -19,7 +19,6 @@
 UInventoryComponent::UInventoryComponent()
 {
     PrimaryComponentTick.bCanEverTick = false;
-    InventorySlots.Init(nullptr, MaxSlots);
 }
 
 void UInventoryComponent::BeginPlay()
@@ -40,6 +39,8 @@ void UInventoryComponent::InitializeValues(const FInventoryData& InventoryData)
     MaxSlots = InventoryData.MaxSlots;
     InteractTraceLenght = InventoryData.InteractTraceLenght;
     InteractTargetRadius = InventoryData.InteractTargetRadius;
+
+    InventorySlots.Init(nullptr, MaxSlots);
 }
 
 void UInventoryComponent::ChangeWeapon(const int32 SlotIndex)
@@ -99,18 +100,18 @@ void UInventoryComponent::EquipWeaponFromSlot(const int32 SlotIndex)
 
     if (InventorySlots[SlotIndex] != nullptr)
     {
-        if (CurrentEquippedWeapon)
+        if (CurrentWeapon)
         {
-            CurrentEquippedWeapon->EnableVisuals(false);
+            CurrentWeapon->EnableVisuals(false);
         }
     }
 
     if (const TScriptInterface<IPickable> Pickable = InventorySlots[SlotIndex].GetObject()) Pickable->Pick(GetOwner());
     
-    CurrentEquippedWeapon = InventorySlots[SlotIndex];
+    CurrentWeapon = InventorySlots[SlotIndex];
     EquippedSlotIndex = SlotIndex;
 
-    CurrentEquippedWeapon->EnableVisuals(true);
+    CurrentWeapon->EnableVisuals(true);
 
     AnimatorProvider->ChangeWeaponAnimationState();
     UpdateInventoryUI();
@@ -123,9 +124,9 @@ void UInventoryComponent::DropWeaponFromSlot(const int32 SlotIndex)
         return;
     }
 
-    InventorySlots[SlotIndex] = CurrentEquippedWeapon;
+    InventorySlots[SlotIndex] = CurrentWeapon;
     
-    if (CurrentEquippedWeapon)
+    if (CurrentWeapon)
     {
         UnequipCurrentWeapon();
     }
@@ -150,10 +151,10 @@ void UInventoryComponent::DropWeaponFromSlot(const int32 SlotIndex)
 
 void UInventoryComponent::UnequipCurrentWeapon()
 {
-    if (CurrentEquippedWeapon)
+    if (CurrentWeapon)
     {
-        CurrentEquippedWeapon->EnableVisuals(false);
-        CurrentEquippedWeapon = nullptr;
+        CurrentWeapon->EnableVisuals(false);
+        CurrentWeapon = nullptr;
         EquippedSlotIndex = -1;
     }
     else
@@ -214,9 +215,9 @@ void UInventoryComponent::UpdateInventoryUI()
     }
 }
 
-void UInventoryComponent::Interact()
+TScriptInterface<IWeaponInterface> UInventoryComponent::PerformInteract()
 {
-    if (IsInventoryOpen()) return;
+    if (IsInventoryOpen()) return nullptr;
     
     FVector TraceStart;
     FRotator CameraRotation;
@@ -250,14 +251,10 @@ void UInventoryComponent::Interact()
                 if (const TScriptInterface<IWeaponInterface> WeaponReached = Pickable.GetObject(); TryAddWeapon(WeaponReached))
                 {
                     ActorsToIgnore.Add(Cast<AActor>(WeaponReached.GetObject()));
-                    if (GEngine)
-                    {
-                        GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Emerald, FString(ResultHit.GetActor()->GetName()));
-                        GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Emerald, FString(ResultHit.GetComponent()->GetName()));
-                    }
-                    //HitSword->OnWallHit.AddDynamic(this, &AEntity::OnWallCollision);
+                    return WeaponReached;
                 }
             }
         }
     }
+    return nullptr;
 }

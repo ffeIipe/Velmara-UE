@@ -30,7 +30,7 @@ public:
 	virtual ECharacterWeaponStates SetWeaponState(ECharacterWeaponStates NewState) = 0;
 	virtual ECharacterActionsStates SetAction(ECharacterActionsStates NewAction) = 0;
 	virtual ECharacterModeStates SetMode(ECharacterModeStates NewForm) = 0;
-	virtual bool IsWeaponStateEqualToAny(const TArray<ECharacterWeaponStates>& StatesToCheck) const = 0;
-	virtual bool IsActionStateEqualToAny(const TArray<ECharacterActionsStates>& ActionsToCheck) const = 0;
-	virtual bool IsModeStateEqualToAny(const TArray<ECharacterModeStates>& FormsToCheck) const = 0;
+	virtual bool IsWeaponStateEqualToAny(const TArray<ECharacterWeaponStates>& StatesToCheck) = 0;
+	virtual bool IsActionStateEqualToAny(const TArray<ECharacterActionsStates>& ActionsToCheck) = 0;
+	virtual bool IsModeStateEqualToAny(const TArray<ECharacterModeStates>& FormsToCheck) = 0;
 };

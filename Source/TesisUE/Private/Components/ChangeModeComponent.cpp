@@ -1,4 +1,4 @@
-#include "Components/PlayerFormComponent.h"
+#include "Components/ChangeModeComponent.h"
 #include "GameFramework/Actor.h"
 #include "Engine/World.h"
 #include "Kismet/GameplayStatics.h"
@@ -6,12 +6,12 @@
 #include "Materials/MaterialParameterCollectionInstance.h"
 #include "Materials/MaterialParameterCollection.h"
 #include "Entities/Entity.h"
-#include <Player/PlayerHeroController.h>
 
+#include "Interfaces/Weapon/WeaponInterface.h"
 #include "Subsystems/SpectralObjectsSubsystem.h"
 
 
-UPlayerFormComponent::UPlayerFormComponent()
+UChangeModeComponent::UChangeModeComponent()
 {
     PrimaryComponentTick.bCanEverTick = false;
 
@@ -24,7 +24,7 @@ UPlayerFormComponent::UPlayerFormComponent()
     }
 }
 
-void UPlayerFormComponent::BeginPlay()
+void UChangeModeComponent::BeginPlay()
 {
     Super::BeginPlay();
 
@@ -40,7 +40,7 @@ void UPlayerFormComponent::BeginPlay()
     }
 }
 
-void UPlayerFormComponent::ToggleForm()
+void UChangeModeComponent::ToggleForm()
 {
     const float CurrentTime = GetWorld()->GetTimeSeconds();
     if (CurrentTime - LastTransformationTime < TransformationCooldown) return;
@@ -57,13 +57,8 @@ void UPlayerFormComponent::ToggleForm()
     LastTransformationTime = CurrentTime;
 }
 
-void UPlayerFormComponent::ApplySpectralEffects()
+void UChangeModeComponent::ApplySpectralEffects()
 {
-    if (APlayerHeroController* PlayerController = Cast<APlayerHeroController>(UGameplayStatics::GetPlayerController(GetWorld(), 0)))
-    {
-        /*if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, FString("PlayerController: Set Generic Team ID to 0"));*/
-        PlayerController->SetGenericTeamId(FGenericTeamId(0));
-    }
     SpectralEffectTimeline->PlayFromStart();
     UGameplayStatics::PlaySound2D(GetWorld(), EnableSpectralModeSFX);
 
@@ -76,16 +71,18 @@ void UPlayerFormComponent::ApplySpectralEffects()
     {
         SpectralObjectsSubsystem->ActivateSpectralObjects();
     }
+
+    if (const TScriptInterface<IWeaponProvider> WeaponProvider = GetOwner())
+    {
+        if (WeaponProvider && WeaponProvider->GetCurrentWeapon())
+        {
+            WeaponProvider->GetCurrentWeapon()->EnableVisuals(false);
+        }
+    }
 }
 
-void UPlayerFormComponent::ApplyHumanEffects()
+void UChangeModeComponent::ApplyHumanEffects()
 {
-    if (APlayerHeroController* PlayerController = Cast<APlayerHeroController>(UGameplayStatics::GetPlayerController(GetWorld(), 0)))
-    {
-		/*if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, FString("PlayerController: Set Generic Team ID to 2"));*/
-        PlayerController->SetGenericTeamId(FGenericTeamId(2));
-    }
-    
     SpectralEffectTimeline->Reverse();
     UGameplayStatics::PlaySound2D(GetWorld(), DisableSpectralModeSFX);
     
@@ -98,9 +95,17 @@ void UPlayerFormComponent::ApplyHumanEffects()
     {
         SpectralObjectsSubsystem->DeactivateSpectralObjects();
     }
+
+    if (const TScriptInterface<IWeaponProvider> WeaponProvider = GetOwner())
+    {
+        if (WeaponProvider && WeaponProvider->GetCurrentWeapon())
+        {
+            WeaponProvider->GetCurrentWeapon()->EnableVisuals(true);
+        }
+    }
 }
 
-void UPlayerFormComponent::UpdateSpectralEffect(float Value)
+void UChangeModeComponent::UpdateSpectralEffect(float Value)
 {
     if (BloodSenseMaterialCollection)
     {

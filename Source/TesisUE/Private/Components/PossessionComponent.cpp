@@ -16,8 +16,6 @@ UPossessionComponent::UPossessionComponent(): OwnerUtils(nullptr), PlayerControl
 
 void UPossessionComponent::InitializeValues(const FPossessionData& PossessionData)
 {
-    PossessDistance = PossessionData.PossessDistance;
-    PossessRadius = PossessionData.PossessRadius;
     ReleaseAndExecuteEnergyTax = PossessionData.ReleaseAndExecuteEnergyTax;
 }
 
@@ -28,7 +26,6 @@ void UPossessionComponent::BeginPlay()
     OwnerUtils = GetOwner();
     CharacterStateProvider = GetOwner();
     AttributeProvider = GetOwner();
-    CameraProvider = GetOwner();
     AnimatorProvider = GetOwner();
     WeaponProvider = GetOwner();
     
@@ -37,13 +34,12 @@ void UPossessionComponent::BeginPlay()
     PlayerController = UGameplayStatics::GetPlayerController(this, 0);
 }
 
-void UPossessionComponent::AttemptPossession()
+void UPossessionComponent::AttemptPossession(AEntity* Victim)
 {
     if (IsPossessing() || CharacterStateProvider->IsModeStateEqualToAny({ECharacterModeStates::ECMS_Spectral}))
     {
         if (AttributeProvider->RequiresEnergy(10.f))
         {
-            AEntity* Victim = FindPossessionVictim();
             if (!Victim) return;
 
             Victim->GetPossessionComponent()->OnPossessionReceived(Cast<AEntity>(OwnerUtils.GetObject()));
@@ -53,9 +49,6 @@ void UPossessionComponent::AttemptPossession()
 
             CurrentlyPossessedEntity = Victim;
             CharacterStateProvider->SetMode(ECharacterModeStates::ECMS_Possessing);
-
-            const TScriptInterface<ICameraProvider> VictimCameraProvider = Victim;
-            VictimCameraProvider->AttachFollowCamera();
             
             GetOwner()->SetActorHiddenInGame(true);
             GetOwner()->SetActorEnableCollision(false);
@@ -63,9 +56,9 @@ void UPossessionComponent::AttemptPossession()
 
             if (WeaponProvider)
             {
-                if (WeaponProvider->GetWeaponEquipped())
+                if (WeaponProvider->GetCurrentWeapon())
                 {
-                    WeaponProvider->GetWeaponEquipped()->EnableVisuals(false);
+                    WeaponProvider->GetCurrentWeapon()->EnableVisuals(false);
                 }
             }
 
@@ -87,7 +80,6 @@ void UPossessionComponent::ReleasePossession()
 
     const FVector ReleaseLocation = CurrentlyPossessedEntity->GetTargetActorLocation() + CurrentlyPossessedEntity->GetActorForwardVector() * 100.f;
     
-    //CameraProvider->AttachFollowCamera(PossessedByEntity);
     GetOwner()->SetActorLocationAndRotation(ReleaseLocation, CurrentlyPossessedEntity->GetActorRotation(), true);
     GetOwner()->SetActorHiddenInGame(false);
     GetOwner()->SetActorEnableCollision(true);
@@ -96,9 +88,9 @@ void UPossessionComponent::ReleasePossession()
 
     if (WeaponProvider)
     {
-        if (WeaponProvider->GetWeaponEquipped())
+        if (WeaponProvider->GetCurrentWeapon())
         {
-            WeaponProvider->GetWeaponEquipped()->EnableVisuals(false);
+            WeaponProvider->GetCurrentWeapon()->EnableVisuals(true);
         }
     }
 
@@ -133,8 +125,6 @@ void UPossessionComponent::OnPossessionReceived(AEntity* NewPossessor)
 
 void UPossessionComponent::ReleasingPossession()
 {
-    const TScriptInterface<ICameraProvider> PossessedByEntityCameraProvider = PossessedByEntity;
-    PossessedByEntityCameraProvider->AttachFollowCamera();
     PossessedByEntity = nullptr;
 
     if (OnPossessorEjected.IsBound()) OnPossessorEjected.Broadcast();
@@ -157,7 +147,15 @@ void UPossessionComponent::EjectAndExecute()
     }
 }
 
-AEntity* UPossessionComponent::FindPossessionVictim() const
+void UPossessionComponent::TryReleasePossession()
+{
+    if (GetPossessedEntity())
+    {
+        ReleasePossession();
+    }
+}
+
+AEntity* UPossessionComponent::FindPossessionVictim(const float PossessDistance, const float PossessRadius) const
 {
     if (!PlayerController) return nullptr;
 
@@ -180,7 +178,7 @@ AEntity* UPossessionComponent::FindPossessionVictim() const
         TraceTypeQuery4,
         false,
         ActorsToIgnore,
-        EDrawDebugTrace::None,
+        EDrawDebugTrace::ForDuration,
         HitResult,
         true
     );
