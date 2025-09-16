@@ -8,7 +8,6 @@
 void USpectralStrategy::Strategy_UseFirstAttack(const bool bIsInAir, const TScriptInterface<IWeaponInterface> CurrentWeapon)
 {
 	Super::Strategy_UseFirstAttack(bIsInAir, CurrentWeapon);
-
 	
 }
 
@@ -28,5 +27,4 @@ void USpectralStrategy::Strategy_UseAbility(AActor* Actor)
 		PossessionComponent->FindPossessionVictim(StrategyProperties.MaxAbilityDistance,
 												  StrategyProperties.MaxAbilityRadius));
 	}
-	
 }

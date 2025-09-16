@@ -252,7 +252,7 @@ void UCombatComponent::ReceiveBlock(UAnimMontage* BlockMontage) const
 	AnimatorProvider->StopAnimMontage(BlockMontage);
 	AnimatorProvider->PlayAnimMontage(BlockMontage, 1.f, FName("BlockReact"));
 	CharacterStateProvider->SetAction(ECharacterActionsStates::ECAS_Stun);
-
+	
 	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "TODO: Change the stun time.");
 	
 	if (UEffectsManager* EffectsManager = GetWorld()->GetSubsystem<UEffectsManager>())

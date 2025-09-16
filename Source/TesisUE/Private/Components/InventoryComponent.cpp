@@ -97,15 +97,12 @@ void UInventoryComponent::EquipWeaponFromSlot(const int32 SlotIndex)
     if (!InventorySlots.IsValidIndex(SlotIndex) || InventorySlots[SlotIndex] == nullptr) return;
     
     //UnequipCurrentWeapon();
-
-    if (InventorySlots[SlotIndex] != nullptr)
+    
+    if (CurrentWeapon)
     {
-        if (CurrentWeapon)
-        {
-            CurrentWeapon->EnableVisuals(false);
-        }
+        CurrentWeapon->EnableVisuals(false);
     }
-
+    
     if (const TScriptInterface<IPickable> Pickable = InventorySlots[SlotIndex].GetObject()) Pickable->Pick(GetOwner());
     
     CurrentWeapon = InventorySlots[SlotIndex];

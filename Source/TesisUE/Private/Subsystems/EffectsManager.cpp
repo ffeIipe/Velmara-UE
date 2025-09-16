@@ -109,7 +109,7 @@ void UEffectsManager::CameraShake(const ECameraShakePreset CameraShakePreset, co
 	}
 	else
 	{
-		CameraShakeSettings = Data->CameraShakes[ECameraShakePreset::ECSP_Default];
+		CameraShakeSettings = Data->CameraShakes[ECameraShakePreset::ECSP_None];
 	}
 
 	UGameplayStatics::PlayWorldCameraShake(this, CameraShakeSettings.ShakeClass, Epicenter, CameraShakeSettings.InnerRadius, CameraShakeSettings.OuterRadius);
@@ -126,7 +126,7 @@ void UEffectsManager::HitStop(const EHitStopPreset HitStopPreset)
 	}
 	else
 	{
-		HitStopSettings = Data->HitStops[EHitStopPreset::EHSP_Default];
+		HitStopSettings = Data->HitStops[EHitStopPreset::EHSP_None];
 	}
 	
 	HitStopEffectParams.StartHitStop(HitStopSettings.Duration, HitStopSettings.Curve);
@@ -144,7 +144,7 @@ void UEffectsManager::TimeWarp(const ETimeWarpPreset TimeWarpPreset)
 	}
 	else
 	{
-		TimeWarpSettings = Data->TimeWarps[ETimeWarpPreset::ETWP_Default];
+		TimeWarpSettings = Data->TimeWarps[ETimeWarpPreset::ETWP_None];
 	}
 	
 	TimeWarpEffectParams.StartWarp(TimeWarpSettings.Curve, TimeWarpSettings.Duration);
@@ -162,7 +162,7 @@ void UEffectsManager::CameraZoom(const ECameraZoomPreset CameraZoomPreset)
 	}
 	else
 	{
-		CameraZoomSettings = Data->CameraZooms[ECameraZoomPreset::ECZP_Default];
+		CameraZoomSettings = Data->CameraZooms[ECameraZoomPreset::ECZP_None];
 	}
 	
     ZoomEffectParams.StartZoom(CameraZoomSettings.Curve, CameraZoomSettings.Duration, CameraComponent->FieldOfView);

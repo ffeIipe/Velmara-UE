@@ -36,6 +36,18 @@ struct FStrategyProperties
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float MaxAbilityRadius = 50.f;
+	/*
+	UPROPERTY(EditDefaultsOnly, Category = "Energy | OnPossession")
+	float PossessionAttackCost;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Energy | OnPossession")
+	float PossessionHeavyAttackCost;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Energy | OnPossession")
+	float PossessionDamage;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Movement | OnPossession")
+	float PossessionMaxWalkSpeed = 700.f;*/
 };
 
 USTRUCT(BlueprintType)

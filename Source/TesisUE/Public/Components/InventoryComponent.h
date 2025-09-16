@@ -43,7 +43,7 @@ protected:
     bool bIsInventoryOpen = false;
 
 public:
-    UPROPERTY(EditAnywhere, Category = "Inventory", Transient) //transient if it isn't needed to be saved 
+    UPROPERTY(EditAnywhere, Category = "Inventory") //transient if it isn't needed to be saved 
     TArray<TScriptInterface<IWeaponInterface>> InventorySlots;
 
     UFUNCTION(BlueprintPure, Category = "Inventory")

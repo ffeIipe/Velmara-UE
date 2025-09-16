@@ -24,8 +24,6 @@ void ATrigger::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AA
 {
 	if (APlayerMain* PlayerTemp = Cast<APlayerMain>(OtherActor))
 	{
-		/*if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, FString("Player Begin Overlap"));*/
-
 		Player = PlayerTemp;
 
 		if (OnPlayerBeginOverlap.IsBound())
@@ -35,18 +33,13 @@ void ATrigger::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AA
 	}
 	else if (AEnemy* EnemyTemp = Cast<AEnemy>(OtherActor))
 	{
-		/*if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::White, FString("Enemy Begin Overlap"));*/
-
 		if (EnemyTemp->GetPossessionComponent()->GetPossessedEntity() != nullptr)
 		{
-			/*if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Emerald, FString("Enemy has a Possession Owner valid..."));*/
-
 			if (OnPlayerBeginOverlap.IsBound())
 			{
 				OnPlayerBeginOverlap.Broadcast();
 			}
 		}
-		/*else if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Emerald, FString("Invalid Possession Owner..."));*/
 	}
 }
 
@@ -59,26 +52,22 @@ void ATrigger::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AAct
 
     if (IsValid(Player) && Player == LeavingPlayer)
     {
-		/*if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Player End Overlap"));*/
-
 		if (OnPlayerEndOverlap.IsBound())
 		{
 			OnPlayerEndOverlap.Broadcast();
 		}
 
-        Player->SetOverlappingItem(nullptr);
+        //Player->SetOverlappingItem(nullptr);
         Player = nullptr;
     }
     else if (LeavingPlayer)
     {
-		/*if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Player End Overlap"));*/
-
 		if (OnPlayerEndOverlap.IsBound())
 		{
 			OnPlayerEndOverlap.Broadcast();
 		}
 
-        LeavingPlayer->SetOverlappingItem(nullptr);
+        //LeavingPlayer->SetOverlappingItem(nullptr);
 		Player = nullptr;
     }
 }

@@ -45,24 +45,8 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Components | Modes")
 	UChangeModeComponent* ChangeModeComponent;
 
-	// --- Spectral Mode - Attack ---
-	UPROPERTY(BlueprintReadWrite, Category = "Gameplay | SpectralMode | SpectralAttack")
-	int SpectralAttackIndex = 0;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Animation | Montages | SpectralMode | SpectralAttack")
-	TArray<UAnimMontage*> SpectralAttackCombo;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Animation | Montages | SpectralMode | SpectralAttack")
-	UAnimMontage* SpectralHeavyAttack;
-
 	UPROPERTY(EditAnywhere, Category = "Gameplay | SpectralMode | SpectralAttack | Targeting")
 	AEnemy* SpectralTarget;
-
-	UPROPERTY(EditAnywhere, Category = "Gameplay | SpectralMode | SpectralAttack | Targeting")
-	float TrackTargetDistance;
-
-	UPROPERTY(EditAnywhere, Category = "Gameplay | SpectralMode | SpectralAttack | Targeting")
-	float TrackTargetRadius;
 
 	UFUNCTION(BlueprintPure, Category = "Gameplay | SpectralMode | SpectralAttack")
 	FORCEINLINE AEnemy* GetSpectralTarget() const { return SpectralTarget; }
@@ -70,10 +54,6 @@ public:
 	// --- State & Interaction ---
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "State | Damage")
 	bool bCanReceiveDamage = true;
-
-	FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }
-
-	// void Equipping(bool bIsSwordBeingEquipped);
 
 	// --- Camera ---
 	UFUNCTION(BlueprintCallable, Category = "Camera")
@@ -89,16 +69,9 @@ protected:
 	UFUNCTION()
 	void PerformDead();
 
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
 private:
-	// --- Movement & Default Parameters ---
-	float DefaultMaxWalkSpeed = 700.f;
-
-	// --- Interaction ---
-	UPROPERTY(VisibleInstanceOnly, Category = "Runtime | Interact")
-	AItem* OverlappingItem;
-
 	// --- Life Cycle ---
 	void Die(UAnimMontage* DeathAnim, FName Section) override;
 	void Revive();

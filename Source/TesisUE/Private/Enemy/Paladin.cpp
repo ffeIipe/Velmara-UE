@@ -1,57 +1,35 @@
 #include "Enemy/Paladin.h"
 #include "Player/PlayerMain.h"
 
-#include "Engine/DamageEvents.h"
 #include "GameFramework/DamageType.h"
 #include "DamageTypes/MeleeDamage.h"
 
 #include "GameFramework/CharacterMovementComponent.h"
-#include "Components/BoxComponent.h"
 #include "Components/AttributeComponent.h"
 #include "Components/CharacterStateComponent.h"
-#include "Components/PossessionComponent.h"
 #include "Components/CapsuleComponent.h"
 
 #include "Kismet/GameplayStatics.h"
-#include "Kismet/KismetSystemLibrary.h"
-
-#include "Interfaces/HitInterface.h"
 
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIController.h"
 #include <Kismet/KismetMathLibrary.h>
+
+#include "DataAssets/EntityData.h"
+#include "Interfaces/Weapon/WeaponInterface.h"
 
 #include "DataAssets/MontagesData.h"
 
 
 APaladin::APaladin()
 {
+	WeaponToEquip = CreateDefaultSubobject<UChildActorComponent>(TEXT("Weapon"));
+	WeaponToEquip->SetupAttachment(GetMesh());
+	
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_GameTraceChannel2, ECR_Ignore);
 	GetMesh()->SetCollisionResponseToChannel(ECC_GameTraceChannel2, ECR_Ignore);
-
+	
 	GetAttributeComponent()->AttachShield(GetMesh(), FName("LeftHandSocket"));
-
-	DefaultDamage = Damage;
-	DefaultMaxWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
-
-	SwordMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SwordMesh"));
-	SwordMesh->SetupAttachment(GetMesh(), TEXT("RightHandSocket"));
-	SwordMesh->CanCharacterStepUpOn = ECB_No;
-	SwordMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-
-	SwordCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("SwordBoxCollider"));
-	SwordCollider->SetupAttachment(SwordMesh);
-	SwordCollider->CanCharacterStepUpOn = ECB_No;
-	SwordCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	SwordCollider->SetCollisionResponseToChannel(ECC_Camera, ECR_Overlap);
-
-	BoxTraceStart = CreateDefaultSubobject<USceneComponent>(TEXT("Box Trace Start"));
-	BoxTraceStart->SetupAttachment(SwordMesh);
-
-	BoxTraceEnd = CreateDefaultSubobject<USceneComponent>(TEXT("Box Trace End"));
-	BoxTraceEnd->SetupAttachment(SwordMesh);
-
-	SwordCollider->OnComponentBeginOverlap.AddDynamic(this, &APaladin::OnSwordOverlap);
 
 	OnShieldTakeDamage.AddDynamic(this, &APaladin::ShieldHit);
 }
@@ -70,6 +48,39 @@ void APaladin::BeginPlay()
 		{
 			AIController = Cast<AAIController>(GetController());
 			BBComponent = Cast<UBlackboardComponent>(AIController->GetBlackboardComponent());
+		}
+	}
+
+	if (!WeaponToEquip->GetChildActor())
+	{
+		WeaponToEquip->CreateChildActor();
+	}
+	
+	TArray<AActor*> AttachedActors;
+	GetAttachedActors(AttachedActors);
+	
+	for (AActor* AttachedActor : AttachedActors)
+	{
+		if (const TScriptInterface<IWeaponInterface> WeaponInterface = AttachedActor)
+		{
+			GetInventoryComponent()->TryAddWeapon(WeaponInterface);
+		}
+		else if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Not valid weapon attached to actor.");
+		}
+	}
+}
+
+void APaladin::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
+
+	if (EntityData)
+	{
+		if (EntityData->InitialWeapon)
+		{
+			WeaponToEquip->SetChildActorClass(EntityData->InitialWeapon);
 		}
 	}
 }
@@ -118,85 +129,6 @@ void APaladin::Die(UAnimMontage* DeathAnim, const FName Section)
 	NotifyDamageTakenToBlackboard(LastDamageCauser);
 }
 
-void APaladin::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled)
-{
-	GetAttributeComponent()->DecreaseEnergyBy(PossessionAttackCost);
-
-	if (SwordCollider)
-	{
-		SwordCollider->SetCollisionEnabled(CollisionEnabled);
-		IgnoreActors.Empty();
-	}
-}
-
-void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	const FVector Start = BoxTraceStart->GetComponentLocation();
-	const FVector End = BoxTraceEnd->GetComponentLocation();
-
-	TArray<FHitResult> HitResults;
-	
-	IgnoreActors.Add(this);
-
-	const bool bHitOccurred = UKismetSystemLibrary::BoxTraceMulti(
-		this,
-		Start,
-		End,
-		FVector(10.f, 10.f, 10.f),
-		BoxTraceStart->GetComponentRotation(),
-		UEngineTypes::ConvertToTraceType(ECC_Pawn),
-		false,
-		IgnoreActors,
-		EDrawDebugTrace::ForDuration,
-		HitResults,
-		true
-	);
-
-	for (const FHitResult& Hit : HitResults)
-	{
-		if (bHitOccurred && Hit.GetActor() && !IgnoreActors.Contains(Hit.GetActor()))
-		{
-			if (IHitInterface* HitInterface = Cast<IHitInterface>(Hit.GetActor()))
-			{
-				FDamageEvent DamageEvent(UDamageType::StaticClass());
-				
-				if (HitInterface->IsHittable())
-				{
-					UGameplayStatics::ApplyDamage(Hit.GetActor(), Damage, GetController(), this, UDamageType::StaticClass());
-					
-					AEntity* FinalDamageCauser = nullptr;	
-					if (IsPossessed()) FinalDamageCauser =  this;
-				
-					HitInterface->GetHit(FinalDamageCauser, Hit.ImpactPoint, DamageEvent, Damage);
-				
-					//PlayCameraShake(SwordMesh->GetComponentLocation(), 0.f, 500.f);
-					IgnoreActors.Add(Hit.GetActor());
-				}
-				else
-				{
-					HitInterface->GetHit(this, Hit.ImpactPoint, DamageEvent, Damage/2);
-					//GetCombatComponent()->ReceiveBlock();
-				}
-			}
-		}
-	}
-}
-
-void APaladin::ApplyPossessionParameters(const bool bShouldEnable)
-{
-	Super::ApplyPossessionParameters(bShouldEnable);
-	if (bShouldEnable)
-	{
-		Damage = PossessionDamage;
-		GetCharacterMovement()->MaxWalkSpeed = PossessionMaxWalkSpeed;
-	}
-	else
-	{
-		Damage = DefaultDamage;
-		GetCharacterMovement()->MaxWalkSpeed = DefaultMaxWalkSpeed;
-	}
-}
-
 void APaladin::ShieldHit()
 {
 	if (MontagesData->Montages.HitReactMontage)
@@ -208,7 +140,7 @@ void APaladin::ShieldHit()
 
 void APaladin::CrashDown()
 {
-	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
+	GetCharacterMovement()->SetMovementMode(MOVE_Falling);
 	PlayAnimMontage(MontagesData->Montages.HitReactMontage, 1.f, FName("KnockDown"));
 	LaunchCharacter(FVector(0.f, 0.f, -100000.f), true, true);
 }
@@ -221,7 +153,7 @@ void APaladin::HitInAir()
 	DisableAI();
 }
 
-void APaladin::ReactToDamage(EMeleeDamageTypes DamageType, const FVector& ImpactPoint)
+void APaladin::ReactToDamage(const EMeleeDamageTypes DamageType, const FVector& ImpactPoint)
 {
 	switch (DamageType)
 	{

@@ -273,7 +273,7 @@ void AEntity::SetWeaponCollisionEnabled(const ECollisionEnabled::Type CollisionE
 void AEntity::BeginPlay()
 {
 	Super::BeginPlay();
-
+	
 	if (!HumanStrategyInstance)
 	{
 		if (EntityData->FirstModeStrategyClass) HumanStrategyInstance = NewObject<UCombatStrategy>(this, EntityData->FirstModeStrategyClass);

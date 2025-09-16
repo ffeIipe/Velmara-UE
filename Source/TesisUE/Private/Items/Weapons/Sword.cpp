@@ -80,6 +80,8 @@ UPrimitiveComponent* ASword::GetCollisionComponent()
 
 void ASword::ResetMelee()
 {
+	if (!LightCommandInstance || !JumpCommandInstance || !HeavyCommandInstance || !HeavyJumpCommandInstance) return;
+	
 	LightCommandInstance->ResetCommand();
 	JumpCommandInstance->ResetCommand();
 	HeavyCommandInstance->ResetCommand();
@@ -151,7 +153,6 @@ void ASword::UsePrimaryAttack(const bool bIsInAir)
 	bIsInAir ? PerformBaseAttack(JumpCommandInstance) : PerformBaseAttack(LightCommandInstance);
 
 	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Yellow, FString("From Sword: Delegating attack call to a command."));
-
 }
 
 void ASword::UseSecondaryAttack(const bool bIsInAir)

@@ -130,4 +130,10 @@ public:
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Strategy")
     TSubclassOf<UCombatStrategy> SecondModeStrategyClass;
+
+    /**
+      This property is optional, so if you are filling these stats and do not want to spawn with a weapon, leave it blank.
+     **/
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "InitialWeapon")
+    TSubclassOf<AActor> InitialWeapon;
 };

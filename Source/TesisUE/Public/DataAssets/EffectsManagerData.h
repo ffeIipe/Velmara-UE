@@ -43,7 +43,7 @@ struct FCameraShakeType
 UENUM(BlueprintType)
 enum class ECameraShakePreset : uint8
 {
-	ECSP_Default UMETA(DisplayName = "Default"),
+	ECSP_None UMETA(DisplayName = "None"),
 	ECSP_ShotHit UMETA(DisplayName = "Shot Hit"),
 	ECSP_SwordHit UMETA(DisplayName = "Sword Hit"),
 	ECSP_HeavyHit UMETA(DisplayName = "Heavy Hit"),
@@ -79,7 +79,7 @@ struct FCameraZoomType : public FEffectBaseType
 UENUM(BlueprintType)
 enum class ECameraZoomPreset : uint8
 {
-	ECZP_Default UMETA(DisplayName = "Default"),
+	ECZP_None UMETA(DisplayName = "None"),
 	ECZP_Finisher UMETA(DisplayName = "Finisher")
 };
 
@@ -96,7 +96,7 @@ struct FTimeWarpType : public FEffectBaseType
 UENUM(BlueprintType)
 enum class ETimeWarpPreset : uint8
 {
-	ETWP_Default UMETA(DisplayName = "Default"),
+	ETWP_None UMETA(DisplayName = "None"),
 	ETWP_Finisher UMETA(DisplayName = "Finisher"),
 	ETWP_Crasher UMETA(DisplayName = "Crasher"),
 	ETWP_SwitchForm UMETA(DisplayName = "Switch Form")
@@ -115,7 +115,7 @@ struct FHitStopType : public FEffectBaseType
 UENUM(BlueprintType)
 enum class EHitStopPreset : uint8
 {
-	EHSP_Default UMETA(DisplayName = "Default"),
+	EHSP_None UMETA(DisplayName = "None"),
 	EHSP_SwordHit UMETA(DisplayName = "Sword Hit"),
 	EHSP_HeavyHit UMETA(DisplayName = "Heavy Hit"),
 	EHSP_Finisher UMETA(DisplayName = "Finisher")
