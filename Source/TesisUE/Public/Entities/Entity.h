@@ -244,7 +244,7 @@ protected:
 
 	// === Input Mapping Context ===
 	UPROPERTY(EditAnywhere, Category = "Input | Mapping")
-	UInputMappingContext* CharacterContext;
+	TObjectPtr<UInputMappingContext> CharacterContext;
 
 	// === Camera ===
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
@@ -260,6 +260,7 @@ protected:
 
 	void Input_DoubleJump();
 
+	UFUNCTION()
 	void Input_Dodge();
 
 	UFUNCTION()
@@ -298,7 +299,7 @@ private:
 	UPROPERTY(BlueprintGetter = GetCharacterStateComponent)
 	UCharacterStateComponent* CharacterStateComponent;
 
-	UPROPERTY(BlueprintGetter = GetExtraMovementComponent)
+	UPROPERTY(VisibleAnywhere ,BlueprintGetter = GetExtraMovementComponent)
 	UExtraMovementComponent* ExtraMovementComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintGetter = GetInventoryComponent)

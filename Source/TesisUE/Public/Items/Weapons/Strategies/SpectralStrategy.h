@@ -18,4 +18,5 @@ public:
 	virtual void Strategy_UseFirstAttack(bool bIsInAir, TScriptInterface<IWeaponInterface> CurrentWeapon) override;
 	virtual void Strategy_UseSecondAttack(bool bIsInAir, TScriptInterface<IWeaponInterface> CurrentWeapon) override;
 	virtual void Strategy_UseAbility(AActor* Actor) override;
+	virtual void Strategy_Dodge(AActor* Actor) override;
 };

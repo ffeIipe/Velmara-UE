@@ -73,7 +73,7 @@ public:
     UFUNCTION()
     void ReceiveBlock(UAnimMontage* BlockMontage) const;
 
-    bool PerformLaunch(const TScriptInterface<ICombatTargetInterface>& TargetToCheck, float DistanceToCheck = 150.f, UAnimMontage* LaunchMontage = nullptr);
+    bool PerformLaunch(const TScriptInterface<ICombatTargetInterface>& TargetToCheck, float DistanceToCheck = 200.f, UAnimMontage* LaunchMontage = nullptr);
      
     // === Internal Utility Functions ===
     bool CheckDistance(const TScriptInterface<ICombatTargetInterface>& TargetToCheck, float DistanceToCheck);

@@ -16,9 +16,10 @@ class AEntity;
 struct FInputActionValue;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDodgeStarted);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDodgeSaved);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDoubleJumpStarted);
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class TESISUE_API UExtraMovementComponent : public UActorComponent
 {
 	GENERATED_BODY()
@@ -26,26 +27,20 @@ class TESISUE_API UExtraMovementComponent : public UActorComponent
 public:	
 	UExtraMovementComponent();
 	
-	void InitializeValues(const FMovementData& MovementData);
+	/*void InitializeValues(const FMovementData& MovementData);*/
 
 	void SetCurrentStrategyValues(float DodgeDistance, float DoubleJumpForce, UAnimMontage* NewDodgeMontage);
 	
 	UFUNCTION()
 	void ResetDodge() { bIsSaveDodge = false; }
 
-	void PerformDoubleJump();
+	void PerformDoubleJump(UAnimMontage* DoubleJumpMontage);
 	void PerformMove(const FVector2D& MoveVector, bool bIsTriggered);
 	void PerformLook(const FVector2D& LookingVector) const;
-	void PerformDodge();
+	void PerformDodge(float DodgeDistance, UAnimMontage* DodgeAnim);
 
 	UPROPERTY()
 	UAnimMontage* CurrentDodgeMontage = nullptr;
-	
-	UPROPERTY(EditAnywhere, Category = "Montages | Jump")
-	UAnimMontage* JumpMontage;
-
-	UPROPERTY(EditAnywhere, Category = "Montages | DoubleJump")
-	UAnimMontage* DoubleJumpMontage;
 
 	UFUNCTION(BlueprintCallable)
 	void DodgeSaveEvent();
@@ -54,30 +49,34 @@ public:
 	bool CanDoubleJump = true;
 
 	void CustomInitialize(AEntity* NewEntity);
-
-	bool IsMovingBackwards() const;
 	
+	void InitializeValues(const FMovementData& MovementData);
+	bool IsMovingBackwards() const;
+
 	bool bIsSaveDodge = false;
 
 	FOnDodgeStarted OnDodgeStarted;
-
+	FOnDodgeSaved OnDodgeSaved;
 	FOnDoubleJumpStarted OnDoubleJumpStarted;
 	
 private:
 	virtual void BeginPlay() override;
 	
-	void PlayDodgeAnim() const;
+	void PlayDodgeAnim(UAnimMontage* DodgeMontage) const;
 
+	UFUNCTION()
 	void DodgeBufferEvent() const;
 
-	void StopDodgeBufferEvent() const;
+	void StopDodgeBufferEvent();
 
-	void UpdateDodgeBuffer(float Alpha) const;
+	UFUNCTION()
+	void UpdateDodgeBuffer(float Alpha);
 
-	void UpdateBuffer(float Alpha, float BufferDistance) const;
+	void DodgeAnimBasedOnInput(UAnimMontage* DodgeMontage) const;
 
-	void DodgeAnimBasedOnInput() const;
-
+	// === Flags ===
+	bool bIsMoving;
+	
 	// === Stats ===
 	FVector2D CurrentMoveVector;
 	
@@ -86,8 +85,11 @@ private:
 	UPROPERTY(BlueprintReadWrite, meta = (AllowPrivateAccess = true))
 	float BufferDodgeDistance;
 	
-	UPROPERTY()
-	UCurveFloat* DodgeCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	UCurveFloat* BufferCurve;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UCurveFloat> AnotherBufferCurve;
 	
 	TScriptInterface<IOwnerUtilsInterface> OwnerUtils;
 	TScriptInterface<IAnimatorProvider> AnimatorProvider;

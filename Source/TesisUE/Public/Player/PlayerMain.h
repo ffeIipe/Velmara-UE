@@ -6,7 +6,6 @@
 #include "Entities/Entity.h"
 #include "PlayerMain.generated.h"
 
-class UInputMappingContext;
 class UInputAction;
 struct FInputActionValue;
 class AEnemy;
