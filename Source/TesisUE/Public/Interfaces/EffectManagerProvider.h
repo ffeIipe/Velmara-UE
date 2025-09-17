@@ -23,8 +23,8 @@ class TESISUE_API IEffectManagerProvider
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCameraShake, ECameraShakePreset, CameraShakePreset);
+	/*DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCameraShake, ECameraShakePreset, CameraShakePreset, const FVector&, ImpactPoint);
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCameraZoom, ECameraZoomPreset, CameraZoomPreset);
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTimeWarp, ETimeWarpPreset, TimeWarpPreset);
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHitStop, EHitStopPreset, HitStopPreset);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHitStop, EHitStopPreset, HitStopPreset);*/
 };

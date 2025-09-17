@@ -77,6 +77,7 @@ public:
 	virtual void Strategy_UseFirstAttack(const bool bIsInAir, TScriptInterface<IWeaponInterface> CurrentWeapon){}
 	virtual void Strategy_UseSecondAttack(const bool bIsInAir, TScriptInterface<IWeaponInterface> CurrentWeapon){}
 	virtual void Strategy_UseAbility(AActor* Actor){}
+	virtual void Strategy_Dodge(AActor* Actor){}
 	
 	void SetCurrentValues(
 		UExtraMovementComponent* ExtraMoveComp,

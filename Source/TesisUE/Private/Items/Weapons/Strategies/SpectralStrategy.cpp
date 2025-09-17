@@ -3,6 +3,7 @@
 
 #include "Items/Weapons/Strategies/SpectralStrategy.h"
 
+#include "Components/ExtraMovementComponent.h"
 #include "Components/PossessionComponent.h"
 
 void USpectralStrategy::Strategy_UseFirstAttack(const bool bIsInAir, const TScriptInterface<IWeaponInterface> CurrentWeapon)
@@ -27,4 +28,12 @@ void USpectralStrategy::Strategy_UseAbility(AActor* Actor)
 		PossessionComponent->FindPossessionVictim(StrategyProperties.MaxAbilityDistance,
 												  StrategyProperties.MaxAbilityRadius));
 	}
+}
+
+void USpectralStrategy::Strategy_Dodge(AActor* Actor)
+{
+	Super::Strategy_Dodge(Actor);
+
+	Actor->GetComponentByClass<UExtraMovementComponent>()->PerformDodge(StrategyProperties.MaxDodgeDistance,
+	                                                                    StrategyMontages.DodgeMontage);
 }

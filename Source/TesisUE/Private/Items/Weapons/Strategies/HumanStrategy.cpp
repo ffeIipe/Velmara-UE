@@ -4,6 +4,7 @@
 #include "Items/Weapons/Strategies/HumanStrategy.h"
 
 #include "Components/CombatComponent.h"
+#include "Components/ExtraMovementComponent.h"
 #include "Components/TargetingComponent.h"
 #include "Interfaces/Weapon/WeaponInterface.h"
 
@@ -46,4 +47,12 @@ void UHumanStrategy::Strategy_UseAbility(AActor* User)
 		User->FindComponentByClass<UCombatComponent>()->PerformExecute(Target, StrategyMontages.FinisherMontage);
 	}
 	else if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, FString("Debug purposes: Not a valid target"));
+}
+
+void UHumanStrategy::Strategy_Dodge(AActor* Actor)
+{
+	Super::Strategy_Dodge(Actor);
+
+	Actor->GetComponentByClass<UExtraMovementComponent>()->PerformDodge(StrategyProperties.MaxDodgeDistance,
+	                                                                    StrategyMontages.DodgeMontage);
 }

@@ -53,6 +53,7 @@ AEntity::AEntity()
 
 	GetExtraMovementComponent()->OnDodgeStarted.
 	                             AddDynamic(TargetingComponent, &UTargetingComponent::RemoveCombatTarget);
+	GetExtraMovementComponent()->OnDodgeSaved.AddDynamic(this, &AEntity::Input_Dodge);
 
 	GetCombatComponent()->OnResetState.AddDynamic(ExtraMovementComponent, &UExtraMovementComponent::ResetDodge);
 	GetCombatComponent()->OnResetState.AddDynamic(TargetingComponent, &UTargetingComponent::RemoveCombatTarget);
@@ -296,11 +297,34 @@ void AEntity::InitializeComponentsData() const
 	if (EntityData)
 	{
 		CombatComponent->InitializeValues(EntityData->CombatData);
-		ExtraMovementComponent->InitializeValues(EntityData->MovementData);
 		AttributeComponent->InitializeValues(EntityData->AttributeData);
 		PossessionComponent->InitializeValues(EntityData->PossessionData);
 		InventoryComponent->InitializeValues(EntityData->InventoryData);
 		TargetingComponent->InitializeValues(EntityData->TargetingData);
+
+		GetExtraMovementComponent()->InitializeValues(EntityData->MovementData);
+		GetSpringArmComponent()->TargetArmLength = EntityData->SpringArmData.SpringArmLength;
+		GetSpringArmComponent()->SocketOffset = EntityData->SpringArmData.SocketOffset;
+		GetSpringArmComponent()->bEnableCameraLag = EntityData->SpringArmData.CameraLag;
+		GetSpringArmComponent()->CameraLagSpeed = EntityData->SpringArmData.CameraLagSpeed;
+		GetSpringArmComponent()->CameraRotationLagSpeed = EntityData->SpringArmData.CameraRotationLagSpeed;
+
+		GetCharacterMovement()->GravityScale = EntityData->CharMoveData.GravityScale;
+		GetCharacterMovement()->MaxAcceleration = EntityData->CharMoveData.MaxAcceleration;
+
+		// Character Movement: Walking
+		GetCharacterMovement()->MaxWalkSpeed = EntityData->CharMoveData.MaxWalkSpeed;
+		GetCharacterMovement()->BrakingDecelerationWalking = EntityData->CharMoveData.BrakingDecelerationWalking;
+
+		// Character Movement: Jumping / Falling
+		GetCharacterMovement()->JumpZVelocity = EntityData->CharMoveData.JumpZVelocity;
+		GetCharacterMovement()->AirControl = EntityData->CharMoveData.AirControl;
+		GetCharacterMovement()->AirControlBoostMultiplier = EntityData->CharMoveData.AirControlBoostMultiplier;
+
+		// Character Movement (Rotation Settings)
+		GetCharacterMovement()->RotationRate = EntityData->CharMoveData.RotationRate;
+
+		GetCharacterMovement()->MaxJumpApexAttemptsPerSimulation = EntityData->CharMoveData.MaxJumpApexAttemptsPerSimulation;
 	}
 }
 
@@ -328,7 +352,6 @@ void AEntity::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_Attack, ETriggerEvent::Triggered, this, &AEntity::Input_PrimaryAttack);
 		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_Attack, ETriggerEvent::Completed, this, &AEntity::OnPrimaryAttackCompleted);
 		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_HeavyAttack, ETriggerEvent::Started, this, &AEntity::Input_SecondaryAttack);
-		/*EnhancedInputComponent->BindAction(InputAction_Launch, ETriggerEvent::Started, this, &AEntity::Input_Launch);*/
 		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_Inventory, ETriggerEvent::Started, this, &AEntity::Input_ToggleHardLock);
 		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_ChangeHardLockTarget, ETriggerEvent::Started, this, &AEntity::Input_ChangeHardLockTarget);
 		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_Block, ETriggerEvent::Triggered, this, &AEntity::Input_Block);
@@ -414,7 +437,7 @@ void AEntity::Jump()
 {
 	if (GetCharacterStateComponent()->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Nothing, ECharacterActionsStates::ECAS_Attack }) && GetExtraMovementComponent()->CanDoubleJump && !IsEquipping())
 	{
-		PlayAnimMontage(GetExtraMovementComponent()->JumpMontage, 1.f);
+		PlayAnimMontage(GetCurrentStrategy()->StrategyMontages.JumpMontage, 1.f);
 
 		Super::Jump();
 
@@ -429,7 +452,7 @@ void AEntity::Input_DoubleJump()
 {
 	if (!IsActionStateEqualToAny({ ECharacterActionsStates::ECAS_Block, ECharacterActionsStates::ECAS_Finish, ECharacterActionsStates::ECAS_Dead }))
 	{
-		GetExtraMovementComponent()->PerformDoubleJump();
+		GetExtraMovementComponent()->PerformDoubleJump(GetCurrentStrategy()->StrategyMontages.DoubleJumpMontage);
 	}
 }
 
@@ -437,7 +460,7 @@ void AEntity::Input_Dodge()
 {
 	if (!IsActionStateEqualToAny({ ECharacterActionsStates::ECAS_Finish, ECharacterActionsStates::ECAS_Stun }))
 	{
-		GetExtraMovementComponent()->PerformDodge();
+		GetCurrentStrategy()->Strategy_Dodge(this);
 	}
 }
 
@@ -445,7 +468,6 @@ void AEntity::OnPrimaryAttackStarted()
 {
 	if (GetCharacterStateComponent()->IsWeaponStateEqualToAny({ ECharacterWeaponStates::ECWS_EquippedWeapon }))
 	{
-		PerformPrimaryAttack();
 		TimeOfPrimaryAttackPressed = GetWorld()->GetTimeSeconds();
 	}
 	else if (GEngine)
@@ -473,6 +495,10 @@ void AEntity::Input_PrimaryAttack(const FInputActionValue& Value)
 
 void AEntity::OnPrimaryAttackCompleted()
 {
+	if (GetCharacterStateComponent()->IsWeaponStateEqualToAny({ ECharacterWeaponStates::ECWS_EquippedWeapon }))
+	{
+		PerformPrimaryAttack();
+	}
 	TimeOfPrimaryAttackPressed = 0.f;
 }
 

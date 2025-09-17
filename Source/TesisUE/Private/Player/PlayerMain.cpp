@@ -10,8 +10,6 @@
 #include "Components/AttributeComponent.h"
 #include "Components/ChangeModeComponent.h"
 #include "Components/MementoComponent.h"
-#include "Components/CombatComponent.h"
-#include "Components/InventoryComponent.h"
 #include "Components/CharacterStateComponent.h"
 #include "Components/PossessionComponent.h"
 #include "Curves/CurveFloat.h"
@@ -29,6 +27,8 @@
 #include "DataAssets/InputData.h"
 #include "DataAssets/MontagesData.h"
 #include "Interfaces/Weapon/WeaponInterface.h"
+#include "UObject/ConstructorHelpers.h"
+#include "EnhancedInput/Public/InputMappingContext.h"
 
 APlayerMain::APlayerMain()
 {
@@ -47,10 +47,20 @@ APlayerMain::APlayerMain()
 
 	ChangeModeComponent->OnHumanEffectApplied.AddDynamic(this, &APlayerMain::ApplyHumanMode);
 	ChangeModeComponent->OnSpectralEffectApplied.AddDynamic(this, &APlayerMain::ApplySpectralMode);
+
+	static ConstructorHelpers::FObjectFinder<UInputMappingContext> IMC(TEXT("/Game/Blueprints/Player/Input"));
+	if (IMC.Succeeded())
+	{
+		CharacterContext = IMC.Object.Get();
+	}
+	else if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, "IMC Found!");
+	}
 }
 
 void APlayerMain::GetHit(TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint,
-	FDamageEvent const& DamageEvent, const float DamageReceived)
+                         FDamageEvent const& DamageEvent, const float DamageReceived)
 {
 	Super::GetHit(DamageCauser, ImpactPoint, DamageEvent, DamageReceived);
 
