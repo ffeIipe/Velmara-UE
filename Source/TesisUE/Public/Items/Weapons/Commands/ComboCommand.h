@@ -18,8 +18,8 @@ class TESISUE_API UComboCommand : public UCommand
 
 	
 protected:
-	virtual void ExecuteCommand(const TScriptInterface<IAnimatorProvider> AnimatorProvider) override;
-	virtual void ResetCommand() override;
+	virtual void ExecuteCommand_Implementation(AActor* User) override;
+	virtual void ResetCommand_Implementation() override;
 	
 	int32 ComboIndex;
 

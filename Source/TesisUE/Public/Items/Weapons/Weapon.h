@@ -19,15 +19,21 @@ class TESISUE_API AWeapon : public AItem, public IWeaponInterface
 	GENERATED_BODY()
 
 public:
-	virtual void UsePrimaryAttack(const bool bIsInAir) override {}
+	virtual void UsePrimaryAttack_Implementation() override {}
 	
-	virtual void UseSecondaryAttack(const bool bIsInAir) override {}
+	virtual void UseSecondaryAttack_Implementation() override {}
+
+	virtual void UseAbilityAttack_Implementation() override {}
+	
+	virtual void SetDamageType_Implementation(TSubclassOf<UMeleeDamage> DamageType) override {}
+
+	virtual void ResetWeapon_Implementation() override {}
 	
 	virtual void Pick(AActor* NewOwner) override;
 
 	virtual void Unequip() {}
 
-	virtual void EnableVisuals(bool bEnable) override;
+	virtual void EnableVisuals(const bool bEnable) override { Super::EnableVisuals(bEnable); }
 
 	virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled) override {}
 

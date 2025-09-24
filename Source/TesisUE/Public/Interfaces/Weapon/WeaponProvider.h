@@ -8,7 +8,7 @@
 
 class IWeaponInterface;
 // This class does not need to be modified.
-UINTERFACE(MinimalAPI)
+UINTERFACE(MinimalAPI, Blueprintable)
 class UWeaponProvider : public UInterface
 {
 	GENERATED_BODY()
@@ -23,5 +23,6 @@ class TESISUE_API IWeaponProvider
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-	virtual TScriptInterface<IWeaponInterface> GetCurrentWeapon() = 0;
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	TScriptInterface<IWeaponInterface> GetCurrentWeapon();
 };

@@ -55,6 +55,7 @@ void APaladin::BeginPlay()
 	{
 		WeaponToEquip->CreateChildActor();
 	}
+
 	
 	TArray<AActor*> AttachedActors;
 	GetAttachedActors(AttachedActors);
@@ -89,9 +90,9 @@ void APaladin::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 {
 	Super::ActivateEnemy(Location, Rotation);
 
-	if (GetCharacterStateComponent())
+	if (CharacterStateComponent)
 	{
-		GetCharacterStateComponent()->SetHumanState(ECharacterWeaponStates::ECWS_EquippedWeapon);
+		CharacterStateComponent->SetWeaponState(ECharacterWeaponStates::ECWS_EquippedWeapon);
 	}
 
 	SetWeaponCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -118,7 +119,7 @@ void APaladin::LaunchUp()
 	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, FString(this->GetName()));
 	bIsLaunched = true;
 	DisableAI();
-	PlayAnimMontage(MontagesData->Montages.HitReactMontage, 1.f, FName("FromAir"));
+	Execute_PlayAnimMontage(this, MontagesData->Montages.HitReactMontage, 1.f, FName("FromAir"));
 	GetCharacterMovement()->SetMovementMode(MOVE_Flying);
 }
 
@@ -133,15 +134,15 @@ void APaladin::ShieldHit()
 {
 	if (MontagesData->Montages.HitReactMontage)
 	{
-		StopAnimMontage();
-		PlayAnimMontage(MontagesData->Montages.HitReactMontage, 1.f, FName("ShieldHit"));
+		Execute_StopAnimMontage(this, GetCurrentMontage());
+		Execute_PlayAnimMontage(this, MontagesData->Montages.HitReactMontage, 1.f, FName("ShieldHit"));
 	}
 }
 
 void APaladin::CrashDown()
 {
 	GetCharacterMovement()->SetMovementMode(MOVE_Falling);
-	PlayAnimMontage(MontagesData->Montages.HitReactMontage, 1.f, FName("KnockDown"));
+	Execute_PlayAnimMontage(this, MontagesData->Montages.HitReactMontage, 1.f, FName("KnockDown"));
 	LaunchCharacter(FVector(0.f, 0.f, -100000.f), true, true);
 }
 
@@ -149,7 +150,7 @@ void APaladin::HitInAir()
 {
 	const float PlayerLocationHeight = UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->GetActorLocation().Z;
 	SetActorLocation(FVector(GetTargetActorLocation().X, GetTargetActorLocation().Y, PlayerLocationHeight));
-	PlayAnimMontage(MontagesData->Montages.HitReactMontage, 1.f, FName("FromAir"));
+	Execute_PlayAnimMontage(this, MontagesData->Montages.HitReactMontage, 1.f, FName("FromAir"));
 	DisableAI();
 }
 
@@ -174,11 +175,11 @@ void APaladin::ReactToDamage(const EMeleeDamageTypes DamageType, const FVector& 
 		break;
 
 	case EMeleeDamageTypes::EMDT_Puncture:
-		PlayAnimMontage(MontagesData->Montages.HitReactMontage, 1.f, FName("PunctureReact"));
+		Execute_PlayAnimMontage(this, MontagesData->Montages.HitReactMontage, 1.f, FName("PunctureReact"));
 		break;
 
 	case EMeleeDamageTypes::EMDT_Impact:
-		PlayAnimMontage(MontagesData->Montages.HitReactMontage, 1.f, FName("ImpactReact"));
+		Execute_PlayAnimMontage(this, MontagesData->Montages.HitReactMontage, 1.f, FName("ImpactReact"));
 		break;
 
 	/*case EMainDamageTypes::EMDT_Pistol:*/
@@ -200,6 +201,6 @@ void APaladin::Slash()
 
 	SetActorRotation(FRotator(0.f, DamageCauserLocation.Yaw, 0.f));
 
-	StopAnimMontage();
-	PlayAnimMontage(MontagesData->Montages.HitReactMontage, 1.f, FName("FromFrontBig"));
+	Execute_StopAnimMontage(this, GetCurrentMontage());
+	Execute_PlayAnimMontage(this, MontagesData->Montages.HitReactMontage, 1.f, FName("FromFrontBig"));
 }

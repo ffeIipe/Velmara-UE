@@ -16,7 +16,7 @@ void ASpectre::PerformSpectralAttack()
 {
 	if (const int RandomValue = UKismetMathLibrary::RandomIntegerInRange(0, SpectralAttackMontages.Max()); SpectralAttackMontages.IsValidIndex(RandomValue))
 	{
-		PlayAnimMontage(SpectralAttackMontages[RandomValue]);
+		Execute_PlayAnimMontage(this, SpectralAttackMontages[RandomValue], 1.f, "Default");
 	}
 }
 

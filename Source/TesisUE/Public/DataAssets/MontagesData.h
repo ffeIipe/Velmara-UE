@@ -16,6 +16,12 @@ struct FMontages
 	GENERATED_BODY()
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Montages")
+	UAnimMontage* JumpMontage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Montages")
+	UAnimMontage* DoubleJumpMontage;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Montages")
 	UAnimMontage* BlockMontage;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Montages")

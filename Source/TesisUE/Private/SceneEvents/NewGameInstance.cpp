@@ -487,7 +487,7 @@ void UNewGameInstance::ApplyPendingLoadedDataToWorld()
 
                         if (const TScriptInterface<ICharacterStateProvider> PlayerCharacterState = PlayerCharacter)
                         {
-                            PlayerCharacterState->SetWeaponState(ECharacterWeaponStates::ECWS_EquippedWeapon);
+                            PlayerCharacterState->Execute_GetCharacterStateComponent(PlayerCharacter)->SetWeaponState(ECharacterWeaponStates::ECWS_EquippedWeapon);
                         }
 
                         PlayerInventory->InventorySlots[i] = NewItem;

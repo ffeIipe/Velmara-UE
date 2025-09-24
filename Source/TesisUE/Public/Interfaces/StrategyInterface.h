@@ -26,25 +26,4 @@ class TESISUE_API IStrategyProvider
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
 	virtual UCombatStrategy* GetCurrentStrategy() = 0;
-	
-	/*UFUNCTION(BlueprintNativeEvent, Category = "Components | Combat")
-	UCombatComponent* GetCombatComponent();
-
-	UFUNCTION(BlueprintNativeEvent, Category = "Components | Attribute")
-	UAttributeComponent* GetAttributeComponent();
-
-	UFUNCTION(BlueprintNativeEvent, Category = "Components | Character State")
-	UCharacterStateComponent* GetCharacterStateComponent();
-
-	UFUNCTION(BlueprintNativeEvent, Category = "Components | Extra Movement")
-	UExtraMovementComponent* GetExtraMovementComponent();
-
-	UFUNCTION(BlueprintNativeEvent, Category = "Components | Inventory")
-	UInventoryComponent* GetInventoryComponent();
-
-	/*UFUNCTION(BlueprintNativeEvent, Category = "Components | Memento")
-	virtual UMementoComponent* GetMementoComponent() const { return MementoComponent; }#1#
-
-	UFUNCTION(BlueprintNativeEvent, Category = "Components | Possession")
-	UPossessionComponent* GetPossessionComponent();*/
 };

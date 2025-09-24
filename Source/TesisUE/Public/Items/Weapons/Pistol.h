@@ -22,8 +22,8 @@ protected:
 	APistol();
 	virtual void BeginPlay() override;
 
-	virtual void UsePrimaryAttack(bool bIsInAir) override;
-	virtual void UseSecondaryAttack(bool bIsInAir) override;
+	virtual void UsePrimaryAttack_Implementation() override;
+	virtual void UseSecondaryAttack_Implementation() override;
 
 	virtual void PrimaryShoot() override;
 

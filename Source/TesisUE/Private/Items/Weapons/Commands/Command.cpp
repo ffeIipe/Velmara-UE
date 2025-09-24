@@ -2,3 +2,19 @@
 
 
 #include "Items/Weapons/Commands/Command.h"
+
+void UCommand::ExecuteCommand_Implementation(AActor* User)
+{
+}
+
+void UCommand::ResetCommand_Implementation()
+{
+}
+
+void UCommand::TerminateCommand_Implementation()
+{
+	if (bIsInstance)
+	{
+		FinishDestroy();
+	}
+}

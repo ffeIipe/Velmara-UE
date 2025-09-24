@@ -2,7 +2,6 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "Items/Weapons/Strategies/CombatStrategy.h"
 #include "CombatComponent.generated.h"
 
 class IStrategyProvider;
@@ -64,6 +63,7 @@ public:
     UFUNCTION()
     bool IsBlocking() const;
 
+    UFUNCTION(BlueprintCallable)
     bool IsInAir() const;
     
     bool CanAttack() const;

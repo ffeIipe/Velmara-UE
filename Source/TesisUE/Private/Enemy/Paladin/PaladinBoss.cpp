@@ -156,8 +156,8 @@ void APaladinBoss::FloodAttack()
 {
 	if (FloodToRaise)
 	{
-		StopAnimMontage();
-		PlayAnimMontage(InvokeMontage);
+		Execute_StopAnimMontage(this, GetCurrentMontage());
+		Execute_PlayAnimMontage(this, InvokeMontage, 1.f, "Default");
 
 		RaiseFlood();
 	}

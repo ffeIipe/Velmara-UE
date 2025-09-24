@@ -39,7 +39,7 @@ public:
 	FCharacterStates CurrentStates;
 
 	UFUNCTION(BlueprintCallable, Category = "Character States | Character State")
-	ECharacterWeaponStates SetHumanState(ECharacterWeaponStates NewState);
+	ECharacterWeaponStates SetWeaponState(ECharacterWeaponStates NewState);
 
 	UFUNCTION(BlueprintCallable, Category = "Character States | Character Action")
 	ECharacterActionsStates SetAction(ECharacterActionsStates NewAction);

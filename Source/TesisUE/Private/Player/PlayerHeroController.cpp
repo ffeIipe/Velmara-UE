@@ -146,14 +146,14 @@ void APlayerHeroController::ToggleInput(const bool Bool)
     {
         if (CharacterStateProvider)
         {
-            CharacterStateProvider->SetAction(ECharacterActionsStates::ECAS_Nothing);
+            CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetAction(ECharacterActionsStates::ECAS_Nothing);
         }
     }
     else
     {
         if (CharacterStateProvider)
         {
-            CharacterStateProvider->SetAction(ECharacterActionsStates::ECAS_Stun);
+            CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetAction(ECharacterActionsStates::ECAS_Stun);
         }
     }
 }

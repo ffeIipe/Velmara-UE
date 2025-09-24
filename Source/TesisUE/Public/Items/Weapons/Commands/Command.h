@@ -10,12 +10,23 @@ class IAnimatorProvider;
 /**
  * 
  */
-UCLASS(Abstract)
+UCLASS(Blueprintable)
 class TESISUE_API UCommand : public UObject
 {
 	GENERATED_BODY()
 
 public:
-	virtual void ExecuteCommand(TScriptInterface<IAnimatorProvider> AnimatorProvider) {}
-	virtual void ResetCommand() {}
+	//Start the Command
+	UFUNCTION(BlueprintNativeEvent)
+	void ExecuteCommand(AActor* User);
+
+	//If not an instance, the command can reset stats
+	UFUNCTION(BlueprintNativeEvent)
+	void ResetCommand();
+
+	//Shut down the command, and if it is an instance, it will be destroyed.
+	UFUNCTION(BlueprintNativeEvent)
+	void TerminateCommand();
+
+	bool bIsInstance = false;
 };

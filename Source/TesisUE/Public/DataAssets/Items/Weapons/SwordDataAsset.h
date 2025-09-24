@@ -68,7 +68,10 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Attacks")
 	TSubclassOf<UCommand> HeavyJumpComboCommandClass;
-    
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Attacks")
+	TSubclassOf<UCommand> AbilityCommandClass;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Properties")
 	FSwordProperties Stats;
 

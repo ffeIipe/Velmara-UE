@@ -46,6 +46,8 @@ public:
 	FName GetUniqueSaveID() const { return UniqueSaveID; }
 
 protected:
+	virtual void DisableCollision() override;
+	
 	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Save System")
 	FName UniqueSaveID;
 

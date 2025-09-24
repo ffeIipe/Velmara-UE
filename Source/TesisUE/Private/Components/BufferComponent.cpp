@@ -1,0 +1,72 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "Components/BufferComponent.h"
+
+#include "Components/TimelineComponent.h"
+#include "Components/ExtraMovementComponent.h"
+#include "GameFramework/Character.h"
+#include "Interfaces/CharacterMovementProvider.h"
+
+
+UBufferComponent::UBufferComponent()
+{
+	PrimaryComponentTick.bCanEverTick = false;
+
+	BufferTimelineComp = CreateDefaultSubobject<UTimelineComponent>(TEXT("Buffer Timeline"));
+}
+
+void UBufferComponent::StartLocationBuffer(const float Distance, UCurveFloat* Curve)
+{
+	if (Curve && Curve != CurrentCurve)
+	{
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE,3.f, FColor::Blue, "Curve loaded.");
+		CurrentCurve = Curve;
+		FOnTimelineFloat TimelineEventFunction;
+		TimelineEventFunction.BindUFunction(this, "UpdateLocationBuffer");
+		BufferTimelineComp->AddInterpFloat(Curve,TimelineEventFunction);	
+	}
+
+	CurrentDistance = 0.f;
+	CurrentDistance = Distance;
+
+	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Distance: " + FString::SanitizeFloat(CurrentDistance));
+	
+	BufferTimelineComp->Stop();
+	BufferTimelineComp->PlayFromStart();
+}
+
+void UBufferComponent::StopLocationBuffer() const
+{
+	if (BufferTimelineComp)
+		BufferTimelineComp->Stop();
+}
+
+/*void UBufferComponent::StartRotationBuffer(const TObjectPtr<UCurveFloat>& Curve)
+{
+}
+
+void UBufferComponent::StopRotationBuffer() const
+{
+}*/
+
+void UBufferComponent::UpdateLocationBuffer(float Alpha)
+{
+	if (const TScriptInterface<ICharacterMovementProvider> CharacterMovementProvider = GetOwner();
+		CharacterMovementProvider->Execute_GetExtraMovementComponent(GetOwner())->IsMoving())
+	{
+		const FVector CurrentLocation = GetOwner()->GetActorLocation();
+		const FVector ForwardVector = CharacterMovementProvider->Execute_GetCharacter(GetOwner())->GetLastMovementInputVector();
+		const FVector TargetLocation = FMath::Lerp(CurrentLocation, CurrentLocation + (ForwardVector * CurrentDistance) * BufferMultiplier, Alpha);
+
+		GetOwner()->SetActorLocation(TargetLocation, true);
+	}
+	else
+	{
+		StopLocationBuffer();
+	}
+}
+
+/*void UBufferComponent::UpdateRotationBuffer(float Alpha)
+{
+}*/

@@ -30,11 +30,19 @@ class TESISUE_API UPossessionComponent : public UActorComponent
 public:
     UPossessionComponent();
     void InitializeValues(const FPossessionData& PossessionData);
-    
+
+    UFUNCTION(BlueprintCallable)
     void AttemptPossession(AEntity* Victim);
+
+    UFUNCTION(BlueprintCallable)
     void ReleasePossession();
+
     void EjectPossessor();
+    
+    UFUNCTION(BlueprintCallable)
     void EjectAndExecute();
+
+    UFUNCTION(BlueprintCallable)
     AEntity* FindPossessionVictim(float PossessDistance, float PossessRadius) const;
     
 	///returns the entity that possesses

@@ -6,6 +6,7 @@
 #include "UObject/Interface.h"
 #include "CharacterStateProvider.generated.h"
 
+class UCharacterStateComponent;
 struct FCharacterStates;
 enum class ECharacterWeaponStates : uint8;
 enum class ECharacterActionsStates : uint8;
@@ -26,11 +27,6 @@ class TESISUE_API ICharacterStateProvider
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-	virtual const FCharacterStates& GetCurrentCharacterState() = 0;
-	virtual ECharacterWeaponStates SetWeaponState(ECharacterWeaponStates NewState) = 0;
-	virtual ECharacterActionsStates SetAction(ECharacterActionsStates NewAction) = 0;
-	virtual ECharacterModeStates SetMode(ECharacterModeStates NewForm) = 0;
-	virtual bool IsWeaponStateEqualToAny(const TArray<ECharacterWeaponStates>& StatesToCheck) = 0;
-	virtual bool IsActionStateEqualToAny(const TArray<ECharacterActionsStates>& ActionsToCheck) = 0;
-	virtual bool IsModeStateEqualToAny(const TArray<ECharacterModeStates>& FormsToCheck) = 0;
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	UCharacterStateComponent* GetCharacterStateComponent();
 };

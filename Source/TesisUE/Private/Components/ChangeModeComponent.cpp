@@ -30,7 +30,7 @@ void UChangeModeComponent::BeginPlay()
 
     OwnerUtils = GetOwner();
     CharacterStateProvider = GetOwner();
-    CharacterStateProvider->SetMode(ECharacterModeStates::ECMS_Human);
+    CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetMode(ECharacterModeStates::ECMS_Human);
 
     if (SpectralCurve)
     {
@@ -45,7 +45,7 @@ void UChangeModeComponent::ToggleForm()
     const float CurrentTime = GetWorld()->GetTimeSeconds();
     if (CurrentTime - LastTransformationTime < TransformationCooldown) return;
 
-    if (CharacterStateProvider->IsModeStateEqualToAny({ECharacterModeStates::ECMS_Human}))
+    if (CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->IsModeEqualToAny({ECharacterModeStates::ECMS_Human}))
     {
         ApplySpectralEffects();
     }
@@ -74,9 +74,9 @@ void UChangeModeComponent::ApplySpectralEffects()
 
     if (const TScriptInterface<IWeaponProvider> WeaponProvider = GetOwner())
     {
-        if (WeaponProvider && WeaponProvider->GetCurrentWeapon())
+        if (WeaponProvider && WeaponProvider->Execute_GetCurrentWeapon(GetOwner()))
         {
-            WeaponProvider->GetCurrentWeapon()->EnableVisuals(false);
+            WeaponProvider->Execute_GetCurrentWeapon(GetOwner())->EnableVisuals(false);
         }
     }
 }
@@ -98,9 +98,9 @@ void UChangeModeComponent::ApplyHumanEffects()
 
     if (const TScriptInterface<IWeaponProvider> WeaponProvider = GetOwner())
     {
-        if (WeaponProvider && WeaponProvider->GetCurrentWeapon())
+        if (WeaponProvider && WeaponProvider->Execute_GetCurrentWeapon(GetOwner()))
         {
-            WeaponProvider->GetCurrentWeapon()->EnableVisuals(true);
+            WeaponProvider->Execute_GetCurrentWeapon(GetOwner())->EnableVisuals(true);
         }
     }
 }

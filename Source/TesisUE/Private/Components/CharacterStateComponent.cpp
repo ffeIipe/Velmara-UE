@@ -9,7 +9,7 @@ UCharacterStateComponent::UCharacterStateComponent()
 	CurrentStates.Mode = ECharacterModeStates::ECMS_Human;
 }
 
-ECharacterWeaponStates UCharacterStateComponent::SetHumanState(ECharacterWeaponStates NewState)
+ECharacterWeaponStates UCharacterStateComponent::SetWeaponState(ECharacterWeaponStates NewState)
 {
 	CurrentStates.WeaponState = NewState;
 	return CurrentStates.WeaponState;

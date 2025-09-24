@@ -28,8 +28,8 @@ public:
 	virtual bool IsFlying() = 0;
 	virtual bool IsMovingBackwards() = 0;
 	virtual bool IsEquipped() = 0;
+	virtual bool IsLocking() = 0;
 
 	virtual TScriptInterface<ICombatTargetInterface> GetLastDamageCauser() = 0;
-	virtual bool IsLocking() = 0;
 	virtual void SetMovementMode(EMovementMode MovementMode) = 0;
 };

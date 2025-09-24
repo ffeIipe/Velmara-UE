@@ -5,7 +5,6 @@
 
 #include "LoadSystem/PlayerProgressSaveGame.h"
 #include "SceneEvents/NewGameStateBase.h"
-#include "Tutorial/PromptWidgetComponent.h"
 #include "Interfaces/ControllerProvider.h"
 
 void AWeapon::Pick(AActor* NewOwner)
@@ -17,13 +16,6 @@ void AWeapon::Pick(AActor* NewOwner)
 	AnimatorProvider = NewOwner;
 	
 	DisableCollision();
-	//TODO: Unify this\/\/\/
-	ItemMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	
-	if (PromptWidget)
-	{
-		PromptWidget->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
-	}
 	
 	if (!bWasUsed)
 	{
@@ -42,7 +34,7 @@ void AWeapon::Pick(AActor* NewOwner)
 	
 	if (CharacterStateProvider)
 	{
-		CharacterStateProvider->SetWeaponState(ECharacterWeaponStates::ECWS_EquippedWeapon);
+		CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetWeaponState(ECharacterWeaponStates::ECWS_EquippedWeapon);
 	}
 	
 	if (AnimatorProvider)
@@ -60,12 +52,6 @@ void AWeapon::Pick(AActor* NewOwner)
 	EnableVisuals(true);
 }
 
-void AWeapon::EnableVisuals(const bool bEnable)
-{
-	Super::EnableVisuals(bEnable);
-
-}
-
 void AWeapon::BeginPlay()
 {
 	Super::BeginPlay();
@@ -77,6 +63,6 @@ void AWeapon::EnableWeaponState(const bool bEnable) const
 	if (CharacterStateProvider)
 	{
 		const ECharacterWeaponStates NewState = bEnable ? ECharacterWeaponStates::ECWS_EquippedWeapon : ECharacterWeaponStates::ECWS_Unequipped;
-		CharacterStateProvider->SetWeaponState(NewState);
+		CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetWeaponState(NewState);
 	}
 }

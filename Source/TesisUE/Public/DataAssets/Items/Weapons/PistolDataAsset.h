@@ -78,11 +78,11 @@ class TESISUE_API UPistolDataAsset : public UDataAsset
 
 public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WeaponProperties")
-    FPistolEffects Effects;
-
+    FPistolProperties Stats;
+    
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WeaponProperties")
     FPistolMontages Montages;
     
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WeaponProperties")
-    FPistolProperties Stats;
+    FPistolEffects Effects;
 };

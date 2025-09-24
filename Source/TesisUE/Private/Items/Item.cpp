@@ -88,6 +88,18 @@ void AItem::ApplySavedState(const FInteractedItemSaveData* SavedData)
 	}
 }
 
+void AItem::DisableCollision()
+{
+	Super::DisableCollision();
+
+	ItemMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	if (PromptWidget)
+	{
+		PromptWidget->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
+	}
+}
+
 void AItem::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	Super::OnSphereBeginOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);

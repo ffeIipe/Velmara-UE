@@ -27,32 +27,26 @@ class TESISUE_API UExtraMovementComponent : public UActorComponent
 public:	
 	UExtraMovementComponent();
 	
-	/*void InitializeValues(const FMovementData& MovementData);*/
-
-	void SetCurrentStrategyValues(float DodgeDistance, float DoubleJumpForce, UAnimMontage* NewDodgeMontage);
-	
 	UFUNCTION()
 	void ResetDodge() { bIsSaveDodge = false; }
 
 	void PerformDoubleJump(UAnimMontage* DoubleJumpMontage);
 	void PerformMove(const FVector2D& MoveVector, bool bIsTriggered);
 	void PerformLook(const FVector2D& LookingVector) const;
-	void PerformDodge(float DodgeDistance, UAnimMontage* DodgeAnim);
-
-	UPROPERTY()
-	UAnimMontage* CurrentDodgeMontage = nullptr;
 
 	UFUNCTION(BlueprintCallable)
 	void DodgeSaveEvent();
 	
+	bool IsMovingBackward() const;
+
+	bool IsMoving() const { return bIsMoving; }
+
+	UFUNCTION(BlueprintCallable)
+	void PlayDodgeAnim(UAnimMontage* DodgeMontage) const;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	bool CanDoubleJump = true;
-
-	void CustomInitialize(AEntity* NewEntity);
-	
-	void InitializeValues(const FMovementData& MovementData);
-	bool IsMovingBackwards() const;
-
+	float DoubleJumpForce = 800.f;
 	bool bIsSaveDodge = false;
 
 	FOnDodgeStarted OnDodgeStarted;
@@ -62,41 +56,12 @@ public:
 private:
 	virtual void BeginPlay() override;
 	
-	void PlayDodgeAnim(UAnimMontage* DodgeMontage) const;
-
-	UFUNCTION()
-	void DodgeBufferEvent() const;
-
-	void StopDodgeBufferEvent();
-
-	UFUNCTION()
-	void UpdateDodgeBuffer(float Alpha);
-
 	void DodgeAnimBasedOnInput(UAnimMontage* DodgeMontage) const;
 
-	// === Flags ===
-	bool bIsMoving;
+	bool bIsMoving = false;
+	FVector2D CurrentMoveVector = FVector2D::ZeroVector;
 	
-	// === Stats ===
-	FVector2D CurrentMoveVector;
-	
-	float DoubleJumpStrength = 800.f;
-
-	UPROPERTY(BlueprintReadWrite, meta = (AllowPrivateAccess = true))
-	float BufferDodgeDistance;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-	UCurveFloat* BufferCurve;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UCurveFloat> AnotherBufferCurve;
-	
-	TScriptInterface<IOwnerUtilsInterface> OwnerUtils;
 	TScriptInterface<IAnimatorProvider> AnimatorProvider;
 	TScriptInterface<ICharacterStateProvider> CharacterStateProvider;
 	TScriptInterface<ICharacterMovementProvider> CharacterMovementProvider;
-	TScriptInterface<IStrategyProvider> StrategyProvider;
-
-	UPROPERTY()
-	class UTimelineComponent* BufferDodgeTimeline;
 };

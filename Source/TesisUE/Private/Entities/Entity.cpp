@@ -1,12 +1,15 @@
 #include "Entities/Entity.h"
 
-#include <NiagaraFunctionLibrary.h>
+#include "NiagaraFunctionLibrary.h"
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Camera/CameraComponent.h"
+#include "Components/BufferComponent.h"
+#include "Components/FieldCreationComponent.h"
 #include "Components/MementoComponent.h"
 #include "DamageTypes/SpectralTrapDamageType.h"
+#include "DataAssets/CombatStrategyDataAsset.h"
 #include "DataAssets/EffectsData.h"
 #include "DataAssets/EntityData.h"
 #include "DataAssets/InputData.h"
@@ -16,7 +19,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Interfaces/EntityAnimInstanceProvider.h"
 #include "Items/Weapons/Sword.h"
-#include "Items/Weapons/Strategies/HumanStrategy.h"
+#include "Items/Weapons/Strategies/CombatStrategy.h"
 #include "Kismet/GameplayStatics.h"
 
 AEntity::AEntity()
@@ -51,16 +54,20 @@ AEntity::AEntity()
 	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	CameraComponent->SetupAttachment(GetSpringArmComponent());
 
-	GetExtraMovementComponent()->OnDodgeStarted.
-	                             AddDynamic(TargetingComponent, &UTargetingComponent::RemoveCombatTarget);
-	GetExtraMovementComponent()->OnDodgeSaved.AddDynamic(this, &AEntity::Input_Dodge);
+	FieldCreationComponent = CreateDefaultSubobject<UFieldCreationComponent>(TEXT("Field Creation"));
 
-	GetCombatComponent()->OnResetState.AddDynamic(ExtraMovementComponent, &UExtraMovementComponent::ResetDodge);
-	GetCombatComponent()->OnResetState.AddDynamic(TargetingComponent, &UTargetingComponent::RemoveCombatTarget);
-	GetCombatComponent()->OnSaveLightAttack.AddDynamic(this, &AEntity::PerformPrimaryAttack);
-	GetCombatComponent()->OnSaveHeavyAttack.AddDynamic(this, &AEntity::Input_SecondaryAttack);
-	GetCombatComponent()->OnLightAttack.AddDynamic(TargetingComponent, &UTargetingComponent::PerformSoftLock);
-	GetCombatComponent()->OnHeavyAttack.AddDynamic(TargetingComponent, &UTargetingComponent::PerformSoftLock);
+	BufferComponent = CreateDefaultSubobject<UBufferComponent>(TEXT("Buffer"));
+	
+	ExtraMovementComponent->OnDodgeStarted.
+	                             AddDynamic(TargetingComponent, &UTargetingComponent::RemoveCombatTarget);
+	ExtraMovementComponent->OnDodgeSaved.AddDynamic(this, &AEntity::Input_Dodge);
+
+	CombatComponent->OnResetState.AddDynamic(ExtraMovementComponent, &UExtraMovementComponent::ResetDodge);
+	CombatComponent->OnResetState.AddDynamic(TargetingComponent, &UTargetingComponent::RemoveCombatTarget);
+	CombatComponent->OnSaveLightAttack.AddDynamic(this, &AEntity::PerformPrimaryAttack);
+	CombatComponent->OnSaveHeavyAttack.AddDynamic(this, &AEntity::Input_SecondaryAttack);
+	CombatComponent->OnLightAttack.AddDynamic(TargetingComponent, &UTargetingComponent::PerformSoftLock);
+	CombatComponent->OnHeavyAttack.AddDynamic(TargetingComponent, &UTargetingComponent::PerformSoftLock);
 
 	GetAttributeComponent()->OnOutOfEnergy.AddDynamic(GetPossessionComponent(),
 	                                                  &UPossessionComponent::TryReleasePossession);
@@ -74,9 +81,9 @@ AEntity::AEntity()
 void AEntity::GetHit(const TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint,
                      FDamageEvent const& DamageEvent, const float DamageReceived)
 {
-	if (GetCharacterStateComponent()->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Dead })) return;
+	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Dead })) return;
 
-	if (IsBlocking()) GetCombatComponent()->ReceiveBlock(MontagesData->Montages.BlockMontage);
+	if (IsBlocking()) CombatComponent->ReceiveBlock(MontagesData->Montages.BlockMontage);
 	
 	LastDamageCauser = DamageCauser;
 	
@@ -106,7 +113,7 @@ void AEntity::GetHit(const TScriptInterface<ICombatTargetInterface> DamageCauser
 			ImpactPoint
 		);
 	}
-	GetCombatComponent()->StartBufferBackwards();
+	CombatComponent->StartBufferBackwards();
 	GetDirectionalReact(ImpactPoint);
 }
 
@@ -118,36 +125,6 @@ void AEntity::GetFinished()
 bool AEntity::IsHittable()
 {
 	return !GetAttributeComponent()->IsShielded() && IsAlive() && !IsBlocking();
-}
-
-ECharacterWeaponStates AEntity::SetWeaponState(const ECharacterWeaponStates NewState)
-{
-	return  GetCharacterStateComponent()->SetHumanState(NewState);
-}
-
-ECharacterActionsStates AEntity::SetAction(const ECharacterActionsStates NewAction)
-{
-	return GetCharacterStateComponent()->SetAction(NewAction);
-}
-
-ECharacterModeStates AEntity::SetMode(const ECharacterModeStates NewForm)
-{
-	return GetCharacterStateComponent()->SetMode(NewForm);
-}
-
-bool AEntity::IsWeaponStateEqualToAny(const TArray<ECharacterWeaponStates>& StatesToCheck)
-{
-	return GetCharacterStateComponent()->IsWeaponStateEqualToAny(StatesToCheck);
-}
-
-bool AEntity::IsActionStateEqualToAny(const TArray<ECharacterActionsStates>& ActionsToCheck)
-{
-	return GetCharacterStateComponent()->IsActionEqualToAny(ActionsToCheck);
-}
-
-bool AEntity::IsModeStateEqualToAny(const TArray<ECharacterModeStates>& FormsToCheck)
-{
-	return GetCharacterStateComponent()->IsModeEqualToAny(FormsToCheck);
 }
 
 void AEntity::GetDirectionalReact(const FVector& ImpactPoint)
@@ -183,14 +160,14 @@ void AEntity::GetDirectionalReact(const FVector& ImpactPoint)
 		Section = FName("FromRight");
 	}
 
-	PlayAnimMontage(MontagesData->Montages.HitReactMontage, 1.f, Section);
+	Execute_PlayAnimMontage(this, MontagesData->Montages.HitReactMontage, 1.f, Section);
 }
 
 void AEntity::ChangeWeaponAnimationState()
 {
 	if (const TScriptInterface<IEntityAnimInstanceProvider> AnimInstance = GetMesh()->GetAnimInstance())
 	{
-		AnimInstance->SetAnimationState(GetCurrentWeapon());
+		AnimInstance->SetAnimationState(Execute_GetCurrentWeapon(this));
 	}
 }
 
@@ -219,7 +196,8 @@ void AEntity::SetCombatStrategy(const ECharacterModeStates Mode)
 	
 	if (CurrentStrategy)
 	{
-		CurrentStrategy->SetCurrentValues(GetExtraMovementComponent(), GetCharacterMovement(), GetTargetingComponent());
+		CurrentStrategy->InitializeStrategy();
+		CurrentStrategy->SetCurrentValues(this);
 	}
 	else if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, "MISSING! Strategy is not valid! Stop the game or it will crash.");
 }
@@ -228,13 +206,13 @@ void AEntity::HitReactJumpToSection(const FName Section)
 {
 	if (MontagesData->Montages.HitReactMontage)
 	{
-		PlayAnimMontage(MontagesData->Montages.HitReactMontage, 1.f, Section);
+		Execute_PlayAnimMontage(this, MontagesData->Montages.HitReactMontage, 1.f, Section);
 	}
 }
 
 bool AEntity::IsEquipped()
 {
-	return GetCharacterStateComponent()->IsWeaponStateEqualToAny({ECharacterWeaponStates::ECWS_EquippedWeapon});
+	return CharacterStateComponent->IsWeaponStateEqualToAny({ECharacterWeaponStates::ECWS_EquippedWeapon});
 }
 
 bool AEntity::CanBeFinished()
@@ -260,13 +238,13 @@ bool AEntity::IsLaunchable()
 
 void AEntity::SetWeaponCollisionEnabled(const ECollisionEnabled::Type CollisionEnabled)
 {
-	if (GetCurrentWeapon())
+	if (Execute_GetCurrentWeapon(this))
 	{
-		GetCurrentWeapon()->SetWeaponCollisionEnabled(CollisionEnabled);
+		Execute_GetCurrentWeapon(this)->SetWeaponCollisionEnabled(CollisionEnabled);
 			
 		if (CollisionEnabled != ECollisionEnabled::NoCollision)
 		{
-			GetCurrentWeapon()->ClearIgnoreActors();
+			Execute_GetCurrentWeapon(this)->ClearIgnoreActors();
 		}
 	}
 }
@@ -288,7 +266,7 @@ void AEntity::BeginPlay()
 	}
 
 	SetCombatStrategy(ECharacterModeStates::ECMS_Human);
-
+	
 	GetMementoComponent()->SaveState();
 }
 
@@ -301,8 +279,7 @@ void AEntity::InitializeComponentsData() const
 		PossessionComponent->InitializeValues(EntityData->PossessionData);
 		InventoryComponent->InitializeValues(EntityData->InventoryData);
 		TargetingComponent->InitializeValues(EntityData->TargetingData);
-
-		GetExtraMovementComponent()->InitializeValues(EntityData->MovementData);
+		
 		GetSpringArmComponent()->TargetArmLength = EntityData->SpringArmData.SpringArmLength;
 		GetSpringArmComponent()->SocketOffset = EntityData->SpringArmData.SocketOffset;
 		GetSpringArmComponent()->bEnableCameraLag = EntityData->SpringArmData.CameraLag;
@@ -311,19 +288,12 @@ void AEntity::InitializeComponentsData() const
 
 		GetCharacterMovement()->GravityScale = EntityData->CharMoveData.GravityScale;
 		GetCharacterMovement()->MaxAcceleration = EntityData->CharMoveData.MaxAcceleration;
-
-		// Character Movement: Walking
 		GetCharacterMovement()->MaxWalkSpeed = EntityData->CharMoveData.MaxWalkSpeed;
 		GetCharacterMovement()->BrakingDecelerationWalking = EntityData->CharMoveData.BrakingDecelerationWalking;
-
-		// Character Movement: Jumping / Falling
 		GetCharacterMovement()->JumpZVelocity = EntityData->CharMoveData.JumpZVelocity;
 		GetCharacterMovement()->AirControl = EntityData->CharMoveData.AirControl;
 		GetCharacterMovement()->AirControlBoostMultiplier = EntityData->CharMoveData.AirControlBoostMultiplier;
-
-		// Character Movement (Rotation Settings)
 		GetCharacterMovement()->RotationRate = EntityData->CharMoveData.RotationRate;
-
 		GetCharacterMovement()->MaxJumpApexAttemptsPerSimulation = EntityData->CharMoveData.MaxJumpApexAttemptsPerSimulation;
 	}
 }
@@ -342,7 +312,6 @@ void AEntity::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent); EnhancedInputComponent && InputsData)
 	{
 		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_Jump, ETriggerEvent::Started, this, &AEntity::Jump);
-
 		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_Move, ETriggerEvent::Triggered, this, &AEntity::Input_Move);
 		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_Move, ETriggerEvent::Completed, this, &AEntity::Input_Move);
 		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_Dodge, ETriggerEvent::Started, this, &AEntity::Input_Dodge);
@@ -351,9 +320,12 @@ void AEntity::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_Attack, ETriggerEvent::Started, this, &AEntity::OnPrimaryAttackStarted);
 		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_Attack, ETriggerEvent::Triggered, this, &AEntity::Input_PrimaryAttack);
 		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_Attack, ETriggerEvent::Completed, this, &AEntity::OnPrimaryAttackCompleted);
+		
 		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_HeavyAttack, ETriggerEvent::Started, this, &AEntity::Input_SecondaryAttack);
+
 		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_Inventory, ETriggerEvent::Started, this, &AEntity::Input_ToggleHardLock);
 		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_ChangeHardLockTarget, ETriggerEvent::Started, this, &AEntity::Input_ChangeHardLockTarget);
+		
 		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_Block, ETriggerEvent::Triggered, this, &AEntity::Input_Block);
 		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_Block, ETriggerEvent::Completed, this, &AEntity::Input_Block);
 
@@ -370,8 +342,8 @@ void AEntity::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);
 	
-	GetCombatComponent()->bIsLaunched = false;
-	GetExtraMovementComponent()->CanDoubleJump = true;
+	CombatComponent->bIsLaunched = false;
+	ExtraMovementComponent->CanDoubleJump = true;
 
 	if (!GetAttributeComponent()->IsAlive())
 	{
@@ -392,7 +364,7 @@ void AEntity::StunBehavior()
 void AEntity::RemoveStunBehavior()
 {
 	GetMesh()->GlobalAnimRateScale = 1.f;
-	GetCharacterMovement()->MaxWalkSpeed = CurrentStrategy->StrategyProperties.MaxWalkSpeed;
+	GetCharacterMovement()->MaxWalkSpeed = CurrentStrategy->CombatStrategyData->StrategyProperties.MaxWalkSpeed;
 }
 
 bool AEntity::IsEquipping() const
@@ -421,52 +393,54 @@ float AEntity::TakeDamage(const float DamageAmount, FDamageEvent const& DamageEv
 
 void AEntity::Input_Move(const FInputActionValue& Value)
 {
-	if (IsActionStateEqualToAny({ ECharacterActionsStates::ECAS_Block, ECharacterActionsStates::ECAS_Finish, ECharacterActionsStates::ECAS_Dead, ECharacterActionsStates::ECAS_Stun })) return;
+	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Block, ECharacterActionsStates::ECAS_Finish, ECharacterActionsStates::ECAS_Dead, ECharacterActionsStates::ECAS_Stun })) return;
 	
-	GetExtraMovementComponent()->PerformMove(Value.Get<FVector2D>(), Value.Get<bool>());
+	ExtraMovementComponent->PerformMove(Value.Get<FVector2D>(), Value.Get<bool>());
 }
 
 void AEntity::Input_Look(const FInputActionValue& Value)
 {
 	if (!IsAlive()) return;
 	
-	GetExtraMovementComponent()->PerformLook(Value.Get<FVector2D>());	
+	ExtraMovementComponent->PerformLook(Value.Get<FVector2D>());	
 }
 
 void AEntity::Jump()
 {
-	if (GetCharacterStateComponent()->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Nothing, ECharacterActionsStates::ECAS_Attack }) && GetExtraMovementComponent()->CanDoubleJump && !IsEquipping())
+	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Nothing, ECharacterActionsStates::ECAS_Attack }) && ExtraMovementComponent->CanDoubleJump && !IsEquipping())
 	{
-		PlayAnimMontage(GetCurrentStrategy()->StrategyMontages.JumpMontage, 1.f);
+		Execute_PlayAnimMontage(this, MontagesData->Montages.JumpMontage, 1.f, "Default");
 
 		Super::Jump();
 
-		if (GetCharacterMovement()->IsFalling() && GetExtraMovementComponent()->CanDoubleJump)
+		if (GetCharacterMovement()->IsFalling() && ExtraMovementComponent->CanDoubleJump)
 		{
-			Input_DoubleJump();
+			if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Block, ECharacterActionsStates::ECAS_Finish, ECharacterActionsStates::ECAS_Dead }))
+			{
+				ExtraMovementComponent->PerformDoubleJump(MontagesData->Montages.DoubleJumpMontage);
+			}
 		}
 	}
 }	
 
-void AEntity::Input_DoubleJump()
-{
-	if (!IsActionStateEqualToAny({ ECharacterActionsStates::ECAS_Block, ECharacterActionsStates::ECAS_Finish, ECharacterActionsStates::ECAS_Dead }))
-	{
-		GetExtraMovementComponent()->PerformDoubleJump(GetCurrentStrategy()->StrategyMontages.DoubleJumpMontage);
-	}
-}
-
 void AEntity::Input_Dodge()
 {
-	if (!IsActionStateEqualToAny({ ECharacterActionsStates::ECAS_Finish, ECharacterActionsStates::ECAS_Stun }))
+	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Finish, ECharacterActionsStates::ECAS_Stun })) return;
+
+	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Dodge }))
+	{
+		ExtraMovementComponent->bIsSaveDodge = true;
+	}
+	else
 	{
 		GetCurrentStrategy()->Strategy_Dodge(this);
+		CharacterStateComponent->SetAction(ECharacterActionsStates::ECAS_Dodge);
 	}
 }
 
 void AEntity::OnPrimaryAttackStarted()
 {
-	if (GetCharacterStateComponent()->IsWeaponStateEqualToAny({ ECharacterWeaponStates::ECWS_EquippedWeapon }))
+	if (CharacterStateComponent->IsWeaponStateEqualToAny({ ECharacterWeaponStates::ECWS_EquippedWeapon }))
 	{
 		TimeOfPrimaryAttackPressed = GetWorld()->GetTimeSeconds();
 	}
@@ -478,67 +452,74 @@ void AEntity::OnPrimaryAttackStarted()
 
 void AEntity::Input_PrimaryAttack(const FInputActionValue& Value)
 {
-	if (IsActionStateEqualToAny({ ECharacterActionsStates::ECAS_Stun, ECharacterActionsStates::ECAS_Dead })) return;
+	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Stun, ECharacterActionsStates::ECAS_Dead })) return;
 	
-	GetExtraMovementComponent()->bIsSaveDodge = false;
-	GetCombatComponent()->bIsSaveHeavyAttack = false;
+	ExtraMovementComponent->bIsSaveDodge = false;
+	CombatComponent->bIsSaveHeavyAttack = false;
 	
-	if (GetCombatComponent()->CanAttack() && GetTargetingComponent()->IsLocking() && IsMovingBackwards())
+	if (CombatComponent->CanAttack() /*&& GetTargetingComponent()->IsLocking()*/ && IsMovingBackwards())
 	{
 		if (GetWorld()->GetTimeSeconds() - TimeOfPrimaryAttackPressed > .8f)
 		{
-			SetAction(ECharacterActionsStates::ECAS_Attack);
-			GetCombatComponent()->PerformLaunch(GetTargetingComponent()->GetCurrentTarget());
+			CharacterStateComponent->SetAction(ECharacterActionsStates::ECAS_Attack);
+			CombatComponent->PerformLaunch(GetTargetingComponent()->GetCurrentTarget());
 		}
 	}
 }
 
 void AEntity::OnPrimaryAttackCompleted()
 {
-	if (GetCharacterStateComponent()->IsWeaponStateEqualToAny({ ECharacterWeaponStates::ECWS_EquippedWeapon }))
-	{
-		PerformPrimaryAttack();
-	}
+	PerformPrimaryAttack();
+	
 	TimeOfPrimaryAttackPressed = 0.f;
 }
 
 void AEntity::PerformPrimaryAttack()
 {
-	GetExtraMovementComponent()->bIsSaveDodge = false;
-	GetCombatComponent()->bIsSaveHeavyAttack = false;
+	ExtraMovementComponent->bIsSaveDodge = false;
+	CombatComponent->bIsSaveHeavyAttack = false;
 	
-	if (!IsActionStateEqualToAny({ ECharacterActionsStates::ECAS_Attack, ECharacterActionsStates::ECAS_Dodge }))
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Attack, ECharacterActionsStates::ECAS_Dodge }))
 	{
-		GetCurrentStrategy()->Strategy_UseFirstAttack(GetCombatComponent()->IsInAir(), GetCurrentWeapon());
+		GetCurrentStrategy()->Strategy_UseFirstCommand(this);
 	}
 	else
 	{
-		GetCombatComponent()->bIsSaveLightAttack = true;
+		CombatComponent->bIsSaveLightAttack = true;
 	}
 }
 
 void AEntity::Input_SecondaryAttack()
 {
-	if (IsActionStateEqualToAny({ ECharacterActionsStates::ECAS_Stun, ECharacterActionsStates::ECAS_Dead })) return;
+	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Stun, ECharacterActionsStates::ECAS_Dead })) return;
 
-	GetExtraMovementComponent()->bIsSaveDodge = false;
-	GetCombatComponent()->bIsSaveLightAttack = false;
+	ExtraMovementComponent->bIsSaveDodge = false;
+	CombatComponent->bIsSaveLightAttack = false;
 
-	if (!IsActionStateEqualToAny({ ECharacterActionsStates::ECAS_Attack, ECharacterActionsStates::ECAS_Dodge }))
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Attack, ECharacterActionsStates::ECAS_Dodge }))
 	{
-		GetCurrentStrategy()->Strategy_UseSecondAttack(GetCombatComponent()->IsInAir(), GetCurrentWeapon());
+		GetCurrentStrategy()->Strategy_UseSecondCommand(this);
 	}
 	else
 	{
-		GetCombatComponent()->bIsSaveHeavyAttack = true;
+		CombatComponent->bIsSaveHeavyAttack = true;
 	}
+}
+
+void AEntity::Input_Ability()
+{
+	if (CharacterStateComponent->IsActionEqualToAny({
+		ECharacterActionsStates::ECAS_Dead, ECharacterActionsStates::ECAS_Finish, ECharacterActionsStates::ECAS_Stun
+	})) return;
+	
+	GetCurrentStrategy()->Strategy_UseAbility(this);
 }
 
 void AEntity::Input_Block(const FInputActionValue& Value)
 {
-	if (IsActionStateEqualToAny({ ECharacterActionsStates::ECAS_Stun, ECharacterActionsStates::ECAS_Dead })) return;
+	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Stun, ECharacterActionsStates::ECAS_Dead })) return;
 
-	GetCombatComponent()->PerformBlock(Value.Get<bool>(), MontagesData->Montages.BlockMontage);
+	CombatComponent->PerformBlock(Value.Get<bool>(), MontagesData->Montages.BlockMontage);
 }
 
 void AEntity::Input_ChangeHardLockTarget()
@@ -557,32 +538,23 @@ void AEntity::Input_ToggleHardLock()
 	}
 }
 
-void AEntity::Input_Execute()
-{
-	if (IsActionStateEqualToAny({
-		ECharacterActionsStates::ECAS_Dead, ECharacterActionsStates::ECAS_Finish, ECharacterActionsStates::ECAS_Stun
-	})) return;
-	
-	GetCurrentStrategy()->Strategy_UseAbility(this);
-}
-
 void AEntity::Input_Interact(const FInputActionValue& InputActionValue)
 {
 	if (const TScriptInterface<IWeaponInterface> WeaponReached = GetInventoryComponent()->PerformInteract())
 	{
-		WeaponReached->OnWeaponUsed.AddDynamic(GetCombatComponent(), &UCombatComponent::StartAttackBufferEvent);
+		WeaponReached->OnWeaponUsed.AddDynamic(CombatComponent, &UCombatComponent::StartAttackBufferEvent);
 		WeaponReached->OnWeaponUsed.AddDynamic(GetTargetingComponent(), &UTargetingComponent::PerformSoftLock);
 	}
 }
 
 void AEntity::Die(UAnimMontage* DeathAnim, const FName Section)
 {
-	if (GetCharacterStateComponent()->CurrentStates.Action == ECharacterActionsStates::ECAS_Dead) return;
+	if (CharacterStateComponent->CurrentStates.Action == ECharacterActionsStates::ECAS_Dead) return;
 
-	StopAnimMontage();
-	GetCharacterStateComponent()->SetAction(ECharacterActionsStates::ECAS_Dead);
+	Execute_StopAnimMontage(this, GetCurrentMontage()) ;
+	CharacterStateComponent->SetAction(ECharacterActionsStates::ECAS_Dead);
 
-	if (GetCombatComponent()->IsInAir())
+	if (CombatComponent->IsInAir())
 	{
 		ACharacter::LaunchCharacter(FVector(0.f, 0.f, -300.f), true, true);
 		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
@@ -590,13 +562,13 @@ void AEntity::Die(UAnimMontage* DeathAnim, const FName Section)
 
 	if (DeathAnim)
 	{
-		StopAnimMontage();
-		PlayAnimMontage(DeathAnim, 1.f, Section);
+		Execute_StopAnimMontage(this, GetCurrentMontage()) ;
+		Execute_PlayAnimMontage(this, DeathAnim, 1.f, Section);
 	}
 }
 
 void AEntity::OnWallCollision()
 {
-	StopAnimMontage();
+	Execute_StopAnimMontage(this, GetCurrentMontage()) ;
 	HitReactJumpToSection(FName("ReactToShield"));
 }

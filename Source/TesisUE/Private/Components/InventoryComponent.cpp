@@ -1,5 +1,6 @@
 #include "Components/InventoryComponent.h"
 #include "Blueprint/UserWidget.h"
+#include "Components/CharacterStateComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/World.h"
@@ -7,14 +8,12 @@
 #include "HUD/Inventory.h"
 
 #include "DataAssets/EntityData.h"
-#include "GameFramework/Character.h"
 #include "Interfaces/AnimatorProvider.h"
 #include "Interfaces/CharacterStateProvider.h"
 #include "Interfaces/Weapon/WeaponInterface.h"
 #include "Interfaces/ControllerProvider.h"
 #include "Interfaces/Pickable.h"
 #include "Player/CharacterWeaponStates.h"
-#include "SpectralMode/Interfaces/Spectral.h"
 
 UInventoryComponent::UInventoryComponent()
 {
@@ -243,7 +242,7 @@ TScriptInterface<IWeaponInterface> UInventoryComponent::PerformInteract()
     {
         if (const TScriptInterface<IPickable> Pickable = ResultHit.GetActor())
         {
-            if (!CharacterStateProvider->IsModeStateEqualToAny({ ECharacterModeStates::ECMS_Spectral }))
+            if (!CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->IsModeEqualToAny({ ECharacterModeStates::ECMS_Spectral }))
             {
                 if (const TScriptInterface<IWeaponInterface> WeaponReached = Pickable.GetObject(); TryAddWeapon(WeaponReached))
                 {

@@ -5,7 +5,6 @@
 #include "CoreMinimal.h"
 #include "Weapon.h"
 #include "Interfaces/Weapon/MeleeWeapon.h"
-#include "Interfaces/Weapon/ResetMelee.h"
 #include "Items/Item.h"
 #include "Sword.generated.h"
 
@@ -15,7 +14,7 @@ class UMeleeDamage;
 class UBoxComponent;
 
 UCLASS()
-class TESISUE_API ASword : public AWeapon, public IMeleeWeapon, public IResetMelee
+class TESISUE_API ASword : public AWeapon, public IMeleeWeapon
 {
     GENERATED_BODY()
 
@@ -40,8 +39,6 @@ public:
     virtual void Unequip() override;
     
     virtual UPrimitiveComponent* GetCollisionComponent() override;
-    
-    virtual void ResetMelee() override;
 
     virtual void AttachMeshToSocket(USceneComponent* InParent) override;
     void ImpactEffects(const FHitResult& Hit, bool bIsHittable) const;
@@ -56,10 +53,14 @@ protected:
        bool bFromSweep,
        const FHitResult& SweepResult);
 
-    virtual void UsePrimaryAttack(bool bIsInAir) override;
-    virtual void UseSecondaryAttack(bool bIsInAir) override;
+    virtual void UsePrimaryAttack_Implementation() override;
+    virtual void UseSecondaryAttack_Implementation() override;
+    virtual void UseAbilityAttack_Implementation() override;
+    
+    virtual void SetDamageType_Implementation(TSubclassOf<UMeleeDamage> DamageType) override;
+    virtual void ResetWeapon_Implementation() override;
+    
 private:
-
     UPROPERTY(EditAnywhere)
     USwordDataAsset* SwordDataAsset;
     
@@ -78,7 +79,7 @@ private:
     
     bool PerformBaseAttack(UCommand* CommToPlay) const;
     
-    virtual void ClearIgnoreActors() override { IgnoreActors.Empty(); }
+    virtual void ClearIgnoreActors() override;
     virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled) override;
 
     UPROPERTY()
@@ -89,4 +90,6 @@ private:
     UCommand* HeavyCommandInstance;
     UPROPERTY()
     UCommand* HeavyJumpCommandInstance;
+    UPROPERTY()
+    UCommand* AbilityCommandInstance;
 };

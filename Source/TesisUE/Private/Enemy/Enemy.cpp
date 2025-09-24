@@ -1,4 +1,5 @@
 #include "Enemy/Enemy.h"
+
 #include "AIController.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -6,14 +7,7 @@
 #include "AI/EnemyAIController.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardComponent.h"
-#include "Components/AttributeComponent.h"
 #include "Components/CapsuleComponent.h"
-#include "Components/CharacterStateComponent.h"
-#include "Components/CombatComponent.h"
-#include "Components/ExtraMovementComponent.h"
-#include "Components/InputComponent.h"
-#include "Components/MementoComponent.h"
-#include "Components/PossessionComponent.h"
 #include "Components/TimelineComponent.h"
 #include "DamageTypes/MeleeDamage.h"
 #include "DataAssets/InputData.h"
@@ -89,7 +83,7 @@ AEnemy::AEnemy()
 	GetPossessionComponent()->OnPossessorEjected.AddDynamic(this, &AEnemy::OnUnpossessed);
 	GetPossessionComponent()->OnPossessorExecutedMeAndEjected.AddDynamic(this, &AEnemy::GetExecuted);
 
-	GetCombatComponent()->OnResetState.AddDynamic(this, &AEnemy::ReturnAttackTokenToTarget);
+	CombatComponent->OnResetState.AddDynamic(this, &AEnemy::ReturnAttackTokenToTarget);
 
 	GetAttributeComponent()->OnEntityDead.AddDynamic(this, &AEnemy::PerformDead);
 	GetAttributeComponent()->OnDettachShield.AddDynamic(this, &AEnemy::NotifyIsNotShieldedToBlackboard);
@@ -123,7 +117,7 @@ void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 		GetAttributeComponent()->ResetAttributes();
 	}
 	
-	SetAction(ECharacterActionsStates::ECAS_Nothing);
+	CharacterStateComponent->SetAction(ECharacterActionsStates::ECAS_Nothing);
 
 	bUseControllerRotationYaw = bOriginalUseControllerRotationYaw;
 
@@ -157,7 +151,7 @@ void AEnemy::DeactivateEnemy()
 	SetActorHiddenInGame(true);
 	HandleEnemyCollision(false);
 
-	StopAnimMontage();
+	Execute_StopAnimMontage(this, GetCurrentMontage());
 	GetMesh()->bPauseAnims = true;
 
 	if (PromptWidgetComponent && PromptWidgetComponent->GetWidget())
@@ -282,7 +276,7 @@ void AEnemy::BeginPlay()
 
 	HandleEnemyCollision(true);
 	
-	SetWeaponState(ECharacterWeaponStates::ECWS_EquippedWeapon);
+	CharacterStateComponent->SetWeaponState(ECharacterWeaponStates::ECWS_EquippedWeapon);
 	
 	if (DissolveCurve)
 	{
@@ -419,7 +413,6 @@ void AEnemy::OnPossessed()
 	ReturnAttackTokenToTarget();
 	DisableAI();
 	ApplyPossessionParameters(true);
-	GetExtraMovementComponent()->CustomInitialize(this);
 }
 
 void AEnemy::OnUnpossessed()
@@ -427,7 +420,6 @@ void AEnemy::OnUnpossessed()
 	ReturnAttackTokenToTarget();
 	EnableAI();
 	ApplyPossessionParameters(false);
-	GetExtraMovementComponent()->CustomInitialize(this);
 
 	if (IGenericTeamAgentInterface* OtherTeamAgent = Cast<IGenericTeamAgentInterface>(GetController()))
 	{
@@ -512,7 +504,7 @@ void AEnemy::FinishedDamage()
 			EffectsManager->CameraZoom(ECameraZoomPreset::ECZP_Finisher);
 		}
 		
-		SetAction(ECharacterActionsStates::ECAS_Dead);
+		CharacterStateComponent->SetAction(ECharacterActionsStates::ECAS_Dead);
 		Die(nullptr, NAME_None);
 
 		if (PromptWidgetComponent && PromptWidgetComponent->GetWidget()) PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
@@ -523,8 +515,8 @@ void AEnemy::FinishedDamage()
 		SetActorRotation(NewRotation);	
 	}
 
-	StopAnimMontage();
-	PlayAnimMontage(FinisherDeathMontage);
+	Execute_StopAnimMontage(this, GetCurrentMontage());
+	Execute_PlayAnimMontage(this, FinisherDeathMontage, 1.f, "Default");
 }
 
 bool AEnemy::IsLaunchable()
@@ -648,7 +640,7 @@ void AEnemy::EnableAI()
 		AIController->RunBehaviorTree(BTAsset);
 	}
 
-	EnemyAIController->CustomInitialize(this, BBComponent, GetCharacterStateComponent());
+	EnemyAIController->CustomInitialize(this, BBComponent, CharacterStateComponent);
 }
 
 TArray<TScriptInterface<ICombatTargetInterface>> AEnemy::GenerateSphereOverlapToDetectOtherEnemies(
@@ -671,7 +663,7 @@ TArray<TScriptInterface<ICombatTargetInterface>> AEnemy::GenerateSphereOverlapTo
 		Origin,
 		Radius,
 		ObjectTypes,
-		AEnemy::StaticClass(),
+		this->StaticClass(),
 		ActorsToIgnoreForSphere,
 		OverlappedActors
 	);

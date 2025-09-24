@@ -3,91 +3,55 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Entities/Entity.h"
 #include "UObject/Object.h"
 #include "CombatStrategy.generated.h"
 
-class UTargetingComponent;
-class UCharacterMovementComponent;
-class UExtraMovementComponent;
-class UStrategyData;
-class UCombatComponent;
-class IWeaponInterface;
-class IWeaponProvider;
+class UCombatStrategyData;
+class UCommand;
 
-USTRUCT(BlueprintType)
-struct FStrategyProperties
-{
-	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float MaxWalkSpeed = 500.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float JumpForce = 800.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float DoubleJumpForce = 800.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float MaxDodgeDistance = 5.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float MaxAbilityDistance = 150.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float MaxAbilityRadius = 50.f;
-	/*
-	UPROPERTY(EditDefaultsOnly, Category = "Energy | OnPossession")
-	float PossessionAttackCost;
-	
-	UPROPERTY(EditDefaultsOnly, Category = "Energy | OnPossession")
-	float PossessionHeavyAttackCost;
-	
-	UPROPERTY(EditDefaultsOnly, Category = "Energy | OnPossession")
-	float PossessionDamage;
-	
-	UPROPERTY(EditDefaultsOnly, Category = "Movement | OnPossession")
-	float PossessionMaxWalkSpeed = 700.f;*/
-};
-
-USTRUCT(BlueprintType)
-struct FStrategyMontages
-{
-	GENERATED_BODY()
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UAnimMontage* JumpMontage;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UAnimMontage* DoubleJumpMontage;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UAnimMontage* DodgeMontage;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UAnimMontage* FinisherMontage;
-};
-
-UCLASS(Abstract)
+UCLASS(Blueprintable)
 class TESISUE_API UCombatStrategy : public UObject
 {
 	GENERATED_BODY()
 	
 public:
-	virtual void Strategy_UseFirstAttack(const bool bIsInAir, TScriptInterface<IWeaponInterface> CurrentWeapon){}
-	virtual void Strategy_UseSecondAttack(const bool bIsInAir, TScriptInterface<IWeaponInterface> CurrentWeapon){}
-	virtual void Strategy_UseAbility(AActor* Actor){}
-	virtual void Strategy_Dodge(AActor* Actor){}
+	void InitializeStrategy();
 	
-	void SetCurrentValues(
-		UExtraMovementComponent* ExtraMoveComp,
-		UCharacterMovementComponent* MoveComp,
-		UTargetingComponent* TargetingComp
-		) const;
+	void Strategy_UseFirstCommand(AActor* User);
+	void Strategy_UseSecondCommand(AActor* User);
+	void Strategy_UseAbility(AActor* User);
+	void Strategy_Dodge(AActor* User);
+
+	void SetCurrentValues(const TObjectPtr<AEntity>& Entity) const;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FStrategyProperties StrategyProperties;
+	UFUNCTION()
+	void ResetCommands();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FStrategyMontages StrategyMontages;
+	UCombatStrategyData* CombatStrategyData;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TObjectPtr<UDataTable> CommandsDataTable;
+
+private:
+	UPROPERTY()
+	UCommand* FirstCommandInstance;
+
+	UPROPERTY()
+	UCommand* SecondCommandInstance;
+
+	UPROPERTY()
+	UCommand* AbilityCommandInstance;
+
+	UPROPERTY()
+	UCommand* DodgeCommandInstance;
+	
+	TSubclassOf<UCommand> FirstCommandClass;
+	TSubclassOf<UCommand> SecondCommandClass;
+	TSubclassOf<UCommand> AbilityCommandClass;
+	TSubclassOf<UCommand> DodgeCommandClass;
+
+	bool bWasInitialized = false;
 };

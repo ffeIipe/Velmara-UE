@@ -36,7 +36,7 @@ void UPossessionComponent::BeginPlay()
 
 void UPossessionComponent::AttemptPossession(AEntity* Victim)
 {
-    if (IsPossessing() || CharacterStateProvider->IsModeStateEqualToAny({ECharacterModeStates::ECMS_Spectral}))
+    if (IsPossessing() || CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->IsModeEqualToAny({ECharacterModeStates::ECMS_Spectral}))
     {
         if (AttributeProvider->RequiresEnergy(10.f))
         {
@@ -48,7 +48,7 @@ void UPossessionComponent::AttemptPossession(AEntity* Victim)
             PlayerController->Possess(Victim);
 
             CurrentlyPossessedEntity = Victim;
-            CharacterStateProvider->SetMode(ECharacterModeStates::ECMS_Possessing);
+            CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetMode(ECharacterModeStates::ECMS_Possessing);
             
             GetOwner()->SetActorHiddenInGame(true);
             GetOwner()->SetActorEnableCollision(false);
@@ -56,9 +56,9 @@ void UPossessionComponent::AttemptPossession(AEntity* Victim)
 
             if (WeaponProvider)
             {
-                if (WeaponProvider->GetCurrentWeapon())
+                if (WeaponProvider->Execute_GetCurrentWeapon(GetOwner()))
                 {
-                    WeaponProvider->GetCurrentWeapon()->EnableVisuals(false);
+                    WeaponProvider->Execute_GetCurrentWeapon(GetOwner())->EnableVisuals(false);
                 }
             }
 
@@ -84,13 +84,13 @@ void UPossessionComponent::ReleasePossession()
     GetOwner()->SetActorHiddenInGame(false);
     GetOwner()->SetActorEnableCollision(true);
     AnimatorProvider->PauseAnims(false);
-    CharacterStateProvider->SetMode(ECharacterModeStates::ECMS_Spectral);
+    CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetMode(ECharacterModeStates::ECMS_Spectral);
 
     if (WeaponProvider)
     {
-        if (WeaponProvider->GetCurrentWeapon())
+        if (WeaponProvider->Execute_GetCurrentWeapon(GetOwner()))
         {
-            WeaponProvider->GetCurrentWeapon()->EnableVisuals(true);
+            WeaponProvider->Execute_GetCurrentWeapon(GetOwner())->EnableVisuals(true);
         }
     }
 

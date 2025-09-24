@@ -1,40 +1,17 @@
 #include "Components/ExtraMovementComponent.h"
 
-#include <Entities/Entity.h>
+#include "Entities/Entity.h"
 
 #include "Components/CharacterStateComponent.h"
-#include "Components/TimelineComponent.h"
-#include "DataAssets/EntityData.h"
 #include "Interfaces/AnimatorProvider.h"
 
 
 UExtraMovementComponent::UExtraMovementComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
-
-	BufferDodgeTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("BufferDodgeTimeline"));
 }
 
-void UExtraMovementComponent::SetCurrentStrategyValues(const float DodgeDistance, const float DoubleJumpForce, UAnimMontage* NewDodgeMontage)
-{
-	BufferDodgeDistance = DodgeDistance;
-	DoubleJumpStrength = DoubleJumpForce; 
-	CurrentDodgeMontage = NewDodgeMontage;
-}
-
-void UExtraMovementComponent::CustomInitialize(AEntity* NewEntity)
-{
-	OwnerUtils = NewEntity;
-	CharacterStateProvider = NewEntity;
-}
-
-void UExtraMovementComponent::InitializeValues(const FMovementData& MovementData)
-{
-	BufferCurve = MovementData.DodgeCurve;
-	AnotherBufferCurve = MovementData.DodgeCurve;
-}
-
-bool UExtraMovementComponent::IsMovingBackwards() const
+bool UExtraMovementComponent::IsMovingBackward() const
 {
 	if (CurrentMoveVector.Y < -.5f) //threshold
 		return true;
@@ -45,78 +22,24 @@ bool UExtraMovementComponent::IsMovingBackwards() const
 void UExtraMovementComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	OwnerUtils = GetOwner();
+	
 	AnimatorProvider = GetOwner();
 	CharacterStateProvider = GetOwner();
 	CharacterMovementProvider = GetOwner();
-	StrategyProvider = GetOwner();
-
-	if (FOnTimelineFloat ProgressDodgeFunction; !ProgressDodgeFunction.IsBound() && BufferCurve)
-	{
-		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Cyan, "Progress function bound... " + GetOwner()->GetName());
-		
-		ProgressDodgeFunction.BindUFunction(this, FName("UpdateDodgeBuffer"));
-		BufferDodgeTimeline->AddInterpFloat(BufferCurve, ProgressDodgeFunction);
-	}
-
-	if (FOnTimelineFloat ProgressDodgeFunction; !ProgressDodgeFunction.IsBound() && AnotherBufferCurve)
-	{
-		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Cyan, "Progress function bound... " + GetOwner()->GetName());
-		
-		ProgressDodgeFunction.BindUFunction(this, FName("UpdateDodgeBuffer"));
-		BufferDodgeTimeline->AddInterpFloat(AnotherBufferCurve, ProgressDodgeFunction);
-	}
 }
 
 void UExtraMovementComponent::PerformDoubleJump(UAnimMontage* DoubleJumpMontage)
 {
-	AnimatorProvider->PlayAnimMontage(DoubleJumpMontage);
-	CharacterMovementProvider->LaunchCharacter(FVector(0.f, 0.f, DoubleJumpStrength), false, true);
+	AnimatorProvider->Execute_PlayAnimMontage(GetOwner(), DoubleJumpMontage, 1.f, "Default");
+	CharacterMovementProvider->Execute_GetCharacter(GetOwner())->LaunchCharacter(FVector(0.f, 0.f, DoubleJumpForce), false, true);
 	CanDoubleJump = false;
-}
-
-void UExtraMovementComponent::PerformDodge(const float DodgeDistance, UAnimMontage* DodgeAnim)
-{
-	if (AnotherBufferCurve)
-	{
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, "Buffer Dodge VALID!");
-	}
-	else
-	{
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Orange, "NULLPTR! Buffer Dodge");
-	}
-	
-	if (CharacterStateProvider->IsActionStateEqualToAny({ECharacterActionsStates::ECAS_Dodge}))
-	{
-		bIsSaveDodge = true;
-	}
-	else
-	{
-		if (OnDodgeStarted.IsBound()) OnDodgeStarted.Broadcast();
-		
-		if (const FVector MovementInput = CharacterMovementProvider->GetLastMovementInputVector(); !MovementInput.IsNearlyZero())
-		{
-			const FRotator LookRotation = MovementInput.Rotation();
-			GetOwner()->SetActorRotation(FRotator(0.f, LookRotation.Yaw, 0.f));
-		}
-		
-		BufferDodgeDistance = DodgeDistance;
-		
-		DodgeBufferEvent();
-	
-		PlayDodgeAnim(DodgeAnim);
-		CharacterStateProvider->SetAction(ECharacterActionsStates::ECAS_Dodge);
-		
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString::SanitizeFloat(DodgeDistance));
-	}
 }
 
 void UExtraMovementComponent::PlayDodgeAnim(UAnimMontage* DodgeMontage) const
 {
-	if (!CharacterMovementProvider->IsUsingControllerRotationYaw())
+	if (!CharacterMovementProvider->Execute_GetCharacter(GetOwner())->bUseControllerRotationYaw)
 	{
-		AnimatorProvider->PlayAnimMontage(DodgeMontage);
+		AnimatorProvider->Execute_PlayAnimMontage(GetOwner(), DodgeMontage, 1.f, "Default");
 	}
 	else
 	{
@@ -144,7 +67,7 @@ void UExtraMovementComponent::DodgeAnimBasedOnInput(UAnimMontage* DodgeMontage) 
 		Section = FName("DodgeBack");
 	}
 
-	AnimatorProvider->PlayAnimMontage(DodgeMontage, 1.f, Section);
+	AnimatorProvider->Execute_PlayAnimMontage(GetOwner(), DodgeMontage, 1.f, Section);
 }
 
 void UExtraMovementComponent::DodgeSaveEvent()
@@ -153,7 +76,7 @@ void UExtraMovementComponent::DodgeSaveEvent()
 	{
 		bIsSaveDodge = false;
 
-		CharacterStateProvider->SetAction(ECharacterActionsStates::ECAS_Nothing);
+		CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetAction(ECharacterActionsStates::ECAS_Nothing);
 
 		if (OnDodgeSaved.IsBound())
 		{
@@ -162,53 +85,19 @@ void UExtraMovementComponent::DodgeSaveEvent()
 	}
 }
 
-void UExtraMovementComponent::DodgeBufferEvent() const
-{
-	if (BufferDodgeTimeline)
-	{
-		BufferDodgeTimeline->PlayFromStart();
-	}
-}
-
-void UExtraMovementComponent::StopDodgeBufferEvent()
-{
-	if (BufferDodgeTimeline)
-	{
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Purple, "Buffer Dodge stopped.");
-		BufferDodgeDistance = 0.f;
-		BufferDodgeTimeline->Stop();
-	}
-}
-
-void UExtraMovementComponent::UpdateDodgeBuffer(const float Alpha)
-{
-	if (bIsMoving)
-	{
-		const FVector CurrentLocation = GetOwner()->GetActorLocation();
-		const FVector ForwardVector = CharacterMovementProvider->GetLastMovementInputVector();
-		const FVector TargetLocation = FMath::Lerp(CurrentLocation, CurrentLocation + (ForwardVector * BufferDodgeDistance), Alpha);
-
-		GetOwner()->SetActorLocation(TargetLocation, true);
-	}
-	else
-	{
-		StopDodgeBufferEvent();
-	}
-}
-
 void UExtraMovementComponent::PerformMove(const FVector2D& MoveVector, const bool bIsTriggered)
 {
 	CurrentMoveVector = MoveVector;
 	bIsMoving = true;
 	
-	const FRotator ControlRotation = CharacterMovementProvider->GetControlRotation();
+	const FRotator ControlRotation = CharacterMovementProvider->Execute_GetCharacter(GetOwner())->GetControlRotation();
 	const FRotator YawRotation(0.f, ControlRotation.Yaw, 0.f);
 
 	const FVector DirectionForward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 	const FVector DirectionSideward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
-	CharacterMovementProvider->AddMovementInput(DirectionForward, MoveVector.Y);
-	CharacterMovementProvider->AddMovementInput(DirectionSideward, MoveVector.X);
+	CharacterMovementProvider->Execute_GetCharacter(GetOwner())->AddMovementInput(DirectionForward, MoveVector.Y);
+	CharacterMovementProvider->Execute_GetCharacter(GetOwner())->AddMovementInput(DirectionSideward, MoveVector.X);
 
 	if (!bIsTriggered)
 	{
@@ -219,6 +108,6 @@ void UExtraMovementComponent::PerformMove(const FVector2D& MoveVector, const boo
 
 void UExtraMovementComponent::PerformLook(const FVector2D& LookingVector) const
 {
-	CharacterMovementProvider->AddControllerPitchInput(LookingVector.Y);
-	CharacterMovementProvider->AddControllerYawInput(LookingVector.X);
+	CharacterMovementProvider->Execute_GetCharacter(GetOwner())->AddControllerPitchInput(LookingVector.Y);
+	CharacterMovementProvider->Execute_GetCharacter(GetOwner())->AddControllerYawInput(LookingVector.X);
 }

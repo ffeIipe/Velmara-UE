@@ -197,15 +197,24 @@ public:
     
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EntityData")
     FSpringArmData SpringArmData;
-    
+
+    /**
+     This class will take part of the primary behavior of the entity,
+     besides it contains the Command classes that, in fact, are their attacks 
+    **/
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Strategy")
     TSubclassOf<UCombatStrategy> FirstModeStrategyClass;
 
+    /**
+    This class will take part of the secondary behavior of the entity,
+     besides it contains the Command classes that, in fact, are their attacks 
+    **/
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Strategy")
     TSubclassOf<UCombatStrategy> SecondModeStrategyClass;
 
     /**
-      This property is optional, so if you are filling these stats and do not want to spawn with a weapon, leave it blank.
+      This property is optional, so if you are filling these stats and do not
+      want to spawn with a weapon, leave it blank.
      **/
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "InitialWeapon")
     TSubclassOf<AActor> InitialWeapon;

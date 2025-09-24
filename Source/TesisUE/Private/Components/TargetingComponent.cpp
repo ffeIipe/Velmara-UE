@@ -2,6 +2,7 @@
 #include "Components/TimelineComponent.h"
 #include "Curves/CurveFloat.h"
 #include "DataAssets/EntityData.h"
+#include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Interfaces/CameraProvider.h"
@@ -94,7 +95,7 @@ void UTargetingComponent::PerformSoftLock()
     if (bIsHardLocking) return;
 
     const FVector Start = GetOwner()->GetActorLocation();
-    const FVector End = CharacterMovementProvider->GetLastMovementInputVector() * SoftLockDistance + GetOwner()->GetActorLocation();
+    const FVector End = CharacterMovementProvider->Execute_GetCharacter(GetOwner())->GetLastMovementInputVector() * SoftLockDistance + GetOwner()->GetActorLocation();
 
     CurrentTarget = SearchCombatTarget(Start, End, SoftLockRadius);
     if (CurrentTarget && CurrentTarget->IsAlive())

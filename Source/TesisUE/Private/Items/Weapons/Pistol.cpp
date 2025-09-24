@@ -37,15 +37,15 @@ void APistol::BeginPlay()
 	}
 }
 
-void APistol::UsePrimaryAttack(const bool bIsInAir)
+void APistol::UsePrimaryAttack_Implementation()
 {
-	Super::UsePrimaryAttack(bIsInAir);
+	Super::UsePrimaryAttack_Implementation();
 	PrimaryShoot();
 }
 
-void APistol::UseSecondaryAttack(const bool bIsInAir)
+void APistol::UseSecondaryAttack_Implementation()
 {
-	Super::UseSecondaryAttack(bIsInAir);
+	Super::UseSecondaryAttack_Implementation();
 	SecondaryShoot();
 }
 
@@ -103,7 +103,7 @@ void APistol::Fire()
 		if (OnFire.IsBound()) OnFire.Broadcast();
 
 		AttributeProvider->IncreaseEnergy(-PistolData->Stats.EnergyToDecrease);
-		AnimatorProvider->PlayAnimMontage(PistolData->Montages.PrimaryFireMontage);
+		AnimatorProvider->Execute_PlayAnimMontage(GetOwner(), PistolData->Montages.PrimaryFireMontage, 1.f, "Default");
 		
 		FVector TraceStart;
 		FRotator CameraRotation;
@@ -161,7 +161,7 @@ void APistol::Reload()
 	/*if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, "Reloading");*/
 	bIsReloading = true;
 	
-	AnimatorProvider->PlayAnimMontage(PistolData->Montages.ReloadMontage);
+	AnimatorProvider->Execute_PlayAnimMontage(GetOwner(), PistolData->Montages.ReloadMontage, 1.f, "Default");
 	SetTimer(TimerHandle_Reload, 1.f, &APistol::FinishReload);
 }
 

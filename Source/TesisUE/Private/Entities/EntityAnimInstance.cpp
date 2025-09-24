@@ -25,7 +25,7 @@ void UEntityAnimInstance::NativeInitializeAnimation()
 	
 	if (CharacterMovementProvider)
 	{
-		MaxWalkSpeed = CharacterMovementProvider->GetMaxWalkSpeed();
+		MaxWalkSpeed = CharacterMovementProvider->Execute_GetCharacterMovementComponent(EntityOwner)->MaxWalkSpeed;
 	}
 }
 
@@ -35,17 +35,17 @@ void UEntityAnimInstance::NativeUpdateAnimation(const float DeltaTime)
 
 	if (CharacterMovementProvider)
 	{
-		GroundSpeed = UKismetMathLibrary::VSizeXY(CharacterMovementProvider->GetVelocity());
+		GroundSpeed = UKismetMathLibrary::VSizeXY(CharacterMovementProvider->Execute_GetCharacterMovementComponent(EntityOwner)->Velocity);
 		IsFalling = OwnerUtils->IsFalling();
 
-		bHasAcceleration = CharacterMovementProvider->GetCurrentAcceleration().SizeSquared2D() > SMALL_NUMBER;
+		bHasAcceleration = CharacterMovementProvider->Execute_GetCharacterMovementComponent(EntityOwner)->GetCurrentAcceleration().SizeSquared2D() > SMALL_NUMBER;
 
-		CharacterWeaponState = CharacterStateProvider->GetCurrentCharacterState().WeaponState;
-		CharacterMode = CharacterStateProvider->GetCurrentCharacterState().Mode;
+		CharacterWeaponState = CharacterStateProvider->Execute_GetCharacterStateComponent(EntityOwner)->CurrentStates.WeaponState;
+		CharacterMode = CharacterStateProvider->Execute_GetCharacterStateComponent(EntityOwner)->CurrentStates.Mode;
 		
 		bIsLocking = OwnerUtils->IsLocking();
 		
-		Direction = UKismetAnimationLibrary::CalculateDirection(CharacterMovementProvider->GetVelocity(),EntityOwner->GetActorRotation());
+		Direction = UKismetAnimationLibrary::CalculateDirection(CharacterMovementProvider->Execute_GetCharacterMovementComponent(EntityOwner)->Velocity,EntityOwner->GetActorRotation());
 	}
 }
 

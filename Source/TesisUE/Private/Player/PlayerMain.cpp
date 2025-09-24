@@ -104,7 +104,7 @@ void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
 		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_SwitchForm, ETriggerEvent::Started, this, &APlayerMain::ToggleForm);
-		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_Possess, ETriggerEvent::Started, this, &APlayerMain::Input_Execute);
+		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_Possess, ETriggerEvent::Started, this, &APlayerMain::Input_Ability);
 	}
 }
 
@@ -125,7 +125,7 @@ float APlayerMain::TakeDamage(const float DamageAmount, FDamageEvent const& Dama
 
 void APlayerMain::ToggleForm()
 {
-	if (GetCharacterStateComponent()->IsActionEqualToAny({
+	if (CharacterStateComponent->IsActionEqualToAny({
 		ECharacterActionsStates::ECAS_Dead,
 		ECharacterActionsStates::ECAS_Block,
 		ECharacterActionsStates::ECAS_Finish,
@@ -150,9 +150,9 @@ void APlayerMain::Die(UAnimMontage* DeathAnim, const FName Section)
 
 void APlayerMain::Revive()
 {
-	if (GetCharacterStateComponent()->CurrentStates.Action == ECharacterActionsStates::ECAS_Dead)
+	if (Execute_GetCharacterStateComponent(this)->CurrentStates.Action == ECharacterActionsStates::ECAS_Dead)
 	{
-		StopAnimMontage();
+		Execute_StopAnimMontage(this, GetCurrentMontage());
 
 		if (PlayerControllerRef)
 		{
@@ -160,7 +160,7 @@ void APlayerMain::Revive()
 		}
 
 		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
-		GetCharacterStateComponent()->SetAction(ECharacterActionsStates::ECAS_Nothing);
+		Execute_GetCharacterStateComponent(this)->SetAction(ECharacterActionsStates::ECAS_Nothing);
 	}
 }
 
@@ -168,7 +168,7 @@ void APlayerMain::ResetFollowCamera()
 {
 	if (FollowCamera && PlayerControllerRef)
 	{
-		GetCharacterStateComponent()->SetAction(ECharacterActionsStates::ECAS_Nothing);
+		Execute_GetCharacterStateComponent(this)->SetAction(ECharacterActionsStates::ECAS_Nothing);
 		FollowCamera->AttachToComponent(GetSpringArmComponent(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName("SpringEndpoint"));
 		PlayerControllerRef->EnableInput(PlayerControllerRef);
 		bCanReceiveDamage = true;
@@ -186,7 +186,7 @@ void APlayerMain::LoadLastCheckpoint() const
 
 void APlayerMain::ApplyHumanMode()
 {
-	if (GetCharacterStateComponent()->IsModeEqualToAny({ECharacterModeStates::ECMS_Human})) return;
+	if (Execute_GetCharacterStateComponent(this)->IsModeEqualToAny({ECharacterModeStates::ECMS_Human})) return;
 	
 	if (const TScriptInterface<IGenericTeamAgentInterface> TeamAgent = GetController())
 	{
@@ -195,9 +195,9 @@ void APlayerMain::ApplyHumanMode()
 	
 	GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = false;
 
-	if (GetCurrentWeapon())
+	if (Execute_GetCurrentWeapon(this))
 	{
-		GetCurrentWeapon()->EnableVisuals(true);
+		Execute_GetCurrentWeapon(this)->EnableVisuals(true);
 	}
 
 	if (GetPossessionComponent()->GetPossessedEntity())
@@ -205,7 +205,7 @@ void APlayerMain::ApplyHumanMode()
 		GetPossessionComponent()->ReleasePossession();
 	}
 
-	GetCharacterStateComponent()->SetMode(ECharacterModeStates::ECMS_Human);
+	Execute_GetCharacterStateComponent(this)->SetMode(ECharacterModeStates::ECMS_Human);
 
 	SetCombatStrategy(ECharacterModeStates::ECMS_Human);
 
@@ -214,14 +214,14 @@ void APlayerMain::ApplyHumanMode()
 
 void APlayerMain::ApplySpectralMode()
 {
-	if (GetCharacterStateComponent()->IsModeEqualToAny({ECharacterModeStates::ECMS_Spectral})) return;
+	if (Execute_GetCharacterStateComponent(this)->IsModeEqualToAny({ECharacterModeStates::ECMS_Spectral})) return;
 	
 	if (const TScriptInterface<IGenericTeamAgentInterface> TeamAgent = GetController())
 	{
 		TeamAgent->SetGenericTeamId(FGenericTeamId(0));
 	}
 	GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = true;
-	GetCharacterStateComponent()->SetMode(ECharacterModeStates::ECMS_Spectral);
+	Execute_GetCharacterStateComponent(this)->SetMode(ECharacterModeStates::ECMS_Spectral);
 
 	SetCombatStrategy(ECharacterModeStates::ECMS_Spectral);
 

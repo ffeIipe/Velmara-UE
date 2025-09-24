@@ -5,17 +5,20 @@
 
 #include "Interfaces/AnimatorProvider.h"
 
-void UComboCommand::ExecuteCommand(const TScriptInterface<IAnimatorProvider> AnimatorProvider)
+
+void UComboCommand::ExecuteCommand_Implementation(AActor* User)
 {
+	Super::ExecuteCommand_Implementation(User);
+
 	if (ComboMontages.IsEmpty())
 	{
 		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Orange, "Empty Combo Anim Montages: " + GetName());
 		return;
 	}
 	
-	if (AnimatorProvider)
+	if (const TScriptInterface<IAnimatorProvider> AnimatorProvider = User)
 	{
-		AnimatorProvider->PlayAnimMontage(ComboMontages[ComboIndex]);
+		AnimatorProvider->Execute_PlayAnimMontage(User, ComboMontages[ComboIndex], 1.f, "Default");
 		ComboIndex++;
 
 		if (ComboIndex >= ComboMontages.Num())
@@ -25,7 +28,9 @@ void UComboCommand::ExecuteCommand(const TScriptInterface<IAnimatorProvider> Ani
 	}
 }
 
-void UComboCommand::ResetCommand()
+void UComboCommand::ResetCommand_Implementation()
 {
+	Super::ResetCommand_Implementation();
+
 	ComboIndex = 0;
 }

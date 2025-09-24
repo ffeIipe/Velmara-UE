@@ -65,6 +65,11 @@ void ASword::BeginPlay()
 		if (SwordDataAsset->HeavyJumpComboCommandClass) HeavyJumpCommandInstance = NewObject<UCommand>(this, SwordDataAsset->HeavyJumpComboCommandClass);
 		else if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5, FColor::Red, "MISSING Heavy Combo Command blueprint class in: " + GetName());	
 	}
+
+	if (!AbilityCommandInstance)
+	{
+		if (SwordDataAsset->AbilityCommandClass) AbilityCommandInstance = NewObject<UCommand>(this, SwordDataAsset->AbilityCommandClass);
+	}
 }
 
 void ASword::Unequip()
@@ -76,15 +81,6 @@ void ASword::Unequip()
 UPrimitiveComponent* ASword::GetCollisionComponent()
 {
 	return WeaponDamageBox;
-}
-
-void ASword::ResetMelee()
-{
-	if (!LightCommandInstance || !JumpCommandInstance || !HeavyCommandInstance || !HeavyJumpCommandInstance) return;
-	
-	LightCommandInstance->ResetCommand();
-	JumpCommandInstance->ResetCommand();
-	HeavyCommandInstance->ResetCommand();
 }
 
 void ASword::AttachMeshToSocket(USceneComponent* InParent)
@@ -114,15 +110,19 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 		UEngineTypes::ConvertToTraceType(ECC_GameTraceChannel3),
 		false,
 		IgnoreActors,
-		EDrawDebugTrace::None,
+		EDrawDebugTrace::ForDuration,
 		HitResults,
 		true
 	);
 
 	for (const FHitResult& Hit : HitResults)
 	{
+		if (IgnoreActors.Contains(Hit.GetActor())) return;
+		
 		if (const TScriptInterface<IHitInterface> HitInterface = Hit.GetActor())
 		{
+			IgnoreActors.Add(Hit.GetActor());
+			
 			FDamageEvent DamageEvent(DamageTypeClass);
 
 			const bool bIsHittable = HitInterface->IsHittable();
@@ -138,27 +138,64 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 				);
 
 				HitInterface->GetHit(GetOwner(), Hit.ImpactPoint, DamageEvent, SwordDataAsset->Stats.BaseDamage);
-					
-				IgnoreActors.Add(Hit.GetActor());
 			}
-			
 			ImpactEffects(Hit, bIsHittable);
 		}
 	}
 }
 
-void ASword::UsePrimaryAttack(const bool bIsInAir)
+void ASword::UsePrimaryAttack_Implementation()
 {
-	Super::UsePrimaryAttack(bIsInAir);
-	bIsInAir ? PerformBaseAttack(JumpCommandInstance) : PerformBaseAttack(LightCommandInstance);
+	Super::UsePrimaryAttack_Implementation();
 
-	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Yellow, FString("From Sword: Delegating attack call to a command."));
+	const TScriptInterface<ICombatComponentProvider> CombatComp = GetOwner();
+	CombatComp->Execute_GetCombatComponent(GetOwner())->IsInAir() ? PerformBaseAttack(JumpCommandInstance) : PerformBaseAttack(LightCommandInstance);
 }
 
-void ASword::UseSecondaryAttack(const bool bIsInAir)
+void ASword::UseSecondaryAttack_Implementation()
 {
-	Super::UseSecondaryAttack(bIsInAir);
-	bIsInAir ? PerformBaseAttack(HeavyJumpCommandInstance) : PerformBaseAttack(HeavyCommandInstance);
+	Super::UseSecondaryAttack_Implementation();
+
+	const TScriptInterface<ICombatComponentProvider> CombatComp = GetOwner();
+	CombatComp->Execute_GetCombatComponent(GetOwner())->IsInAir() ? PerformBaseAttack(HeavyJumpCommandInstance) : PerformBaseAttack(HeavyCommandInstance);
+}
+
+void ASword::UseAbilityAttack_Implementation()
+{
+	Super::UseAbilityAttack_Implementation();
+	
+}
+
+void ASword::SetDamageType_Implementation(const TSubclassOf<UMeleeDamage> DamageType)
+{
+	Super::SetDamageType_Implementation(DamageType);
+
+	DamageTypeClass = DamageType;
+}
+
+void ASword::ResetWeapon_Implementation()
+{
+	Super::ResetWeapon_Implementation();
+
+	if (LightCommandInstance)
+	{
+		LightCommandInstance->ResetCommand();
+	}
+
+	if (HeavyCommandInstance)
+	{
+		HeavyCommandInstance->ResetCommand();
+	}
+
+	if (HeavyJumpCommandInstance)
+	{
+		HeavyJumpCommandInstance->ResetCommand();
+	}
+
+	if (JumpCommandInstance)
+	{
+		JumpCommandInstance->ResetCommand();
+	}
 }
 
 float ASword::CalculateDamage() const
@@ -180,11 +217,18 @@ bool ASword::PerformBaseAttack(UCommand* CommToPlay) const
 		return false;
 	}
 	
-	CharacterStateProvider->SetAction(ECharacterActionsStates::ECAS_Attack);
-	CommToPlay->ExecuteCommand(AnimatorProvider);
+	CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetAction(ECharacterActionsStates::ECAS_Attack);
+	CommToPlay->ExecuteCommand(GetOwner());
+	
 	if (OnWeaponUsed.IsBound()) OnWeaponUsed.Broadcast();
 	
 	return true;
+}
+
+void ASword::ClearIgnoreActors()
+{
+	IgnoreActors.Empty();
+	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Yellow, FString("From " + GetName() + ": Ignore Actors"));
 }
 
 void ASword::SetWeaponCollisionEnabled(const ECollisionEnabled::Type CollisionEnabled)

@@ -7,7 +7,7 @@
 #include "AnimatorProvider.generated.h"
 
 // This class does not need to be modified.
-UINTERFACE(MinimalAPI)
+UINTERFACE(MinimalAPI, Blueprintable)
 class UAnimatorProvider : public UInterface
 {
 	GENERATED_BODY()
@@ -22,8 +22,12 @@ class TESISUE_API IAnimatorProvider
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-	virtual float PlayAnimMontage(UAnimMontage* Montage, float Rate = 1.f, FName Section = "Default") = 0;
-	virtual void StopAnimMontage(UAnimMontage* MontageToStop = nullptr) = 0;
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	float PlayAnimMontage(UAnimMontage* Montage, float Rate = 1.f, FName Section = "Default");
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void StopAnimMontage(UAnimMontage* MontageToStop = nullptr);
+	
 	virtual USceneComponent* GetMeshComponent() = 0;
 	virtual void PauseAnims(bool bEnable) = 0;
 	virtual void ChangeWeaponAnimationState() = 0;

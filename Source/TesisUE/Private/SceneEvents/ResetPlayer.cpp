@@ -18,13 +18,15 @@ void AResetPlayer::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent
 {
     if (AEntity* OverlappingActor = Cast<AEntity>(OtherActor))
     {
-        if (APlayerMain* PlayerRef = Cast<APlayerMain>(OverlappingActor))
+        GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Cyan, "TODO! Fix ResetPlayer.cpp");
+        
+        /*if (APlayerMain* PlayerRef = Cast<APlayerMain>(OverlappingActor))
         {
-            if (PlayerRef->GetCurrentCharacterState().Mode == ECharacterModeStates::ECMS_Spectral)
+            if (PlayerRef->GetCharacterStateComponent() .Mode == ECharacterModeStates::ECMS_Spectral)
             {
                 PlayerRef->ToggleForm();
             }
-        }
+        }*/
 
         if (UNewGameInstance* GameInst = GetGameInstance<UNewGameInstance>())
         {
