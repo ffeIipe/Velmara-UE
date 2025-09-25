@@ -55,7 +55,6 @@ void APaladin::BeginPlay()
 	{
 		WeaponToEquip->CreateChildActor();
 	}
-
 	
 	TArray<AActor*> AttachedActors;
 	GetAttachedActors(AttachedActors);
@@ -64,7 +63,10 @@ void APaladin::BeginPlay()
 	{
 		if (const TScriptInterface<IWeaponInterface> WeaponInterface = AttachedActor)
 		{
-			GetInventoryComponent()->TryAddWeapon(WeaponInterface);
+			if (!GetInventoryComponent()->TryAddWeapon(WeaponInterface))
+			{
+				WeaponToEquip->DestroyChildActor();
+			}
 		}
 		else if (GEngine)
 		{

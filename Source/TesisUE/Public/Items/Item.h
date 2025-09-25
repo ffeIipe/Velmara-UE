@@ -7,6 +7,7 @@
 #include "Interfaces/Pickable.h"
 #include "Item.generated.h"
 
+class UItemMementoComponent;
 class IAttributeProvider;
 class UBoxComponent;
 class UPromptWidgetComponent;
@@ -41,9 +42,12 @@ public:
 	
 	virtual UPrimitiveComponent* GetCollisionComponent();
 
-	virtual void ApplySavedState(const struct FInteractedItemSaveData* SavedData);
+	/*virtual void ApplySavedState(const struct FInteractedItemSaveData* SavedData);
+	*/
 
 	FName GetUniqueSaveID() const { return UniqueSaveID; }
+	
+	UItemMementoComponent* GetItemMementoComponent() const { return ItemMementoComponent; }
 
 protected:
 	virtual void DisableCollision() override;
@@ -91,4 +95,7 @@ protected:
 		int32 OtherBodyIndex) override;
 
 	TScriptInterface<IAttributeProvider> AttributeProvider;
+
+	UPROPERTY()
+	UItemMementoComponent* ItemMementoComponent;
 };

@@ -1,14 +1,17 @@
 #include "Items/Item.h"
-#include "Player/PlayerMain.h"
 #include "Components/BoxComponent.h"
+#include "Player/PlayerMain.h"
 #include "Tutorial/PromptWidgetComponent.h"
-#include <SceneEvents/NewGameStateBase.h>
+
+#include "Components/Items/ItemMementoComponent.h"
 
 
 AItem::AItem()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
+	ItemMementoComponent = CreateDefaultSubobject<UItemMementoComponent>(TEXT("ItemMemento"));
+	
 	ItemMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Item Mesh"));
 	RootComponent = ItemMesh;
 	ItemMesh->SetCollisionResponseToAllChannels(ECR_Ignore);
@@ -19,6 +22,12 @@ AItem::AItem()
 
 	PromptWidget = CreateDefaultSubobject<UPromptWidgetComponent>(TEXT("PromptTrigger"));
 	PromptWidget->SetupAttachment(GetRootComponent());
+
+	/*if (UniqueSaveID == NAME_None)
+	{
+		const FString GuidString = FGuid::NewGuid().ToString();
+		UniqueSaveID = FName(*GuidString);
+	}*/
 }
 
 void AItem::BeginPlay()
@@ -32,14 +41,6 @@ void AItem::BeginPlay()
 			PromptWidget->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
 		}
 	}
-	
-	if (const UWorld* World = GetWorld())
-	{
-		if (ANewGameStateBase* GameState = World->GetGameState<ANewGameStateBase>())
-		{
-			GameState->RequestInteractedItemStateReconciliation(this);
-		}
-	}
 }
 
 void AItem::Pick(AActor* NewOwner)
@@ -51,16 +52,7 @@ void AItem::Pick(AActor* NewOwner)
 	if (!bWasUsed)
 	{
 		bWasUsed = true;
-		if (const UWorld* World = GetWorld())
-		{
-			if (ANewGameStateBase* GameState = World->GetGameState<ANewGameStateBase>())
-			{
-				FInteractedItemSaveData SaveData;
-				SaveData.UniqueSaveID = GetUniqueSaveID();
-				SaveData.bWasOpened = bWasUsed;
-				GameState->UpdateInteractedItemState(SaveData);
-			}
-		}
+		ItemMementoComponent->CaptureItemState();
 	}
 }
 
@@ -74,18 +66,6 @@ void AItem::EnableVisuals(const bool bEnable)
 UPrimitiveComponent* AItem::GetCollisionComponent()
 {
 	return nullptr;
-}
-
-void AItem::ApplySavedState(const FInteractedItemSaveData* SavedData)
-{
-	if (SavedData && SavedData->bWasOpened)
-	{
-		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Item has been used... So restoring..."));
-		/*Pick(SavedData.OldOwner);*/
-		bWasUsed = true;
-		
-		Destroy();
-	}
 }
 
 void AItem::DisableCollision()

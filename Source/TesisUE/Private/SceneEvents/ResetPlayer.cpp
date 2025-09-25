@@ -3,7 +3,7 @@
 #include "Player/PlayerMain.h"
 #include "GameFramework/PlayerStart.h"
 #include "Entities/Entity.h"
-#include <SceneEvents/NewGameInstance.h>
+#include <SceneEvents/VelmaraGameInstance.h>
 
 #include "Components/CharacterStateComponent.h"
 
@@ -28,7 +28,7 @@ void AResetPlayer::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent
             }
         }*/
 
-        if (UNewGameInstance* GameInst = GetGameInstance<UNewGameInstance>())
+        if (UVelmaraGameInstance* GameInst = GetGameInstance<UVelmaraGameInstance>())
         {
             GameInst->LoadPlayerProgress(GameInst->ActiveSaveSlotIndex);
         }

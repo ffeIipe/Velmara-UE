@@ -2,7 +2,7 @@
 #include "Entities/Entity.h"
 #include "Components/PossessionComponent.h"
 #include "Kismet/GameplayStatics.h"
-#include "SceneEvents/NewGameInstance.h"
+#include "SceneEvents/VelmaraGameInstance.h"
 
 void ACheckpoint::OnSphereBeginOverlap(
     UPrimitiveComponent* OverlappedComponent,
@@ -25,7 +25,7 @@ void ACheckpoint::OnSphereBeginOverlap(
             }
             
 
-            if (UNewGameInstance* GameInst = Cast<UNewGameInstance>(GetGameInstance()))
+            if (UVelmaraGameInstance* GameInst = Cast<UVelmaraGameInstance>(GetGameInstance()))
             {
                 if (GameInst->SavePlayerProgress(GameInst->ActiveSaveSlotIndex, OverlappingEntity))
                 {
@@ -33,6 +33,8 @@ void ACheckpoint::OnSphereBeginOverlap(
                     UE_LOG(LogTemp, Log, TEXT("ACheckpoint: Player progress saved via GameInstance. Slot: %d"), GameInst->ActiveSaveSlotIndex);
                 }
             }
+            else if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, FString("Failed to save via VelmaraGameInstance. The current GameInstance is: " + GetGameInstance()->GetName()));
+
             Destroy();
         }
     }

@@ -4,12 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
-#include "NewGameModeBase.generated.h"
+#include "VelmaraGameModeBase.generated.h"
 
 class AEnemy;
 
 UCLASS()
-class TESISUE_API ANewGameModeBase : public AGameModeBase
+class TESISUE_API AVelmaraGameModeBase : public AGameModeBase
 {
 	GENERATED_BODY()
 

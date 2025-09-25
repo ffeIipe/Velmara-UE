@@ -9,7 +9,7 @@
 
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/GameplayStatics.h"
-#include "SceneEvents/NewGameModeBase.h"
+#include "SceneEvents/VelmaraGameModeBase.h"
 #include "Interfaces/CharacterStateProvider.h"
 #include "Interfaces/CharacterMovementProvider.h"
 #include "Interfaces/OwnerUtilsInterface.h"
@@ -309,7 +309,7 @@ void UCombatComponent::PerformExecute(const TScriptInterface<ICombatTargetInterf
 
 		AnimatorProvider->Execute_PlayAnimMontage(GetOwner(), FinisherMontage, 1.f, "Default");
 
-		Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->SetEnemiesAIEnabled(false);
+		Cast<AVelmaraGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->SetEnemiesAIEnabled(false);
 	}
 }
 
