@@ -26,6 +26,7 @@
 #include "Interfaces/CombatTargetInterface.h"
 #include "Interfaces/ControllerProvider.h"
 #include "Interfaces/FieldCreationComponentProvider.h"
+#include "Interfaces/MementoEntity.h"
 #include "Interfaces/StrategyInterface.h"
 #include "Interfaces/Weapon/WeaponProvider.h"
 
@@ -69,6 +70,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEntityShieldTakeDamage);
 UCLASS()
 class TESISUE_API AEntity : public ACharacter,
 							public IHitInterface,
+							public IMementoEntity,
 							public ICameraProvider,
 							public IWeaponProvider,
                             public ICharacterStateProvider,
@@ -118,7 +120,7 @@ public:
 	FORCEINLINE UInventoryComponent* GetInventoryComponent() const { return InventoryComponent; }
 
 	UFUNCTION(BlueprintPure, Category = "Components")
-	FORCEINLINE UMementoComponent* GetMementoComponent() const { return MementoComponent; }
+	virtual UMementoComponent* GetMementoComponent_Implementation() override { return MementoComponent; }
 
 	UFUNCTION(BlueprintPure, Category = "Components")
 	FORCEINLINE UPossessionComponent* GetPossessionComponent() const { return PossessionComponent; }
@@ -203,8 +205,6 @@ public:
 	virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
 
 	void HitReactJumpToSection(FName Section);
-	
-	/*void AttachFollowCamera(USpringArmComponent* AttachTarget);*/
 
 	virtual void StunBehavior();
 	virtual void RemoveStunBehavior();
@@ -214,6 +214,10 @@ public:
 	
 	bool IsEquipping() const;
 
+	// === Save System ===
+	UFUNCTION(BlueprintCallable, Category = "Save System")
+	FName GetUniqueSaveID() const { return UniqueSaveID; }
+	
 protected:
 	// === Actor Functions ===
 	virtual void BeginPlay() override;
@@ -297,7 +301,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintGetter = GetInventoryComponent)
 	UInventoryComponent* InventoryComponent;
 
-	UPROPERTY(BlueprintGetter = GetMementoComponent)
+	UPROPERTY()
 	UMementoComponent* MementoComponent;
 
 	UPROPERTY(BlueprintGetter = GetPossessionComponent)
@@ -317,6 +321,9 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<UBufferComponent> BufferComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FName UniqueSaveID;
 	
 private:
 	// === Aux. Functions ===

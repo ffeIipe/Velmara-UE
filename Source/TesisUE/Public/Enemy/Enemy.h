@@ -106,10 +106,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components | PromptWidgetComponent")
 	UPromptWidgetComponent* PromptWidgetComponent;
 
-	// === Save System ===
-	UFUNCTION(BlueprintCallable, Category = "Save System")
-	FName GetUniqueSaveID() const { return UniqueSaveID; }
-
 	// === Status Flags ===
 	bool bWasPossessed = false;
 
@@ -236,9 +232,6 @@ protected:
 	// === AI Controllers & Blackboard ===
 	UPROPERTY(EditAnywhere)
 	UBehaviorTree* BTAsset;
-
-	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Save System", meta = (DisplayName = "Unique Save ID"))
-	FName UniqueSaveID;
 
 	UPROPERTY()
 	AAIController* AIController;

@@ -1,22 +1,12 @@
-#include "SceneEvents/NewGameInstance.h"
+#include "SceneEvents/VelmaraGameInstance.h"
 #include "LoadSystem/SettingsSaveGame.h"
 #include "LoadSystem/PlayerProgressSaveGame.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/GameUserSettings.h"
-#include "GameFramework/Character.h"
-#include "Components/MementoComponent.h"
-#include "Components/PossessionComponent.h"
-#include "Enemy/Enemy.h"
 #include "Blueprint/UserWidget.h"
-#include "Player/PlayerMain.h"
-#include "Components/InventoryComponent.h"
-#include "Items/Item.h"
-#include "Items/Weapons/Sword.h"
-#include <SceneEvents/NewGameStateBase.h>
+#include <SceneEvents/VelmaraGameStateBase.h>
 
-#include "DataAssets/EntityData.h"
-
-UNewGameInstance::UNewGameInstance()
+UVelmaraGameInstance::UVelmaraGameInstance()
 {
     CurrentSettings = nullptr;
     ActiveSaveSlotIndex = 0;
@@ -26,18 +16,18 @@ UNewGameInstance::UNewGameInstance()
     bIsLoadingPlayerProgress = false;
 }
 
-void UNewGameInstance::Init()
+void UVelmaraGameInstance::Init()
 {
     Super::Init();
     LoadGameSettings();
 }
 
-void UNewGameInstance::Shutdown()
+void UVelmaraGameInstance::Shutdown()
 {
     Super::Shutdown();
 }
 
-void UNewGameInstance::SetDefaultGameSettings()
+void UVelmaraGameInstance::SetDefaultGameSettings()
 {
     if (!CurrentSettings)
     {
@@ -67,7 +57,7 @@ void UNewGameInstance::SetDefaultGameSettings()
     }
 }
 
-void UNewGameInstance::LoadGameSettings()
+void UVelmaraGameInstance::LoadGameSettings()
 {
     if (USettingsSaveGame* LoadedSettings = Cast<USettingsSaveGame>(UGameplayStatics::LoadGameFromSlot(SettingsSlotName, DefaultUserIndex)))
     {
@@ -84,7 +74,7 @@ void UNewGameInstance::LoadGameSettings()
     ApplyGraphicsSettings();
 }
 
-void UNewGameInstance::SaveGameSettings()
+void UVelmaraGameInstance::SaveGameSettings()
 {
     if (CurrentSettings)
     {
@@ -97,7 +87,7 @@ void UNewGameInstance::SaveGameSettings()
     }
 }
 
-void UNewGameInstance::ApplyGraphicsSettings()
+void UVelmaraGameInstance::ApplyGraphicsSettings()
 {
     if (!CurrentSettings)
     {
@@ -131,7 +121,7 @@ void UNewGameInstance::ApplyGraphicsSettings()
     }
 }
 
-void UNewGameInstance::SetScreenResolution(FIntPoint NewResolution)
+void UVelmaraGameInstance::SetScreenResolution(FIntPoint NewResolution)
 {
     if (CurrentSettings)
     {
@@ -141,7 +131,7 @@ void UNewGameInstance::SetScreenResolution(FIntPoint NewResolution)
     }
 }
 
-void UNewGameInstance::SetTextureQuality(int32 NewQuality)
+void UVelmaraGameInstance::SetTextureQuality(int32 NewQuality)
 {
     if (CurrentSettings)
     {
@@ -152,7 +142,7 @@ void UNewGameInstance::SetTextureQuality(int32 NewQuality)
     }
 }
 
-void UNewGameInstance::SetShadowQuality(int32 NewQuality)
+void UVelmaraGameInstance::SetShadowQuality(int32 NewQuality)
 {
     if (CurrentSettings)
     {
@@ -173,7 +163,7 @@ void UNewGameInstance::SetShadowQuality(int32 NewQuality)
     }
 }
 
-void UNewGameInstance::SetAntiAliasing(int32 NewQuality)
+void UVelmaraGameInstance::SetAntiAliasing(int32 NewQuality)
 {
     if (CurrentSettings)
     {
@@ -184,7 +174,7 @@ void UNewGameInstance::SetAntiAliasing(int32 NewQuality)
     }
 }
 
-void UNewGameInstance::SetViewDistance(int32 NewQuality)
+void UVelmaraGameInstance::SetViewDistance(int32 NewQuality)
 {
     if (CurrentSettings)
     {
@@ -195,7 +185,7 @@ void UNewGameInstance::SetViewDistance(int32 NewQuality)
     }
 }
 
-void UNewGameInstance::SetPostProcess(int32 NewQuality)
+void UVelmaraGameInstance::SetPostProcess(int32 NewQuality)
 {
     if (CurrentSettings)
     {
@@ -206,7 +196,7 @@ void UNewGameInstance::SetPostProcess(int32 NewQuality)
     }
 }
 
-void UNewGameInstance::SetVisualEffect(int32 NewQuality)
+void UVelmaraGameInstance::SetVisualEffect(int32 NewQuality)
 {
     if (CurrentSettings)
     {
@@ -217,7 +207,7 @@ void UNewGameInstance::SetVisualEffect(int32 NewQuality)
     }
 }
 
-void UNewGameInstance::SetGlobalIllumination(int32 NewQuality)
+void UVelmaraGameInstance::SetGlobalIllumination(int32 NewQuality)
 {
     if (CurrentSettings)
     {
@@ -228,7 +218,7 @@ void UNewGameInstance::SetGlobalIllumination(int32 NewQuality)
     }
 }
 
-void UNewGameInstance::SetShadingQuality(int32 NewQuality)
+void UVelmaraGameInstance::SetShadingQuality(int32 NewQuality)
 {
     if (CurrentSettings)
     {
@@ -239,7 +229,7 @@ void UNewGameInstance::SetShadingQuality(int32 NewQuality)
     }
 }
 
-void UNewGameInstance::SetFrameRateLimit(int32 NewFrameRateLimit)
+void UVelmaraGameInstance::SetFrameRateLimit(int32 NewFrameRateLimit)
 {
     if (CurrentSettings)
     {
@@ -249,57 +239,57 @@ void UNewGameInstance::SetFrameRateLimit(int32 NewFrameRateLimit)
     }
 }
 
-FIntPoint UNewGameInstance::GetScreenResolution() const
+FIntPoint UVelmaraGameInstance::GetScreenResolution() const
 {
     return CurrentSettings ? CurrentSettings->ScreenResolution : FIntPoint(0, 0);
 }
 
-int32 UNewGameInstance::GetTextureQuality() const
+int32 UVelmaraGameInstance::GetTextureQuality() const
 {
     return CurrentSettings ? CurrentSettings->TextureQuality : 2;
 }
 
-int32 UNewGameInstance::GetShadowQuality() const
+int32 UVelmaraGameInstance::GetShadowQuality() const
 {
     return CurrentSettings ? CurrentSettings->ShadowQuality : 2;
 }
 
-int32 UNewGameInstance::GetAntiAliasingQuality() const
+int32 UVelmaraGameInstance::GetAntiAliasingQuality() const
 {
     return CurrentSettings ? CurrentSettings->AntiAliasingQuality : 2;
 }
 
-int32 UNewGameInstance::GetViewDistanceQuality() const
+int32 UVelmaraGameInstance::GetViewDistanceQuality() const
 {
     return CurrentSettings ? CurrentSettings->AntiAliasingQuality : 2;
 }
 
-int32 UNewGameInstance::GetPostProcessQuality() const
+int32 UVelmaraGameInstance::GetPostProcessQuality() const
 {
     return CurrentSettings ? CurrentSettings->PostProcessingQuality : 2;
 }
 
-int32 UNewGameInstance::GetGlobalIlluminationQuality() const
+int32 UVelmaraGameInstance::GetGlobalIlluminationQuality() const
 {
     return CurrentSettings ? CurrentSettings->GlobalIlluminationQuality : 2;
 }
 
-int32 UNewGameInstance::GetShadingQuality() const
+int32 UVelmaraGameInstance::GetShadingQuality() const
 {
     return CurrentSettings ? CurrentSettings->ShadingQuality : 2;
 }
 
-int32 UNewGameInstance::GetVisualEffectsQuality() const
+int32 UVelmaraGameInstance::GetVisualEffectsQuality() const
 {
     return CurrentSettings ? CurrentSettings->VisualEffectQuality : 2;
 }
 
-int32 UNewGameInstance::GetFrameRateLimit() const
+int32 UVelmaraGameInstance::GetFrameRateLimit() const
 {
     return CurrentSettings ? CurrentSettings->FrameRateLimit : 60;
 }
 
-void UNewGameInstance::CreateNewGame(int32 SlotIndex, FString StartLevelName)
+void UVelmaraGameInstance::CreateNewGame(int32 SlotIndex, FString StartLevelName)
 {
     ActiveSaveSlotIndex = FMath::Clamp(SlotIndex, 0, 2);
     PendingGameDataToLoad = nullptr;
@@ -313,110 +303,48 @@ void UNewGameInstance::CreateNewGame(int32 SlotIndex, FString StartLevelName)
     UGameplayStatics::OpenLevel(this, FName(*StartLevelName));
 }
 
-bool UNewGameInstance::SavePlayerProgress(int32 SlotIndex, APawn* Entity)
+bool UVelmaraGameInstance::SavePlayerProgress(const int32 SlotIndex, APawn* Pawn)
 {
-    ActiveSaveSlotIndex = FMath::Clamp(SlotIndex, 0, 2);
-    FString CurrentSlotName = FString::Printf(TEXT("%s%d"), *ProgressSaveSlotPrefix, ActiveSaveSlotIndex);
-
-    UPlayerProgressSaveGame* SaveGameInstance = Cast<UPlayerProgressSaveGame>(UGameplayStatics::CreateSaveGameObject(UPlayerProgressSaveGame::StaticClass()));
-    if (!SaveGameInstance)
+    if (Pawn->GetController() == UGameplayStatics::GetPlayerController(this, 0))
     {
-        return false;
+        if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Purple, "Proceed to Save Player progress.");
+
+        ActiveSaveSlotIndex = FMath::Clamp(SlotIndex, 0, 2);
+        const FString CurrentSlotName = FString::Printf(TEXT("%s%d"), *ProgressSaveSlotPrefix, ActiveSaveSlotIndex);
+
+        UPlayerProgressSaveGame* SaveGameInstance = Cast<UPlayerProgressSaveGame>(UGameplayStatics::CreateSaveGameObject(UPlayerProgressSaveGame::StaticClass()));
+        if (!SaveGameInstance)
+        {
+            if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Failed Cast to UPlayerSaveProgress.");
+            return false;
+        }
+
+        SaveGameInstance->CurrentLevelName = UGameplayStatics::GetCurrentLevelName(this);
+
+        if (AVelmaraGameStateBase* GameState = GetWorld()->GetGameState<AVelmaraGameStateBase>())
+        {
+            if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, "Game State looking for Memento Entities States...");
+            
+            SaveGameInstance->EntitiesStates = GameState->SaveAllEntityMementoStates();
+            SaveGameInstance->ItemsStates = GameState->SaveAllItemMementoStates();
+        }
+
+        SaveGameInstance->Timestamp = FDateTime::UtcNow();
+        SaveGameInstance->SaveSlotIndex = ActiveSaveSlotIndex;
+
+        const bool bSaveSuccess = UGameplayStatics::SaveGameToSlot(SaveGameInstance, CurrentSlotName, DefaultUserIndex);
+        return bSaveSuccess;
     }
 
-    SaveGameInstance->CurrentLevelName = UGameplayStatics::GetCurrentLevelName(this);
+    if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Failed to Save Data.");
 
-    APlayerMain* PlayerCharacter = Cast<APlayerMain>(Entity);
-
-    if (PlayerCharacter)
-    {
-        //if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Cyan, FString("Player reference obtained from Player."));
-    }
-    else
-    {
-        if (AEnemy* EnemyRef = Cast<AEnemy>(Entity))
-        {
-            PlayerCharacter = Cast<APlayerMain>(EnemyRef->GetPossessionComponent()->GetPossessor());
-            //if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Magenta, FString("Player reference obtained from Enemy possessed."));
-        }
-        else
-        {
-            //if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Player reference not obtained."));
-        }
-    }
-
-    UInventoryComponent* PlayerInventory = IsValid(PlayerCharacter) ? PlayerCharacter->GetInventoryComponent() : nullptr;
-
-    if (IsValid(PlayerCharacter))
-    {
-        if (UMementoComponent* PlayerMemento = PlayerCharacter->GetMementoComponent())
-        {
-            PlayerMemento->SaveState();
-            SaveGameInstance->PlayerState = PlayerMemento->GetCurrentSavedState();
-        }
-
-        if (PlayerInventory)
-        {
-            SaveGameInstance->InventorySlotsData.Empty();
-            const TArray<TScriptInterface<IWeaponInterface>>& CurrentInventoryItems = PlayerInventory->GetInventoryItems();
-            const TScriptInterface<IWeaponInterface> CurrentlyEquippedItem = PlayerInventory->GetCurrentWeapon();
-
-            for (TScriptInterface ItemInSlot : CurrentInventoryItems)
-            {
-                FInventoryItemSaveData ItemData;
-                if (ItemInSlot)
-                {
-                    ItemData.ItemClass = ItemInSlot.GetObject()->GetClass();
-                }
-                else
-                {
-                    ItemData.ItemClass = nullptr;
-                }
-                SaveGameInstance->InventorySlotsData.Add(ItemData);
-            }
-            SaveGameInstance->EquippedSlotIndexInSave = CurrentInventoryItems.Find(Cast<AItem>(CurrentlyEquippedItem.GetObject()));
-        }
-    }
-
-    if (ANewGameStateBase* GameState = GetWorld() ? GetWorld()->GetGameState<ANewGameStateBase>() : nullptr)
-    {
-        GameState->GetAllEnemyStates(SaveGameInstance->EnemiesData);
-
-        TArray<FInteractedItemSaveData> AllWorldItemStates;
-        GameState->GetAllInteractedItemStates(AllWorldItemStates);
-
-        if (PlayerInventory)
-        {
-            TSet<FName> InventoryItemIDs;
-            for (TScriptInterface ItemInInventory : PlayerInventory->GetInventoryItems())
-            {
-                if (ItemInInventory)
-                {
-                    InventoryItemIDs.Add(ItemInInventory->GetUniqueSaveID());
-                }
-            }
-        }
-
-        SaveGameInstance->InteractedItemsData.Empty();
-
-        for (const FInteractedItemSaveData& ItemState : AllWorldItemStates)
-        {
-            SaveGameInstance->InteractedItemsData.Add(ItemState);
-        }
-    }
-
-    SaveGameInstance->Timestamp = FDateTime::UtcNow();
-    SaveGameInstance->SaveSlotIndex = ActiveSaveSlotIndex;
-
-    bool bSaveSuccess = UGameplayStatics::SaveGameToSlot(SaveGameInstance, CurrentSlotName, DefaultUserIndex);
-
-    return bSaveSuccess;
+    return false;
 }
 
-bool UNewGameInstance::LoadPlayerProgress(int32 SlotIndex)
+bool UVelmaraGameInstance::LoadPlayerProgress(int32 SlotIndex)
 {
     ActiveSaveSlotIndex = FMath::Clamp(SlotIndex, 0, 2);
-    FString CurrentSlotName = FString::Printf(TEXT("%s%d"), *ProgressSaveSlotPrefix, ActiveSaveSlotIndex);
+    const FString CurrentSlotName = FString::Printf(TEXT("%s%d"), *ProgressSaveSlotPrefix, ActiveSaveSlotIndex);
 
     if (!DoesProgressSaveExist(ActiveSaveSlotIndex))
     {
@@ -439,16 +367,20 @@ bool UNewGameInstance::LoadPlayerProgress(int32 SlotIndex)
     return false;
 }
 
-void UNewGameInstance::ApplyPendingLoadedDataToWorld()
+void UVelmaraGameInstance::ApplyPendingLoadedDataToWorld()
 {
+    if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Cyan, "Applying Pending Data to world.");
+    
     if (!PendingGameDataToLoad)
     {
         bIsLoadingPlayerProgress = false;
         HideLoadingScreen();
+        if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Non-Pending Data to apply to world.");
+        
         return;
     }
 
-    UWorld* World = GetWorld();
+    const UWorld* World = GetWorld();
     if (!World)
     {
         PendingGameDataToLoad = nullptr;
@@ -457,64 +389,10 @@ void UNewGameInstance::ApplyPendingLoadedDataToWorld()
         return;
     }
 
-    if (APlayerMain* PlayerCharacter = Cast<APlayerMain>(UGameplayStatics::GetPlayerCharacter(this, 0)))
+    if (AVelmaraGameStateBase* GameState = World->GetGameState<AVelmaraGameStateBase>())
     {
-        if (UMementoComponent* PlayerMemento = PlayerCharacter->GetMementoComponent())
-        {
-            PlayerMemento->ApplyExternalState(PendingGameDataToLoad->PlayerState);
-        }
-
-        if (UInventoryComponent* PlayerInventory = PlayerCharacter->GetInventoryComponent())
-        {
-            PlayerInventory->InventorySlots.Init(nullptr, PlayerCharacter->EntityData->InventoryData.MaxSlots);
-
-            FActorSpawnParameters SpawnParams;
-            SpawnParams.Owner = PlayerCharacter;
-            SpawnParams.Instigator = PlayerCharacter;
-            SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-            for (int32 i = 0; i < PendingGameDataToLoad->InventorySlotsData.Num(); ++i)
-            {
-                if (!PlayerInventory->InventorySlots.IsValidIndex(i)) continue;
-
-                const FInventoryItemSaveData& SavedItemData = PendingGameDataToLoad->InventorySlotsData[i];
-                if (SavedItemData.ItemClass != nullptr)
-                {
-                    if (AItem* NewItem = GetWorld()->SpawnActor<AItem>(SavedItemData.ItemClass, PlayerCharacter->GetTargetActorLocation(), PlayerCharacter->GetActorRotation(), SpawnParams))
-                    {
-                        //GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Item reconciliated..."));
-                        NewItem->SetOwner(PlayerCharacter);
-
-                        if (const TScriptInterface<ICharacterStateProvider> PlayerCharacterState = PlayerCharacter)
-                        {
-                            PlayerCharacterState->Execute_GetCharacterStateComponent(PlayerCharacter)->SetWeaponState(ECharacterWeaponStates::ECWS_EquippedWeapon);
-                        }
-
-                        PlayerInventory->InventorySlots[i] = NewItem;
-                        if (const AWeapon* Weapon = Cast<AWeapon>(NewItem))
-                        {
-                            if (APlayerMain* Player = Cast<APlayerMain>(PlayerCharacter))
-                            {
-                                Weapon->EnableWeaponState(true);
-                                //Weapon->OnWallHit.AddDynamic(Player, &APlayerMain::OnWallCollision);
-                            }
-                        }
-                    }
-                }
-            }
-            PlayerInventory->UpdateInventoryUI();
-
-            if (PendingGameDataToLoad->EquippedSlotIndexInSave != -1 && PlayerInventory->InventorySlots.IsValidIndex(PendingGameDataToLoad->EquippedSlotIndexInSave) && PlayerInventory->InventorySlots[PendingGameDataToLoad->EquippedSlotIndexInSave] != nullptr)
-            {
-                PlayerInventory->EquipWeaponFromSlot(PendingGameDataToLoad->EquippedSlotIndexInSave);
-            }
-        }
-    }
-
-    if (ANewGameStateBase* GameState = World->GetGameState<ANewGameStateBase>())
-    {
-        GameState->InitializeWorldState(PendingGameDataToLoad->EnemiesData);
-        GameState->InitializeWorldInteractedItemsState(PendingGameDataToLoad->InteractedItemsData);
+        GameState->InitializeEntities(PendingGameDataToLoad->EntitiesStates);
+        GameState->InitializeItems(PendingGameDataToLoad->ItemsStates);
     }
 
     PendingGameDataToLoad = nullptr;
@@ -522,13 +400,13 @@ void UNewGameInstance::ApplyPendingLoadedDataToWorld()
     HideLoadingScreen();
 }
 
-bool UNewGameInstance::DoesProgressSaveExist(int32 SlotIndex) const
+bool UVelmaraGameInstance::DoesProgressSaveExist(int32 SlotIndex) const
 {
     FString CurrentSlotName = FString::Printf(TEXT("%s%d"), *ProgressSaveSlotPrefix, FMath::Clamp(SlotIndex, 0, 2));
     return UGameplayStatics::DoesSaveGameExist(CurrentSlotName, DefaultUserIndex);
 }
 
-UPlayerProgressSaveGame* UNewGameInstance::GetSaveGameInfo(int32 SlotIndex) const
+UPlayerProgressSaveGame* UVelmaraGameInstance::GetSaveGameInfo(int32 SlotIndex) const
 {
     FString CurrentSlotName = FString::Printf(TEXT("%s%d"), *ProgressSaveSlotPrefix, FMath::Clamp(SlotIndex, 0, 2));
     if (DoesProgressSaveExist(SlotIndex))
@@ -538,7 +416,7 @@ UPlayerProgressSaveGame* UNewGameInstance::GetSaveGameInfo(int32 SlotIndex) cons
     return nullptr;
 }
 
-void UNewGameInstance::ShowLoadingScreen()
+void UVelmaraGameInstance::ShowLoadingScreen()
 {
     if (LoadingScreenWidgetClass && !CurrentLoadingScreenInstance)
     {
@@ -553,7 +431,7 @@ void UNewGameInstance::ShowLoadingScreen()
     }
 }
 
-void UNewGameInstance::HideLoadingScreen()
+void UVelmaraGameInstance::HideLoadingScreen()
 {
     if (CurrentLoadingScreenInstance)
     {

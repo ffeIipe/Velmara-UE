@@ -3,8 +3,11 @@
 
 #include "Items/Weapons/Weapon.h"
 
+#include "Components/CharacterStateComponent.h"
+#include "Interfaces/AnimatorProvider.h"
+#include "Interfaces/CharacterStateProvider.h"
 #include "LoadSystem/PlayerProgressSaveGame.h"
-#include "SceneEvents/NewGameStateBase.h"
+#include "SceneEvents/VelmaraGameStateBase.h"
 #include "Interfaces/ControllerProvider.h"
 
 void AWeapon::Pick(AActor* NewOwner)
@@ -16,21 +19,6 @@ void AWeapon::Pick(AActor* NewOwner)
 	AnimatorProvider = NewOwner;
 	
 	DisableCollision();
-	
-	if (!bWasUsed)
-	{
-		bWasUsed = true;
-		if (const UWorld* World = GetWorld())
-		{
-			if (ANewGameStateBase* GameState = World->GetGameState<ANewGameStateBase>())
-			{
-				FInteractedItemSaveData SaveData;
-				SaveData.UniqueSaveID = GetUniqueSaveID();
-				SaveData.bWasOpened = bWasUsed;
-				GameState->UpdateInteractedItemState(SaveData);
-			}
-		}
-	}
 	
 	if (CharacterStateProvider)
 	{

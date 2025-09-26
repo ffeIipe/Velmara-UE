@@ -21,8 +21,8 @@
 #include "Perception/AIPerceptionComponent.h"  
 #include "Player/PlayerHeroController.h"
 #include "Player/PlayerMain.h"
-#include "SceneEvents/NewGameModeBase.h"
-#include "SceneEvents/NewGameStateBase.h"
+#include "SceneEvents/VelmaraGameModeBase.h"
+#include "SceneEvents/VelmaraGameStateBase.h"
 #include "Subsystems/EffectsManager.h"
 #include "Subsystems/EnemyPoolManager.h"
 #include "Subsystems/EnemyTokenManager.h"
@@ -87,6 +87,8 @@ AEnemy::AEnemy()
 
 	GetAttributeComponent()->OnEntityDead.AddDynamic(this, &AEnemy::PerformDead);
 	GetAttributeComponent()->OnDettachShield.AddDynamic(this, &AEnemy::NotifyIsNotShieldedToBlackboard);
+
+	MementoComponent->bShouldSaveInventory = false;
 }
 
 void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
@@ -121,13 +123,13 @@ void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 
 	bUseControllerRotationYaw = bOriginalUseControllerRotationYaw;
 
-	if (ANewGameModeBase* NewGameMode = Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
+	if (AVelmaraGameModeBase* NewGameMode = Cast<AVelmaraGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
 	{
 		NewGameMode->RegisterEnemy(this);
 
-		if (ANewGameStateBase* NewGameStateBase = Cast<ANewGameStateBase>(NewGameMode->GameState))
+		if (AVelmaraGameStateBase* NewGameStateBase = Cast<AVelmaraGameStateBase>(NewGameMode->GameState))
 		{
-			if (GetMementoComponent())
+			if (MementoComponent)
 			{
 				NewGameStateBase->RegisterMementoEntity(this);
 			}
@@ -191,7 +193,7 @@ void AEnemy::Die(UAnimMontage* DeathAnim, FName Section)
 	DissolveTimeline->PlayFromStart();
 
 	//save data de que murio
-	if (const UWorld* World = GetWorld())
+	/*if (const UWorld* World = GetWorld())
 	{
 		if (ANewGameStateBase* GameState = World->GetGameState<ANewGameStateBase>())
 		{
@@ -207,8 +209,10 @@ void AEnemy::Die(UAnimMontage* DeathAnim, FName Section)
 
 			GameState->UpdateEnemyState(CurrentStateData);
 		}
-	} 
+	} */
 
+	MementoComponent->CaptureOwnerState();
+	
 	//disable 'F' widget
 	if (PromptWidgetComponent && PromptWidgetComponent->GetWidget())
 	{
@@ -285,25 +289,9 @@ void AEnemy::BeginPlay()
 		DissolveTimeline->AddInterpFloat(DissolveCurve, ProgressFunction);
 	}
 
-	if (ANewGameModeBase* NewGameMode = Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
+	if (AVelmaraGameModeBase* NewGameMode = Cast<AVelmaraGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
 	{
 		NewGameMode->RegisterEnemy(this);
-
-		if (ANewGameStateBase* NewGameStateBase = Cast<ANewGameStateBase>(NewGameMode->GameState))
-		{
-			if (GetMementoComponent())
-			{
-				NewGameStateBase->RegisterMementoEntity(this);
-			}
-		}
-	}
-
-	if (const UWorld* World = GetWorld())
-	{
-		if (ANewGameStateBase* GameState = World->GetGameState<ANewGameStateBase>())
-		{
-			GameState->RequestEnemyStateReconciliation(this);
-		}
 	}
 
 	if (IsValid(PromptWidgetComponent->GetWidget()))

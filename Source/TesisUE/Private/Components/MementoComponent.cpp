@@ -3,6 +3,8 @@
 #include "GameFramework/Actor.h"
 #include <Entities/Entity.h>
 
+#include "Items/Weapons/Weapon.h"
+
 UMementoComponent::UMementoComponent()
 {
     PrimaryComponentTick.bCanEverTick = false;
@@ -13,23 +15,7 @@ void UMementoComponent::BeginPlay()
 {
     Super::BeginPlay();
 
-    SaveState();
-}
-
-void UMementoComponent::SaveState()
-{
-    if (GetOwner())
-    {
-        InternalMementoState = CaptureOwnerState();
-    }
-}
-
-void UMementoComponent::LoadState()
-{
-    if (GetOwner())
-    {
-        ApplyExternalState(InternalMementoState);
-    }
+    CaptureOwnerState();
 }
 
 void UMementoComponent::ApplyExternalState(const FEntityMementoState& StateToApply)
@@ -43,27 +29,65 @@ void UMementoComponent::ApplyExternalState(const FEntityMementoState& StateToApp
             AttrComp->SetEnergy(StateToApply.Energy);
         }
 
+        if (bShouldSaveInventory)
+        {
+            if (UInventoryComponent* InventoryComp = Owner->GetComponentByClass<UInventoryComponent>())
+            {
+                for (int32 i = 0; i < StateToApply.InventorySlots.Num(); i++)
+                {
+                    FActorSpawnParameters SpawnParams;
+                    {
+                        SpawnParams.Owner = GetOwner();
+                        SpawnParams.Instigator = Cast<APawn>(GetOwner());
+                        SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+                    }
+                    AWeapon* WeaponToAdd = GetWorld()->SpawnActor<AWeapon>(StateToApply.InventorySlots[i],
+                                                                           GetOwner()->GetActorLocation(),
+                                                                           GetOwner()->GetActorRotation(), SpawnParams);
+                    WeaponToAdd->SetUniqueSaveID(StateToApply.UniqueSaveID);
+                    if (!InventoryComp->TryAddWeapon(WeaponToAdd))
+                    {
+                        WeaponToAdd->Destroy();
+                    }
+                    //InventoryComp->EquipWeaponFromSlot(StateToApply.ActiveSaveSlotIndex);
+                }
+            }
+        }
+        
         InternalMementoState = StateToApply;
     }
 }
 
-FEntityMementoState UMementoComponent::CaptureOwnerState() const
+FEntityMementoState UMementoComponent::CaptureOwnerState()
 {
-    FEntityMementoState State;
-
-    if (AEntity* EntityOwner = Cast<AEntity>(GetOwner()))
+    if (const AEntity* EntityOwner = Cast<AEntity>(GetOwner()))
     {
-        State.Transform = EntityOwner->GetActorTransform();
+        InternalMementoState.OwnerClass = EntityOwner->GetClass();
+        InternalMementoState.Transform = EntityOwner->GetActorTransform();
+        InternalMementoState.UniqueSaveID = EntityOwner->GetUniqueSaveID();
+        
         if (UAttributeComponent* AttrComp = EntityOwner->GetAttributeComponent())
         {
-            State.Health = AttrComp->GetHealth();
-            State.Energy = AttrComp->GetEnergy();
+            InternalMementoState.Health = AttrComp->GetHealth();
+            InternalMementoState.Energy = AttrComp->GetEnergy();
+            InternalMementoState.bIsAlive = AttrComp->IsAlive();
         }
-        else
+
+        if (bShouldSaveInventory)
         {
-            State.Health = 0.0f;
-            State.Energy = 0.0f;
+            if (UInventoryComponent* InventoryComp = EntityOwner->GetInventoryComponent())
+            {
+                for (TScriptInterface Weapon : InventoryComp->InventorySlots)
+                {
+                    if (Weapon)
+                    {
+                        InternalMementoState.InventorySlots.Add(Weapon.GetObject()->GetClass());
+                    }
+                }
+            
+                InternalMementoState.ActiveSaveSlotIndex = InventoryComp->EquippedSlotIndex;
+            }
         }
     }
-    return State;
+    return InternalMementoState;
 }

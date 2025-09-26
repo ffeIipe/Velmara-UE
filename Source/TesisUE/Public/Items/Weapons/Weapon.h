@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Components/MementoComponent.h"
 #include "Interfaces/Weapon/WeaponInterface.h"
 #include "Items/Item.h"
 #include "Weapon.generated.h"
@@ -41,8 +42,10 @@ public:
 
 	virtual FName& GetUniqueSaveID() override { return UniqueSaveID; }
 
-	void EnableWeaponState(bool bEnable) const;
+	void SetUniqueSaveID(const FName Name) { UniqueSaveID = Name; }
 	
+	void EnableWeaponState(bool bEnable) const;
+
 protected:
 	virtual void BeginPlay() override;
 	

@@ -103,14 +103,16 @@ void UInventoryComponent::EquipWeaponFromSlot(const int32 SlotIndex)
     }
     
     if (const TScriptInterface<IPickable> Pickable = InventorySlots[SlotIndex].GetObject()) Pickable->Pick(GetOwner());
+
+    if (InventorySlots.IsValidIndex(SlotIndex))
+    {
+        CurrentWeapon = InventorySlots[SlotIndex];
+        EquippedSlotIndex = SlotIndex;
+        CurrentWeapon->EnableVisuals(true);
+    }
     
-    CurrentWeapon = InventorySlots[SlotIndex];
-    EquippedSlotIndex = SlotIndex;
-
-    CurrentWeapon->EnableVisuals(true);
-
-    AnimatorProvider->ChangeWeaponAnimationState();
-    UpdateInventoryUI();
+    //AnimatorProvider->ChangeWeaponAnimationState();
+    //UpdateInventoryUI();
 }
 
 void UInventoryComponent::DropWeaponFromSlot(const int32 SlotIndex)

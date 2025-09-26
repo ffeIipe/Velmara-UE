@@ -76,6 +76,12 @@ AEntity::AEntity()
 
 	GetSpringArmComponent()->bUsePawnControlRotation = true;
 	//I think that I could solve the problem w/ the strange rotation of the hard lock system
+
+	/*if (UniqueSaveID == NAME_None)
+	{
+		const FString GuidString = FGuid::NewGuid().ToString();
+		UniqueSaveID = FName(*GuidString);
+	}*/
 }
 
 void AEntity::GetHit(const TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint,
@@ -266,8 +272,6 @@ void AEntity::BeginPlay()
 	}
 
 	SetCombatStrategy(ECharacterModeStates::ECMS_Human);
-	
-	GetMementoComponent()->SaveState();
 }
 
 void AEntity::InitializeComponentsData() const

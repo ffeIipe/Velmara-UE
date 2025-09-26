@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
-#include "NewGameInstance.generated.h"
+#include "VelmaraGameInstance.generated.h"
 
 class USettingsSaveGame;
 class UPlayerProgressSaveGame;
@@ -10,12 +10,12 @@ class ACharacter;
 class AEnemy;
 
 UCLASS()
-class TESISUE_API UNewGameInstance : public UGameInstance
+class TESISUE_API UVelmaraGameInstance : public UGameInstance
 {
     GENERATED_BODY()
 
 public:
-    UNewGameInstance();
+    UVelmaraGameInstance();
 
     virtual void Init() override;
     virtual void Shutdown() override;
@@ -102,7 +102,7 @@ public:
     void CreateNewGame(int32 SlotIndex, FString StartLevelName);
 
     UFUNCTION(BlueprintCallable, Category = "SaveLoad|Progress")
-    bool SavePlayerProgress(int32 SlotIndex, APawn* Entity);
+    bool SavePlayerProgress(int32 SlotIndex, APawn* Pawn);
 
     UFUNCTION(BlueprintCallable, Category = "SaveLoad|Progress")
     bool LoadPlayerProgress(int32 SlotIndex);

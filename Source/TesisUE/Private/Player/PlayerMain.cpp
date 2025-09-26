@@ -1,8 +1,8 @@
 #include "Player/PlayerMain.h"
 
-#include "SceneEvents/NewGameModeBase.h"
-#include "SceneEvents/NewGameStateBase.h"
-#include "SceneEvents/NewGameInstance.h"
+#include "SceneEvents/VelmaraGameModeBase.h"
+#include "SceneEvents/VelmaraGameStateBase.h"
+#include "SceneEvents/VelmaraGameInstance.h"
 
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -81,11 +81,11 @@ void APlayerMain::BeginPlay()
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 			Subsystem->AddMappingContext(CharacterContext, 0);
 
-	if (const ANewGameModeBase* NewGameMode = Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
+	if (const AVelmaraGameModeBase* NewGameMode = Cast<AVelmaraGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
 	{
-		if (ANewGameStateBase* NewGameStateBase = Cast<ANewGameStateBase>(NewGameMode->GameState))
+		if (AVelmaraGameStateBase* NewGameStateBase = Cast<AVelmaraGameStateBase>(NewGameMode->GameState))
 		{
-			if (GetMementoComponent())
+			if (MementoComponent)
 			{
 				NewGameStateBase->RegisterMementoEntity(this);
 			}
@@ -172,13 +172,13 @@ void APlayerMain::ResetFollowCamera()
 		FollowCamera->AttachToComponent(GetSpringArmComponent(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName("SpringEndpoint"));
 		PlayerControllerRef->EnableInput(PlayerControllerRef);
 		bCanReceiveDamage = true;
-		Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->SetEnemiesAIEnabled(true);
+		Cast<AVelmaraGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->SetEnemiesAIEnabled(true);
 	}
 }
 
 void APlayerMain::LoadLastCheckpoint() const
 {
-	if (UNewGameInstance* GameInst = GetGameInstance<UNewGameInstance>())
+	if (UVelmaraGameInstance* GameInst = GetGameInstance<UVelmaraGameInstance>())
 	{
 		GameInst->LoadPlayerProgress(GameInst->ActiveSaveSlotIndex);
 	}
