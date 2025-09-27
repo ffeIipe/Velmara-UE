@@ -312,27 +312,27 @@ bool UVelmaraGameInstance::SavePlayerProgress(const int32 SlotIndex, APawn* Pawn
         ActiveSaveSlotIndex = FMath::Clamp(SlotIndex, 0, 2);
         const FString CurrentSlotName = FString::Printf(TEXT("%s%d"), *ProgressSaveSlotPrefix, ActiveSaveSlotIndex);
 
-        UPlayerProgressSaveGame* SaveGameInstance = Cast<UPlayerProgressSaveGame>(UGameplayStatics::CreateSaveGameObject(UPlayerProgressSaveGame::StaticClass()));
-        if (!SaveGameInstance)
+        UPlayerProgressSaveGame* CurrentGameProgress = Cast<UPlayerProgressSaveGame>(UGameplayStatics::CreateSaveGameObject(UPlayerProgressSaveGame::StaticClass()));
+        if (!CurrentGameProgress)
         {
             if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Failed Cast to UPlayerSaveProgress.");
             return false;
         }
 
-        SaveGameInstance->CurrentLevelName = UGameplayStatics::GetCurrentLevelName(this);
+        CurrentGameProgress->CurrentLevelName = UGameplayStatics::GetCurrentLevelName(this);
 
         if (AVelmaraGameStateBase* GameState = GetWorld()->GetGameState<AVelmaraGameStateBase>())
         {
             if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, "Game State looking for Memento Entities States...");
             
-            SaveGameInstance->EntitiesStates = GameState->SaveAllEntityMementoStates();
-            SaveGameInstance->ItemsStates = GameState->SaveAllItemMementoStates();
+            CurrentGameProgress->EntitiesStates = GameState->SaveAllEntityMementoStates();
+            CurrentGameProgress->ItemsStates = GameState->SaveAllItemMementoStates();
         }
 
-        SaveGameInstance->Timestamp = FDateTime::UtcNow();
-        SaveGameInstance->SaveSlotIndex = ActiveSaveSlotIndex;
-
-        const bool bSaveSuccess = UGameplayStatics::SaveGameToSlot(SaveGameInstance, CurrentSlotName, DefaultUserIndex);
+        CurrentGameProgress->Timestamp = FDateTime::UtcNow();
+        CurrentGameProgress->SaveSlotIndex = ActiveSaveSlotIndex;
+        
+        const bool bSaveSuccess = UGameplayStatics::SaveGameToSlot(CurrentGameProgress, CurrentSlotName, DefaultUserIndex);
         return bSaveSuccess;
     }
 

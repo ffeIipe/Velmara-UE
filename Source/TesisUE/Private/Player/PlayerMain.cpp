@@ -81,7 +81,7 @@ void APlayerMain::BeginPlay()
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 			Subsystem->AddMappingContext(CharacterContext, 0);
 
-	if (const AVelmaraGameModeBase* NewGameMode = Cast<AVelmaraGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
+	/*if (const AVelmaraGameModeBase* NewGameMode = Cast<AVelmaraGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
 	{
 		if (AVelmaraGameStateBase* NewGameStateBase = Cast<AVelmaraGameStateBase>(NewGameMode->GameState))
 		{
@@ -90,7 +90,7 @@ void APlayerMain::BeginPlay()
 				NewGameStateBase->RegisterMementoEntity(this);
 			}
 		}
-	}
+	}*/
 }
 
 void APlayerMain::PerformDead()
@@ -125,14 +125,10 @@ float APlayerMain::TakeDamage(const float DamageAmount, FDamageEvent const& Dama
 
 void APlayerMain::ToggleForm()
 {
-	if (CharacterStateComponent->IsActionEqualToAny({
-		ECharacterActionsStates::ECAS_Dead,
-		ECharacterActionsStates::ECAS_Block,
-		ECharacterActionsStates::ECAS_Finish,
-		ECharacterActionsStates::ECAS_Attack,
-		ECharacterActionsStates::ECAS_Stun })) return;
-	
-	ChangeModeComponent->ToggleForm();
+	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Nothing, ECharacterActionsStates::ECAS_Stun }))
+	{
+		ChangeModeComponent->ToggleForm();
+	}
 }
 
 void APlayerMain::Die(UAnimMontage* DeathAnim, const FName Section)

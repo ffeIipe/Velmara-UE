@@ -230,21 +230,13 @@ void UCombatComponent::UpdateLaunchCharacterUp(const float Alpha)
 
 void UCombatComponent::PerformBlock(const bool bIsTriggered, UAnimMontage* BlockMontage) const
 {
-	if (CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Stun, ECharacterActionsStates::ECAS_Dead })) return;
-
-	bIsTriggered && !CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Stun, ECharacterActionsStates::ECAS_Dead })
-		? Block(BlockMontage) : ReleaseBlock(BlockMontage);
+	bIsTriggered ? Block(BlockMontage) : ReleaseBlock(BlockMontage);
 }
 
 void UCombatComponent::Block(UAnimMontage* BlockMontage) const
 {
-	if (CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Stun })) return;
-	
-	if (!CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->IsWeaponStateEqualToAny({ECharacterWeaponStates::ECWS_Unequipped }))
-	{
-		AnimatorProvider->Execute_PlayAnimMontage(GetOwner(),  BlockMontage, 1.f, FName("BlockIdle"));
-		CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetAction(ECharacterActionsStates::ECAS_Block);
-	}
+	AnimatorProvider->Execute_PlayAnimMontage(GetOwner(), BlockMontage, 1.f, FName("BlockIdle"));
+	CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetAction(ECharacterActionsStates::ECAS_Block);
 }
 
 void UCombatComponent::ReceiveBlock(UAnimMontage* BlockMontage) const

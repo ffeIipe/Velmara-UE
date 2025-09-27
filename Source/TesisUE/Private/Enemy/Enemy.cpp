@@ -127,13 +127,13 @@ void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 	{
 		NewGameMode->RegisterEnemy(this);
 
-		if (AVelmaraGameStateBase* NewGameStateBase = Cast<AVelmaraGameStateBase>(NewGameMode->GameState))
+		/*if (AVelmaraGameStateBase* NewGameStateBase = Cast<AVelmaraGameStateBase>(NewGameMode->GameState))
 		{
 			if (MementoComponent)
 			{
 				NewGameStateBase->RegisterMementoEntity(this);
 			}
-		}
+		}*/
 	}
 
 	if (PromptWidgetComponent && PromptWidgetComponent->GetWidget())
@@ -192,25 +192,6 @@ void AEnemy::Die(UAnimMontage* DeathAnim, FName Section)
 
 	DissolveTimeline->PlayFromStart();
 
-	//save data de que murio
-	/*if (const UWorld* World = GetWorld())
-	{
-		if (ANewGameStateBase* GameState = World->GetGameState<ANewGameStateBase>())
-		{
-			FEnemySaveData CurrentStateData;
-			CurrentStateData.UniqueSaveID = GetUniqueSaveID();
-			CurrentStateData.bIsAlive = false;
-			CurrentStateData.EnemyClass = GetClass();
-
-			if (GetMementoComponent())
-			{
-				CurrentStateData.EnemyState = GetMementoComponent()->CaptureOwnerState();
-			}
-
-			GameState->UpdateEnemyState(CurrentStateData);
-		}
-	} */
-
 	MementoComponent->CaptureOwnerState();
 	
 	//disable 'F' widget
@@ -230,6 +211,7 @@ void AEnemy::Die(UAnimMontage* DeathAnim, FName Section)
 	}
 
 	if (OnDeactivated.IsBound()) OnDeactivated.Broadcast(this);
+	if (OnDead.IsBound()) OnDead.Broadcast(this);
 	
 	GetWorldTimerManager().SetTimer(ReturnToPoolTimerHandle, this, &AEnemy::RequestReturnToPool, 5.0f, false);
 }
@@ -276,6 +258,11 @@ void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (!AttributeComponent->IsAlive())
+	{
+		DeactivateEnemy();
+	}
+	
 	PlayerControllerRef = Cast<APlayerHeroController>(UGameplayStatics::GetPlayerController(this, 0));
 
 	HandleEnemyCollision(true);

@@ -334,7 +334,7 @@ void AEntity::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_Block, ETriggerEvent::Completed, this, &AEntity::Input_Block);
 
 		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_Interact, ETriggerEvent::Started, this, &AEntity::Input_Interact);
-		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_ToggleWeapon, ETriggerEvent::Started, GetInventoryComponent(), &UInventoryComponent::ToggleInventorySlot);
+		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_ToggleWeapon, ETriggerEvent::Started, this, &AEntity::Input_ToggleWeapon);
 	}
 	else if (GEngine)
 	{
@@ -483,7 +483,8 @@ void AEntity::PerformPrimaryAttack()
 	ExtraMovementComponent->bIsSaveDodge = false;
 	CombatComponent->bIsSaveHeavyAttack = false;
 	
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Attack, ECharacterActionsStates::ECAS_Dodge }))
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Attack, ECharacterActionsStates::ECAS_Dodge }) &&
+		CharacterStateComponent->IsModeEqualToAny({ ECharacterModeStates::ECMS_Human }))
 	{
 		GetCurrentStrategy()->Strategy_UseFirstCommand(this);
 	}
@@ -500,7 +501,8 @@ void AEntity::Input_SecondaryAttack()
 	ExtraMovementComponent->bIsSaveDodge = false;
 	CombatComponent->bIsSaveLightAttack = false;
 
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Attack, ECharacterActionsStates::ECAS_Dodge }))
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Attack, ECharacterActionsStates::ECAS_Dodge }) &&
+		CharacterStateComponent->IsModeEqualToAny({ ECharacterModeStates::ECMS_Human }))
 	{
 		GetCurrentStrategy()->Strategy_UseSecondCommand(this);
 	}
@@ -521,9 +523,11 @@ void AEntity::Input_Ability()
 
 void AEntity::Input_Block(const FInputActionValue& Value)
 {
-	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Stun, ECharacterActionsStates::ECAS_Dead })) return;
-
-	CombatComponent->PerformBlock(Value.Get<bool>(), MontagesData->Montages.BlockMontage);
+	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Stun, ECharacterActionsStates::ECAS_Dead })
+		&& IsEquipped())
+	{
+		CombatComponent->PerformBlock(Value.Get<bool>(), MontagesData->Montages.BlockMontage);
+	}
 }
 
 void AEntity::Input_ChangeHardLockTarget()
@@ -551,11 +555,21 @@ void AEntity::Input_Interact(const FInputActionValue& InputActionValue)
 	}
 }
 
+void AEntity::Input_ToggleWeapon()
+{
+	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Nothing, ECharacterActionsStates::ECAS_Stun }) &&
+		CharacterStateComponent->IsModeEqualToAny({ ECharacterModeStates::ECMS_Human }) &&
+		IsEquipped())
+	{
+		InventoryComponent->ToggleInventorySlot();
+	}
+}
+
 void AEntity::Die(UAnimMontage* DeathAnim, const FName Section)
 {
 	if (CharacterStateComponent->CurrentStates.Action == ECharacterActionsStates::ECAS_Dead) return;
 
-	Execute_StopAnimMontage(this, GetCurrentMontage()) ;
+	Execute_StopAnimMontage(this, GetCurrentMontage());
 	CharacterStateComponent->SetAction(ECharacterActionsStates::ECAS_Dead);
 
 	if (CombatComponent->IsInAir())
@@ -566,7 +580,7 @@ void AEntity::Die(UAnimMontage* DeathAnim, const FName Section)
 
 	if (DeathAnim)
 	{
-		Execute_StopAnimMontage(this, GetCurrentMontage()) ;
+		Execute_StopAnimMontage(this, GetCurrentMontage());
 		Execute_PlayAnimMontage(this, DeathAnim, 1.f, Section);
 	}
 }

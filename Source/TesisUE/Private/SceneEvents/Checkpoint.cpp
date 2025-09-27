@@ -23,7 +23,6 @@ void ACheckpoint::OnSphereBeginOverlap(
                 if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Red, FString("Saving from " + OverlappingEntity->GetName()));
                 OverlappingEntity->GetPossessionComponent()->GetPossessor()->SetActorTransform(OverlappingEntity->GetActorTransform());
             }
-            
 
             if (UVelmaraGameInstance* GameInst = Cast<UVelmaraGameInstance>(GetGameInstance()))
             {

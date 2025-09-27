@@ -45,6 +45,7 @@ struct FEntityMementoState
         , ActiveSaveSlotIndex(0)
     {
         Transform = FTransform::Identity;
+        /*InventorySlots.Empty();*/
     }
 };
 

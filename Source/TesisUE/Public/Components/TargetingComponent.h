@@ -23,8 +23,6 @@ public:
     UTargetingComponent();
 
     void InitializeValues(const FTargetingData& TargetingData);
-    
-    void SetCurrentStrategyValues(float NewSoftLockDistance, float NewSoftLockRadius);
 
     virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
     
@@ -72,8 +70,8 @@ private:
     UPROPERTY()
     UCurveFloat* SoftLockCurve;
     
-    float SoftLockDistance;
-    float SoftLockRadius;
+    float SoftLockDistance = 250.f;
+    float SoftLockRadius = 100.f;
     bool bIsHardLocking = false;
     float HardLockRadius = 1500.f;
     int32 CombatTargetIndex = 0;

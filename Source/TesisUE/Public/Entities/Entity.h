@@ -62,7 +62,7 @@ class UCameraShakeBase;
 class UEntityData;
 
 // === Delegates ===
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEntityDead);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEntityDead, AEntity*, Entity);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEntityDamaged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEntityCanBeFinished);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEntityShieldTakeDamage);
@@ -217,6 +217,13 @@ public:
 	// === Save System ===
 	UFUNCTION(BlueprintCallable, Category = "Save System")
 	FName GetUniqueSaveID() const { return UniqueSaveID; }
+
+	// === Delegates ===
+	UPROPERTY(BlueprintAssignable)
+	FOnEntityDead OnDead;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnEntityDamaged OnDamaged;
 	
 protected:
 	// === Actor Functions ===
@@ -284,6 +291,8 @@ protected:
 	void Input_ToggleHardLock();
 
 	void Input_Interact(const FInputActionValue& InputActionValue);
+
+	void Input_ToggleWeapon();
 
 	// === Components ===
 	UPROPERTY()

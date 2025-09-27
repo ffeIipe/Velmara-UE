@@ -15,33 +15,39 @@ class TESISUE_API AVelmaraGameStateBase : public AGameStateBase
 	GENERATED_BODY()
 
 public:
+	virtual void BeginPlay() override;
+	
 	void RegisterMementoEntity(AEntity* Entity);
 	void RegisterMementoItem(AItem* Item);
 	
 	void UnregisterMementoEntity(AEntity* Entity);
-	
+
 	TArray<AEntity*> GetMementoEntities();
 	TArray<AItem*> GetMementoItems();
 
 	TMap<FName, FEntityMementoState> GetEntityMementoStatesWithKey();
 	TMap<FName, FItemMementoState> GetItemMementoStatesWithKey();
 
-	UFUNCTION(BlueprintCallable, Category = "Memento")
-	void LoadAllMementoStates();
-
-	void InitializeItems(TArray<FItemMementoState> ItemsStates);
-	TArray<FEntityMementoState> SaveAllEntityMementoStates();
-	/*void RequestItemStateReconciliation(const AItem* Item);*/
+	void InitializeItems(const TArray<FItemMementoState>& ItemsStates);
+	TArray<FItemMementoState> SaveAllItemMementoStates();
 	
 	void InitializeEntities(TArray<FEntityMementoState> EntitiesStates);
-	TArray<FItemMementoState> SaveAllItemMementoStates();
-	/*void RequestEntityStateReconciliation(AEntity* Entity);*/
+	TArray<FEntityMementoState> SaveAllEntityMementoStates();
+
+	UFUNCTION()
+	void UpdateEntityState(AEntity* DeadEntity);
 
 protected:
-	UPROPERTY()
+	UPROPERTY(VisibleAnywhere)
+	TArray<FEntityMementoState> CurrentGameEntities;
+	
+	UPROPERTY(VisibleAnywhere)
+	TArray<FItemMementoState> CurrentGameItems;
+	
+	UPROPERTY(VisibleAnywhere)
 	TMap<FName, FEntityMementoState> WorldEntityStates;
 	
-	UPROPERTY()
+	UPROPERTY(VisibleAnywhere)
 	TMap<FName, FItemMementoState> WorldItemsStates;
 
 	bool bIsLoadingFromSave = false;

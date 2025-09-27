@@ -56,13 +56,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void RequestReturnToPool();
 
-	// === Delegates ===
-	UPROPERTY(BlueprintAssignable)
-	FOnEntityDead OnDead;
-
-	UPROPERTY(BlueprintAssignable)
-	FOnEntityDamaged OnDamaged;
-
 	// === Combat & Damage ===
 	virtual void Die(UAnimMontage* DeathAnim, FName Section) override;
 

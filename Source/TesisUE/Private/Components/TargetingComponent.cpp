@@ -21,12 +21,6 @@ void UTargetingComponent::InitializeValues(const FTargetingData& TargetingData)
     SoftLockCurve = TargetingData.SoftLockCurve;
 }
 
-void UTargetingComponent::SetCurrentStrategyValues(const float NewSoftLockDistance, const float NewSoftLockRadius)
-{
-    SoftLockDistance = NewSoftLockDistance;
-    SoftLockRadius = NewSoftLockRadius;
-}
-
 void UTargetingComponent::BeginPlay()
 {
     Super::BeginPlay();

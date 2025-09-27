@@ -8,14 +8,12 @@
 UMementoComponent::UMementoComponent()
 {
     PrimaryComponentTick.bCanEverTick = false;
-    InternalMementoState = FEntityMementoState();
+    /*InternalMementoState = FEntityMementoState();*/
 }
 
 void UMementoComponent::BeginPlay()
 {
     Super::BeginPlay();
-
-    CaptureOwnerState();
 }
 
 void UMementoComponent::ApplyExternalState(const FEntityMementoState& StateToApply)
@@ -41,20 +39,15 @@ void UMementoComponent::ApplyExternalState(const FEntityMementoState& StateToApp
                         SpawnParams.Instigator = Cast<APawn>(GetOwner());
                         SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
                     }
-                    AWeapon* WeaponToAdd = GetWorld()->SpawnActor<AWeapon>(StateToApply.InventorySlots[i],
-                                                                           GetOwner()->GetActorLocation(),
-                                                                           GetOwner()->GetActorRotation(), SpawnParams);
-                    WeaponToAdd->SetUniqueSaveID(StateToApply.UniqueSaveID);
-                    if (!InventoryComp->TryAddWeapon(WeaponToAdd))
-                    {
-                        WeaponToAdd->Destroy();
-                    }
+                    AWeapon* WeaponToAdd = GetWorld()->SpawnActor<AWeapon>(StateToApply.InventorySlots[i], GetOwner()->GetActorLocation(), GetOwner()->GetActorRotation(), SpawnParams);
+                    
+                    if (!InventoryComp->TryAddWeapon(WeaponToAdd)) WeaponToAdd->Destroy();
+                    
                     //InventoryComp->EquipWeaponFromSlot(StateToApply.ActiveSaveSlotIndex);
                 }
             }
         }
-        
-        InternalMementoState = StateToApply;
+        /*InternalMementoState = StateToApply;*/
     }
 }
 
@@ -77,14 +70,14 @@ FEntityMementoState UMementoComponent::CaptureOwnerState()
         {
             if (UInventoryComponent* InventoryComp = EntityOwner->GetInventoryComponent())
             {
-                for (TScriptInterface Weapon : InventoryComp->InventorySlots)
+                InternalMementoState.InventorySlots.Empty();
+                
+                for (int32 i = 0; i < InventoryComp->InventorySlots.Num(); i++)
                 {
-                    if (Weapon)
-                    {
-                        InternalMementoState.InventorySlots.Add(Weapon.GetObject()->GetClass());
-                    }
+                    if (InventoryComp->InventorySlots[i] == nullptr) continue;
+                    
+                    InternalMementoState.InventorySlots.AddUnique(InventoryComp->InventorySlots[i].GetObject()->GetClass());
                 }
-            
                 InternalMementoState.ActiveSaveSlotIndex = InventoryComp->EquippedSlotIndex;
             }
         }

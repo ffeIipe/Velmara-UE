@@ -6,6 +6,14 @@
 #include "Interfaces/MementoEntity.h"
 #include "Items/Item.h"
 
+void AVelmaraGameStateBase::BeginPlay()
+{
+	Super::BeginPlay();
+
+	GetMementoEntities();
+	GetMementoItems();
+}
+
 void AVelmaraGameStateBase::RegisterMementoEntity(AEntity* Entity)
 {
 	if (Entity && !MementoEntities.Contains(Entity))
@@ -13,7 +21,7 @@ void AVelmaraGameStateBase::RegisterMementoEntity(AEntity* Entity)
 		if (GEngine)
 			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Orange, Entity->GetName() + " registered.");
 
-		MementoEntities.Add(Entity);
+		MementoEntities.AddUnique(Entity);
 	}
 }
 
@@ -24,7 +32,7 @@ void AVelmaraGameStateBase::RegisterMementoItem(AItem* Item)
 		if (GEngine)
 			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Orange, Item->GetName() + " registered.");
 
-		MementoItems.Add(Item);
+		MementoItems.AddUnique(Item);
 	}
 }
 
@@ -36,23 +44,41 @@ void AVelmaraGameStateBase::UnregisterMementoEntity(AEntity* Entity)
 	}
 }
 
+void AVelmaraGameStateBase::UpdateEntityState(AEntity* DeadEntity)
+{
+	const FEntityMementoState DeadEntityState = DeadEntity->Execute_GetMementoComponent(DeadEntity)->CaptureOwnerState();
+	if (WorldEntityStates.Find(DeadEntity->GetUniqueSaveID()))
+	{
+		WorldEntityStates[DeadEntity->GetUniqueSaveID()] = DeadEntityState;
+	}
+
+	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Orange, DeadEntity->GetName() + " updated.  [" + DeadEntity->GetUniqueSaveID().ToString() + "]");
+}
+
 TArray<AEntity*> AVelmaraGameStateBase::GetMementoEntities()
 {
+	//MementoEntities.Empty();
+
 	for (TActorIterator<AEntity> It(GetWorld()); It; ++It)
 	{
 		AEntity* Entity = *It;
-		MementoEntities.Add(Entity);
+		MementoEntities.AddUnique(Entity);
+
+		Entity->OnDead.AddDynamic(this, &AVelmaraGameStateBase::UpdateEntityState);
+
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Orange, Entity->GetName() + " registered.");
 	}
-	
 	return MementoEntities;
 }
 
 TArray<AItem*> AVelmaraGameStateBase::GetMementoItems()
 {
+	//MementoItems.Empty();
+
 	for (TActorIterator<AItem> It(GetWorld()); It; ++It)
 	{
 		AItem* Item = *It;
-		MementoItems.Add(Item);
+		MementoItems.AddUnique(Item);
 	}
 	return MementoItems;
 }
@@ -76,9 +102,9 @@ TMap<FName, FItemMementoState> AVelmaraGameStateBase::GetItemMementoStatesWithKe
 
 	for (const AItem* Item : GetMementoItems())
 	{
-		Result.Add(Item->GetUniqueSaveID(), Item->GetItemMementoComponent()->GetInternalItemState());
+		Result.Add(Item->GetUniqueSaveID(), Item->GetItemMementoComponent()->CaptureItemState());
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Yellow, Item->GetUniqueSaveID().ToString());
 	}
-
 	return Result;
 }
 
@@ -100,27 +126,12 @@ TArray<FEntityMementoState> AVelmaraGameStateBase::SaveAllEntityMementoStates()
 			}
 		}
 	}
+	
+	CurrentGameEntities = Result;
 	return Result;
 }
 
-void AVelmaraGameStateBase::LoadAllMementoStates()
-{
-	for (AActor* Entity : MementoEntities)
-	{
-		if (!IsValid(Entity)) return;
-		
-		if (const TScriptInterface<IMementoEntity> MementoEntity = Entity)
-		{
-			if (UMementoComponent* MementoComponent = MementoEntity->Execute_GetMementoComponent(Entity);
-				IsValid(MementoComponent))
-			{
-				MementoComponent->ApplyExternalState(MementoComponent->GetInternalSavedState());
-			}
-		}
-	}
-}
-
-void AVelmaraGameStateBase::InitializeItems(TArray<FItemMementoState> ItemsStates)
+void AVelmaraGameStateBase::InitializeItems(const TArray<FItemMementoState>& ItemsStates)
 {
 	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Black, "Initializing Items data.");
 	
@@ -132,13 +143,21 @@ void AVelmaraGameStateBase::InitializeItems(TArray<FItemMementoState> ItemsState
 		WorldItemsStates.Add(ItemState.UniqueSaveID, ItemState);
 	}
 
-	for (const AItem* Item : GetMementoItems())
+	for (AItem* Item : GetMementoItems())
 	{
 		if (const FItemMementoState* ItemData = WorldItemsStates.Find(Item->GetUniqueSaveID()))
 		{
+			/*if (ItemData->bWasOpened)
+			{
+				Item->Destroy();
+			}*/
+
+			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Turquoise, Item->GetUniqueSaveID().ToString());
+			
 			const FItemMementoState& ItemState = *ItemData;
 			Item->GetItemMementoComponent()->ApplyExternalState(ItemState);
 		}
+		else GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Yellow, Item->GetUniqueSaveID().ToString());
 	}
 }
 
@@ -152,8 +171,8 @@ void AVelmaraGameStateBase::InitializeEntities(TArray<FEntityMementoState> Entit
 
 	for (AEntity* Entity : GetMementoEntities())
 	{
-		const FEntityMementoState& ItemData = *WorldEntityStates.Find(Entity->GetUniqueSaveID());
-		Entity->Execute_GetMementoComponent(Entity)->ApplyExternalState(ItemData);
+		const FEntityMementoState& EntityData = *WorldEntityStates.Find(Entity->GetUniqueSaveID());
+		Entity->Execute_GetMementoComponent(Entity)->ApplyExternalState(EntityData);
 	}
 }
 
@@ -163,11 +182,15 @@ TArray<FItemMementoState> AVelmaraGameStateBase::SaveAllItemMementoStates()
 
 	for (const AItem* Item : GetMementoItems())
 	{
-		if (GEngine)
+		/*if (GEngine)
 			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, Item->GetName() + " saved.");
-		
+			*/
+
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Yellow, Item->GetUniqueSaveID().ToString());
 		Result.Add(Item->GetItemMementoComponent()->CaptureItemState());
 	}
+	
+	CurrentGameItems = Result;
 	return Result;
 }
 

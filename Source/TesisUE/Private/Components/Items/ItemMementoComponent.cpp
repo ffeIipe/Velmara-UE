@@ -40,6 +40,4 @@ void UItemMementoComponent::ApplyExternalState(const FItemMementoState ItemState
 void UItemMementoComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	CaptureItemState();
 }
