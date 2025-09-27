@@ -9,7 +9,6 @@
 #include "Components/InputComponent.h"
 #include "Components/AttributeComponent.h"
 #include "Components/ChangeModeComponent.h"
-#include "Components/MementoComponent.h"
 #include "Components/CharacterStateComponent.h"
 #include "Components/PossessionComponent.h"
 #include "Curves/CurveFloat.h"
@@ -182,7 +181,7 @@ void APlayerMain::LoadLastCheckpoint() const
 
 void APlayerMain::ApplyHumanMode()
 {
-	if (Execute_GetCharacterStateComponent(this)->IsModeEqualToAny({ECharacterModeStates::ECMS_Human})) return;
+	if (CharacterStateComponent->IsModeEqualToAny({ECharacterModeStates::ECMS_Human})) return;
 	
 	if (const TScriptInterface<IGenericTeamAgentInterface> TeamAgent = GetController())
 	{
@@ -194,6 +193,7 @@ void APlayerMain::ApplyHumanMode()
 	if (Execute_GetCurrentWeapon(this))
 	{
 		Execute_GetCurrentWeapon(this)->EnableVisuals(true);
+		CharacterStateComponent->SetWeaponState(ECharacterWeaponStates::ECWS_EquippedWeapon);
 	}
 
 	if (GetPossessionComponent()->GetPossessedEntity())
@@ -201,7 +201,7 @@ void APlayerMain::ApplyHumanMode()
 		GetPossessionComponent()->ReleasePossession();
 	}
 
-	Execute_GetCharacterStateComponent(this)->SetMode(ECharacterModeStates::ECMS_Human);
+	CharacterStateComponent->SetMode(ECharacterModeStates::ECMS_Human);
 
 	SetCombatStrategy(ECharacterModeStates::ECMS_Human);
 
@@ -210,17 +210,20 @@ void APlayerMain::ApplyHumanMode()
 
 void APlayerMain::ApplySpectralMode()
 {
-	if (Execute_GetCharacterStateComponent(this)->IsModeEqualToAny({ECharacterModeStates::ECMS_Spectral})) return;
+	if (CharacterStateComponent->IsModeEqualToAny({ECharacterModeStates::ECMS_Spectral})) return;
+
+	CharacterStateComponent->SetWeaponState(ECharacterWeaponStates::ECWS_Unequipped);
 	
 	if (const TScriptInterface<IGenericTeamAgentInterface> TeamAgent = GetController())
 	{
 		TeamAgent->SetGenericTeamId(FGenericTeamId(0));
 	}
+	
 	GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = true;
-	Execute_GetCharacterStateComponent(this)->SetMode(ECharacterModeStates::ECMS_Spectral);
+	
+	CharacterStateComponent->SetMode(ECharacterModeStates::ECMS_Spectral);
 
 	SetCombatStrategy(ECharacterModeStates::ECMS_Spectral);
 
 	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "VAMPIRE");
-	
 }

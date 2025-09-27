@@ -39,13 +39,11 @@ AEnemy::AEnemy()
 	GetMesh()->SetCollisionResponseToChannel(ECC_GameTraceChannel3, ECR_Block);
 	GetMesh()->SetGenerateOverlapEvents(true);
 	GetMesh()->CanCharacterStepUpOn = ECB_No;
-	InitialMeshCollisionEnabled = GetMesh()->GetCollisionEnabled();
 
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 	GetCapsuleComponent()->SetGenerateOverlapEvents(true);
 	GetCapsuleComponent()->CanCharacterStepUpOn = ECB_No;
 	GetCapsuleComponent()->SetCapsuleRadius(45.f);
-	InitialCapsuleCollisionEnabled = GetCapsuleComponent()->GetCollisionEnabled();
 
 	PromptWidgetComponent = CreateDefaultSubobject<UPromptWidgetComponent>(TEXT("PromptWidget"));
 	PromptWidgetComponent->SetupAttachment(GetRootComponent());
@@ -61,16 +59,6 @@ AEnemy::AEnemy()
 	GetCharacterMovement()->BrakingDecelerationWalking = 1000.f;
 	GetCharacterMovement()->GravityScale = 3.f;
 	GetCharacterMovement()->JumpZVelocity = 1000.f;
-
-	bInitialMeshGenerateOverlapEvents = GetMesh()->GetGenerateOverlapEvents();
-	bInitialCapsuleGenerateOverlapEvents = GetCapsuleComponent()->GetGenerateOverlapEvents();
-
-	DefaultMaxWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
-	DefaultGravityScale = GetCharacterMovement()->GravityScale;
-	DefaultJumpZVelocity = GetCharacterMovement()->JumpZVelocity;
-	bDefaultOrientRotationToMovement = GetCharacterMovement()->bOrientRotationToMovement;
-	bDefaultUseControllerDesiredRotation = GetCharacterMovement()->bUseControllerDesiredRotation;
-	bOriginalUseControllerRotationYaw = bUseControllerRotationYaw;
 
 	DissolveTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("DissolveTimelineComponent"));
 
@@ -112,7 +100,6 @@ void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 	EnemyState = EEnemyState::EES_None;
 	bIsLaunched = false;
 	LastDamageCauser = nullptr;
-	bWasPossessed = false;
 
 	if (GetAttributeComponent())
 	{
@@ -121,19 +108,9 @@ void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 	
 	CharacterStateComponent->SetAction(ECharacterActionsStates::ECAS_Nothing);
 
-	bUseControllerRotationYaw = bOriginalUseControllerRotationYaw;
-
 	if (AVelmaraGameModeBase* NewGameMode = Cast<AVelmaraGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
 	{
 		NewGameMode->RegisterEnemy(this);
-
-		/*if (AVelmaraGameStateBase* NewGameStateBase = Cast<AVelmaraGameStateBase>(NewGameMode->GameState))
-		{
-			if (MementoComponent)
-			{
-				NewGameStateBase->RegisterMementoEntity(this);
-			}
-		}*/
 	}
 
 	if (PromptWidgetComponent && PromptWidgetComponent->GetWidget())

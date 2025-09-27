@@ -72,24 +72,7 @@ void UBufferComponent::UpdateLocationBuffer(float Alpha)
 		CharacterMovementProvider->Execute_GetExtraMovementComponent(GetOwner())->IsMoving())
 	{
 		const FVector CurrentLocation = GetOwner()->GetActorLocation();
-
-		FVector ForwardVector; 
-		
-		if (!bIsCameraForwardVector)
-		{
-			ForwardVector = CharacterMovementProvider->Execute_GetCharacter(GetOwner())->GetLastMovementInputVector();
-		}
-		else
-		{
-			if (const TScriptInterface<IControllerProvider> ControllerProvider = GetOwner())
-			{
-				FRotator CurrentRotation;
-				ControllerProvider->GetEntityController()->GetPlayerViewPoint(ForwardVector, CurrentRotation);
-				ForwardVector = CurrentRotation.Vector();
-			}
-			else if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Failed to get Controller Provider.");
-		}
-		
+		const FVector ForwardVector = CharacterMovementProvider->Execute_GetCharacter(GetOwner())->GetLastMovementInputVector();
 		const FVector TargetLocation = FMath::Lerp(CurrentLocation, CurrentLocation + (ForwardVector * CurrentDistance) * BufferMultiplier, Alpha);
 
 		GetOwner()->SetActorLocation(TargetLocation, true);
