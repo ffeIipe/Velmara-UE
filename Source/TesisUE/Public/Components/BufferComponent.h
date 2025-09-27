@@ -18,7 +18,7 @@ public:
 	UBufferComponent();
 
 	UFUNCTION(BlueprintCallable)
-	void StartLocationBuffer(const float Distance, UCurveFloat* Curve);
+	void StartLocationBuffer(const float Distance, UCurveFloat* Curve, bool bIsCameraForwardVectorUsed);
 
 	UFUNCTION(BlueprintCallable)
 	void StopLocationBuffer() const;
@@ -26,6 +26,7 @@ public:
 	/*void StartRotationBuffer(const TObjectPtr<UCurveFloat>& Curve);
 	void StopRotationBuffer() const;*/
 	
+	bool bIsCameraForwardVector = false;
 protected:
 	/*virtual void BeginPlay() override;*/
 
@@ -33,6 +34,9 @@ private:
 	UFUNCTION()
 	void UpdateLocationBuffer(float Alpha);
 
+	UFUNCTION()
+	void SetDefaultMovement();
+	
 	/*UFUNCTION()
 	void UpdateRotationBuffer(float Alpha);*/
 	
