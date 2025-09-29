@@ -35,16 +35,24 @@ void UExtraMovementComponent::PerformDoubleJump(UAnimMontage* DoubleJumpMontage)
 	CanDoubleJump = false;
 }
 
-void UExtraMovementComponent::PlayDodgeAnim(UAnimMontage* DodgeMontage) const
+void UExtraMovementComponent::PlayDodgeAnim(UAnimMontage* DodgeMontage, const FOnDodgeStarted& OnDodgeStartedEvent) const
 {
 	if (!CharacterMovementProvider->Execute_GetCharacter(GetOwner())->bUseControllerRotationYaw)
 	{
+		if (const FVector MovementInput =CharacterMovementProvider->Execute_GetCharacter(GetOwner())->GetLastMovementInputVector(); !MovementInput.IsNearlyZero())
+		{
+			const FRotator LookRotation = MovementInput.Rotation();
+			GetOwner()->SetActorRotation(FRotator(0.f, LookRotation.Yaw, 0.f));
+		}
 		AnimatorProvider->Execute_PlayAnimMontage(GetOwner(), DodgeMontage, 1.f, "Default");
 	}
 	else
 	{
 		DodgeAnimBasedOnInput(DodgeMontage);	
 	}
+	
+	OnDodgeStarted.ExecuteIfBound();
+	OnDodgeStartedEvent.ExecuteIfBound();
 }
 
 void UExtraMovementComponent::DodgeAnimBasedOnInput(UAnimMontage* DodgeMontage) const
@@ -75,8 +83,6 @@ void UExtraMovementComponent::DodgeSaveEvent()
 	if (bIsSaveDodge)
 	{
 		bIsSaveDodge = false;
-
-		CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetAction(ECharacterActionsStates::ECAS_Nothing);
 
 		if (OnDodgeSaved.IsBound())
 		{

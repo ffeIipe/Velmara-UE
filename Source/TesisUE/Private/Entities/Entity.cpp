@@ -58,8 +58,7 @@ AEntity::AEntity()
 
 	BufferComponent = CreateDefaultSubobject<UBufferComponent>(TEXT("Buffer"));
 	
-	ExtraMovementComponent->OnDodgeStarted.
-	                             AddDynamic(TargetingComponent, &UTargetingComponent::RemoveCombatTarget);
+	ExtraMovementComponent->OnDodgeStarted.BindUFunction(TargetingComponent, "RemoveCombatTarget");
 	ExtraMovementComponent->OnDodgeSaved.AddDynamic(this, &AEntity::Input_Dodge);
 
 	CombatComponent->OnResetState.AddDynamic(ExtraMovementComponent, &UExtraMovementComponent::ResetDodge);
