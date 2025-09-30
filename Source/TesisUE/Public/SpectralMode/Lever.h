@@ -9,9 +9,6 @@ class TESISUE_API ALever : public ASpectralObject
 {
 	GENERATED_BODY()
 
-public:
-	//ASpectralObjectInteractable();
-
 protected:
 	virtual void Pick(AActor* NewOwner) override;
 	

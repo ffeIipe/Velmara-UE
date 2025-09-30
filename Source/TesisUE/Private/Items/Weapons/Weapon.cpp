@@ -6,8 +6,6 @@
 #include "Components/CharacterStateComponent.h"
 #include "Interfaces/AnimatorProvider.h"
 #include "Interfaces/CharacterStateProvider.h"
-#include "LoadSystem/PlayerProgressSaveGame.h"
-#include "SceneEvents/VelmaraGameStateBase.h"
 #include "Interfaces/ControllerProvider.h"
 
 void AWeapon::Pick(AActor* NewOwner)
@@ -17,8 +15,6 @@ void AWeapon::Pick(AActor* NewOwner)
 	ControllerProvider = NewOwner;
 	CharacterStateProvider = NewOwner;
 	AnimatorProvider = NewOwner;
-	
-	DisableCollision();
 	
 	if (CharacterStateProvider)
 	{
@@ -37,7 +33,6 @@ void AWeapon::Pick(AActor* NewOwner)
 	
 	ItemState = EItemState::EIS_Equipped;
 	EnableWeaponState(true);
-	EnableVisuals(true);
 }
 
 void AWeapon::BeginPlay()

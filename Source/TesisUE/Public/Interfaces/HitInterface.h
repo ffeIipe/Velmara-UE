@@ -22,4 +22,8 @@ public:
 	virtual void GetFinished() = 0;
 
 	virtual bool IsHittable() = 0;
+	
+	virtual void AddStunBehavior() = 0;
+	
+	virtual void RemoveStunBehavior() = 0;
 };

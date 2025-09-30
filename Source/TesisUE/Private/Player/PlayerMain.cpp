@@ -58,17 +58,6 @@ APlayerMain::APlayerMain()
 	}
 }
 
-void APlayerMain::GetHit(TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint,
-                         FDamageEvent const& DamageEvent, const float DamageReceived)
-{
-	Super::GetHit(DamageCauser, ImpactPoint, DamageEvent, DamageReceived);
-
-	if (DamageEvent.DamageTypeClass == USpectralTrapDamageType::StaticClass())
-	{
-		StunBehavior();
-	}	
-}
-
 void APlayerMain::BeginPlay()
 {
 	Super::BeginPlay();
@@ -79,17 +68,6 @@ void APlayerMain::BeginPlay()
 	if (const APlayerController* PlayerController = CastChecked<APlayerController>(GetController()))
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 			Subsystem->AddMappingContext(CharacterContext, 0);
-
-	/*if (const AVelmaraGameModeBase* NewGameMode = Cast<AVelmaraGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
-	{
-		if (AVelmaraGameStateBase* NewGameStateBase = Cast<AVelmaraGameStateBase>(NewGameMode->GameState))
-		{
-			if (MementoComponent)
-			{
-				NewGameStateBase->RegisterMementoEntity(this);
-			}
-		}
-	}*/
 }
 
 void APlayerMain::PerformDead()
@@ -192,7 +170,7 @@ void APlayerMain::ApplyHumanMode()
 
 	if (Execute_GetCurrentWeapon(this))
 	{
-		Execute_GetCurrentWeapon(this)->EnableVisuals(true);
+		Execute_GetCurrentWeapon(this)->EnableVisuals();
 		CharacterStateComponent->SetWeaponState(ECharacterWeaponStates::ECWS_EquippedWeapon);
 	}
 

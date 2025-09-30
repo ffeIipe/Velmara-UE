@@ -174,7 +174,7 @@ void AEnemy::Die(UAnimMontage* DeathAnim, FName Section)
 	//disable 'F' widget
 	if (PromptWidgetComponent && PromptWidgetComponent->GetWidget())
 	{
-		PromptWidgetComponent->GetPromptWidgetComponent()->EnablePromptWidget(false);
+		PromptWidgetComponent->GetPromptWidgetComponent()->EnablePromptWidget();
 	}
 
 	DisableAI();

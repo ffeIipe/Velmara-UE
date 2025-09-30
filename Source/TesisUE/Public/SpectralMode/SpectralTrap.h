@@ -6,6 +6,7 @@
 #include "SceneEvents/Trigger.h"
 #include "SpectralTrap.generated.h"
 
+class IHitInterface;
 class APlayerMain;
 
 UCLASS()
@@ -13,34 +14,38 @@ class TESISUE_API ASpectralTrap : public ATrigger
 {
 	GENERATED_BODY()
 
-private:
-	void BeginPlay() override;
-
-	void OnSphereBeginOverlap(
-		UPrimitiveComponent* OverlappedComponent,
-		AActor* OtherActor,
-		UPrimitiveComponent* OtherComp,
-		int32 OtherBodyIndex, bool bFromSweep,
-		const FHitResult& SweepResult) override;
-
-	void OnSphereEndOverlap(
-		UPrimitiveComponent* OverlappedComponent,
-		AActor* OtherActor,
-		UPrimitiveComponent* OtherComp,
-		int32 OtherBodyIndex) override;
-
-	void ApplyTrapDamage(const FVector& ImpactPoint);
-
-	UPROPERTY(EditAnywhere, Category = "Stats | Trap")
-	float Damage = 10.0f;
+public:
+	ASpectralTrap();
 	
-	UPROPERTY(EditAnywhere, Category = "Stats | Trap")
-	float DamageInterval = .5f;
+protected:
+	virtual void BeginPlay() override;
 
-	UPROPERTY(EditAnywhere, Category = "Stats | SFX")
+private:
+	UPROPERTY(EditAnywhere, Category = "Properties | Trap")
+	float MaxDamage = 10.f;
+
+	UPROPERTY(VisibleAnywhere, Category = "Properties | Trap")
+	float CurrentDamage = 0.0f;
+	
+	UPROPERTY(EditAnywhere, Category = "Properties | Trap")
+	float DamageInterval = .2f;
+
+	UPROPERTY(EditAnywhere, Category = "Properties | Trap")
+	UCurveFloat* DamageCurve = nullptr;
+
+	UPROPERTY(VisibleAnywhere, Category = "Properties | Trap")
+	float TimeOnTarget = 0.0f;
+	
+	UPROPERTY(EditAnywhere, Category = "Properties | SFX")
 	USoundBase* TrapSFX;
 
 	FTimerHandle ContinuousDamageTimerHandle;
 
+	UFUNCTION()
+	void StartDamage();
+	
+	UFUNCTION()
+	void FinishDamage();
+	
 	void DealContinuousDamage();
 };

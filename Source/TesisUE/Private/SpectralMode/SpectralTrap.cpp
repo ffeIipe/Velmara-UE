@@ -5,79 +5,78 @@
 #include "Engine/DamageEvents.h"
 #include "DamageTypes/SpectralTrapDamageType.h"
 
+
+ASpectralTrap::ASpectralTrap()
+{
+	OnPlayerBeginOverlap.AddDynamic(this, &ASpectralTrap::StartDamage);
+	OnPlayerEndOverlap.AddDynamic(this, &ASpectralTrap::FinishDamage);
+}
+
 void ASpectralTrap::BeginPlay()
 {
 	Super::BeginPlay();
 
+	OnPlayerBeginOverlap.AddDynamic(this, &ASpectralTrap::StartDamage);
+	OnPlayerEndOverlap.AddDynamic(this, &ASpectralTrap::FinishDamage);
+	
 	if (TrapSFX)
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), TrapSFX, BoxCollider->GetComponentLocation());
 	}
 }
 
-void ASpectralTrap::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void ASpectralTrap::StartDamage()
 {
-	Super::OnSphereBeginOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
-
-	if (Player)
+	if (!HitActor)
 	{
-		GetWorld()->GetTimerManager().SetTimer(
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Not valid HitActor!");
+		return;
+	}
+
+	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, "Damage Started");
+	
+	TimeOnTarget = 0.f;
+	
+	HitActor->AddStunBehavior();
+	
+	DealContinuousDamage();
+	
+	GetWorld()->GetTimerManager().SetTimer(
 			ContinuousDamageTimerHandle,
 			this,
 			&ASpectralTrap::DealContinuousDamage,
 			DamageInterval,
-			true
-		);
-
-		DealContinuousDamage();
-
-		//ApplyTrapDamage(SweepResult.ImpactPoint);
-	}
+			true);
 }
 
-void ASpectralTrap::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+void ASpectralTrap::FinishDamage()
 {
-	//Super::OnSphereEndOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex);
+	if (!HitActor) return;
 
-	if (Player == OtherActor)
-	{
-		Player->RemoveStunBehavior();
-		Player = nullptr;
-		
-		GetWorld()->GetTimerManager().ClearTimer(ContinuousDamageTimerHandle);
-	}
-}
+	TimeOnTarget = 0.f;
+	CurrentDamage = 0.0f;
+	
+	HitActor->RemoveStunBehavior();
+	GetWorld()->GetTimerManager().ClearTimer(ContinuousDamageTimerHandle);
 
-void ASpectralTrap::ApplyTrapDamage(const FVector& ImpactPoint)
-{
-	UGameplayStatics::ApplyDamage(
-		Player,
-		Damage,
-		Player->GetController(),
-		this,
-		USpectralTrapDamageType::StaticClass()
-	);
-
-	if (Player)
-	{
-		if (IHitInterface* Entity = Cast<IHitInterface>(Player))
-		{
-			const FDamageEvent DamageEvent(UDamageType::StaticClass());
-			Entity->GetHit(GetOwner(), ImpactPoint, DamageEvent, Damage);
-;		}
-	}
+	HitActor = nullptr;
 }
 
 void ASpectralTrap::DealContinuousDamage()
 {
-	if (Player)
-	{
-		UGameplayStatics::ApplyDamage(Player, Damage, nullptr, this, USpectralTrapDamageType::StaticClass());
+	if (!HitActor) return;
 
-		if (IHitInterface* PlayerGetHit = Cast<IHitInterface>(Player))
-		{
-			const FDamageEvent DamageEvent(UDamageType::StaticClass());
-			PlayerGetHit->GetHit(GetOwner(), FVector::ZeroVector, DamageEvent, Damage);
-		}
+	TimeOnTarget += DamageInterval;
+
+	if (DamageCurve && CurrentDamage < MaxDamage)
+	{
+		CurrentDamage = MaxDamage * DamageCurve->GetFloatValue(TimeOnTarget);
+
+		if (GEngine) GEngine->AddOnScreenDebugMessage(4, 3.f, FColor::White, "Dealing damage: " + FString::SanitizeFloat(CurrentDamage));
 	}
+	
+	UGameplayStatics::ApplyDamage(Cast<AActor>(HitActor.GetObject()), CurrentDamage, nullptr, this, USpectralTrapDamageType::StaticClass());
+	
+	const FDamageEvent DamageEvent(USpectralTrapDamageType::StaticClass());
+	HitActor->GetHit(GetOwner(), FVector::ZeroVector, DamageEvent, CurrentDamage);
 }

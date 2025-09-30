@@ -76,7 +76,7 @@ void UChangeModeComponent::ApplySpectralEffects()
     {
         if (WeaponProvider && WeaponProvider->Execute_GetCurrentWeapon(GetOwner()))
         {
-            WeaponProvider->Execute_GetCurrentWeapon(GetOwner())->EnableVisuals(false);
+            WeaponProvider->Execute_GetCurrentWeapon(GetOwner())->EnableVisuals();
         }
     }
 }
@@ -100,7 +100,7 @@ void UChangeModeComponent::ApplyHumanEffects()
     {
         if (WeaponProvider && WeaponProvider->Execute_GetCurrentWeapon(GetOwner()))
         {
-            WeaponProvider->Execute_GetCurrentWeapon(GetOwner())->EnableVisuals(true);
+            WeaponProvider->Execute_GetCurrentWeapon(GetOwner())->EnableVisuals();
         }
     }
 }

@@ -32,6 +32,10 @@
 
 #include "Entity.generated.h"
 
+/*
+ * =========-Forward Declarations=========-
+ */
+
 class UBufferComponent;
 class UFieldCreationComponent;
 class UMontagesData;
@@ -39,9 +43,6 @@ class UEffectsData;
 class UInputData;
 class UTargetingComponent;
 class UCameraComponent;
-/*
- * =========-Forward Declarations=========-
- */
 class UCombatComponent;
 class UAttributeComponent;
 class UCharacterStateComponent;
@@ -151,7 +152,9 @@ public:
 	                    FDamageEvent const& DamageEvent, const float DamageReceived) override;
 	virtual void GetFinished() override;
 	virtual bool IsHittable() override;
-
+	virtual void AddStunBehavior() override;
+	virtual void RemoveStunBehavior() override;
+	
 	// === Camera Provider Interface ===
 	virtual UCameraComponent* GetEntityCamera() override { return GetCameraComponent(); }
 	virtual FVector GetCameraLocation() override { return GetCameraComponent()->GetComponentLocation(); }
@@ -205,9 +208,6 @@ public:
 	virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
 
 	void HitReactJumpToSection(FName Section);
-
-	virtual void StunBehavior();
-	virtual void RemoveStunBehavior();
 
 	UFUNCTION()
 	void OnWallCollision();

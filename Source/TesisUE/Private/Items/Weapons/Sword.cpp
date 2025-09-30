@@ -29,7 +29,6 @@ ASword::ASword()
 
 	BoxTraceEnd = CreateDefaultSubobject<USceneComponent>(TEXT("Box Trace End"));
 	BoxTraceEnd->SetupAttachment(GetRootComponent());
-
 }
 
 void ASword::BeginPlay()

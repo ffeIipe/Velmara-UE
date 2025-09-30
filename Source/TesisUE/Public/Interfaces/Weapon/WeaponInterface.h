@@ -42,7 +42,8 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void SetDamageType(TSubclassOf<UMeleeDamage> DamageType);
 	
-	virtual void EnableVisuals(bool Enable) = 0;
+	virtual void EnableVisuals() = 0;
+	virtual void DisableVisuals() = 0;
 	virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled) = 0;
 	virtual void ClearIgnoreActors() = 0;
 	virtual FName& GetUniqueSaveID() = 0;

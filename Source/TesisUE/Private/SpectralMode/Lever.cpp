@@ -1,4 +1,5 @@
 #include "SpectralMode/Lever.h"
+
 #include "Kismet/GameplayStatics.h"
 
 void ALever::Pick(AActor* NewOwner)

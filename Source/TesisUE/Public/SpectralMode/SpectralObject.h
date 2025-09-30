@@ -13,9 +13,6 @@ class TESISUE_API ASpectralObject : public AItem, public ISpectral
 {
     GENERATED_BODY()
 
-public:
-    //ASpectralObject();
-
 protected:
     virtual void BeginPlay() override;
 

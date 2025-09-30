@@ -99,7 +99,7 @@ void UInventoryComponent::EquipWeaponFromSlot(const int32 SlotIndex)
     
     if (CurrentWeapon)
     {
-        CurrentWeapon->EnableVisuals(false);
+        CurrentWeapon->DisableVisuals();
     }
     
     if (const TScriptInterface<IPickable> Pickable = InventorySlots[SlotIndex].GetObject()) Pickable->Pick(GetOwner());
@@ -108,7 +108,7 @@ void UInventoryComponent::EquipWeaponFromSlot(const int32 SlotIndex)
     {
         CurrentWeapon = InventorySlots[SlotIndex];
         EquippedSlotIndex = SlotIndex;
-        CurrentWeapon->EnableVisuals(true);
+        CurrentWeapon->EnableVisuals();
     }
     
     //AnimatorProvider->ChangeWeaponAnimationState();
@@ -151,7 +151,7 @@ void UInventoryComponent::UnequipCurrentWeapon()
 {
     if (CurrentWeapon)
     {
-        CurrentWeapon->EnableVisuals(false);
+        CurrentWeapon->EnableVisuals();
         CurrentWeapon = nullptr;
         EquippedSlotIndex = -1;
     }

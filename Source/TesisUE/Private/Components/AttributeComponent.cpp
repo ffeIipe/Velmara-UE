@@ -32,7 +32,7 @@ void UAttributeComponent::ReceiveDamage(float Damage)
 	if (!IsAlive()) return;
 
 	Health = FMath::Clamp(Health - Damage, 0.f, MaxHealth);
-	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Magenta, TEXT("Damage: " + FString::SanitizeFloat(Damage)));
+	//if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Magenta, TEXT("Damage: " + FString::SanitizeFloat(Damage)));
 	
 	if (!IsAlive() && OnEntityDead.IsBound())
 	{
