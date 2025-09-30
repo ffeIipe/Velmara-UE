@@ -14,6 +14,7 @@
 #include "Interfaces/ControllerProvider.h"
 #include "Interfaces/Pickable.h"
 #include "Player/CharacterWeaponStates.h"
+#include "SpectralMode/Interfaces/Spectral.h"
 
 UInventoryComponent::UInventoryComponent()
 {
@@ -250,6 +251,13 @@ TScriptInterface<IWeaponInterface> UInventoryComponent::PerformInteract()
                 {
                     ActorsToIgnore.Add(Cast<AActor>(WeaponReached.GetObject()));
                     return WeaponReached;
+                }
+            }
+            else
+            {
+                if (const TScriptInterface<ISpectral> SpectralItem = Pickable.GetObject(); SpectralItem)
+                {
+                    Pickable->Pick(GetOwner());
                 }
             }
         }

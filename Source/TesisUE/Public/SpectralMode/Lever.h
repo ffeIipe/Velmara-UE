@@ -11,6 +11,8 @@ class TESISUE_API ALever : public ASpectralObject
 
 protected:
 	virtual void Pick(AActor* NewOwner) override;
+
+	virtual void BeginPlay() override;
 	
 	UFUNCTION(BlueprintImplementableEvent)
 	void OpenDoors(AActor* DoorToOpen);

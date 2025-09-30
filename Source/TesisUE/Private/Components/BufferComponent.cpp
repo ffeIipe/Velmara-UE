@@ -18,15 +18,24 @@ UBufferComponent::UBufferComponent()
 	BufferTimelineComp = CreateDefaultSubobject<UTimelineComponent>(TEXT("Buffer Timeline"));
 }
 
-void UBufferComponent::StartLocationBuffer(const float Distance, UCurveFloat* Curve, const bool bIsCameraForwardVectorUsed)
+void UBufferComponent::StartLocationBuffer(const float Distance, UCurveFloat* Curve,
+                                           const bool bIsCameraForwardVectorUsed, const FOnBufferStarted OnBufferStarted,
+                                           const FOnBufferFinished OnBufferFinished, const FOnBufferStopped OnBufferStopped)
 {
+	OnBufferStarted_Internal = OnBufferStarted;
+	OnBufferFinished_Internal = OnBufferFinished;
+	OnBufferStopped_Internal = OnBufferStopped;
+
+	OnBufferStarted_Internal.ExecuteIfBound();
+	OnBufferStarted_Internal.Clear();
+	
 	if (Curve && Curve != CurrentCurve)
 	{
 		GEngine->AddOnScreenDebugMessage(INDEX_NONE,3.f, FColor::Blue, "Curve loaded.");
 		CurrentCurve = Curve;
 		FOnTimelineFloat TimelineEventFunction;
 		TimelineEventFunction.BindUFunction(this, "UpdateLocationBuffer");
-		BufferTimelineComp->AddInterpFloat(Curve,TimelineEventFunction);	
+		BufferTimelineComp->AddInterpFloat(Curve,TimelineEventFunction);
 	}
 
 	bIsCameraForwardVector = bIsCameraForwardVectorUsed;
@@ -52,10 +61,13 @@ void UBufferComponent::StartLocationBuffer(const float Distance, UCurveFloat* Cu
 	BufferTimelineComp->PlayFromStart();
 }
 
-void UBufferComponent::StopLocationBuffer() const
+void UBufferComponent::StopLocationBuffer()
 {
 	if (BufferTimelineComp)
 		BufferTimelineComp->Stop();
+
+	OnBufferStopped_Internal.ExecuteIfBound();
+	OnBufferStopped_Internal.Clear();
 }
 
 /*void UBufferComponent::StartRotationBuffer(const TObjectPtr<UCurveFloat>& Curve)
@@ -81,17 +93,19 @@ void UBufferComponent::UpdateLocationBuffer(float Alpha)
 	{
 		StopLocationBuffer();
 	}
-
-	
 }
 
 void UBufferComponent::SetDefaultMovement()
 {
 	if (const TScriptInterface<ICharacterMovementProvider> CharacterMovementProvider = GetOwner())
 	{
-		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Orange, "Set Default Movement called.");
+		//if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Orange, "Set Default Movement called.");
 		CharacterMovementProvider->Execute_GetCharacterMovementComponent(GetOwner())->SetMovementMode(MOVE_Falling);
 	}
+
+	//this is not related to setting default movement
+	OnBufferFinished_Internal.ExecuteIfBound();
+	OnBufferFinished_Internal.Clear();
 }
 
 /*void UBufferComponent::UpdateRotationBuffer(float Alpha)

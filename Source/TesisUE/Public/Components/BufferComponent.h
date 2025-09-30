@@ -6,6 +6,9 @@
 #include "Components/ActorComponent.h"
 #include "BufferComponent.generated.h"
 
+DECLARE_DYNAMIC_DELEGATE(FOnBufferStarted);
+DECLARE_DYNAMIC_DELEGATE(FOnBufferFinished);
+DECLARE_DYNAMIC_DELEGATE(FOnBufferStopped);
 
 class UTimelineComponent;
 
@@ -17,16 +20,24 @@ class TESISUE_API UBufferComponent : public UActorComponent
 public:
 	UBufferComponent();
 
-	UFUNCTION(BlueprintCallable)
-	void StartLocationBuffer(const float Distance, UCurveFloat* Curve, bool bIsCameraForwardVectorUsed);
+	UFUNCTION(BlueprintCallable, meta=(AutoCreateRefTerm = "EventToCall"))
+	void StartLocationBuffer(const float Distance, UCurveFloat* Curve, bool bIsCameraForwardVectorUsed, FOnBufferStarted OnBufferStarted, FOnBufferFinished
+	                         OnBufferFinished, FOnBufferStopped OnBufferStopped);
 
 	UFUNCTION(BlueprintCallable)
-	void StopLocationBuffer() const;
+	void StopLocationBuffer();
 	
 	/*void StartRotationBuffer(const TObjectPtr<UCurveFloat>& Curve);
 	void StopRotationBuffer() const;*/
 	
 	bool bIsCameraForwardVector = false;
+
+	FOnBufferStarted OnBufferStarted_Internal;
+	
+	FOnBufferFinished OnBufferFinished_Internal;
+	
+	FOnBufferStopped OnBufferStopped_Internal;
+	
 protected:
 	/*virtual void BeginPlay() override;*/
 

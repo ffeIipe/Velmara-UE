@@ -39,21 +39,25 @@ void AItem::Pick(AActor* NewOwner)
 		ItemMementoComponent->CaptureItemState();
 	}
 	
-	DisableCollision();
+	/*
+	DisableCollision();*/
 }
 
 void AItem::EnableVisuals()
 {
 	SetActorHiddenInGame(false);
 	SetActorEnableCollision(true);
-	//PromptWidgetComponent->EnablePromptWidget();
+
+	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Enable visuals");
+	
 }
 
 void AItem::DisableVisuals()
 {
+	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Disable visuals");
+	
 	SetActorHiddenInGame(true);
 	SetActorEnableCollision(false);
-	//PromptWidgetComponent->DisablePromptWidget();
 }
 
 UPrimitiveComponent* AItem::GetCollisionComponent()

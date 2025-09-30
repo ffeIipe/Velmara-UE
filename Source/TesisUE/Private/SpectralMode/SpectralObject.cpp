@@ -6,7 +6,7 @@ void ASpectralObject::BeginPlay()
 {
     Super::BeginPlay();
 
-    AddToSpectralObjects();
+    DeactivateVisibility();
 }
 
 void ASpectralObject::ActivateVisiblity()

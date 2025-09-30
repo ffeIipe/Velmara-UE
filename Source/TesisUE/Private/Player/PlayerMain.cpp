@@ -189,8 +189,6 @@ void APlayerMain::ApplyHumanMode()
 void APlayerMain::ApplySpectralMode()
 {
 	if (CharacterStateComponent->IsModeEqualToAny({ECharacterModeStates::ECMS_Spectral})) return;
-
-	CharacterStateComponent->SetWeaponState(ECharacterWeaponStates::ECWS_Unequipped);
 	
 	if (const TScriptInterface<IGenericTeamAgentInterface> TeamAgent = GetController())
 	{
@@ -198,6 +196,12 @@ void APlayerMain::ApplySpectralMode()
 	}
 	
 	GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = true;
+
+	if (Execute_GetCurrentWeapon(this))
+	{
+		Execute_GetCurrentWeapon(this)->DisableVisuals();
+		CharacterStateComponent->SetWeaponState(ECharacterWeaponStates::ECWS_Unequipped);
+	}
 	
 	CharacterStateComponent->SetMode(ECharacterModeStates::ECMS_Spectral);
 

@@ -33,6 +33,7 @@ void AWeapon::Pick(AActor* NewOwner)
 	
 	ItemState = EItemState::EIS_Equipped;
 	EnableWeaponState(true);
+	DisableCollision();
 }
 
 void AWeapon::BeginPlay()
