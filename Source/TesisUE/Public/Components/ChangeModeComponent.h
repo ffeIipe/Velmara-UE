@@ -18,19 +18,6 @@ class UCharacterStateComponent;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHumanEffectApplied);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSpectralEffectApplied);
 
-USTRUCT()
-struct FSpectralStats
-{
-    GENERATED_BODY()
-
-    UPROPERTY()
-    float SpectralMaxWalkSpeed;
-    UPROPERTY()
-    float SpectralMaxJumpDistance;
-    UPROPERTY()
-    float SpectralMaxDodgeDistance;
-};
-
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class TESISUE_API UChangeModeComponent : public UActorComponent
 {

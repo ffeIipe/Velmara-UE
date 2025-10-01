@@ -1,9 +1,6 @@
 #include "SceneEvents/Trigger.h"
 #include "Components/BoxComponent.h"
-#include "Components/PossessionComponent.h"
-#include "Player/PlayerMain.h"
-#include "Enemy/Enemy.h"
-#include <Kismet/GameplayStatics.h>
+#include "Entities/Entity.h"
 
 ATrigger::ATrigger()
 {
@@ -22,54 +19,54 @@ void ATrigger::BeginPlay()
 
 void ATrigger::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (APlayerMain* PlayerTemp = Cast<APlayerMain>(OtherActor))
-	{
-		Player = PlayerTemp;
+	if (!OtherActor) return;
+	const TScriptInterface<IControllerProvider> ControllerProvider = OtherActor;
 
+	if (!ControllerProvider) return;
+	if (ControllerProvider->GetEntityController() == GetWorld()->GetFirstPlayerController())
+	{
+		HitActor = OtherActor;
+		
 		if (OnPlayerBeginOverlap.IsBound())
 		{
 			OnPlayerBeginOverlap.Broadcast();
 		}
 	}
-	else if (AEnemy* EnemyTemp = Cast<AEnemy>(OtherActor))
+
+	if (ControllerProvider)
 	{
-		if (EnemyTemp->GetPossessionComponent()->GetPossessedEntity() != nullptr)
+		if (OnEntityBeginOverlap.IsBound())
 		{
-			if (OnPlayerBeginOverlap.IsBound())
-			{
-				OnPlayerBeginOverlap.Broadcast();
-			}
+			OnEntityBeginOverlap.Broadcast();
 		}
 	}
 }
 
 void ATrigger::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-    UWorld* World = GetWorld();
-    if (!IsValid(World)) return;
+	if (const UWorld* World = GetWorld(); !IsValid(World)) return;
+	
+	if (!OtherActor) return;
+	const TScriptInterface<IControllerProvider> ControllerProvider = Cast<APawn>(OtherActor);
 
-    APlayerMain* LeavingPlayer = Cast<APlayerMain>(OtherActor);
-
-    if (IsValid(Player) && Player == LeavingPlayer)
-    {
+	if (!ControllerProvider) return;
+	if (ControllerProvider->GetEntityController() == GetWorld()->GetFirstPlayerController())
+	{
 		if (OnPlayerEndOverlap.IsBound())
 		{
 			OnPlayerEndOverlap.Broadcast();
+			if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, "Player End");
 		}
+	}
 
-        //Player->SetOverlappingItem(nullptr);
-        Player = nullptr;
-    }
-    else if (LeavingPlayer)
-    {
-		if (OnPlayerEndOverlap.IsBound())
+	if (ControllerProvider)
+	{
+		if (OnEntityEndOverlap.IsBound())
 		{
-			OnPlayerEndOverlap.Broadcast();
+			OnEntityEndOverlap.Broadcast();
+			if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Entity End");
 		}
-
-        //LeavingPlayer->SetOverlappingItem(nullptr);
-		Player = nullptr;
-    }
+	}
 }
 
 void ATrigger::DisableCollision()
@@ -79,5 +76,6 @@ void ATrigger::DisableCollision()
 		BoxCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		BoxCollider->SetCollisionResponseToAllChannels(ECR_Ignore);
 	}
+	
 	SetActorEnableCollision(false);
 }

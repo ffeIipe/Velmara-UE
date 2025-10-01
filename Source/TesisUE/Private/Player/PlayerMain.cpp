@@ -9,7 +9,6 @@
 #include "Components/InputComponent.h"
 #include "Components/AttributeComponent.h"
 #include "Components/ChangeModeComponent.h"
-#include "Components/MementoComponent.h"
 #include "Components/CharacterStateComponent.h"
 #include "Components/PossessionComponent.h"
 #include "Curves/CurveFloat.h"
@@ -59,17 +58,6 @@ APlayerMain::APlayerMain()
 	}
 }
 
-void APlayerMain::GetHit(TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint,
-                         FDamageEvent const& DamageEvent, const float DamageReceived)
-{
-	Super::GetHit(DamageCauser, ImpactPoint, DamageEvent, DamageReceived);
-
-	if (DamageEvent.DamageTypeClass == USpectralTrapDamageType::StaticClass())
-	{
-		StunBehavior();
-	}	
-}
-
 void APlayerMain::BeginPlay()
 {
 	Super::BeginPlay();
@@ -80,17 +68,6 @@ void APlayerMain::BeginPlay()
 	if (const APlayerController* PlayerController = CastChecked<APlayerController>(GetController()))
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 			Subsystem->AddMappingContext(CharacterContext, 0);
-
-	/*if (const AVelmaraGameModeBase* NewGameMode = Cast<AVelmaraGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
-	{
-		if (AVelmaraGameStateBase* NewGameStateBase = Cast<AVelmaraGameStateBase>(NewGameMode->GameState))
-		{
-			if (MementoComponent)
-			{
-				NewGameStateBase->RegisterMementoEntity(this);
-			}
-		}
-	}*/
 }
 
 void APlayerMain::PerformDead()
@@ -182,7 +159,7 @@ void APlayerMain::LoadLastCheckpoint() const
 
 void APlayerMain::ApplyHumanMode()
 {
-	if (Execute_GetCharacterStateComponent(this)->IsModeEqualToAny({ECharacterModeStates::ECMS_Human})) return;
+	if (CharacterStateComponent->IsModeEqualToAny({ECharacterModeStates::ECMS_Human})) return;
 	
 	if (const TScriptInterface<IGenericTeamAgentInterface> TeamAgent = GetController())
 	{
@@ -193,7 +170,8 @@ void APlayerMain::ApplyHumanMode()
 
 	if (Execute_GetCurrentWeapon(this))
 	{
-		Execute_GetCurrentWeapon(this)->EnableVisuals(true);
+		Execute_GetCurrentWeapon(this)->EnableVisuals();
+		CharacterStateComponent->SetWeaponState(ECharacterWeaponStates::ECWS_EquippedWeapon);
 	}
 
 	if (GetPossessionComponent()->GetPossessedEntity())
@@ -201,7 +179,7 @@ void APlayerMain::ApplyHumanMode()
 		GetPossessionComponent()->ReleasePossession();
 	}
 
-	Execute_GetCharacterStateComponent(this)->SetMode(ECharacterModeStates::ECMS_Human);
+	CharacterStateComponent->SetMode(ECharacterModeStates::ECMS_Human);
 
 	SetCombatStrategy(ECharacterModeStates::ECMS_Human);
 
@@ -210,17 +188,24 @@ void APlayerMain::ApplyHumanMode()
 
 void APlayerMain::ApplySpectralMode()
 {
-	if (Execute_GetCharacterStateComponent(this)->IsModeEqualToAny({ECharacterModeStates::ECMS_Spectral})) return;
+	if (CharacterStateComponent->IsModeEqualToAny({ECharacterModeStates::ECMS_Spectral})) return;
 	
 	if (const TScriptInterface<IGenericTeamAgentInterface> TeamAgent = GetController())
 	{
 		TeamAgent->SetGenericTeamId(FGenericTeamId(0));
 	}
+	
 	GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = true;
-	Execute_GetCharacterStateComponent(this)->SetMode(ECharacterModeStates::ECMS_Spectral);
+
+	if (Execute_GetCurrentWeapon(this))
+	{
+		Execute_GetCurrentWeapon(this)->DisableVisuals();
+		CharacterStateComponent->SetWeaponState(ECharacterWeaponStates::ECWS_Unequipped);
+	}
+	
+	CharacterStateComponent->SetMode(ECharacterModeStates::ECMS_Spectral);
 
 	SetCombatStrategy(ECharacterModeStates::ECMS_Spectral);
 
 	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "VAMPIRE");
-	
 }

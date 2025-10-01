@@ -187,7 +187,7 @@ TScriptInterface<ICombatTargetInterface> UTargetingComponent::SearchCombatTarget
         ObjectTypes,
         false,
         ActorsToIgnore,
-        EDrawDebugTrace::ForDuration,
+        EDrawDebugTrace::None,
         ResultHit,
         true
     );

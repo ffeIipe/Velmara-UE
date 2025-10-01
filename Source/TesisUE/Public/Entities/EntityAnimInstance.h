@@ -41,7 +41,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	bool IsFalling;
 	
-	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	bool bHasAcceleration;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Movement")
@@ -62,7 +62,7 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Movement | Character State")
 	ECharacterWeaponStates CharacterWeaponState;
 	
-	UPROPERTY(BlueprintReadOnly, Category = "Movement | Character Form")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement | Character Form")
 	ECharacterModeStates CharacterMode;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Movement | Animation States")

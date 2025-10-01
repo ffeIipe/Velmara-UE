@@ -20,20 +20,6 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	void OnSphereBeginOverlap(
-		UPrimitiveComponent* OverlappedComponent,
-		AActor* OtherActor,
-		UPrimitiveComponent* OtherComp,
-		int32 OtherBodyIndex, bool bFromSweep,
-		const FHitResult& SweepResult) override;
-
-	void OnSphereEndOverlap(
-		UPrimitiveComponent* OverlappedComponent,
-		AActor* OtherActor,
-		UPrimitiveComponent* OtherComp,
-		int32 OtherBodyIndex) override;
-
-private:
     UPROPERTY(VisibleAnywhere)
     UPromptWidgetComponent* PromptWidgetComponent;
 };

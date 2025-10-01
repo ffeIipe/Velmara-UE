@@ -3,10 +3,7 @@
 
 #include "Tutorial/InputPromptTrigger.h"
 #include "Components/BoxComponent.h"
-#include "Blueprint/UserWidget.h"
-#include "HUD/PlayerMainHUD.h"
 #include "Tutorial/PromptWidgetComponent.h"
-#include "Player/PlayerMain.h"
 
 
 AInputPromptTrigger::AInputPromptTrigger()
@@ -20,8 +17,10 @@ AInputPromptTrigger::AInputPromptTrigger()
 
     PromptWidgetComponent = CreateDefaultSubobject<UPromptWidgetComponent>(TEXT("PromptWidgetComponent"));
     PromptWidgetComponent->SetupAttachment(GetRootComponent());
-    PromptWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
-    PromptWidgetComponent->SetDrawAtDesiredSize(true);
+    PromptWidgetComponent->SetPromptRowName("Interact");
+
+    OnEntityBeginOverlap.AddDynamic(PromptWidgetComponent, &UPromptWidgetComponent::EnablePromptWidget);
+    OnEntityEndOverlap.AddDynamic(PromptWidgetComponent, &UPromptWidgetComponent::DisablePromptWidget);
 }
 
 void AInputPromptTrigger::BeginPlay()
@@ -30,31 +29,6 @@ void AInputPromptTrigger::BeginPlay()
     
     if (PromptWidgetComponent)
     {
-        PromptWidgetComponent->EnablePromptWidget(false);
-    }
-}
-
-void AInputPromptTrigger::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-    Super::OnSphereBeginOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
-
-    if (Player && PromptWidgetComponent)
-    {
-        PromptWidgetComponent->EnablePromptWidget(true);
-    }
-}
-
-void AInputPromptTrigger::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
-{
-    Super::OnSphereEndOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex);
-
-    Player = Cast<APlayerMain>(OtherActor);
-
-    if (Player)
-    {
-        if (PromptWidgetComponent && PromptWidgetComponent->GetWidget())
-        {
-            PromptWidgetComponent->EnablePromptWidget(false);
-        }
+        PromptWidgetComponent->DisablePromptWidget();
     }
 }

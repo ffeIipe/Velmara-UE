@@ -58,7 +58,7 @@ void UPossessionComponent::AttemptPossession(AEntity* Victim)
             {
                 if (WeaponProvider->Execute_GetCurrentWeapon(GetOwner()))
                 {
-                    WeaponProvider->Execute_GetCurrentWeapon(GetOwner())->EnableVisuals(false);
+                    WeaponProvider->Execute_GetCurrentWeapon(GetOwner())->EnableVisuals();
                 }
             }
 
@@ -90,7 +90,7 @@ void UPossessionComponent::ReleasePossession()
     {
         if (WeaponProvider->Execute_GetCurrentWeapon(GetOwner()))
         {
-            WeaponProvider->Execute_GetCurrentWeapon(GetOwner())->EnableVisuals(true);
+            WeaponProvider->Execute_GetCurrentWeapon(GetOwner())->EnableVisuals();
         }
     }
 

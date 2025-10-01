@@ -30,8 +30,6 @@ class TESISUE_API APlayerMain : public AEntity
 public:
 	APlayerMain();
 	
-	virtual void GetHit(TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived) override;
-	
 	virtual float TakeDamage(
 		float DamageAmount,
 		FDamageEvent const& DamageEvent,

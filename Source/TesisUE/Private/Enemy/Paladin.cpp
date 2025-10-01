@@ -143,6 +143,8 @@ void APaladin::ShieldHit()
 
 void APaladin::CrashDown()
 {
+	if (!IsAlive()) return;
+	
 	GetCharacterMovement()->SetMovementMode(MOVE_Falling);
 	Execute_PlayAnimMontage(this, MontagesData->Montages.HitReactMontage, 1.f, FName("KnockDown"));
 	LaunchCharacter(FVector(0.f, 0.f, -100000.f), true, true);
@@ -150,6 +152,8 @@ void APaladin::CrashDown()
 
 void APaladin::HitInAir()
 {
+	if (!IsAlive()) return;
+	
 	const float PlayerLocationHeight = UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->GetActorLocation().Z;
 	SetActorLocation(FVector(GetTargetActorLocation().X, GetTargetActorLocation().Y, PlayerLocationHeight));
 	Execute_PlayAnimMontage(this, MontagesData->Montages.HitReactMontage, 1.f, FName("FromAir"));
@@ -158,6 +162,8 @@ void APaladin::HitInAir()
 
 void APaladin::ReactToDamage(const EMeleeDamageTypes DamageType, const FVector& ImpactPoint)
 {
+	if (!IsAlive()) return;
+	
 	switch (DamageType)
 	{
 	case EMeleeDamageTypes::EMDT_CrashDown:
@@ -177,7 +183,10 @@ void APaladin::ReactToDamage(const EMeleeDamageTypes DamageType, const FVector& 
 		break;
 
 	case EMeleeDamageTypes::EMDT_Puncture:
-		Execute_PlayAnimMontage(this, MontagesData->Montages.HitReactMontage, 1.f, FName("PunctureReact"));
+		{
+			if (!IsAlive()) return;
+			Execute_PlayAnimMontage(this, MontagesData->Montages.HitReactMontage, 1.f, FName("PunctureReact"));
+		}
 		break;
 
 	case EMeleeDamageTypes::EMDT_Impact:
@@ -199,6 +208,8 @@ void APaladin::ReactToDamage(const EMeleeDamageTypes DamageType, const FVector& 
 
 void APaladin::Slash()
 {
+	if (!IsAlive()) return;
+	
 	const FRotator DamageCauserLocation = UKismetMathLibrary::FindLookAtRotation(GetTargetActorLocation(), LastDamageCauser->GetTargetActorLocation());
 
 	SetActorRotation(FRotator(0.f, DamageCauserLocation.Yaw, 0.f));

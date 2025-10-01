@@ -52,7 +52,5 @@ void AEnergyItem::Pick(AActor* NewOwner)
 		{
 			UGameplayStatics::PlaySoundAtLocation(GetWorld(), HealthSFX, ItemMesh->GetComponentLocation());
 		}
-
-		PromptWidget->EnablePromptWidget(false);
 	}
 }

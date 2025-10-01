@@ -40,17 +40,14 @@ void UCombatComponent::InitializeValues(const FCombatData& CombatData)
 
 void UCombatComponent::ResetState()
 {
+	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Purple, "RESET STATE!");
+	
 	if (OwnerUtils->IsFlying())
 	{
 		OwnerUtils->SetMovementMode(MOVE_Falling);
 	}
-
-	if (!CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Block }))
-	{
-		CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetAction(ECharacterActionsStates::ECAS_Nothing);
-	}
-
-	/*if (const TScriptInterface<IResetMelee> MeleeToReset = GetCurrentWeapon().GetObject()) MeleeToReset->ResetMelee();*/
+	
+	CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetAction(ECharacterActionsStates::ECAS_Nothing);
 
 	if (OnResetState.IsBound()) OnResetState.Broadcast(); //this is called by AN_ResetState during the anim event
 }

@@ -15,7 +15,7 @@ struct FMovementData;
 class AEntity;
 struct FInputActionValue;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDodgeStarted);
+DECLARE_DYNAMIC_DELEGATE(FOnDodgeStarted);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDodgeSaved);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDoubleJumpStarted);
 
@@ -41,8 +41,8 @@ public:
 
 	bool IsMoving() const { return bIsMoving; }
 
-	UFUNCTION(BlueprintCallable)
-	void PlayDodgeAnim(UAnimMontage* DodgeMontage) const;
+	UFUNCTION(BlueprintCallable, meta=(AutoCreateRefTerm = "EventToCall"))
+	void PlayDodgeAnim(UAnimMontage* DodgeMontage, const FOnDodgeStarted& OnDodgeStartedEvent) const;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	bool CanDoubleJump = true;

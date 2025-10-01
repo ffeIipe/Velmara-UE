@@ -58,8 +58,7 @@ AEntity::AEntity()
 
 	BufferComponent = CreateDefaultSubobject<UBufferComponent>(TEXT("Buffer"));
 	
-	ExtraMovementComponent->OnDodgeStarted.
-	                             AddDynamic(TargetingComponent, &UTargetingComponent::RemoveCombatTarget);
+	ExtraMovementComponent->OnDodgeStarted.BindUFunction(TargetingComponent, "RemoveCombatTarget");
 	ExtraMovementComponent->OnDodgeSaved.AddDynamic(this, &AEntity::Input_Dodge);
 
 	CombatComponent->OnResetState.AddDynamic(ExtraMovementComponent, &UExtraMovementComponent::ResetDodge);
@@ -69,8 +68,7 @@ AEntity::AEntity()
 	CombatComponent->OnLightAttack.AddDynamic(TargetingComponent, &UTargetingComponent::PerformSoftLock);
 	CombatComponent->OnHeavyAttack.AddDynamic(TargetingComponent, &UTargetingComponent::PerformSoftLock);
 
-	GetAttributeComponent()->OnOutOfEnergy.AddDynamic(GetPossessionComponent(),
-	                                                  &UPossessionComponent::TryReleasePossession);
+	GetAttributeComponent()->OnOutOfEnergy.AddDynamic(GetPossessionComponent(), &UPossessionComponent::TryReleasePossession);
 
 	GetPossessionComponent()->OnPossessed.AddDynamic(AttributeComponent, &UAttributeComponent::StartDecreaseEnergy);
 
@@ -120,7 +118,15 @@ void AEntity::GetHit(const TScriptInterface<ICombatTargetInterface> DamageCauser
 		);
 	}
 	CombatComponent->StartBufferBackwards();
-	GetDirectionalReact(ImpactPoint);
+	
+	if (DamageEvent.DamageTypeClass != USpectralTrapDamageType::StaticClass())
+	{
+		GetDirectionalReact(ImpactPoint);
+	}
+	else
+	{
+		
+	}
 }
 
 void AEntity::GetFinished()
@@ -131,6 +137,20 @@ void AEntity::GetFinished()
 bool AEntity::IsHittable()
 {
 	return !GetAttributeComponent()->IsShielded() && IsAlive() && !IsBlocking();
+}
+
+void AEntity::AddStunBehavior()
+{
+	GetMesh()->GlobalAnimRateScale = .5f;
+	GetCharacterMovement()->MaxWalkSpeed = EntityData->MovementData.StunMaxWalkSpeed;
+	CharacterStateComponent->SetAction(ECharacterActionsStates::ECAS_Stun);
+}
+
+void AEntity::RemoveStunBehavior()
+{
+	GetMesh()->GlobalAnimRateScale = 1.f;
+	GetCharacterMovement()->MaxWalkSpeed = CurrentStrategy->CombatStrategyData->StrategyProperties.MaxWalkSpeed;
+	CharacterStateComponent->SetAction(ECharacterActionsStates::ECAS_Nothing);
 }
 
 void AEntity::GetDirectionalReact(const FVector& ImpactPoint)
@@ -359,18 +379,6 @@ void AEntity::Landed(const FHitResult& Hit)
 	}
 }
 
-void AEntity::StunBehavior()
-{
-	GetMesh()->GlobalAnimRateScale = .5f;
-	GetCharacterMovement()->MaxWalkSpeed = EntityData->MovementData.StunMaxWalkSpeed;
-}
-	
-void AEntity::RemoveStunBehavior()
-{
-	GetMesh()->GlobalAnimRateScale = 1.f;
-	GetCharacterMovement()->MaxWalkSpeed = CurrentStrategy->CombatStrategyData->StrategyProperties.MaxWalkSpeed;
-}
-
 bool AEntity::IsEquipping() const
 {
 	return CharacterStateComponent->CurrentStates.WeaponState == ECharacterWeaponStates::ECWS_EquippingWeapon;
@@ -397,7 +405,7 @@ float AEntity::TakeDamage(const float DamageAmount, FDamageEvent const& DamageEv
 
 void AEntity::Input_Move(const FInputActionValue& Value)
 {
-	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Block, ECharacterActionsStates::ECAS_Finish, ECharacterActionsStates::ECAS_Dead, ECharacterActionsStates::ECAS_Stun })) return;
+	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Block, ECharacterActionsStates::ECAS_Finish, ECharacterActionsStates::ECAS_Dead })) return;
 	
 	ExtraMovementComponent->PerformMove(Value.Get<FVector2D>(), Value.Get<bool>());
 }

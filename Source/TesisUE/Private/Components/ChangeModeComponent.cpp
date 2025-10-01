@@ -71,14 +71,6 @@ void UChangeModeComponent::ApplySpectralEffects()
     {
         SpectralObjectsSubsystem->ActivateSpectralObjects();
     }
-
-    if (const TScriptInterface<IWeaponProvider> WeaponProvider = GetOwner())
-    {
-        if (WeaponProvider && WeaponProvider->Execute_GetCurrentWeapon(GetOwner()))
-        {
-            WeaponProvider->Execute_GetCurrentWeapon(GetOwner())->EnableVisuals(false);
-        }
-    }
 }
 
 void UChangeModeComponent::ApplyHumanEffects()
@@ -94,14 +86,6 @@ void UChangeModeComponent::ApplyHumanEffects()
     if (USpectralObjectsSubsystem* SpectralObjectsSubsystem = GetWorld()->GetSubsystem<USpectralObjectsSubsystem>())
     {
         SpectralObjectsSubsystem->DeactivateSpectralObjects();
-    }
-
-    if (const TScriptInterface<IWeaponProvider> WeaponProvider = GetOwner())
-    {
-        if (WeaponProvider && WeaponProvider->Execute_GetCurrentWeapon(GetOwner()))
-        {
-            WeaponProvider->Execute_GetCurrentWeapon(GetOwner())->EnableVisuals(true);
-        }
     }
 }
 

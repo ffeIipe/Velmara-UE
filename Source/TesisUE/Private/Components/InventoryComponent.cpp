@@ -14,6 +14,7 @@
 #include "Interfaces/ControllerProvider.h"
 #include "Interfaces/Pickable.h"
 #include "Player/CharacterWeaponStates.h"
+#include "SpectralMode/Interfaces/Spectral.h"
 
 UInventoryComponent::UInventoryComponent()
 {
@@ -99,7 +100,7 @@ void UInventoryComponent::EquipWeaponFromSlot(const int32 SlotIndex)
     
     if (CurrentWeapon)
     {
-        CurrentWeapon->EnableVisuals(false);
+        CurrentWeapon->DisableVisuals();
     }
     
     if (const TScriptInterface<IPickable> Pickable = InventorySlots[SlotIndex].GetObject()) Pickable->Pick(GetOwner());
@@ -108,7 +109,7 @@ void UInventoryComponent::EquipWeaponFromSlot(const int32 SlotIndex)
     {
         CurrentWeapon = InventorySlots[SlotIndex];
         EquippedSlotIndex = SlotIndex;
-        CurrentWeapon->EnableVisuals(true);
+        CurrentWeapon->EnableVisuals();
     }
     
     //AnimatorProvider->ChangeWeaponAnimationState();
@@ -151,7 +152,7 @@ void UInventoryComponent::UnequipCurrentWeapon()
 {
     if (CurrentWeapon)
     {
-        CurrentWeapon->EnableVisuals(false);
+        CurrentWeapon->EnableVisuals();
         CurrentWeapon = nullptr;
         EquippedSlotIndex = -1;
     }
@@ -250,6 +251,13 @@ TScriptInterface<IWeaponInterface> UInventoryComponent::PerformInteract()
                 {
                     ActorsToIgnore.Add(Cast<AActor>(WeaponReached.GetObject()));
                     return WeaponReached;
+                }
+            }
+            else
+            {
+                if (const TScriptInterface<ISpectral> SpectralItem = Pickable.GetObject(); SpectralItem)
+                {
+                    Pickable->Pick(GetOwner());
                 }
             }
         }

@@ -28,6 +28,7 @@ public:
     TScriptInterface<IWeaponInterface> CurrentWeapon;
 
     void InitializeValues(const FInventoryData& InventoryData);
+    
 protected:
     virtual void BeginPlay() override;
     

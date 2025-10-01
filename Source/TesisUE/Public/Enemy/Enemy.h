@@ -98,10 +98,7 @@ public:
 	// === Components ===
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components | PromptWidgetComponent")
 	UPromptWidgetComponent* PromptWidgetComponent;
-
-	// === Status Flags ===
-	bool bWasPossessed = false;
-
+	
 	//=== Implementable Events ===
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
 	void ResetKeyBool(float Duration, struct FBlackboardKeySelector Key, bool SetBool, APawn* TargetPawn);
@@ -186,7 +183,6 @@ protected:
 	UPROPERTY()
 	FTimerHandle HitFlashTimerHandle;
 	
-
 	// === Enemy Properties ===
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "EnemyType")
 	EEnemyType EnemyType;
@@ -200,22 +196,6 @@ protected:
 	// === Resetting & Defaults ===
 	UFUNCTION(BlueprintCallable)
 	void ResetEnemy();
-
-	// === Initial Component States ===
-	ECollisionEnabled::Type InitialMeshCollisionEnabled;
-	ECollisionEnabled::Type InitialCapsuleCollisionEnabled;
-	TMap<TEnumAsByte<ECollisionChannel>, ECollisionResponse> InitialMeshCollisionResponses;
-	TMap<TEnumAsByte<ECollisionChannel>, ECollisionResponse> InitialCapsuleCollisionResponses;
-	bool bInitialMeshGenerateOverlapEvents;
-	bool bInitialCapsuleGenerateOverlapEvents;
-
-	float DefaultMaxWalkSpeed;
-	float DefaultGravityScale;
-	float DefaultJumpZVelocity;
-	float DefaultDamage;
-	bool bDefaultOrientRotationToMovement;
-	bool bDefaultUseControllerDesiredRotation;
-	bool bOriginalUseControllerRotationYaw;
 
 	UPROPERTY()
 	bool bShouldDropOrbs = true; //this is for inheritance xd

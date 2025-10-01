@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "Trigger.generated.h"
 
+class IHitInterface;
 class APlayerMain;
 class UBoxComponent;
 
@@ -16,6 +17,8 @@ class TESISUE_API ATrigger : public AActor
 	
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerBeginOverlap);
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerEndOverlap);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEntityBeginOverlap);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEntityEndOverlap);
 
 public:	
 	ATrigger();
@@ -25,6 +28,12 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FOnPlayerEndOverlap OnPlayerEndOverlap;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnEntityBeginOverlap OnEntityBeginOverlap;
+	
+	UPROPERTY(BlueprintAssignable)
+	FOnEntityEndOverlap OnEntityEndOverlap;
 
 protected:
 	virtual void BeginPlay() override;
@@ -49,6 +58,6 @@ protected:
 
 	UFUNCTION()
 	virtual void DisableCollision();
-
-	APlayerMain* Player;
+	
+	TScriptInterface<IHitInterface> HitActor;
 };

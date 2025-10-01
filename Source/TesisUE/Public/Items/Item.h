@@ -3,8 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "SceneEvents/Trigger.h"
 #include "Interfaces/Pickable.h"
+#include "Tutorial/InputPromptTrigger.h"
 #include "Item.generated.h"
 
 class UItemMementoComponent;
@@ -21,7 +21,7 @@ enum class EItemState : uint8
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnItemUsed, ACharacter*, UserCharacter);
 
 UCLASS()
-class TESISUE_API AItem : public ATrigger, public IPickable
+class TESISUE_API AItem : public AInputPromptTrigger, public IPickable
 {
 	GENERATED_BODY()
 
@@ -37,8 +37,12 @@ public:
 	virtual void BeginPlay() override;
 	
 	virtual void Pick(AActor* NewOwner) override;
-	
-	virtual void EnableVisuals(bool bEnable);
+
+	UFUNCTION()
+	virtual void EnableVisuals();
+
+	UFUNCTION()
+	virtual void DisableVisuals();
 	
 	virtual UPrimitiveComponent* GetCollisionComponent();
 
@@ -75,25 +79,9 @@ protected:
 	
 	EItemState ItemState = EItemState::EIS_Hovering;
 	
-	UPROPERTY(VisibleAnywhere)
-	UPromptWidgetComponent* PromptWidget;
-
-	// UPROPERTY(BlueprintReadWrite)
-	// ACharacter* User;
-
-	virtual void OnSphereBeginOverlap(
-		UPrimitiveComponent* OverlappedComponent,
-		AActor* OtherActor,
-		UPrimitiveComponent* OtherComp,
-		int32 OtherBodyIndex, bool bFromSweep,
-		const FHitResult& SweepResult) override;
-
-	virtual void OnSphereEndOverlap(
-		UPrimitiveComponent* OverlappedComponent,
-		AActor* OtherActor,
-		UPrimitiveComponent* OtherComp,
-		int32 OtherBodyIndex) override;
-
+	/*UPROPERTY(VisibleAnywhere)
+	UPromptWidgetComponent* PromptWidget;*/
+	
 	TScriptInterface<IAttributeProvider> AttributeProvider;
 
 	UPROPERTY()

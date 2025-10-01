@@ -1,8 +1,7 @@
 #include "Items/Item.h"
 #include "Components/BoxComponent.h"
-#include "Player/PlayerMain.h"
 #include "Tutorial/PromptWidgetComponent.h"
-
+#include "Interfaces/AttributeProvider.h" //do not delete this
 #include "Components/Items/ItemMementoComponent.h"
 
 
@@ -14,33 +13,18 @@ AItem::AItem()
 	
 	ItemMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Item Mesh"));
 	RootComponent = ItemMesh;
+	ItemMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	ItemMesh->SetCollisionResponseToAllChannels(ECR_Ignore);
+	ItemMesh->SetCollisionResponseToChannel(ECC_GameTraceChannel5, ECR_Block);
 
 	BoxCollider->SetupAttachment(GetRootComponent());
 	BoxCollider->SetCollisionResponseToAllChannels(ECR_Ignore);
 	BoxCollider->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-
-	PromptWidget = CreateDefaultSubobject<UPromptWidgetComponent>(TEXT("PromptTrigger"));
-	PromptWidget->SetupAttachment(GetRootComponent());
-
-	/*if (UniqueSaveID == NAME_None)
-	{
-		const FString GuidString = FGuid::NewGuid().ToString();
-		UniqueSaveID = FName(*GuidString);
-	}*/
 }
 
 void AItem::BeginPlay()
 {
 	Super::BeginPlay();
-
-	if (PromptWidget)
-	{
-		if (PromptWidget->GetWidget())
-		{
-			PromptWidget->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
-		}
-	}
 }
 
 void AItem::Pick(AActor* NewOwner)
@@ -54,13 +38,26 @@ void AItem::Pick(AActor* NewOwner)
 		bWasUsed = true;
 		ItemMementoComponent->CaptureItemState();
 	}
+	
+	/*
+	DisableCollision();*/
 }
 
-void AItem::EnableVisuals(const bool bEnable)
+void AItem::EnableVisuals()
 {
-	SetActorHiddenInGame(!bEnable);
-	SetActorEnableCollision(bEnable);
-	PromptWidget->EnablePromptWidget(false);
+	SetActorHiddenInGame(false);
+	SetActorEnableCollision(true);
+
+	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Enable visuals");
+	
+}
+
+void AItem::DisableVisuals()
+{
+	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Disable visuals");
+	
+	SetActorHiddenInGame(true);
+	SetActorEnableCollision(false);
 }
 
 UPrimitiveComponent* AItem::GetCollisionComponent()
@@ -72,42 +69,11 @@ void AItem::DisableCollision()
 {
 	Super::DisableCollision();
 
+	ItemMesh->SetCollisionResponseToChannel(ECC_GameTraceChannel5, ECR_Ignore);
 	ItemMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-
-	if (PromptWidget)
+	
+	if (PromptWidgetComponent)
 	{
-		PromptWidget->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
+		PromptWidgetComponent->DisablePromptWidget();
 	}
-}
-
-void AItem::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	Super::OnSphereBeginOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
-
-	if (Player)
-	{
-		PromptWidget->EnablePromptWidget(true);
-	}
-}
-
-void AItem::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
-{
-    Super::OnSphereEndOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex);
-
-    APlayerMain* CurrentOverlappingPlayer = Cast<APlayerMain>(OtherActor);
-
-    if (IsValid(Player) && Player == CurrentOverlappingPlayer)
-    {
-        if (PromptWidget && PromptWidget->GetWidget())
-        {
-			PromptWidget->EnablePromptWidget(false);
-        }
-    }
-    else if (CurrentOverlappingPlayer)
-    {
-		if (PromptWidget && PromptWidget->GetWidget())
-		{
-			PromptWidget->EnablePromptWidget(false);
-		}
-    }
 }
