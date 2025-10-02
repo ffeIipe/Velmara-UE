@@ -110,7 +110,7 @@ void APaladinBoss::Die(UAnimMontage* DeathAnim, FName Section)
 	
 	if (OnDead.IsBound())
 	{
-		OnDead.Broadcast(this);
+		OnDead.Broadcast(Cast<AEntity>(LastDamageCauser.GetObject()));
 	}
 }
 

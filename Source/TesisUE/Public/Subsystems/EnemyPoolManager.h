@@ -10,8 +10,7 @@ USTRUCT(BlueprintType)
 struct FEnemyPool
 {
     GENERATED_BODY()
-
-public:
+    
     UPROPERTY()
     TArray<AEnemy*> PooledEnemies;
 
@@ -43,7 +42,7 @@ private:
     UPROPERTY()
     TMap<TSubclassOf<AEnemy>, FEnemyPool> EnemyPools;
 
-    FEnemyPool* GetOrCreatePool(TSubclassOf<AEnemy> EnemyClass);
+    FEnemyPool* GetOrCreatePool(const TSubclassOf<AEnemy>& EnemyClass);
 
-    AEnemy* SpawnNewEnemyForPool(TSubclassOf<AEnemy> EnemyClass, const FVector& Location, const FRotator& Rotation, AActor* Owner, APawn* Instigator);
+    AEnemy* SpawnNewEnemyForPool(const TSubclassOf<AEnemy>& EnemyClass, const FVector& Location, const FRotator& Rotation, AActor* Owner, APawn* Instigator) const;
 };

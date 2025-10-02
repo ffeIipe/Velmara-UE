@@ -48,8 +48,7 @@ void AItem::EnableVisuals()
 	SetActorHiddenInGame(false);
 	SetActorEnableCollision(true);
 
-	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Enable visuals");
-	
+	/*if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Enable visuals");*/
 }
 
 void AItem::DisableVisuals()

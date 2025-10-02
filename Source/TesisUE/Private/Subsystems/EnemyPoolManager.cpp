@@ -26,21 +26,19 @@ void UEnemyPoolManager::Deinitialize()
     Super::Deinitialize();
 }
 
-void UEnemyPoolManager::EnsurePoolInitialized(TSubclassOf<AEnemy> EnemyClass, int32 InitialPoolSize)
+void UEnemyPoolManager::EnsurePoolInitialized(const TSubclassOf<AEnemy> EnemyClass, const int32 InitialPoolSize)
 {
     if (!EnemyClass)
     {
         return;
     }
 
-    FEnemyPool* Pool = GetOrCreatePool(EnemyClass);
-    if (Pool)
+    if (FEnemyPool* Pool = GetOrCreatePool(EnemyClass))
     {
-        int32 EnemiesToCreate = InitialPoolSize - Pool->PooledEnemies.Num();
+        const int32 EnemiesToCreate = InitialPoolSize - Pool->PooledEnemies.Num();
         for (int32 i = 0; i < EnemiesToCreate; ++i)
         {
-            AEnemy* NewEnemy = SpawnNewEnemyForPool(EnemyClass, FVector::ZeroVector, FRotator::ZeroRotator, nullptr, nullptr);
-            if (NewEnemy)
+            if (AEnemy* NewEnemy = SpawnNewEnemyForPool(EnemyClass, FVector::ZeroVector, FRotator::ZeroRotator, nullptr, nullptr))
             {
                 NewEnemy->DeactivateEnemy();
                 Pool->PooledEnemies.Add(NewEnemy);
@@ -49,15 +47,16 @@ void UEnemyPoolManager::EnsurePoolInitialized(TSubclassOf<AEnemy> EnemyClass, in
     }
 }
 
-AEnemy* UEnemyPoolManager::SpawnEnemyFromPool(TSubclassOf<AEnemy> EnemyClass, const FVector& Location, const FRotator& Rotation, AActor* Owner, APawn* Instigator)
+AEnemy* UEnemyPoolManager::SpawnEnemyFromPool(const TSubclassOf<AEnemy> EnemyClass, const FVector& Location, const FRotator& Rotation, AActor* Owner, APawn* Instigator)
 {
     if (!EnemyClass)
     {
+        if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3, FColor::Red, "Invalid Enemy class.");
         return nullptr;
     }
 
     FEnemyPool* Pool = GetOrCreatePool(EnemyClass);
-    AEnemy* EnemyToSpawn = nullptr;
+    AEnemy* EnemyToSpawn;
 
     if (Pool && Pool->PooledEnemies.Num() > 0)
     {
@@ -92,10 +91,9 @@ void UEnemyPoolManager::ReturnEnemyToPool(AEnemy* Enemy)
         return;
     }
 
-    TSubclassOf<AEnemy> EnemyClass = Enemy->GetClass();
-    FEnemyPool* Pool = GetOrCreatePool(EnemyClass);
+    const TSubclassOf<AEnemy> EnemyClass = Enemy->GetClass();
 
-    if (Pool)
+    if (FEnemyPool* Pool = GetOrCreatePool(EnemyClass))
     {
         Pool->PooledEnemies.Add(Enemy);
         
@@ -106,7 +104,7 @@ void UEnemyPoolManager::ReturnEnemyToPool(AEnemy* Enemy)
     }
 }
 
-FEnemyPool* UEnemyPoolManager::GetOrCreatePool(TSubclassOf<AEnemy> EnemyClass)
+FEnemyPool* UEnemyPoolManager::GetOrCreatePool(const TSubclassOf<AEnemy>& EnemyClass)
 {
     if (!EnemyClass) return nullptr;
 
@@ -121,7 +119,7 @@ FEnemyPool* UEnemyPoolManager::GetOrCreatePool(TSubclassOf<AEnemy> EnemyClass)
     return FoundPool;
 }
 
-AEnemy* UEnemyPoolManager::SpawnNewEnemyForPool(TSubclassOf<AEnemy> EnemyClass, const FVector& Location, const FRotator& Rotation, AActor* Owner, APawn* Instigator)
+AEnemy* UEnemyPoolManager::SpawnNewEnemyForPool(const TSubclassOf<AEnemy>& EnemyClass, const FVector& Location, const FRotator& Rotation, AActor* Owner, APawn* Instigator) const
 {
     UWorld* World = GetWorld();
     if (!World || !EnemyClass)

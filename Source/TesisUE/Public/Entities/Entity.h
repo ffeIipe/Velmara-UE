@@ -63,8 +63,8 @@ class UCameraShakeBase;
 class UEntityData;
 
 // === Delegates ===
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEntityDead, AEntity*, Entity);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEntityDamaged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEntityDead, AEntity*, LastDamageCauser);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEntityDamaged, AEntity*, LastDamageCauser);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEntityCanBeFinished);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEntityShieldTakeDamage);
 
