@@ -17,7 +17,7 @@ UPromptWidgetComponent::UPromptWidgetComponent()
     {  
         SetWidgetClass(InputPromptWidgetClass.Object->GetClass());
     }
-    else if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Missing! Input Prompt Widget");
+    /*else if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Missing! Input Prompt Widget");*/
     
     SetDrawAtDesiredSize(true);
     SetWidgetSpace(EWidgetSpace::Screen);
@@ -61,7 +61,7 @@ void UPromptWidgetComponent::EnablePromptWidget()
     SetHiddenInGame(false);
     SetVisibility(true);
 
-    GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, "Prompt Widget Enabled");
+    /*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, "Prompt Widget Enabled");*/
 }
 
 void UPromptWidgetComponent::DisablePromptWidget()
@@ -73,5 +73,5 @@ void UPromptWidgetComponent::DisablePromptWidget()
     SetHiddenInGame(true);
     SetVisibility(false);
 
-    GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Prompt Widget Disabled");
+    /*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Prompt Widget Disabled");*/
 }

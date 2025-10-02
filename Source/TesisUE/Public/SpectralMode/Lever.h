@@ -9,6 +9,14 @@ class TESISUE_API ALever : public ASpectralObject
 {
 	GENERATED_BODY()
 
+	DECLARE_DYNAMIC_DELEGATE(FOnLeverActivation);
+
+public:
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
+	FOnLeverActivation OnLeverActivation;
+
+	bool bLeverWasActivated;
+	
 protected:
 	virtual void Pick(AActor* NewOwner) override;
 

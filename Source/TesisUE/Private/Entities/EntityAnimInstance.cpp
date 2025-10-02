@@ -37,9 +37,9 @@ void UEntityAnimInstance::NativeUpdateAnimation(const float DeltaTime)
 	{
 		GroundSpeed = UKismetMathLibrary::VSizeXY(CharacterMovementProvider->Execute_GetCharacterMovementComponent(EntityOwner)->Velocity);
 		IsFalling = OwnerUtils->IsFalling();
-
+	
 		bHasAcceleration = CharacterMovementProvider->Execute_GetCharacterMovementComponent(EntityOwner)->GetCurrentAcceleration().SizeSquared2D() > SMALL_NUMBER;
-
+	
 		CharacterWeaponState = CharacterStateProvider->Execute_GetCharacterStateComponent(EntityOwner)->CurrentStates.WeaponState;
 		CharacterMode = CharacterStateProvider->Execute_GetCharacterStateComponent(EntityOwner)->CurrentStates.Mode;
 		

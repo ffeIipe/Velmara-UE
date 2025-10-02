@@ -64,7 +64,7 @@ void ATrigger::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AAct
 		if (OnEntityEndOverlap.IsBound())
 		{
 			OnEntityEndOverlap.Broadcast();
-			if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Entity End");
+			/*if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Entity End");*/
 		}
 	}
 }

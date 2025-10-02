@@ -188,7 +188,7 @@ void AEnemy::Die(UAnimMontage* DeathAnim, FName Section)
 	}
 
 	if (OnDeactivated.IsBound()) OnDeactivated.Broadcast(this);
-	if (OnDead.IsBound()) OnDead.Broadcast(this);
+	if (OnDead.IsBound()) OnDead.Broadcast(Cast<AEntity>(LastDamageCauser.GetObject()));
 	
 	GetWorldTimerManager().SetTimer(ReturnToPoolTimerHandle, this, &AEnemy::RequestReturnToPool, 5.0f, false);
 }
@@ -427,7 +427,7 @@ void AEnemy::ResetEnemy()
 	EnableAI();
 }
 
-void AEnemy::DropOrbs(const float DamageReceived, const TScriptInterface<ICombatTargetInterface>& DamageCauser) const
+void AEnemy::DropOrbs(const float DamageReceived, const TScriptInterface<ICombatTargetInterface>& DamageCauser)
 {
 	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Drops orbs called");
 	const float Percentage = DamageReceived / EnergyDivider;
@@ -439,7 +439,7 @@ void AEnemy::DropOrbs(const float DamageReceived, const TScriptInterface<ICombat
 	{
 		for (int32 i = 0; i < Orbs; i++)
 		{
-			OnDamaged.Broadcast();
+			OnDamaged.Broadcast(Cast<AEntity>(DamageCauser.GetObject()));
 		}
 	}
 }

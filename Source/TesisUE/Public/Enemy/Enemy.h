@@ -61,7 +61,7 @@ public:
 
 	virtual void GetHit(TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived) override;
 	
-	void DropOrbs(const float DamageReceived, const TScriptInterface<ICombatTargetInterface>& DamageCauser) const;
+	void DropOrbs(const float DamageReceived, const TScriptInterface<ICombatTargetInterface>& DamageCauser);
 
 	void FinishedDamage();
 
