@@ -8,8 +8,8 @@ void ALever::Pick(AActor* NewOwner)
 
 	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, "Interact");
 	
-	OnLeverActivation.ExecuteIfBound();
 	bLeverWasActivated = true;
+	OnLeverActivation.ExecuteIfBound();
 	
 	for (AActor* Door : DoorArray)
 	{

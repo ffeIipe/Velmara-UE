@@ -157,6 +157,7 @@ void AEnemy::DeactivateEnemy()
 	if (OnDeactivated.IsBound())
 	{
 		OnDeactivated.Broadcast(this);
+		OnDeactivated.Clear();
 	}
 	
 	GetWorldTimerManager().ClearTimer(HitFlashTimerHandle);
@@ -187,7 +188,6 @@ void AEnemy::Die(UAnimMontage* DeathAnim, FName Section)
 		GetPossessionComponent()->ReleasePossession();
 	}
 
-	if (OnDeactivated.IsBound()) OnDeactivated.Broadcast(this);
 	if (OnDead.IsBound()) OnDead.Broadcast(Cast<AEntity>(LastDamageCauser.GetObject()));
 	
 	GetWorldTimerManager().SetTimer(ReturnToPoolTimerHandle, this, &AEnemy::RequestReturnToPool, 5.0f, false);

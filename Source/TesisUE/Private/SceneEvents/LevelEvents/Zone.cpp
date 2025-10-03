@@ -4,7 +4,6 @@
 #include "SceneEvents/LevelEvents/Zone.h"
 
 #include "SceneEvents/EnemySpawner.h"
-#include "SceneEvents/EnemySpawner/SpawnPoint.h"
 #include "SpectralMode/Lever.h"
 
 
@@ -27,8 +26,6 @@ void AZone::BeginPlay()
 	{
 		Lever->OnLeverActivation.BindUFunction(this, FName("OnLeverActivation"));
 	}
-
-	
 }
 
 void AZone::OnLeverActivation()

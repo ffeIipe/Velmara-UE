@@ -54,7 +54,7 @@ void ASpectralTrap::FinishDamage()
 	if (!HitActor) return;
 
 	TimeOnTarget = 0.f;
-	CurrentDamage = 0.0f;
+	InitialDamage = 0.0f;
 	
 	HitActor->RemoveStunBehavior();
 	GetWorld()->GetTimerManager().ClearTimer(ContinuousDamageTimerHandle);
@@ -68,15 +68,15 @@ void ASpectralTrap::DealContinuousDamage()
 
 	TimeOnTarget += DamageInterval;
 
-	if (DamageCurve && CurrentDamage < MaxDamage)
+	if (DamageCurve && InitialDamage < MaxDamage)
 	{
-		CurrentDamage = MaxDamage * DamageCurve->GetFloatValue(TimeOnTarget);
+		InitialDamage = MaxDamage * DamageCurve->GetFloatValue(TimeOnTarget);
 
-		if (GEngine) GEngine->AddOnScreenDebugMessage(4, 3.f, FColor::White, "Dealing damage: " + FString::SanitizeFloat(CurrentDamage));
+		if (GEngine) GEngine->AddOnScreenDebugMessage(4, 3.f, FColor::White, "Dealing damage: " + FString::SanitizeFloat(InitialDamage));
 	}
 	
-	UGameplayStatics::ApplyDamage(Cast<AActor>(HitActor.GetObject()), CurrentDamage, nullptr, this, USpectralTrapDamageType::StaticClass());
+	UGameplayStatics::ApplyDamage(Cast<AActor>(HitActor.GetObject()), InitialDamage, nullptr, this, USpectralTrapDamageType::StaticClass());
 	
 	const FDamageEvent DamageEvent(USpectralTrapDamageType::StaticClass());
-	HitActor->GetHit(GetOwner(), FVector::ZeroVector, DamageEvent, CurrentDamage);
+	HitActor->GetHit(GetOwner(), FVector::ZeroVector, DamageEvent, InitialDamage);
 }

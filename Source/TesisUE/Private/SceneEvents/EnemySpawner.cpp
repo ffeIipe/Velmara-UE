@@ -15,22 +15,19 @@ AEnemySpawner::AEnemySpawner()
 
 void AEnemySpawner::StartSpawning()
 {
-	//if (!GetWorld()->GetTimerManager().IsTimerActive(SpawnTimerHandle))
-	{
-		const float TimeBetweenSpawn = FMath::RandRange(TimeBetweenSpawnMin, TimeBetweenSpawnMax);
+	const float TimeBetweenSpawn = FMath::RandRange(TimeBetweenSpawnMin, TimeBetweenSpawnMax);
 	
-		GetWorld()->GetTimerManager().SetTimer(
-			SpawnTimerHandle,
-			this,
-			&AEnemySpawner::SpawnEnemyFromSpawnPoint,
-			TimeBetweenSpawn,
-			true);
-	}
+	GetWorld()->GetTimerManager().SetTimer(
+		SpawnTimerHandle,
+		this,
+		&AEnemySpawner::SpawnEnemyFromSpawnPoint,
+		TimeBetweenSpawn,
+		true);
 }
 
 void AEnemySpawner::SpawnEnemyFromSpawnPoint()
 {
-	if (EnemiesSpawned < EnemiesSpawnedLimit)
+	if (EnemiesSpawned < SpawnPoints.Num())
 	{
 		EnemiesSpawned++;
 		const int32 RandomIndex = FMath::RandRange(0, SpawnPoints.Num() - 1);
@@ -44,11 +41,12 @@ void AEnemySpawner::SpawnEnemyFromSpawnPoint()
 			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Invalid Random Index!");	
 		}
 	}
-	//else EndSpawning();
 }
 
 void AEnemySpawner::EndSpawning()
 {
+	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "End of spawning!");
+	
 	GetWorld()->GetTimerManager().ClearTimer(SpawnTimerHandle);
 }
 
@@ -59,16 +57,14 @@ void AEnemySpawner::BeginPlay()
 	for (ASpawnPoint* SpawnPoint : SpawnPoints)
 	{
 		SpawnPoint->OnEnemyDeactivated.BindUFunction(this, "DecreaseEnemiesSpawned");
+
+		SpawnPoint->SetOwner(this);
 	}
 }
 
 void AEnemySpawner::DecreaseEnemiesSpawned()
 {
 	EnemiesSpawned--;
-
-	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Emerald, "DecreaseEnemiesSpawned");
-	
-	//StartSpawning();
 }
 
 

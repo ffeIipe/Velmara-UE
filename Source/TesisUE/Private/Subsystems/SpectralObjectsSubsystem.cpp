@@ -9,7 +9,7 @@ void USpectralObjectsSubsystem::AddSpectralObject(const TScriptInterface<ISpectr
 {
 	if (SpectralObject)
 	{
-		SpectralObjects.Add(SpectralObject);
+		SpectralObjects.AddUnique(SpectralObject);
 	}
 }
 

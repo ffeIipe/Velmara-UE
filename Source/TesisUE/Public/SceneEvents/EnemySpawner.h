@@ -27,9 +27,6 @@ protected:
 
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
 	TArray<ASpawnPoint*> SpawnPoints;
-
-	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
-	int32 EnemiesSpawnedLimit = 5;
 	
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
 	float TimeBetweenSpawnMin = 1.f;
@@ -41,7 +38,7 @@ protected:
 
 private:
 	int32 EnemiesSpawned = 0;
-
+	
 	UFUNCTION()
 	void DecreaseEnemiesSpawned();
 };
