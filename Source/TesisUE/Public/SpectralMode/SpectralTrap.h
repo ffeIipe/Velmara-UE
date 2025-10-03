@@ -24,13 +24,13 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Properties | Trap")
 	float MaxDamage = 10.f;
 
-	UPROPERTY(VisibleAnywhere, Category = "Properties | Trap")
-	float CurrentDamage = 0.0f;
+	UPROPERTY(EditInstanceOnly, Category = "Properties | Trap")
+	float InitialDamage = 1.0f;
 	
-	UPROPERTY(EditAnywhere, Category = "Properties | Trap")
+	UPROPERTY(EditInstanceOnly, Category = "Properties | Trap")
 	float DamageInterval = .2f;
 
-	UPROPERTY(EditAnywhere, Category = "Properties | Trap")
+	UPROPERTY(EditInstanceOnly, Category = "Properties | Trap")
 	UCurveFloat* DamageCurve = nullptr;
 
 	UPROPERTY(VisibleAnywhere, Category = "Properties | Trap")

@@ -33,8 +33,6 @@ protected:
 private:
 	UFUNCTION()
 	void OnLeverActivation();
-	
-	void OnEnemiesSpawnedLimitReached();
 
 	bool CheckLevers();
 };

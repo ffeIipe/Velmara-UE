@@ -15,7 +15,7 @@ public:
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
 	FOnLeverActivation OnLeverActivation;
 
-	bool bLeverWasActivated;
+	bool bLeverWasActivated = false;
 	
 protected:
 	virtual void Pick(AActor* NewOwner) override;
@@ -30,5 +30,4 @@ protected:
 
 	UPROPERTY(EditAnywhere)
 	USoundBase* OpenDoorSFX;
-
 };
