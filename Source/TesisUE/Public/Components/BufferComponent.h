@@ -9,6 +9,7 @@
 DECLARE_DYNAMIC_DELEGATE(FOnBufferStarted);
 DECLARE_DYNAMIC_DELEGATE(FOnBufferFinished);
 DECLARE_DYNAMIC_DELEGATE(FOnBufferStopped);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnBufferUpdated, const float, Alpha);
 
 class UTimelineComponent;
 
@@ -22,8 +23,11 @@ public:
 
 	UFUNCTION(BlueprintCallable, meta=(AutoCreateRefTerm = "EventToCall"))
 	void StartLocationBuffer(const float Distance, UCurveFloat* Curve, bool bIsCameraForwardVectorUsed, FOnBufferStarted OnBufferStarted, FOnBufferFinished
-	                         OnBufferFinished, FOnBufferStopped OnBufferStopped);
+	                         OnBufferFinished, FOnBufferStopped OnBufferStopped, const FOnBufferUpdated OnBufferUpdated);
 
+
+	
+	
 	UFUNCTION(BlueprintCallable)
 	void StopLocationBuffer();
 	
@@ -33,10 +37,9 @@ public:
 	bool bIsCameraForwardVector = false;
 
 	FOnBufferStarted OnBufferStarted_Internal;
-	
 	FOnBufferFinished OnBufferFinished_Internal;
-	
 	FOnBufferStopped OnBufferStopped_Internal;
+	FOnBufferUpdated OnBufferUpdated_Internal;
 	
 protected:
 	/*virtual void BeginPlay() override;*/

@@ -20,11 +20,13 @@ UBufferComponent::UBufferComponent()
 
 void UBufferComponent::StartLocationBuffer(const float Distance, UCurveFloat* Curve,
                                            const bool bIsCameraForwardVectorUsed, const FOnBufferStarted OnBufferStarted,
-                                           const FOnBufferFinished OnBufferFinished, const FOnBufferStopped OnBufferStopped)
+                                           const FOnBufferFinished OnBufferFinished, const FOnBufferStopped OnBufferStopped, const FOnBufferUpdated
+                                           OnBufferUpdated)
 {
 	OnBufferStarted_Internal = OnBufferStarted;
 	OnBufferFinished_Internal = OnBufferFinished;
 	OnBufferStopped_Internal = OnBufferStopped;
+	OnBufferUpdated_Internal = OnBufferUpdated;
 
 	OnBufferStarted_Internal.ExecuteIfBound();
 	OnBufferStarted_Internal.Clear();
@@ -66,6 +68,8 @@ void UBufferComponent::StopLocationBuffer()
 	if (BufferTimelineComp)
 		BufferTimelineComp->Stop();
 
+	OnBufferUpdated_Internal.Clear();
+	
 	OnBufferStopped_Internal.ExecuteIfBound();
 	OnBufferStopped_Internal.Clear();
 }
@@ -83,6 +87,8 @@ void UBufferComponent::UpdateLocationBuffer(float Alpha)
 	if (const TScriptInterface<ICharacterMovementProvider> CharacterMovementProvider = GetOwner();
 		CharacterMovementProvider->Execute_GetExtraMovementComponent(GetOwner())->IsMoving())
 	{
+		OnBufferUpdated_Internal.ExecuteIfBound(Alpha);
+		
 		const FVector CurrentLocation = GetOwner()->GetActorLocation();
 		const FVector ForwardVector = CharacterMovementProvider->Execute_GetCharacter(GetOwner())->GetLastMovementInputVector();
 		const FVector TargetLocation = FMath::Lerp(CurrentLocation, CurrentLocation + (ForwardVector * CurrentDistance) * BufferMultiplier, Alpha);
@@ -104,6 +110,8 @@ void UBufferComponent::SetDefaultMovement()
 	}
 
 	//this is not related to setting default movement
+	OnBufferUpdated_Internal.Clear();
+	
 	OnBufferFinished_Internal.ExecuteIfBound();
 	OnBufferFinished_Internal.Clear();
 }

@@ -29,4 +29,3 @@ void UFieldCreationComponent::CreateFields(const float FieldMagnitude, const flo
 	FieldSystemComp->ApplyPhysicsField(true, Field_ExternalClusterStrain, nullptr, RadialFalloff);
 	FieldSystemComp->ApplyPhysicsField(true, Field_LinearForce, MetaDataFilterComp, RadialVector);
 }
-
