@@ -13,6 +13,7 @@
 UTargetingComponent::UTargetingComponent()
 {
     PrimaryComponentTick.bCanEverTick = true;
+    PrimaryComponentTick.TickInterval = 0.01f;
     SoftLockTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("SoftLockTimeline"));
 }
 
@@ -26,6 +27,7 @@ void UTargetingComponent::BeginPlay()
     Super::BeginPlay();
     PrimaryComponentTick.bStartWithTickEnabled = false;
     SetComponentTickEnabled(false);
+    PrimaryComponentTick.TickInterval = 0.01f;
 
     ControllerProvider = GetOwner();
     CharacterMovementProvider = GetOwner();
@@ -43,6 +45,17 @@ void UTargetingComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+    GEngine->AddOnScreenDebugMessage(INDEX_NONE, -1.f, FColor::Purple, "UTargetingComponent::TickComponent");
+
+    if (bIsHardLocking)
+    {
+        GEngine->AddOnScreenDebugMessage(INDEX_NONE, -1.f, FColor::Green, "HardLocking true");
+    }
+    else
+    {
+        GEngine->AddOnScreenDebugMessage(INDEX_NONE, -1.f, FColor::Red, "HardLocking false");
+    }
+    
     ValidateCurrentTarget();
     
     if (bIsHardLocking && CurrentTarget.GetInterface() != nullptr)
@@ -121,23 +134,31 @@ void UTargetingComponent::ValidateCurrentTarget()
     }
 }
 
-void UTargetingComponent::RotateTowardsHardLockTarget(const TScriptInterface<ICombatTargetInterface>& Target, float DeltaTime) const
+void UTargetingComponent::RotateTowardsHardLockTarget(const TScriptInterface<ICombatTargetInterface>& Target, const float DeltaTime) const
 {
-    if (!ControllerProvider || !CameraProvider) return;
+    if (!ControllerProvider || !CameraProvider || !Target) return;
 
-    if (AController* OwnerController = ControllerProvider->GetEntityController())
-    {
-        FRotator NewControlRotation = UKismetMathLibrary::RInterpTo(
-            OwnerController->GetControlRotation(),
-            UKismetMathLibrary::FindLookAtRotation(
-                CameraProvider->GetCameraLocation(),
-                Target->GetTargetActorLocation() + FVector(0.0f, 0.0f, 50.0f)
-            ),
-            DeltaTime,
-            50.f
-        );
-        OwnerController->SetControlRotation(NewControlRotation);
-    }
+    AController* OwnerController = ControllerProvider->GetEntityController();
+    if (!OwnerController) return;
+    
+    const FVector StartLocation = CameraProvider->GetCameraLocation();
+    const FVector TargetLocation = Target->GetTargetActorLocation() + FVector(0.f, 0.f, 70.f);
+    
+    FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(StartLocation, TargetLocation);
+    
+    TargetRotation.Pitch = FMath::Clamp(TargetRotation.Pitch, -45.0f, 45.0f);
+    
+    const FRotator CurrentControlRotation = OwnerController->GetControlRotation();
+    const FRotator NewControlRotation = UKismetMathLibrary::RInterpTo(CurrentControlRotation, TargetRotation, DeltaTime, 0.f);
+
+    OwnerController->SetControlRotation(NewControlRotation);
+
+    FRotator OwnerActorRotation = GetOwner()->GetActorRotation();
+    FRotator NewActorYawRotation = FRotator(OwnerActorRotation.Pitch, TargetRotation.Yaw, OwnerActorRotation.Roll);
+
+    GetOwner()->SetActorRotation(NewActorYawRotation);
+
+    DrawDebugBox(GetWorld(), TargetLocation, FVector(32.f, 32.f, 32.f), FColor::Red);
 }
 
 TArray<TScriptInterface<ICombatTargetInterface>> UTargetingComponent::GetCombatTargets(const float Radius) const
@@ -168,6 +189,14 @@ TArray<TScriptInterface<ICombatTargetInterface>> UTargetingComponent::GetCombatT
         }
     }
     return FinalCombatTargets;
+}
+
+void UTargetingComponent::RemoveCombatTarget()
+{
+    if (!bIsHardLocking)
+    {
+        CurrentTarget = nullptr;
+    }
 }
 
 TScriptInterface<ICombatTargetInterface> UTargetingComponent::SearchCombatTarget(const FVector& Start, const FVector& End, const float SearchRadius) const

@@ -54,6 +54,7 @@ protected:
        const FHitResult& SweepResult);
 
     virtual void UsePrimaryAttack_Implementation() override;
+    virtual void UseLaunchAttack_Implementation() override;
     virtual void UseSecondaryAttack_Implementation() override;
     virtual void UseAbilityAttack_Implementation() override;
     
@@ -77,13 +78,15 @@ private:
 
     /*void OnWallCollision(const FHitResult& Hit);*/
     
-    bool PerformBaseAttack(UCommand* CommToPlay) const;
+    bool PerformCommand(UCommand* CommToPlay, bool bShouldSoftLock) const;
     
     virtual void ClearIgnoreActors() override;
     virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled) override;
 
     UPROPERTY()
     UCommand* LightCommandInstance;
+    UPROPERTY()
+    UCommand* LaunchCommandInstance;
     UPROPERTY()
     UCommand* JumpCommandInstance;
     UPROPERTY()

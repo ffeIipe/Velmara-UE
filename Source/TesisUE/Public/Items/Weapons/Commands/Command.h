@@ -6,6 +6,9 @@
 #include "UObject/Object.h"
 #include "Command.generated.h"
 
+DECLARE_DYNAMIC_DELEGATE(FOnComboFinished);
+
+class AEntity;
 class IAnimatorProvider;
 /**
  * 
@@ -18,7 +21,7 @@ class TESISUE_API UCommand : public UObject
 public:
 	//Start the Command
 	UFUNCTION(BlueprintNativeEvent)
-	void ExecuteCommand(AActor* User);
+	void ExecuteCommand(AEntity* User);
 
 	//If not an instance, the command can reset stats
 	UFUNCTION(BlueprintNativeEvent)
@@ -28,5 +31,8 @@ public:
 	UFUNCTION(BlueprintNativeEvent)
 	void TerminateCommand();
 
+	UPROPERTY(BlueprintReadWrite)
+	FOnComboFinished OnComboFinished;
+	
 	bool bIsInstance = false;
 };

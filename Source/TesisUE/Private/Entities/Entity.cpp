@@ -73,13 +73,8 @@ AEntity::AEntity()
 	GetPossessionComponent()->OnPossessed.AddDynamic(AttributeComponent, &UAttributeComponent::StartDecreaseEnergy);
 
 	GetSpringArmComponent()->bUsePawnControlRotation = true;
-	//I think that I could solve the problem w/ the strange rotation of the hard lock system
 
-	/*if (UniqueSaveID == NAME_None)
-	{
-		const FString GuidString = FGuid::NewGuid().ToString();
-		UniqueSaveID = FName(*GuidString);
-	}*/
+	TargetingComponent->OnHardLockToggled.AddDynamic(this, &AEntity::EnableControllerRatoationYaw);
 }
 
 void AEntity::GetHit(const TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint,
@@ -243,7 +238,7 @@ bool AEntity::IsEquipped()
 
 bool AEntity::CanBeFinished()
 {
-	if (GetAttributeComponent()->GetHealthPercent() <= .2f)
+	if (GetAttributeComponent()->GetHealthPercent() <= .4f)
 	{
 		if (OnCanBeFinished.IsBound())
 		{
@@ -251,7 +246,6 @@ bool AEntity::CanBeFinished()
 				"Can be Finished" + FString::SanitizeFloat(GetAttributeComponent()->GetHealth()));
 			OnCanBeFinished.Broadcast();
 		}
-
 		return true;
 	}
 	return false;
@@ -341,9 +335,8 @@ void AEntity::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_Dodge, ETriggerEvent::Started, this, &AEntity::Input_Dodge);
 		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_Look, ETriggerEvent::Triggered, this, &AEntity::Input_Look);
 
-		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_Attack, ETriggerEvent::Started, this, &AEntity::OnPrimaryAttackStarted);
 		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_Attack, ETriggerEvent::Triggered, this, &AEntity::Input_PrimaryAttack);
-		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_Attack, ETriggerEvent::Completed, this, &AEntity::OnPrimaryAttackCompleted);
+		/*EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_Attack, ETriggerEvent::Completed, this, &AEntity::OnPrimaryAttackReleased);*/
 		
 		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_HeavyAttack, ETriggerEvent::Started, this, &AEntity::Input_SecondaryAttack);
 
@@ -412,7 +405,7 @@ void AEntity::Input_Move(const FInputActionValue& Value)
 
 void AEntity::Input_Look(const FInputActionValue& Value)
 {
-	if (!IsAlive()) return;
+	if (!IsAlive() && TargetingComponent->IsLocking()) return;
 	
 	ExtraMovementComponent->PerformLook(Value.Get<FVector2D>());	
 }
@@ -450,56 +443,42 @@ void AEntity::Input_Dodge()
 	}
 }
 
-void AEntity::OnPrimaryAttackStarted()
-{
-	if (CharacterStateComponent->IsWeaponStateEqualToAny({ ECharacterWeaponStates::ECWS_EquippedWeapon }))
-	{
-		TimeOfPrimaryAttackPressed = GetWorld()->GetTimeSeconds();
-	}
-	else if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Entity does not have an equipped weapon.");
-	}
-}
-
 void AEntity::Input_PrimaryAttack(const FInputActionValue& Value)
 {
 	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Stun, ECharacterActionsStates::ECAS_Dead })) return;
 	
 	ExtraMovementComponent->bIsSaveDodge = false;
 	CombatComponent->bIsSaveHeavyAttack = false;
-	
-	if (CombatComponent->CanAttack() /*&& GetTargetingComponent()->IsLocking()*/ && IsMovingBackwards())
-	{
-		if (GetWorld()->GetTimeSeconds() - TimeOfPrimaryAttackPressed > .8f)
-		{
-			CharacterStateComponent->SetAction(ECharacterActionsStates::ECAS_Attack);
-			CombatComponent->PerformLaunch(GetTargetingComponent()->GetCurrentTarget());
-		}
-	}
-}
 
-void AEntity::OnPrimaryAttackCompleted()
-{
+	const bool bCheckInput = GetTargetingComponent()->IsLocking() && IsMovingBackwards();
+	bCheckInput ? bPrimaryInputHeld = true : bPrimaryInputHeld = false;
+
 	PerformPrimaryAttack();
-	
-	TimeOfPrimaryAttackPressed = 0.f;
 }
 
 void AEntity::PerformPrimaryAttack()
 {
 	ExtraMovementComponent->bIsSaveDodge = false;
 	CombatComponent->bIsSaveHeavyAttack = false;
+
+	const bool bCanAttack = !CharacterStateComponent->IsActionEqualToAny(
+	{ ECharacterActionsStates::ECAS_Attack, ECharacterActionsStates::ECAS_Dodge })
+	&& CharacterStateComponent->IsModeEqualToAny({ ECharacterModeStates::ECMS_Human });
 	
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Attack, ECharacterActionsStates::ECAS_Dodge }) &&
-		CharacterStateComponent->IsModeEqualToAny({ ECharacterModeStates::ECMS_Human }))
+	if (bCanAttack)
 	{
-		GetCurrentStrategy()->Strategy_UseFirstCommand(this);
+		GetCurrentStrategy()->Strategy_UseFirstCommand(this, bPrimaryInputHeld);
 	}
 	else
 	{
 		CombatComponent->bIsSaveLightAttack = true;
 	}
+}
+
+void AEntity::EnableControllerRatoationYaw()
+{
+	bUseControllerRotationYaw = !bUseControllerRotationYaw;
+	GetCharacterMovement()->bOrientRotationToMovement = !GetCharacterMovement()->bOrientRotationToMovement;
 }
 
 void AEntity::Input_SecondaryAttack()
@@ -520,7 +499,7 @@ void AEntity::Input_SecondaryAttack()
 	}
 }
 
-void AEntity::Input_Ability()
+void AEntity::Input_Ability() //'F' input
 {
 	if (CharacterStateComponent->IsActionEqualToAny({
 		ECharacterActionsStates::ECAS_Dead, ECharacterActionsStates::ECAS_Finish, ECharacterActionsStates::ECAS_Stun

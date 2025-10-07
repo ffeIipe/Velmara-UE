@@ -18,7 +18,7 @@ class TESISUE_API UComboCommand : public UCommand
 
 	
 protected:
-	virtual void ExecuteCommand_Implementation(AActor* User) override;
+	virtual void ExecuteCommand_Implementation(AEntity* User) override;
 	virtual void ResetCommand_Implementation() override;
 	
 	int32 ComboIndex;

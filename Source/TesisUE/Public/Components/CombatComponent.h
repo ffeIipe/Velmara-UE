@@ -73,6 +73,7 @@ public:
     UFUNCTION()
     void ReceiveBlock(UAnimMontage* BlockMontage) const;
 
+    UFUNCTION(BlueprintCallable)
     bool PerformLaunch(const TScriptInterface<ICombatTargetInterface>& TargetToCheck, float DistanceToCheck = 200.f, UAnimMontage* LaunchMontage = nullptr);
      
     // === Internal Utility Functions ===
@@ -80,7 +81,7 @@ public:
     
     
     // === Attack Events ===
-    UFUNCTION()
+    UFUNCTION(BlueprintCallable)
     void PerformExecute(const TScriptInterface<ICombatTargetInterface>& Target, UAnimMontage* FinisherMontage) const;
     
     // === Combat Utility Functions ===
@@ -160,21 +161,6 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Montages | ComboAttack")
     TArray<UAnimMontage*> ComboExtenderAttack;
     
-    /*UPROPERTY(EditAnywhere)
-    UAnimMontage* BlockMontage;
-    
-    UPROPERTY(EditAnywhere)
-    UAnimMontage* FinisherMontage;
-    
-    UPROPERTY(EditAnywhere)
-    UAnimMontage* CrasherMontage;
-    
-    UPROPERTY(EditAnywhere)
-    UAnimMontage* LaunchMontage;
-    
-    UPROPERTY(EditAnywhere)
-    UAnimMontage* HitReactMontage;*/
-    
 private:
     // === Internal State Variables ===
     int ComboExtenderIndex = 0;
@@ -190,9 +176,6 @@ private:
     
     UFUNCTION(BlueprintCallable, Category = "Attack | SaveAttack", meta = (AllowPrivateAccess = "true"))
     void ResetAttackSave();
-    
-    // === Component References ===
-    TScriptInterface<IWeaponInterface> GetCurrentWeapon();
     
     // === Timelines ===
     UPROPERTY()
@@ -216,7 +199,7 @@ private:
     UPROPERTY()
     UCurveFloat* BufferCurve;
     UPROPERTY()
-    UCurveFloat* LaunchUpCurve;
+    UCurveFloat* LaunchCharacterUpCurve;
     UPROPERTY()
     UCurveFloat* BufferBackwardsCurve;
 };

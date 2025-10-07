@@ -40,10 +40,11 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "Targeting")
     TScriptInterface<ICombatTargetInterface> GetCurrentTarget() { return CurrentTarget; }
-    UFUNCTION()
-    void RemoveCombatTarget() { CurrentTarget = nullptr; }
 
     UFUNCTION()
+    void RemoveCombatTarget();
+
+    UFUNCTION(BlueprintCallable, Category = "Targeting")
     TScriptInterface<ICombatTargetInterface> SearchCombatTarget(const FVector& Start, const FVector& End, float SearchRadius) const;
     
     bool IsLocking() const { return bIsHardLocking; }

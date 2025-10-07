@@ -241,13 +241,19 @@ TScriptInterface<IWeaponInterface> UInventoryComponent::PerformInteract()
         ResultHit,
         true
     );
+
+    const bool bIsSpectral = CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->IsModeEqualToAny(
+    {
+        ECharacterModeStates::ECMS_Spectral 
+    });
+    
     if (bHit)
     {
         if (const TScriptInterface<IPickable> Pickable = ResultHit.GetActor())
         {
-            if (!CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->IsModeEqualToAny({ ECharacterModeStates::ECMS_Spectral }))
+            if (const TScriptInterface<IWeaponInterface> WeaponReached = Pickable.GetObject(); TryAddWeapon(WeaponReached))
             {
-                if (const TScriptInterface<IWeaponInterface> WeaponReached = Pickable.GetObject(); TryAddWeapon(WeaponReached))
+                if (!bIsSpectral)
                 {
                     ActorsToIgnore.Add(Cast<AActor>(WeaponReached.GetObject()));
                     return WeaponReached;
@@ -255,10 +261,7 @@ TScriptInterface<IWeaponInterface> UInventoryComponent::PerformInteract()
             }
             else
             {
-                if (const TScriptInterface<ISpectral> SpectralItem = Pickable.GetObject(); SpectralItem)
-                {
-                    Pickable->Pick(GetOwner());
-                }
+                Pickable->Pick(GetOwner());
             }
         }
     }

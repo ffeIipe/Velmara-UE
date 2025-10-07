@@ -41,19 +41,22 @@ void UCombatStrategy::InitializeStrategy()
 	}
 }
 
-void UCombatStrategy::Strategy_UseFirstCommand(AActor* User)
+void UCombatStrategy::Strategy_UseFirstCommand(AEntity* User, const bool OnInputHeld)
 {
-	if (const TScriptInterface<IWeaponProvider> WeaponProvider = User; WeaponProvider->Execute_GetCurrentWeapon(User))
+	if (const TScriptInterface<IWeaponProvider> WeaponProvider = User)
 	{
-		const TScriptInterface<IWeaponInterface> WeaponEquipped = WeaponProvider->Execute_GetCurrentWeapon(User);
-		
-		if (const TScriptInterface<IOwnerUtilsInterface> OwnerUtils = User; OwnerUtils->IsEquipped())
+		if (const TScriptInterface<IWeaponInterface> WeaponEquipped = WeaponProvider->Execute_GetCurrentWeapon(User))
 		{
-			WeaponProvider->Execute_GetCurrentWeapon(User)->Execute_UsePrimaryAttack(WeaponEquipped.GetObject());
+			!OnInputHeld
+			? WeaponEquipped->Execute_UsePrimaryAttack(WeaponEquipped.GetObject())
+			: WeaponEquipped->Execute_UseLaunchAttack(WeaponEquipped.GetObject());
+
+			User->Execute_GetCharacterStateComponent(User)->SetAction(ECharacterActionsStates::ECAS_Attack);
+			
 			return;
 		}
 	}
-
+	
 	if (!FirstCommandInstance)
 	{
 		if (FirstCommandClass)
@@ -69,7 +72,7 @@ void UCombatStrategy::Strategy_UseFirstCommand(AActor* User)
 	else FirstCommandInstance->ExecuteCommand(User);
 }
 
-void UCombatStrategy::Strategy_UseSecondCommand(AActor* User)
+void UCombatStrategy::Strategy_UseSecondCommand(AEntity* User)
 {
 	if (const TScriptInterface<IWeaponProvider> WeaponProvider = User; WeaponProvider->Execute_GetCurrentWeapon(User))
 	{
@@ -97,15 +100,15 @@ void UCombatStrategy::Strategy_UseSecondCommand(AActor* User)
 	else SecondCommandInstance->ExecuteCommand(User);
 }
 
-void UCombatStrategy::Strategy_UseAbility(AActor* User)
+void UCombatStrategy::Strategy_UseAbility(AEntity* Entity)
 {
-	if (const TScriptInterface<IWeaponProvider> WeaponProvider = User; WeaponProvider->Execute_GetCurrentWeapon(User))
+	if (const TScriptInterface<IWeaponProvider> WeaponProvider = Entity; WeaponProvider->Execute_GetCurrentWeapon(Entity))
 	{
-		const TScriptInterface<IWeaponInterface> WeaponEquipped = WeaponProvider->Execute_GetCurrentWeapon(User);
+		const TScriptInterface<IWeaponInterface> WeaponEquipped = WeaponProvider->Execute_GetCurrentWeapon(Entity);
 		
-		if (const TScriptInterface<IOwnerUtilsInterface> OwnerUtils = User; OwnerUtils->IsEquipped())
+		if (const TScriptInterface<IOwnerUtilsInterface> OwnerUtils = Entity; OwnerUtils->IsEquipped())
 		{
-			WeaponProvider->Execute_GetCurrentWeapon(User)->Execute_UseAbilityAttack(WeaponEquipped.GetObject());
+			WeaponProvider->Execute_GetCurrentWeapon(Entity)->Execute_UseAbilityAttack(WeaponEquipped.GetObject());
 			return;
 		}
 	}
@@ -114,17 +117,17 @@ void UCombatStrategy::Strategy_UseAbility(AActor* User)
 	{
 		if (AbilityCommandClass)
 		{
-			AbilityCommandInstance = NewObject<UCommand>(User, AbilityCommandClass);
-			AbilityCommandInstance->ExecuteCommand(User);
+			AbilityCommandInstance = NewObject<UCommand>(Entity, AbilityCommandClass);
+			AbilityCommandInstance->ExecuteCommand(Entity);
 		}
 		else
 		{
-			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Not a valid Ability Command class in: " + User->GetName());
+			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Not a valid Ability Command class in: " + Entity->GetName());
 		}
 	}
 }
 
-void UCombatStrategy::Strategy_Dodge(AActor* User)
+void UCombatStrategy::Strategy_Dodge(AEntity* User)
 {
 	if (!DodgeCommandInstance)
 	{

@@ -6,6 +6,7 @@
 #include "Entities/Entity.h"
 #include "Enemy.generated.h"
 
+enum class EMeleeDamageTypes : uint8;
 class UCameraComponent;
 class UInputMappingContext;
 class AAIController;
@@ -135,7 +136,7 @@ protected:
 	EMeleeDamageTypes LastDamageType;
 
 	UFUNCTION(BlueprintCallable)
-	virtual void ReactToDamage(EMeleeDamageTypes DamageType, const FVector& ImpactPoint) {};
+	virtual void ReactToDamage(EMeleeDamageTypes DamageType, const FVector& ImpactPoint) {}
 
 	// === Energy & Orbs ===
 	UPROPERTY(EditAnywhere, Category = "Energy | Energy Drop");

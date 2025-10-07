@@ -39,6 +39,8 @@ protected:
 private:
 	int32 EnemiesSpawned = 0;
 	
+	bool bHasBeenStopped = false;
+	
 	UFUNCTION()
 	void DecreaseEnemiesSpawned();
 };

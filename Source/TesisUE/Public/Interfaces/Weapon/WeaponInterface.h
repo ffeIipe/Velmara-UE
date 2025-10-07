@@ -31,6 +31,9 @@ public:
 	void UsePrimaryAttack();
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void UseLaunchAttack();
+	
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void UseSecondaryAttack();
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)

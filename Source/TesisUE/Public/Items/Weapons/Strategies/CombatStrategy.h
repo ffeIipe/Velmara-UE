@@ -19,10 +19,10 @@ class TESISUE_API UCombatStrategy : public UObject
 public:
 	void InitializeStrategy();
 	
-	void Strategy_UseFirstCommand(AActor* User);
-	void Strategy_UseSecondCommand(AActor* User);
-	void Strategy_UseAbility(AActor* User);
-	void Strategy_Dodge(AActor* User);
+	void Strategy_UseFirstCommand(AEntity* User, bool OnInputHeld);
+	void Strategy_UseSecondCommand(AEntity* User);
+	void Strategy_UseAbility(AEntity* Entity);
+	void Strategy_Dodge(AEntity* User);
 
 	void SetCurrentValues(const TObjectPtr<AEntity>& Entity) const;
 	

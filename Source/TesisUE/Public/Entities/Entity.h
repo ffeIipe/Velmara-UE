@@ -103,7 +103,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
 	TObjectPtr<UMontagesData> MontagesData;
-
+	
 	// === Getters ===
 	UFUNCTION(BlueprintPure, Category = "Components")
 	virtual UCombatComponent* GetCombatComponent_Implementation() override { return CombatComponent; };
@@ -278,6 +278,8 @@ protected:
 	UFUNCTION()
 	void Input_PrimaryAttack(const FInputActionValue& Value);
 
+	/*void OnPrimaryAttackReleased(const FInputActionValue& Value);*/
+	
 	UFUNCTION()
 	void Input_SecondaryAttack();
 
@@ -295,22 +297,22 @@ protected:
 	void Input_ToggleWeapon();
 
 	// === Components ===
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly)
 	UCombatComponent* CombatComponent;
 
 	UPROPERTY(BlueprintGetter = GetAttributeComponent)
 	UAttributeComponent* AttributeComponent;
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly)
 	UCharacterStateComponent* CharacterStateComponent;
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly)
 	UExtraMovementComponent* ExtraMovementComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintGetter = GetInventoryComponent)
 	UInventoryComponent* InventoryComponent;
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly)
 	UMementoComponent* MementoComponent;
 
 	UPROPERTY(BlueprintGetter = GetPossessionComponent)
@@ -338,10 +340,11 @@ private:
 	// === Aux. Functions ===
 	UFUNCTION()
 	void PerformPrimaryAttack();
-	void OnPrimaryAttackStarted();
-	void OnPrimaryAttackCompleted();
-	
-	float TimeOfPrimaryAttackPressed;
+
+	bool bPrimaryInputHeld;
+
+	UFUNCTION()
+	void EnableControllerRatoationYaw();
 	
 	UPROPERTY()
 	UCombatStrategy* CurrentStrategy;

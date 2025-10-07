@@ -4,30 +4,52 @@
 #include "SpectralObject.h"
 #include "Lever.generated.h"
 
+class ADoor;
+
 UCLASS()
 class TESISUE_API ALever : public ASpectralObject
 {
 	GENERATED_BODY()
 
-	DECLARE_DYNAMIC_DELEGATE(FOnLeverActivation);
+	/*DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLeverActivation);*/
+	DECLARE_DYNAMIC_DELEGATE(FOnLeverActivation_Internal);
+	DECLARE_DYNAMIC_DELEGATE(FOnLeverDeactivation_Internal);
 
 public:
-	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
-	FOnLeverActivation OnLeverActivation;
+	/*UPROPERTY(BlueprintAssignable)
+	FOnLeverActivation OnLeverActivation;*/
+	
+	FOnLeverActivation_Internal OnLeverActivation_Internal;
+	FOnLeverDeactivation_Internal OnLeverDeactivation_Internal;
 
 	bool bLeverWasActivated = false;
+	
+	void ClearDoorTimer();
 	
 protected:
 	virtual void Pick(AActor* NewOwner) override;
 
 	virtual void BeginPlay() override;
-	
-	UFUNCTION(BlueprintImplementableEvent)
-	void OpenDoors(AActor* DoorToOpen);
-	
-	UPROPERTY(EditAnywhere)
-	TArray<AActor*> DoorArray;
 
-	UPROPERTY(EditAnywhere)
-	USoundBase* OpenDoorSFX;
+	void CloseDoorsByTimer();
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnLeverActivation();
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnLeverDeactivation();
+
+	UPROPERTY(EditAnywhere, Category = "Properties")
+	TArray<ADoor*> DoorArray;
+
+	UPROPERTY(EditAnywhere, Category = "Properties")
+	USoundBase* LeverActivatedSFX;
+
+	UPROPERTY(EditAnywhere, Category = "Properties")
+	USoundBase* LeverDeactivatedSFX;
+
+	UPROPERTY(EditAnywhere, Category = "Properties")
+	float LeverTimer = 30.f;
+
+	FTimerHandle LeverTimerHandle;
 };

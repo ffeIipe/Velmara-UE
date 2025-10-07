@@ -1,25 +1,32 @@
 #include "SpectralMode/Lever.h"
 
 #include "Kismet/GameplayStatics.h"
+#include "SceneEvents/LevelEvents/Door.h"
 
 void ALever::Pick(AActor* NewOwner)
 {
 	Super::Pick(NewOwner);
-
-	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, "Interact");
 	
 	bLeverWasActivated = true;
-	OnLeverActivation.ExecuteIfBound();
 	
-	for (AActor* Door : DoorArray)
+	OnLeverActivation_Internal.ExecuteIfBound();
+
+	OnLeverActivation();
+
+	if (LeverTimer != 0.f)
+	{
+		GetWorld()->GetTimerManager().SetTimer(LeverTimerHandle, this, &ALever::CloseDoorsByTimer, LeverTimer, false);
+	}
+	
+	for (ADoor* Door : DoorArray)
 	{
 		if (!IsValid(Door)) return;
 		
-		OpenDoors(Door);
+		Door->OpenDoor();
 		
-		if (OpenDoorSFX)
+		if (LeverActivatedSFX)
 		{
-			UGameplayStatics::PlaySoundAtLocation(GetWorld(), OpenDoorSFX, Door->GetActorLocation());
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), LeverActivatedSFX, GetActorLocation());
 		}
 	}
 }
@@ -29,4 +36,32 @@ void ALever::BeginPlay()
 	Super::BeginPlay();
 
 	AddToSpectralObjects();
+}
+
+void ALever::CloseDoorsByTimer()
+{
+	ClearDoorTimer();
+
+	bLeverWasActivated = false;
+	
+	OnLeverDeactivation_Internal.ExecuteIfBound();
+
+	OnLeverDeactivation();
+	
+	for (ADoor* Door : DoorArray)
+	{
+		if (!IsValid(Door)) return;
+		
+		Door->CloseDoor();
+		
+		if (LeverDeactivatedSFX)
+		{
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), LeverDeactivatedSFX, GetActorLocation());
+		}
+	}
+}
+
+void ALever::ClearDoorTimer()
+{
+	GetWorld()->GetTimerManager().ClearTimer(LeverTimerHandle);
 }

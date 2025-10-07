@@ -4,8 +4,9 @@
 #include "Items/Weapons/Commands/SingleCommand.h"
 
 #include "Interfaces/AnimatorProvider.h"
+#include "Entities/Entity.h"
 
-void USingleCommand::ExecuteCommand_Implementation(AActor* User)
+void USingleCommand::ExecuteCommand_Implementation(AEntity* User)
 {
 	Super::ExecuteCommand_Implementation(User);
 

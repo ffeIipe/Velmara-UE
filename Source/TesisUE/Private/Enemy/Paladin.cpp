@@ -114,15 +114,15 @@ bool APaladin::IsLaunchable()
 
 void APaladin::LaunchUp()
 {
+	/*if (bIsLaunched) return;*/
+	GetCharacterMovement()->SetMovementMode(MOVE_Flying);
 	Super::LaunchUp();
 	
-	if (bIsLaunched) return;
-
-	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, FString(this->GetName()));
 	bIsLaunched = true;
+
+	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, GetName() + " was launched.");
 	DisableAI();
 	Execute_PlayAnimMontage(this, MontagesData->Montages.HitReactMontage, 1.f, FName("FromAir"));
-	GetCharacterMovement()->SetMovementMode(MOVE_Flying);
 }
 
 void APaladin::Die(UAnimMontage* DeathAnim, const FName Section)
@@ -143,8 +143,6 @@ void APaladin::ShieldHit()
 
 void APaladin::CrashDown()
 {
-	if (!IsAlive()) return;
-	
 	GetCharacterMovement()->SetMovementMode(MOVE_Falling);
 	Execute_PlayAnimMontage(this, MontagesData->Montages.HitReactMontage, 1.f, FName("KnockDown"));
 	LaunchCharacter(FVector(0.f, 0.f, -100000.f), true, true);
@@ -152,8 +150,6 @@ void APaladin::CrashDown()
 
 void APaladin::HitInAir()
 {
-	if (!IsAlive()) return;
-	
 	const float PlayerLocationHeight = UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->GetActorLocation().Z;
 	SetActorLocation(FVector(GetTargetActorLocation().X, GetTargetActorLocation().Y, PlayerLocationHeight));
 	Execute_PlayAnimMontage(this, MontagesData->Montages.HitReactMontage, 1.f, FName("FromAir"));
@@ -183,10 +179,7 @@ void APaladin::ReactToDamage(const EMeleeDamageTypes DamageType, const FVector& 
 		break;
 
 	case EMeleeDamageTypes::EMDT_Puncture:
-		{
-			if (!IsAlive()) return;
-			Execute_PlayAnimMontage(this, MontagesData->Montages.HitReactMontage, 1.f, FName("PunctureReact"));
-		}
+		Execute_PlayAnimMontage(this, MontagesData->Montages.HitReactMontage, 1.f, FName("PunctureReact"));
 		break;
 
 	case EMeleeDamageTypes::EMDT_Impact:
@@ -194,7 +187,10 @@ void APaladin::ReactToDamage(const EMeleeDamageTypes DamageType, const FVector& 
 		break;
 
 	/*case EMainDamageTypes::EMDT_Pistol:*/
-		
+
+	case EMeleeDamageTypes::EMDT_Launch:
+		LaunchUp();
+		break;
 		
 	case EMeleeDamageTypes::EMDT_None:
 		GetDirectionalReact(ImpactPoint);

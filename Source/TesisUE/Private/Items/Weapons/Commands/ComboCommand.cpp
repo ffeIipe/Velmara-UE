@@ -4,9 +4,10 @@
 #include "Items/Weapons/Commands/ComboCommand.h"
 
 #include "Interfaces/AnimatorProvider.h"
+#include "Entities/Entity.h"
 
 
-void UComboCommand::ExecuteCommand_Implementation(AActor* User)
+void UComboCommand::ExecuteCommand_Implementation(AEntity* User)
 {
 	Super::ExecuteCommand_Implementation(User);
 
@@ -23,9 +24,12 @@ void UComboCommand::ExecuteCommand_Implementation(AActor* User)
 
 		if (ComboIndex >= ComboMontages.Num())
 		{
+			OnComboFinished.ExecuteIfBound();
 			ComboIndex = 0;
 		}
 	}
+
+	//End event to call a function when the combo finishes.
 }
 
 void UComboCommand::ResetCommand_Implementation()

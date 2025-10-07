@@ -24,7 +24,7 @@ void AZone::BeginPlay()
 
 	for (ALever* Lever : Levers)
 	{
-		Lever->OnLeverActivation.BindUFunction(this, FName("OnLeverActivation"));
+		Lever->OnLeverActivation_Internal.BindUFunction(this, FName("OnLeverActivation"));
 	}
 }
 
@@ -33,6 +33,11 @@ void AZone::OnLeverActivation()
 	if (CheckLevers())
 	{
 		EnemySpawner->EndSpawning();
+		Trigger->OnPlayerBeginOverlap.Clear();
+		for (ALever* Lever : Levers)
+		{
+			Lever->ClearDoorTimer();
+		}
 	}
 }
 

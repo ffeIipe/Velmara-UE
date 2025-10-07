@@ -37,7 +37,7 @@ void ASword::BeginPlay()
 
 	if (!SwordDataAsset)
 	{
-		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "MISSING! Data asset is nullptr.");
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "MISSING! Data asset of: " + GetName() + " is nullptr.");
 		return;
 	}
 	
@@ -45,6 +45,11 @@ void ASword::BeginPlay()
 	{
 		if (SwordDataAsset->LightComboCommandClass) LightCommandInstance = NewObject<UCommand>(this, SwordDataAsset->LightComboCommandClass);
 		else if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5, FColor::Red, "MISSING Light Combo Command blueprint class in: " + GetName());
+	}
+
+	if (!LaunchCommandInstance)
+	{
+		if (SwordDataAsset->LaunchCommandClass) LaunchCommandInstance = NewObject<UCommand>(this, SwordDataAsset->LaunchCommandClass);
 	}
 
 	if (!JumpCommandInstance)
@@ -148,7 +153,15 @@ void ASword::UsePrimaryAttack_Implementation()
 	Super::UsePrimaryAttack_Implementation();
 
 	const TScriptInterface<ICombatComponentProvider> CombatComp = GetOwner();
-	CombatComp->Execute_GetCombatComponent(GetOwner())->IsInAir() ? PerformBaseAttack(JumpCommandInstance) : PerformBaseAttack(LightCommandInstance);
+	CombatComp->Execute_GetCombatComponent(GetOwner())->IsInAir() ? PerformCommand(JumpCommandInstance, true) : PerformCommand(LightCommandInstance, true);
+	CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetAction(ECharacterActionsStates::ECAS_Attack);
+}
+
+void ASword::UseLaunchAttack_Implementation()
+{
+	Super::UseLaunchAttack_Implementation();
+
+	PerformCommand(LaunchCommandInstance, true);
 }
 
 void ASword::UseSecondaryAttack_Implementation()
@@ -156,13 +169,18 @@ void ASword::UseSecondaryAttack_Implementation()
 	Super::UseSecondaryAttack_Implementation();
 
 	const TScriptInterface<ICombatComponentProvider> CombatComp = GetOwner();
-	CombatComp->Execute_GetCombatComponent(GetOwner())->IsInAir() ? PerformBaseAttack(HeavyJumpCommandInstance) : PerformBaseAttack(HeavyCommandInstance);
+	CombatComp->Execute_GetCombatComponent(GetOwner())->IsInAir() ? PerformCommand(HeavyJumpCommandInstance, true) : PerformCommand(HeavyCommandInstance, true);
+	CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetAction(ECharacterActionsStates::ECAS_Attack);
 }
 
 void ASword::UseAbilityAttack_Implementation()
 {
 	Super::UseAbilityAttack_Implementation();
-	
+
+	if (const TScriptInterface<ICombatComponentProvider> CombatComp = GetOwner(); !CombatComp->Execute_GetCombatComponent(GetOwner())->IsInAir())
+	{
+		PerformCommand(AbilityCommandInstance, false);
+	}
 }
 
 void ASword::SetDamageType_Implementation(const TSubclassOf<UMeleeDamage> DamageType)
@@ -179,6 +197,11 @@ void ASword::ResetWeapon_Implementation()
 	if (LightCommandInstance)
 	{
 		LightCommandInstance->ResetCommand();
+	}
+
+	if (LaunchCommandInstance)
+	{
+		LaunchCommandInstance->ResetCommand();
 	}
 
 	if (HeavyCommandInstance)
@@ -208,7 +231,7 @@ float ASword::CalculateDamage() const
 	return CriticalDamage;
 }
 
-bool ASword::PerformBaseAttack(UCommand* CommToPlay) const
+bool ASword::PerformCommand(UCommand* CommToPlay, const bool bShouldSoftLock) const
 {
 	if (!CommToPlay)
 	{
@@ -216,10 +239,9 @@ bool ASword::PerformBaseAttack(UCommand* CommToPlay) const
 		return false;
 	}
 	
-	CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetAction(ECharacterActionsStates::ECAS_Attack);
-	CommToPlay->ExecuteCommand(GetOwner());
+	CommToPlay->ExecuteCommand(Cast<AEntity>(GetOwner()));
 	
-	if (OnWeaponUsed.IsBound()) OnWeaponUsed.Broadcast();
+	if (bShouldSoftLock) if (OnWeaponUsed.IsBound()) OnWeaponUsed.Broadcast();
 	
 	return true;
 }

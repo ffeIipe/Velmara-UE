@@ -3,7 +3,7 @@
 
 #include "Items/Weapons/Commands/Command.h"
 
-void UCommand::ExecuteCommand_Implementation(AActor* User)
+void UCommand::ExecuteCommand_Implementation(AEntity* User)
 {
 }
 

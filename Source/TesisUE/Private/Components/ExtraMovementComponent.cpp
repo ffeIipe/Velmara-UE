@@ -13,7 +13,7 @@ UExtraMovementComponent::UExtraMovementComponent()
 
 bool UExtraMovementComponent::IsMovingBackward() const
 {
-	if (CurrentMoveVector.Y < -.5f) //threshold
+	if (CurrentMoveVector.Y < -.7f) //threshold
 		return true;
 	
 	return false;

@@ -11,13 +11,11 @@
 #include "Kismet/GameplayStatics.h"
 #include "SceneEvents/VelmaraGameModeBase.h"
 #include "Interfaces/CharacterStateProvider.h"
-#include "Interfaces/CharacterMovementProvider.h"
 #include "Interfaces/OwnerUtilsInterface.h"
 #include "Interfaces/CombatTargetInterface.h"
-#include "Interfaces/Weapon/WeaponProvider.h"
-#include "Interfaces/CameraProvider.h"
 #include "Interfaces/ControllerProvider.h"
-#include "Items/Weapons/Sword.h"
+#include "Interfaces/CharacterMovementProvider.h"
+#include "Interfaces/CameraProvider.h"
 #include "Player/CharacterWeaponStates.h"
 #include "Subsystems/EffectsManager.h"
 
@@ -28,6 +26,13 @@ UCombatComponent::UCombatComponent()
 	BufferAttackTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("BufferAttackTimeline"));
 	LaunchCharacterTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("LaunchCharacterTimeline"));
 	BufferBackwardsTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("BufferBackwardsTimeline"));
+
+	/*static ConstructorHelpers::FObjectFinder<UCurveFloat> LaunchCharacterUpCurveObject (TEXT("/Game/Blueprints/Curves/CF_LaunchUpCharacter.CF_LaunchUpCharacter"));
+	if (LaunchCharacterUpCurveObject.Succeeded())
+	{
+		LaunchCharacterUpCurve = LaunchCharacterUpCurveObject.Object;
+	}
+	else if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "LaunchCharacterUpCurve not found.");*/
 }
 
 void UCombatComponent::InitializeValues(const FCombatData& CombatData)
@@ -35,6 +40,8 @@ void UCombatComponent::InitializeValues(const FCombatData& CombatData)
 	UE_LOG(LogTemp, Warning, TEXT("Combat Component values assigned by CombatData"));
 
 	BufferAttackDistance = CombatData.BufferAttackDistance;
+	LaunchCharacterUpCurve = CombatData.LaunchUpCurve;
+	BufferBackwardsCurve = CombatData.BufferBackwardsCurve;
 	BufferCurve = CombatData.BufferCurve;
 }
 
@@ -73,12 +80,13 @@ void UCombatComponent::BeginPlay()
 		BufferAttackTimeline->AddInterpFloat(BufferCurve, ProgressAttackFunction);
 	}
 
-	if (LaunchUpCurve)
+	if (LaunchCharacterUpCurve)
 	{
 		FOnTimelineFloat ProgressLaunchUpFunction;
 		ProgressLaunchUpFunction.BindUFunction(this, FName("UpdateLaunchCharacterUp"));
-		LaunchCharacterTimeline->AddInterpFloat(LaunchUpCurve, ProgressLaunchUpFunction);
+		LaunchCharacterTimeline->AddInterpFloat(LaunchCharacterUpCurve, ProgressLaunchUpFunction);
 
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Magenta, GetOwner()->GetName() + " using curve: " + LaunchCharacterUpCurve->GetName());
 	}
 		
 	if (BufferBackwardsCurve)
@@ -265,6 +273,8 @@ bool UCombatComponent::CanAttack() const
 
 bool UCombatComponent::PerformLaunch(const TScriptInterface<ICombatTargetInterface>& TargetToCheck, const float DistanceToCheck, UAnimMontage* LaunchMontage)
 {
+	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, "PerformLaunch");
+	
 	if (OnLightAttack.IsBound())
 	{
 		OnLightAttack.Broadcast();
@@ -304,22 +314,22 @@ void UCombatComponent::PerformExecute(const TScriptInterface<ICombatTargetInterf
 
 void UCombatComponent::LaunchCharacterUp(const TScriptInterface<ICombatTargetInterface> Target)
 {
-	if (!Target) return;
+	/*if (!Target) return;*/
 	
-	if (Target->IsLaunchable())
+	/*if (Target->IsLaunchable())*/
 	{
 		OwnerUtils->SetMovementMode(MOVE_Flying);
 		bIsLaunched = true;
 
 		StartLaunchingUp();
-		Target->LaunchUp();
+		/*Target->LaunchUp();*/
 
 		if (UEffectsManager* EffectsManager = GetWorld()->GetSubsystem<UEffectsManager>())
 		{
 			EffectsManager->TimeWarp(ETimeWarpPreset::ETWP_Crasher);
 		}
 	}
-	else if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Not launchable");
+	/*else if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Not launchable");*/
 }
 
 void UCombatComponent::StartLaunchingUp()
@@ -402,7 +412,7 @@ void UCombatComponent::SaveLightAttackEvent()
 		if (CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Attack }))
 		{
 			CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetAction(ECharacterActionsStates::ECAS_Nothing);
-			PerformComboStarter(1); //TODO: combo index from strategy "LightAttackIndex"
+			//PerformComboStarter(1); //TODO: combo index from strategy "LightAttackIndex"
 		}
 	}
 }

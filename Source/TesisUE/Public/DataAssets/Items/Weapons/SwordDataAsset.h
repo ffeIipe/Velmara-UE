@@ -59,7 +59,10 @@ class TESISUE_API USwordDataAsset : public UDataAsset
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Attacks")
 	TSubclassOf<UCommand> LightComboCommandClass;
-    
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Attacks")
+	TSubclassOf<UCommand> LaunchCommandClass;
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Attacks")
 	TSubclassOf<UCommand> JumpComboCommandClass;
     

@@ -18,13 +18,13 @@ class TESISUE_API AZone : public AActor
 public:
 	AZone();
 
-	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Properties")
 	AEnemySpawner* EnemySpawner = nullptr;
 
-	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Properties")
 	ATrigger* Trigger = nullptr;
 
-	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Properties")
 	TArray<ALever*> Levers;
 
 protected:

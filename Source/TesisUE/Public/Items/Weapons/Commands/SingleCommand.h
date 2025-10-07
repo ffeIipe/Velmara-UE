@@ -17,7 +17,7 @@ class TESISUE_API USingleCommand : public UCommand
 	GENERATED_BODY()
 
 	protected:
-	virtual void ExecuteCommand_Implementation(AActor* User) override;
+	virtual void ExecuteCommand_Implementation(AEntity* User) override;
 	virtual void ResetCommand_Implementation() override;
 
 	UPROPERTY(BlueprintReadWrite, Category = Montage)

@@ -20,8 +20,10 @@ class TESISUE_API AWeapon : public AItem, public IWeaponInterface
 
 public:
 	virtual void UsePrimaryAttack_Implementation() override {}
+	virtual void UseLaunchAttack_Implementation() override {}
 	virtual void UseSecondaryAttack_Implementation() override {}
 	virtual void UseAbilityAttack_Implementation() override {}
+	
 	virtual void SetDamageType_Implementation(TSubclassOf<UMeleeDamage> DamageType) override {}
 	virtual void ResetWeapon_Implementation() override {}
 	
