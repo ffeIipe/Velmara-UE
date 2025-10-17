@@ -47,7 +47,7 @@ APlayerMain::APlayerMain()
 	ChangeModeComponent->OnHumanEffectApplied.AddDynamic(this, &APlayerMain::ApplyHumanMode);
 	ChangeModeComponent->OnSpectralEffectApplied.AddDynamic(this, &APlayerMain::ApplySpectralMode);
 
-	static ConstructorHelpers::FObjectFinder<UInputMappingContext> IMC(TEXT("/Game/Blueprints/Player/Input"));
+	static ConstructorHelpers::FObjectFinder<UInputMappingContext> IMC(TEXT("/Game/Blueprints/Player/Input/IMC_PlayerMain.IMC_PlayerMain"));
 	if (IMC.Succeeded())
 	{
 		CharacterContext = IMC.Object.Get();
