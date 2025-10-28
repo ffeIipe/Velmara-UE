@@ -4,6 +4,8 @@
 #include "AIController.h"
 #include "EnemyAIController.generated.h"
 
+class ICombatTargetInterface;
+class IOwnerUtilsInterface;
 class UAIPerceptionComponent;
 class UAISenseConfig_Sight;
 class APlayerController;
@@ -17,7 +19,7 @@ class TESISUE_API AEnemyAIController : public AAIController
 public:
 	AEnemyAIController(const FObjectInitializer& ObjectInitializer);
 
-	void CustomInitialize(class AEntity* NewOwner, UBlackboardComponent* NewBlackboardComponent, class UCharacterStateComponent* NewCharacterStateComponent);
+	void CustomInitialize(const class AEntity* NewOwner, UBlackboardComponent* NewBlackboardComponent, class UCharacterStateComponent* NewCharacterStateComponent);
 
 	void DeactivateController() const;
 
@@ -28,7 +30,7 @@ public:
 	bool bIsAlreadyFocused = false;
 
 	UPROPERTY()
-	AEntity* DamageCauser = nullptr;
+	TScriptInterface<ICombatTargetInterface> DamageCauser;
 
 	void SetHasReservedAttackToken(bool bHasToken);
 
@@ -44,15 +46,15 @@ protected:
 	UFUNCTION()
 	virtual void OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
 
-	bool IsDamageCauserValid(const AEntity* EntityToCheck) const;
+	bool IsDamageCauserValid(const TScriptInterface<ICombatTargetInterface>& EntityToCheck) const;
 
-	void SetHasAttackToken(class UEnemyTokenManager* TokenManager, AActor* Actor);
+	void SetHasAttackToken(class UEnemyTokenManager* TokenManager, TScriptInterface<ICombatTargetInterface> CombatTarget);
 
 	UPROPERTY()
 	UBlackboardComponent* BlackboardComponent;
 
 	UPROPERTY()
-	AEntity* EntityOwner;
+	TScriptInterface<IOwnerUtilsInterface> EntityOwner;
 
 	UPROPERTY()
 	AEntity* CachedTarget;

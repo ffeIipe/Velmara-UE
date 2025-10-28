@@ -1,53 +1,49 @@
 #include "Enemy/Enemy.h"
-#include "AI/EnemyAIController.h"
+
 #include "AIController.h"
-#include "BehaviorTree/BehaviorTree.h"
-#include "BehaviorTree/BlackboardComponent.h"
-#include "Components/AttributeComponent.h"
-#include "Components/CapsuleComponent.h"
-#include "Components/CombatComponent.h"
-#include "Components/ExtraMovementComponent.h"
-#include "Components/InputComponent.h"
-#include "Components/MementoComponent.h"
-#include "Components/PossessionComponent.h"
-#include "Components/TimelineComponent.h"
-#include "DamageTypes/DamageTypeMain.h"
-#include "Engine/DamageEvents.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "NiagaraComponent.h"
+#include "AI/EnemyAIController.h"
+#include "BehaviorTree/BehaviorTree.h"
+#include "BehaviorTree/BlackboardComponent.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/TimelineComponent.h"
+#include "DamageTypes/MeleeDamage.h"
+#include "DataAssets/InputData.h"
+#include "DataAssets/MontagesData.h"
+#include "Engine/DamageEvents.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/DamageType.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Misc/Guid.h"
-#include "NiagaraComponent.h"
+#include "Perception/AIPerceptionComponent.h"  
+#include "Player/PlayerHeroController.h"
 #include "Player/PlayerMain.h"
-#include "SceneEvents/NewGameModeBase.h"
-#include "SceneEvents/NewGameStateBase.h"
+#include "SceneEvents/VelmaraGameModeBase.h"
+#include "SceneEvents/VelmaraGameStateBase.h"
+#include "Subsystems/EffectsManager.h"
 #include "Subsystems/EnemyPoolManager.h"
 #include "Subsystems/EnemyTokenManager.h"
 #include "Tutorial/PromptWidgetComponent.h"
-#include "Player/PlayerHeroController.h"
-#include "Perception/AIPerceptionComponent.h"  
 
 AEnemy::AEnemy()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	
-	GetMesh()->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
-	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
-	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
-	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
-	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel3, ECollisionResponse::ECR_Block);
+	GetMesh()->SetCollisionObjectType(ECC_Pawn);
+	GetMesh()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+	GetMesh()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+	GetMesh()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+	GetMesh()->SetCollisionResponseToChannel(ECC_GameTraceChannel3, ECR_Block);
 	GetMesh()->SetGenerateOverlapEvents(true);
-	GetMesh()->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
-	InitialMeshCollisionEnabled = GetMesh()->GetCollisionEnabled();
+	GetMesh()->CanCharacterStepUpOn = ECB_No;
 
-	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 	GetCapsuleComponent()->SetGenerateOverlapEvents(true);
-	GetCapsuleComponent()->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
+	GetCapsuleComponent()->CanCharacterStepUpOn = ECB_No;
 	GetCapsuleComponent()->SetCapsuleRadius(45.f);
-	InitialCapsuleCollisionEnabled = GetCapsuleComponent()->GetCollisionEnabled();
 
 	PromptWidgetComponent = CreateDefaultSubobject<UPromptWidgetComponent>(TEXT("PromptWidget"));
 	PromptWidgetComponent->SetupAttachment(GetRootComponent());
@@ -64,16 +60,6 @@ AEnemy::AEnemy()
 	GetCharacterMovement()->GravityScale = 3.f;
 	GetCharacterMovement()->JumpZVelocity = 1000.f;
 
-	bInitialMeshGenerateOverlapEvents = GetMesh()->GetGenerateOverlapEvents();
-	bInitialCapsuleGenerateOverlapEvents = GetCapsuleComponent()->GetGenerateOverlapEvents();
-
-	DefaultMaxWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
-	DefaultGravityScale = GetCharacterMovement()->GravityScale;
-	DefaultJumpZVelocity = GetCharacterMovement()->JumpZVelocity;
-	bDefaultOrientRotationToMovement = GetCharacterMovement()->bOrientRotationToMovement;
-	bDefaultUseControllerDesiredRotation = GetCharacterMovement()->bUseControllerDesiredRotation;
-	bOriginalUseControllerRotationYaw = bUseControllerRotationYaw;
-
 	DissolveTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("DissolveTimelineComponent"));
 
 	DissolveParticleComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("Dissolve"));
@@ -85,10 +71,12 @@ AEnemy::AEnemy()
 	GetPossessionComponent()->OnPossessorEjected.AddDynamic(this, &AEnemy::OnUnpossessed);
 	GetPossessionComponent()->OnPossessorExecutedMeAndEjected.AddDynamic(this, &AEnemy::GetExecuted);
 
-	GetCombatComponent()->OnAttackEnd.AddDynamic(this, &AEnemy::ReturnAttackTokenToTarget);
+	CombatComponent->OnResetState.AddDynamic(this, &AEnemy::ReturnAttackTokenToTarget);
 
 	GetAttributeComponent()->OnEntityDead.AddDynamic(this, &AEnemy::PerformDead);
 	GetAttributeComponent()->OnDettachShield.AddDynamic(this, &AEnemy::NotifyIsNotShieldedToBlackboard);
+
+	MementoComponent->bShouldSaveInventory = false;
 }
 
 void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
@@ -98,10 +86,10 @@ void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	GetMesh()->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
-	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
-	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
-	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+	GetMesh()->SetCollisionObjectType(ECC_WorldDynamic);
+	GetMesh()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+	GetMesh()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 	GetCapsuleComponent()->SetGenerateOverlapEvents(true);
 
 	GetMesh()->bPauseAnims = false;
@@ -112,31 +100,17 @@ void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 	EnemyState = EEnemyState::EES_None;
 	bIsLaunched = false;
 	LastDamageCauser = nullptr;
-	bWasPossessed = false;
 
 	if (GetAttributeComponent())
 	{
 		GetAttributeComponent()->ResetAttributes();
 	}
+	
+	CharacterStateComponent->SetAction(ECharacterActionsStates::ECAS_Nothing);
 
-	if (GetCharacterStateComponent())
-	{
-		GetCharacterStateComponent()->SetCharacterAction(ECharacterActions::ECA_Nothing);
-	}
-
-	bUseControllerRotationYaw = bOriginalUseControllerRotationYaw;
-
-	if (ANewGameModeBase* NewGameMode = Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
+	if (AVelmaraGameModeBase* NewGameMode = Cast<AVelmaraGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
 	{
 		NewGameMode->RegisterEnemy(this);
-
-		if (ANewGameStateBase* NewGameStateBase = Cast<ANewGameStateBase>(NewGameMode->GameState))
-		{
-			if (GetMementoComponent())
-			{
-				NewGameStateBase->RegisterMementoEntity(this);
-			}
-		}
 	}
 
 	if (PromptWidgetComponent && PromptWidgetComponent->GetWidget())
@@ -156,7 +130,7 @@ void AEnemy::DeactivateEnemy()
 	SetActorHiddenInGame(true);
 	HandleEnemyCollision(false);
 
-	StopAnimMontage();
+	Execute_StopAnimMontage(this, GetCurrentMontage());
 	GetMesh()->bPauseAnims = true;
 
 	if (PromptWidgetComponent && PromptWidgetComponent->GetWidget())
@@ -183,6 +157,7 @@ void AEnemy::DeactivateEnemy()
 	if (OnDeactivated.IsBound())
 	{
 		OnDeactivated.Broadcast(this);
+		OnDeactivated.Clear();
 	}
 	
 	GetWorldTimerManager().ClearTimer(HitFlashTimerHandle);
@@ -195,29 +170,12 @@ void AEnemy::Die(UAnimMontage* DeathAnim, FName Section)
 
 	DissolveTimeline->PlayFromStart();
 
-	//save data de que murio
-	if (UWorld* World = GetWorld())
-	{
-		if (ANewGameStateBase* GameState = World->GetGameState<ANewGameStateBase>())
-		{
-			FEnemySaveData CurrentStateData;
-			CurrentStateData.UniqueSaveID = GetUniqueSaveID();
-			CurrentStateData.bIsAlive = false;
-			CurrentStateData.EnemyClass = GetClass();
-
-			if (GetMementoComponent())
-			{
-				CurrentStateData.EnemyState = GetMementoComponent()->CaptureOwnerState();
-			}
-
-			GameState->UpdateEnemyState(CurrentStateData);
-		}
-	} 
-
+	MementoComponent->CaptureOwnerState();
+	
 	//disable 'F' widget
 	if (PromptWidgetComponent && PromptWidgetComponent->GetWidget())
 	{
-		PromptWidgetComponent->GetPromptWidgetComponent()->EnablePromptWidget(false);
+		PromptWidgetComponent->GetPromptWidgetComponent()->EnablePromptWidget();
 	}
 
 	DisableAI();
@@ -230,16 +188,37 @@ void AEnemy::Die(UAnimMontage* DeathAnim, FName Section)
 		GetPossessionComponent()->ReleasePossession();
 	}
 
-	if (OnDeactivated.IsBound()) OnDeactivated.Broadcast(this);
+	if (OnDead.IsBound()) OnDead.Broadcast(Cast<AEntity>(LastDamageCauser.GetObject()));
 	
 	GetWorldTimerManager().SetTimer(ReturnToPoolTimerHandle, this, &AEnemy::RequestReturnToPool, 5.0f, false);
+}
+
+void AEnemy::GetHit(const TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint,
+	FDamageEvent const& DamageEvent, const float DamageReceived)
+{
+	Super::GetHit(DamageCauser, ImpactPoint, DamageEvent, DamageReceived);
+
+	if (DamageEvent.DamageTypeClass)
+	{
+		if (const UMeleeDamage* MainDamageTypeClass = Cast<UMeleeDamage>(DamageEvent.DamageTypeClass->GetDefaultObject()))
+		{
+			const EMeleeDamageTypes MainDamageType = MainDamageTypeClass->DamageType;
+			ReactToDamage(MainDamageType, ImpactPoint);
+
+			if (bShouldDropOrbs) DropOrbs(DamageReceived, DamageCauser);
+		}
+	}
+	
+	NotifyDamageTakenToBlackboard(DamageCauser);
+	ReturnAttackTokenToTarget();
+	HitFlash(.1f,.75f);
 }
 
 void AEnemy::RequestReturnToPool()
 {
 	DeactivateEnemy();
 
-	if (UWorld* World = GetWorld())
+	if (const UWorld* World = GetWorld())
 	{
 		if (UEnemyPoolManager* PoolManager = World->GetSubsystem<UEnemyPoolManager>())
 		{
@@ -256,15 +235,17 @@ void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (!AttributeComponent->IsAlive())
+	{
+		DeactivateEnemy();
+	}
+	
 	PlayerControllerRef = Cast<APlayerHeroController>(UGameplayStatics::GetPlayerController(this, 0));
 
 	HandleEnemyCollision(true);
-
-	if (GetCharacterStateComponent())
-	{
-		GetCharacterStateComponent()->SetCharacterState(ECharacterStates::ECS_EquippedSword);
-	}
-
+	
+	CharacterStateComponent->SetWeaponState(ECharacterWeaponStates::ECWS_EquippedWeapon);
+	
 	if (DissolveCurve)
 	{
 		FOnTimelineFloat ProgressFunction;
@@ -272,25 +253,9 @@ void AEnemy::BeginPlay()
 		DissolveTimeline->AddInterpFloat(DissolveCurve, ProgressFunction);
 	}
 
-	if (ANewGameModeBase* NewGameMode = Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
+	if (AVelmaraGameModeBase* NewGameMode = Cast<AVelmaraGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
 	{
 		NewGameMode->RegisterEnemy(this);
-
-		if (ANewGameStateBase* NewGameStateBase = Cast<ANewGameStateBase>(NewGameMode->GameState))
-		{
-			if (GetMementoComponent())
-			{
-				NewGameStateBase->RegisterMementoEntity(this);
-			}
-		}
-	}
-
-	if (UWorld* World = GetWorld())
-	{
-		if (ANewGameStateBase* GameState = World->GetGameState<ANewGameStateBase>())
-		{
-			GameState->RequestEnemyStateReconciliation(this);
-		}
 	}
 
 	if (IsValid(PromptWidgetComponent->GetWidget()))
@@ -311,7 +276,7 @@ void AEnemy::BeginPlay()
 
 	if (GetMesh())
 	{
-		TArray<UMaterialInterface*> TempArray = GetMesh()->GetMaterials();
+		const TArray<UMaterialInterface*> TempArray = GetMesh()->GetMaterials();
 
 		for (int32 MatIndex = 0; MatIndex < TempArray.Num(); MatIndex++)
 		{
@@ -326,12 +291,12 @@ void AEnemy::BeginPlay()
 
 void AEnemy::PerformDead()
 {
-	Die(DeathMontage, SelectRandomDieAnim());
+	Die(MontagesData->Montages.DeathMontage, SelectRandomDieAnim());
 }
 
 void AEnemy::ReturnAttackTokenToTarget()
 {
-	if (UWorld* World = GetWorld())
+	if (const UWorld* World = GetWorld())
 	{
 		if (UEnemyTokenManager* TokenManager = World->GetSubsystem<UEnemyTokenManager>())
 		{
@@ -361,8 +326,8 @@ void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		EnhancedInputComponent->BindAction(InputAction_Possess, ETriggerEvent::Started, GetPossessionComponent(), &UPossessionComponent::EjectPossessor);
-		EnhancedInputComponent->BindAction(InputAction_SwitchForm, ETriggerEvent::Started, GetPossessionComponent(), &UPossessionComponent::EjectAndExecute);
+		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_Possess, ETriggerEvent::Started, GetPossessionComponent(), &UPossessionComponent::EjectPossessor);
+		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_SwitchForm, ETriggerEvent::Started, GetPossessionComponent(), &UPossessionComponent::EjectAndExecute);
 	}
 }
 
@@ -375,7 +340,7 @@ void AEnemy::EnableFinisherWidget()
 	}
 }
 
-void AEnemy::NotifyThreat(AEntity* ThreatActor)
+void AEnemy::NotifyThreat(const TScriptInterface<ICombatTargetInterface>& ThreatActor) const
 {
 	if (!ThreatActor)
 	{
@@ -389,10 +354,10 @@ void AEnemy::NotifyThreat(AEntity* ThreatActor)
 
 	if (AIController && AIController->GetBlackboardComponent())
 	{
-		AIController->GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), ThreatActor);
+		AIController->GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), ThreatActor.GetObject());
 	}
 
-	// una func con un forget?
+	// a function that could forget the current target?
 }
 
 void AEnemy::OnPossessed()
@@ -400,7 +365,6 @@ void AEnemy::OnPossessed()
 	ReturnAttackTokenToTarget();
 	DisableAI();
 	ApplyPossessionParameters(true);
-	GetExtraMovementComponent()->CustomInitialize(this, GetCharacterStateComponent());
 }
 
 void AEnemy::OnUnpossessed()
@@ -408,10 +372,8 @@ void AEnemy::OnUnpossessed()
 	ReturnAttackTokenToTarget();
 	EnableAI();
 	ApplyPossessionParameters(false);
-	GetExtraMovementComponent()->CustomInitialize(this, GetCharacterStateComponent());
 
-	IGenericTeamAgentInterface* OtherTeamAgent = Cast<IGenericTeamAgentInterface>(GetController());
-	if (OtherTeamAgent)
+	if (IGenericTeamAgentInterface* OtherTeamAgent = Cast<IGenericTeamAgentInterface>(GetController()))
 	{
 		OtherTeamAgent->SetGenericTeamId(FGenericTeamId(0));
 	}
@@ -435,87 +397,81 @@ void AEnemy::UpdateDissolveEffect(float Value)
 	}
 }
 
+void AEnemy::HitFlash(const float Duration, const float Amount)
+{
+	for (UMaterialInstanceDynamic* DissolveMaterial : DissolveMaterials)
+	{
+		if (DissolveMaterial)
+		{
+			DissolveMaterial->SetScalarParameterValue(FName("HitFlashAmount"), Amount);
+			GetWorldTimerManager().SetTimer(HitFlashTimerHandle, this,&AEnemy::DeactivateHitFlash, Duration, false);
+		}
+	}
+}
+
+void AEnemy::DeactivateHitFlash()
+{
+	for (UMaterialInstanceDynamic* DissolveMaterial : DissolveMaterials)
+	{
+		if (DissolveMaterial)
+		{
+			DissolveMaterial->SetScalarParameterValue(FName("HitFlashAmount"), 0);
+		}
+	}
+}
+
 void AEnemy::ResetEnemy()
 {
 	bIsLaunched = false;
-	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
+	GetCharacterMovement()->SetMovementMode(MOVE_Falling);
 	EnableAI();
 }
 
-void AEnemy::GetHit_Implementation(AEntity* DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived)
+void AEnemy::DropOrbs(const float DamageReceived, const TScriptInterface<ICombatTargetInterface>& DamageCauser)
 {
-	Super::GetHit_Implementation(DamageCauser, ImpactPoint, DamageEvent, DamageReceived);
-	
-	if (DamageEvent.DamageTypeClass)
-	{
-		if (UDamageTypeMain* MainDamageTypeClass = Cast<UDamageTypeMain>(DamageEvent.DamageTypeClass->GetDefaultObject()))
-		{
-			EMainDamageTypes MainDamageType = MainDamageTypeClass->DamageType;
-			ReactToDamage(MainDamageType, ImpactPoint);
-		}
-	}
-
-	if (DamageCauser)
-	{
-		if (bShouldDropOrbs)
-		{
-			DropOrbs(DamageReceived, DamageCauser);
-		}
-		NotifyDamageTakenToBlackboard(DamageCauser);
-	}
-}
-
-void AEnemy::DropOrbs(const float DamageReceived, AEntity* DamageCauser) const
-{
+	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Drops orbs called");
 	const float Percentage = DamageReceived / EnergyDivider;
 	const int32 Orbs = FMath::RoundToInt(Percentage) / 5;
+	
+	DamageCauser->IncreaseEnergy(Percentage);
 
-	if (const APlayerMain* PlayerRef = Cast<APlayerMain>(DamageCauser))
+	if (OnDamaged.IsBound())
 	{
-		PlayerRef->GetAttributeComponent()->IncreaseEnergy(Percentage);
-
-		if (OnDamaged.IsBound())
+		for (int32 i = 0; i < Orbs; i++)
 		{
-			for (int32 i = 0; i < Orbs; i++)
-			{
-				OnDamaged.Broadcast();
-			}
-		}
-	}
-
-	if (const AEnemy* EnemyRef = Cast<AEnemy>(DamageCauser))
-	{
-		if (EnemyRef->GetPossessionComponent()->IsPossessed())
-		{
-			EnemyRef->GetAttributeComponent()->IncreaseEnergy(Percentage);
-
-			for (int32 i = 0; i < Orbs; i++)
-			{
-				OnDamaged.Broadcast();
-			}
+			OnDamaged.Broadcast(Cast<AEntity>(DamageCauser.GetObject()));
 		}
 	}
 }
 
 void AEnemy::FinishedDamage()
 {
-	if (GetCharacterStateComponent()->GetCurrentCharacterState().Action != ECharacterActions::ECA_Dead)
+	if (!CanBeFinished()) return;
+	
+	if (IsAlive())
 	{
-		GetCharacterStateComponent()->SetCharacterAction(ECharacterActions::ECA_Dead);
+		if (UEffectsManager* EffectsManager = GetWorld()->GetSubsystem<UEffectsManager>())
+		{
+			EffectsManager->TimeWarp(ETimeWarpPreset::ETWP_Finisher);
+			EffectsManager->CameraZoom(ECameraZoomPreset::ECZP_Finisher);
+		}
+		
+		CharacterStateComponent->SetAction(ECharacterActionsStates::ECAS_Dead);
 		Die(nullptr, NAME_None);
-		StopAnimMontage();
-		PlayAnimMontage(FinisherDeathMontage);
 
 		if (PromptWidgetComponent && PromptWidgetComponent->GetWidget()) PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
 
-		FVector Start = GetActorLocation();
-		FVector End = LastDamageCauser ? LastDamageCauser->GetActorLocation() : Start + GetActorForwardVector();
-		FRotator NewRotation = UKismetMathLibrary::FindLookAtRotation(Start, End);
+		const FVector Start = GetTargetActorLocation();
+		const FVector End = LastDamageCauser ? LastDamageCauser->GetTargetActorLocation() : Start + GetActorForwardVector();
+		const FRotator NewRotation = UKismetMathLibrary::FindLookAtRotation(Start, End);
 		SetActorRotation(NewRotation);	
 	}
+
+	Execute_StopAnimMontage(this, GetCurrentMontage());
+	Execute_PlayAnimMontage(this, FinisherDeathMontage, 1.f, "Default");
 }
 
-bool AEnemy::IsLaunchable_Implementation()
+bool AEnemy::IsLaunchable()
 {
 	return !GetAttributeComponent()->IsShielded() && GetAttributeComponent()->IsAlive();
 }
@@ -553,7 +509,7 @@ void AEnemy::HandleEnemyCollision(bool bEnable)
 		GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
 		GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block);
 
-		GetMesh()->SetCollisionResponseToAllChannels(ECR_Ignore);//
+		GetMesh()->SetCollisionResponseToAllChannels(ECR_Ignore);
 
 		GetAttributeComponent()->GetShieldMeshComponent()->SetCollisionResponseToAllChannels(ECR_Ignore);
 	}
@@ -561,9 +517,8 @@ void AEnemy::HandleEnemyCollision(bool bEnable)
 
 void AEnemy::GetExecuted()
 {
-	Die(DeathMontage, FName("UnpossessDeath"));
-
-	DropOrbs(30.f, GetPossessionComponent()->GetPossessingEntity());
+	Die(MontagesData->Montages.DeathMontage, FName("UnpossessDeath"));
+	DropOrbs(30.f, GetPossessionComponent()->GetPossessor());
 }	
 
 FName AEnemy::SelectRandomDieAnim()
@@ -586,7 +541,7 @@ FName AEnemy::SelectRandomDieAnim()
 	}
 }
 
-EEnemyState AEnemy::SetEnemyState(EEnemyState NewState)
+EEnemyState AEnemy::SetEnemyState(const EEnemyState NewState)
 {
 	EnemyState = NewState;
 
@@ -624,7 +579,7 @@ void AEnemy::EnableAI()
 
 	if (!EnemyAIController) EnemyAIController = Cast<AEnemyAIController>(AIController);
 
-	if (!GetPossessionComponent()->IsPossessed())
+	if (!IsPossessed())
 	{
 		AIController->UnPossess();
 		AIController->Possess(this);
@@ -637,10 +592,11 @@ void AEnemy::EnableAI()
 		AIController->RunBehaviorTree(BTAsset);
 	}
 
-	EnemyAIController->CustomInitialize(this, BBComponent, GetCharacterStateComponent());
+	EnemyAIController->CustomInitialize(this, BBComponent, CharacterStateComponent);
 }
 
-TArray<AEnemy*> AEnemy::GenerateSphereOverlapToDetectOtherEnemies(const FVector& Origin, AActor* HitEnemyToExclude)
+TArray<TScriptInterface<ICombatTargetInterface>> AEnemy::GenerateSphereOverlapToDetectOtherEnemies(
+	const FVector& Origin, const float Radius, AActor* HitEnemyToExclude)
 {
 	TArray<AActor*> ActorsToIgnoreForSphere;
 	ActorsToIgnoreForSphere.Add(this);
@@ -654,36 +610,34 @@ TArray<AEnemy*> AEnemy::GenerateSphereOverlapToDetectOtherEnemies(const FVector&
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
 	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
 
-	bool bOverlapOccurred = UKismetSystemLibrary::SphereOverlapActors(
+	const bool bOverlapOccurred = UKismetSystemLibrary::SphereOverlapActors(
 		GetWorld(),
 		Origin,
-		RadiusToNotifyAllies,
+		Radius,
 		ObjectTypes,
-		AEnemy::StaticClass(),
+		this->StaticClass(),
 		ActorsToIgnoreForSphere,
 		OverlappedActors
 	);
 
-	DrawDebugSphere(
-		GetWorld(),
-		Origin,
-		RadiusToNotifyAllies,
-		24,
-		FColor::Yellow,
-		false,
-		5.0f
-	);
+	// DrawDebugSphere(
+	// 	GetWorld(),
+	// 	Origin,
+	// 	Radius,
+	// 	24,
+	// 	FColor::Yellow,
+	// 	false,
+	// 	5.0f
+	// );
 
-	TArray<AEnemy*> EnemiesFound;
+	TArray<TScriptInterface<ICombatTargetInterface>> EnemiesFound;
 	if (bOverlapOccurred)
 	{
 		for (AActor* Actor : OverlappedActors)
 		{
-			AEnemy* EnemyActor = Cast<AEnemy>(Actor);
-
-			if (EnemyActor)
+			if (TScriptInterface<ICombatTargetInterface> CombatTarget = Actor)
 			{
-				EnemiesFound.Add(EnemyActor);
+				EnemiesFound.Add(CombatTarget);
 			}
 		}
 	}
@@ -691,17 +645,16 @@ TArray<AEnemy*> AEnemy::GenerateSphereOverlapToDetectOtherEnemies(const FVector&
 	return EnemiesFound;
 }
 
-void AEnemy::NotifyDamageTakenToBlackboard(AEntity* DamageCauser)
+void AEnemy::NotifyDamageTakenToBlackboard(const TScriptInterface<ICombatTargetInterface>& DamageCauser)
 {
-	AEnemy* IsEnemyDamageCauser = Cast<AEnemy>(DamageCauser);
-	APlayerMain* IsPlayerDamageCauser = Cast<APlayerMain>(DamageCauser);
+	if (!DamageCauser) return;
 	
-	if (IsEnemyDamageCauser && IsEnemyDamageCauser->GetPossessionComponent()->IsPossessed() || IsPlayerDamageCauser)
+	if (DamageCauser->IsPossessed())
 	{
 		if (AIController)
 		{
 			AIController->GetBlackboardComponent()->SetValueAsBool(FName("DamageTakenRecently"), true);
-			AIController->GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), DamageCauser);
+			AIController->GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), DamageCauser.GetObject());
 		}
 
 		if (EnemyAIController)
@@ -709,14 +662,9 @@ void AEnemy::NotifyDamageTakenToBlackboard(AEntity* DamageCauser)
 			EnemyAIController->DamageCauser = DamageCauser;
 		}
 
-		for (AEnemy* Enemy : GenerateSphereOverlapToDetectOtherEnemies(GetActorLocation(), this))
+		for (TScriptInterface CombatTarget  : GenerateSphereOverlapToDetectOtherEnemies(GetTargetActorLocation(), RadiusToNotifyAllies, this))
 		{
-			Enemy->NotifyThreat(DamageCauser);
+			Cast<AEnemy>(CombatTarget.GetObject())->NotifyThreat(DamageCauser);
 		}
 	}
-}
-
-void AEnemy::LaunchUp_Implementation(const FVector& InstigatorLocation)
-{
-	GetCombatComponent()->StartLaunchingUp();
 }

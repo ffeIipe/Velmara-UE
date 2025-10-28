@@ -1,97 +1,67 @@
 #include "Components/ExtraMovementComponent.h"
-#include "Components/TimelineComponent.h"
-#include "GameFramework/Character.h"
-#include "GameFramework/CharacterMovementComponent.h"
+
+#include "Entities/Entity.h"
+
 #include "Components/CharacterStateComponent.h"
-#include <Components/CombatComponent.h>
-#include <Entities/Entity.h>
-#include "InputAction.h"
+#include "Interfaces/AnimatorProvider.h"
 
 
 UExtraMovementComponent::UExtraMovementComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
-
-	BufferDodgeTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("BufferDodgeTimeline"));
 }
 
-void UExtraMovementComponent::CustomInitialize(AEntity* NewEntity, UCharacterStateComponent* NewOwnerCharStateComp)
+bool UExtraMovementComponent::IsMovingBackward() const
 {
-	EntityOwner = NewEntity;
-	OwnerCharacterStateComponent = NewOwnerCharStateComp;
+	if (CurrentMoveVector.Y < -.7f) //threshold
+		return true;
+	
+	return false;
 }
 
 void UExtraMovementComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	EntityOwner = Cast<AEntity>(GetOwner());
-	OwnerCharacterStateComponent = EntityOwner ? EntityOwner->GetCharacterStateComponent() : nullptr;
-	DefaultWalkSpeed = EntityOwner->GetCharacterMovement()->MaxWalkSpeed;
-
-	if (BufferCurve)
-	{
-		FOnTimelineFloat ProgressDodgeFunction;
-		ProgressDodgeFunction.BindUFunction(this, FName("UpdateDodgeBuffer"));
-		BufferDodgeTimeline->AddInterpFloat(BufferCurve, ProgressDodgeFunction);
-	}
+	
+	AnimatorProvider = GetOwner();
+	CharacterStateProvider = GetOwner();
+	CharacterMovementProvider = GetOwner();
 }
 
-void UExtraMovementComponent::Input_Dodge()
+void UExtraMovementComponent::PerformDoubleJump(UAnimMontage* DoubleJumpMontage)
 {
-	if (EntityOwner->GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling || 
-		EntityOwner->GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Flying ||
-		EntityOwner->IsEquipping()) return;
+	AnimatorProvider->Execute_PlayAnimMontage(GetOwner(), DoubleJumpMontage, 1.f, "Default");
+	CharacterMovementProvider->Execute_GetCharacter(GetOwner())->LaunchCharacter(FVector(0.f, 0.f, DoubleJumpForce), false, true);
+	CanDoubleJump = false;
+}
 
-	if (OwnerCharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Dodge }))
+void UExtraMovementComponent::PlayDodgeAnim(UAnimMontage* DodgeMontage, const FOnDodgeStarted& OnDodgeStartedEvent) const
+{
+	if (!CharacterMovementProvider->Execute_GetCharacter(GetOwner())->bUseControllerRotationYaw)
 	{
-		bIsSaveDodge = true;
+		if (const FVector MovementInput =CharacterMovementProvider->Execute_GetCharacter(GetOwner())->GetLastMovementInputVector(); !MovementInput.IsNearlyZero())
+		{
+			const FRotator LookRotation = MovementInput.Rotation();
+			GetOwner()->SetActorRotation(FRotator(0.f, LookRotation.Yaw, 0.f));
+		}
+		AnimatorProvider->Execute_PlayAnimMontage(GetOwner(), DodgeMontage, 1.f, "Default");
 	}
 	else
 	{
-		PerformDodge();
+		DodgeAnimBasedOnInput(DodgeMontage);	
 	}
+	
+	OnDodgeStarted.ExecuteIfBound();
+	OnDodgeStartedEvent.ExecuteIfBound();
 }
 
-void UExtraMovementComponent::DodgeSaveEvent()
-{
-	if (bIsSaveDodge)
-	{
-		bIsSaveDodge = false;
-
-		OwnerCharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Nothing);
-		PerformDodge();
-	}
-}
-
-void UExtraMovementComponent::PerformDodge()
-{
-	if (!OwnerCharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Finish, ECharacterActions::ECA_Stun }))
-	{
-		EntityOwner->GetCombatComponent()->RemoveSoftLockTarget();
-
-		FVector MovementInput = EntityOwner->GetLastMovementInputVector();
-		if (!MovementInput.IsNearlyZero())
-		{
-			FRotator LookRotation = MovementInput.Rotation();
-			GetOwner()->SetActorRotation(FRotator(0.f, LookRotation.Yaw, 0.f));
-		}
-
-		DodgeAnimBasedOnInput();
-
-		StopDodgeBufferEvent();
-		DodgeBufferEvent(BufferDodgeDistance);
-		OwnerCharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Dodge);
-	}
-}
-
-void UExtraMovementComponent::DodgeAnimBasedOnInput() const
+void UExtraMovementComponent::DodgeAnimBasedOnInput(UAnimMontage* DodgeMontage) const
 {
 	FName Section("Default");
 
-	if (MoveVector.Y == 0.f)
+	if (CurrentMoveVector.Y == 0.f)
 	{
-		if (MoveVector.X > KINDA_SMALL_NUMBER)
+		if (CurrentMoveVector.X > KINDA_SMALL_NUMBER)
 		{
 			Section = FName("DodgeRight");
 		}
@@ -100,154 +70,50 @@ void UExtraMovementComponent::DodgeAnimBasedOnInput() const
 			Section = FName("DodgeLeft");
 		}
 	}
-	else if (MoveVector.Y < 0.f)
+	else if (CurrentMoveVector.Y < 0.f)
 	{
 		Section = FName("DodgeBack");
 	}
-	EntityOwner->PlayAnimMontage(DodgeMontage, 1.f, Section);
+
+	AnimatorProvider->Execute_PlayAnimMontage(GetOwner(), DodgeMontage, 1.f, Section);
 }
 
-void UExtraMovementComponent::DodgeBufferEvent(float BufferAmount)
+void UExtraMovementComponent::DodgeSaveEvent()
 {
-	if (BufferDodgeTimeline)
+	if (bIsSaveDodge)
 	{
-		BufferDodgeTimeline->PlayFromStart();
-	}
-}
+		bIsSaveDodge = false;
 
-void UExtraMovementComponent::StopDodgeBufferEvent()
-{
-	if (BufferDodgeTimeline)
-	{
-		BufferDodgeTimeline->Stop();
-	}
-}
-
-void UExtraMovementComponent::UpdateDodgeBuffer(float Alpha)
-{
-	UpdateBuffer(Alpha, BufferDodgeDistance);
-}
-
-void UExtraMovementComponent::UpdateBuffer(float Alpha, float BufferDistance)
-{
-	FVector CurrentLocation = GetOwner()->GetActorLocation();
-	FVector ForwardVector = EntityOwner->GetLastMovementInputVector();
-
-	FVector TargetLocation = FMath::Lerp(CurrentLocation, CurrentLocation + (ForwardVector * BufferDistance), Alpha);
-
-	GetOwner()->SetActorLocation(TargetLocation, true);
-}
-
-void UExtraMovementComponent::Input_Move(const FInputActionValue& Value)
-{
-	if (!OwnerCharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Block, ECharacterActions::ECA_Finish, ECharacterActions::ECA_Dead, ECharacterActions::ECA_Stun }))
-	{
-		MoveVector = Value.Get<FVector2D>();
-
-		const FRotator ControlRotation = EntityOwner->GetControlRotation();
-		const FRotator YawRotation(0.f, ControlRotation.Yaw, 0.f);
-
-		const FVector DirectionForward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-		const FVector DirectionSideward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-
-		EntityOwner->AddMovementInput(DirectionForward, MoveVector.Y);
-		EntityOwner->AddMovementInput(DirectionSideward, MoveVector.X);
-
-		UpdateAllowRunStrafe();
-	}
-}
-
-void UExtraMovementComponent::Input_Look(const FInputActionValue& Value)
-{
-	const FVector2D LookingVector = Value.Get<FVector2D>();
-
-	EntityOwner->AddControllerPitchInput(LookingVector.Y);
-	EntityOwner->AddControllerYawInput(LookingVector.X);
-}
-
-void UExtraMovementComponent::Input_Run(const FInputActionValue& Value)
-{
-	if (OwnerCharacterStateComponent->IsActionEqualToAny({
-		ECharacterActions::ECA_Block,
-		ECharacterActions::ECA_Finish,
-		ECharacterActions::ECA_Dead,
-		ECharacterActions::ECA_Stun })) return;
-
-	if (EntityOwner->GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling ||
-		EntityOwner->GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Flying) return;
-
-	if (!Value.Get<bool>())
-	{
-		EntityOwner->GetCharacterMovement()->MaxWalkSpeed = DefaultWalkSpeed;
-		return;
-	}
-		
-	if (bAllowRun)
-	{
-		EntityOwner->GetCharacterMovement()->MaxWalkSpeed = MaxRunSpeed;
-
-		if (bAllowRunStrafe)
+		if (OnDodgeSaved.IsBound())
 		{
-			EntityOwner->GetCharacterMovement()->MaxWalkSpeed = MaxStrafeSpeed;
+			OnDodgeSaved.Broadcast();
 		}
 	}
-	else EntityOwner->GetCharacterMovement()->MaxWalkSpeed = DefaultWalkSpeed;
 }
 
-void UExtraMovementComponent::UpdateAllowRunStrafe()
+void UExtraMovementComponent::PerformMove(const FVector2D& MoveVector, const bool bIsTriggered)
 {
-	MoveVector.Y > KINDA_SMALL_NUMBER ? bAllowRun = true : bAllowRun = false;
+	CurrentMoveVector = MoveVector;
+	bIsMoving = true;
+	
+	const FRotator ControlRotation = CharacterMovementProvider->Execute_GetCharacter(GetOwner())->GetControlRotation();
+	const FRotator YawRotation(0.f, ControlRotation.Yaw, 0.f);
 
-	MoveVector.X != 0.f ? bAllowRunStrafe = true : bAllowRunStrafe = false;
+	const FVector DirectionForward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+	const FVector DirectionSideward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+
+	CharacterMovementProvider->Execute_GetCharacter(GetOwner())->AddMovementInput(DirectionForward, MoveVector.Y);
+	CharacterMovementProvider->Execute_GetCharacter(GetOwner())->AddMovementInput(DirectionSideward, MoveVector.X);
+
+	if (!bIsTriggered)
+	{
+		CurrentMoveVector = FVector2D::ZeroVector;
+		bIsMoving = false;
+	}
 }
 
-void UExtraMovementComponent::Input_DoubleJump()
+void UExtraMovementComponent::PerformLook(const FVector2D& LookingVector) const
 {
-	if (!OwnerCharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Block, ECharacterActions::ECA_Finish, ECharacterActions::ECA_Dead }))
-	{
-		EntityOwner->PlayAnimMontage(DoubleJumpMontage);
-		EntityOwner->LaunchCharacter(FVector(0.f, 0.f, LaunchStrength), false, true);
-		CanDoubleJump = false;
-	}
+	CharacterMovementProvider->Execute_GetCharacter(GetOwner())->AddControllerPitchInput(LookingVector.Y);
+	CharacterMovementProvider->Execute_GetCharacter(GetOwner())->AddControllerYawInput(LookingVector.X);
 }
-
-void UExtraMovementComponent::PlayTurnInPlaceMontage(const FVector& DesiredInputDirection)
-{
-	const FVector CharacterForward = EntityOwner->GetActorForwardVector();
-	const FVector NormalizedDesiredInputDirection = DesiredInputDirection.GetSafeNormal();
-
-	const double CosAngle = FVector::DotProduct(CharacterForward, NormalizedDesiredInputDirection);
-	double Angle = FMath::Acos(CosAngle);
-	Angle = FMath::RadiansToDegrees(Angle);
-
-	if (const FVector CrossProduct = FVector::CrossProduct(CharacterForward, NormalizedDesiredInputDirection); CrossProduct.Z < 0)
-	{
-		Angle *= -1.f;
-	}
-
-	FName SectionToPlay = FName("Default");
-
-	if (Angle >= -45.f && Angle < 45.f)
-	{
-		return;
-	}
-	else if (Angle >= 45.f && Angle < 135.f)
-	{
-		SectionToPlay = FName("TurnRight");
-	}
-	else if (Angle >= -135.f && Angle < -45.f)
-	{
-		SectionToPlay = FName("TurnLeft");
-	}
-	else
-	{
-		SectionToPlay = FName("Turn180");
-	}
-
-	EntityOwner->PlayAnimMontage(TurnInPlaceMontage, 1.f, SectionToPlay);
-}
-
-//void UExtraMovementComponent::OnTurnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
-//{
-//	bIsTurningInPlace = false;
-//}

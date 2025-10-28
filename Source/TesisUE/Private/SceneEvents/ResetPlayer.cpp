@@ -3,7 +3,9 @@
 #include "Player/PlayerMain.h"
 #include "GameFramework/PlayerStart.h"
 #include "Entities/Entity.h"
-#include <SceneEvents/NewGameInstance.h>
+#include <SceneEvents/VelmaraGameInstance.h>
+
+#include "Components/CharacterStateComponent.h"
 
 void AResetPlayer::BeginPlay()
 {
@@ -16,15 +18,17 @@ void AResetPlayer::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent
 {
     if (AEntity* OverlappingActor = Cast<AEntity>(OtherActor))
     {
-        if (APlayerMain* PlayerRef = Cast<APlayerMain>(OverlappingActor))
+        GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Cyan, "TODO! Fix ResetPlayer.cpp");
+        
+        /*if (APlayerMain* PlayerRef = Cast<APlayerMain>(OverlappingActor))
         {
-            if (PlayerRef->GetCharacterStateComponent()->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
+            if (PlayerRef->GetCharacterStateComponent() .Mode == ECharacterModeStates::ECMS_Spectral)
             {
                 PlayerRef->ToggleForm();
             }
-        }
+        }*/
 
-        if (UNewGameInstance* GameInst = GetGameInstance<UNewGameInstance>())
+        if (UVelmaraGameInstance* GameInst = GetGameInstance<UVelmaraGameInstance>())
         {
             GameInst->LoadPlayerProgress(GameInst->ActiveSaveSlotIndex);
         }

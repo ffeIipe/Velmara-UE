@@ -4,10 +4,12 @@
 #include "Perception/AISenseConfig_Sight.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Components/CharacterStateComponent.h"
-#include "Components/PossessionComponent.h"
-#include "Enemy/Enemy.h"
+#include "Interfaces/ControllerProvider.h"
 #include "Subsystems/EnemyTokenManager.h"
 #include <Kismet/GameplayStatics.h>
+
+#include "Entities/Entity.h"
+#include "Interfaces/CombatTargetInterface.h"
 
 AEnemyAIController::AEnemyAIController(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer.SetDefaultSubobjectClass<UCrowdFollowingComponent>("PathFollowingComponent"))
 {
@@ -26,9 +28,9 @@ AEnemyAIController::AEnemyAIController(const FObjectInitializer& ObjectInitializ
     AAIController::SetGenericTeamId(FGenericTeamId(0));
 }
 
-void AEnemyAIController::CustomInitialize(AEntity* NewOwner, UBlackboardComponent* NewBlackboardComponent, UCharacterStateComponent* NewCharacterStateComponent)
+void AEnemyAIController::CustomInitialize(const AEntity* NewOwner, UBlackboardComponent* NewBlackboardComponent, UCharacterStateComponent* NewCharacterStateComponent)
 {
-    EntityOwner = NewOwner;
+    EntityOwner = NewOwner->GetOwner();
     BlackboardComponent = NewBlackboardComponent;
 	OwningCharacterStateComponent = NewCharacterStateComponent;
 
@@ -47,7 +49,7 @@ void AEnemyAIController::DeactivateController() const
 
 ETeamAttitude::Type AEnemyAIController::GetTeamAttitudeTowards(const AActor& Other) const
 {
-    if (!IsDamageCauserValid(Cast<AEntity>(&Other)))
+    if (const TScriptInterface<ICombatTargetInterface> CombatTarget = Other.GetOwner(); !IsDamageCauserValid(CombatTarget))
     {
         const APawn* PawnToCheck = Cast<APawn>(&Other);
 
@@ -55,9 +57,9 @@ ETeamAttitude::Type AEnemyAIController::GetTeamAttitudeTowards(const AActor& Oth
         {
             FGenericTeamId OtherTeamId = OtherTeamAgent->GetGenericTeamId();
 
-            if      (OtherTeamId == FGenericTeamId(0)) return ETeamAttitude::Neutral;
-            else if (OtherTeamId == FGenericTeamId(1)) return ETeamAttitude::Friendly;
-            else if (OtherTeamId == FGenericTeamId(2)) return ETeamAttitude::Hostile;
+            if (OtherTeamId == FGenericTeamId(0)) return ETeamAttitude::Neutral;
+            if (OtherTeamId == FGenericTeamId(1)) return ETeamAttitude::Friendly;
+            if (OtherTeamId == FGenericTeamId(2)) return ETeamAttitude::Hostile;
         }
     }
     return ETeamAttitude::Neutral;
@@ -67,7 +69,7 @@ void AEnemyAIController::BeginPlay()
 {
     Super::BeginPlay();
 
-    EntityOwner = Cast<AEntity>(GetCharacter());
+    EntityOwner = GetOwner();
     BlackboardComponent = GetBlackboardComponent();
     CachedPlayerController = Cast<APlayerController>(UGameplayStatics::GetPlayerController(this, 0));
 }
@@ -76,7 +78,7 @@ void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Sti
 {
     if (!CachedPlayerController) return;
     
-    if (EntityOwner->GetCharacterStateComponent()->GetCurrentCharacterState().Action == ECharacterActions::ECA_Dead) return;
+    if (EntityOwner && !EntityOwner->IsAlive()) return;
 
     UEnemyTokenManager* TokenManager = GetWorld()->GetSubsystem<UEnemyTokenManager>();
     if (!TokenManager) return;
@@ -100,14 +102,15 @@ void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Sti
     }
 }
 
-bool AEnemyAIController::IsDamageCauserValid(const AEntity* EntityToCheck) const
+bool AEnemyAIController::IsDamageCauserValid(const TScriptInterface<ICombatTargetInterface>& EntityToCheck) const
 {
-    return EntityToCheck && (EntityToCheck)->GetPossessionComponent()->IsPossessed() && (EntityToCheck)->GetController() == CachedPlayerController;
+    const TScriptInterface<IControllerProvider> MyController = GetOwner();
+    return EntityToCheck && EntityToCheck->IsPossessed() && MyController == CachedPlayerController;
 }
 
-void AEnemyAIController::SetHasAttackToken(UEnemyTokenManager* TokenManager, AActor* Actor)
+void AEnemyAIController::SetHasAttackToken(UEnemyTokenManager* TokenManager, TScriptInterface<ICombatTargetInterface> CombatTarget)
 {
-    if (Actor->IsHidden())
+    if (CombatTarget->IsPossessing())
     {
         BlackboardComponent->SetValueAsObject(FName("TargetActor"), nullptr);
         return;
@@ -130,7 +133,7 @@ void AEnemyAIController::SetHasAttackToken(UEnemyTokenManager* TokenManager, AAc
         BlackboardComponent->SetValueAsBool(FName("HasAttackToken"), true);
     }
 
-    BlackboardComponent->SetValueAsObject(FName("TargetActor"), Actor);
+    BlackboardComponent->SetValueAsObject(FName("TargetActor"), CombatTarget.GetObject());
 }
 
 void AEnemyAIController::SetHasReservedAttackToken(const bool bHasToken)

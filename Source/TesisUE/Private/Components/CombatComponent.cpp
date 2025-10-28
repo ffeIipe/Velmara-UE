@@ -1,73 +1,78 @@
 #include "Components/CombatComponent.h"
+
+#include "Components/CharacterStateComponent.h"
 #include "Components/TimelineComponent.h"
-#include "Components/InventoryComponent.h"
-#include "Components/ExtraMovementComponent.h"
 #include "Curves/CurveFloat.h"
-#include "GameFramework/Character.h"
-#include "GameFramework/CharacterMovementComponent.h"
+#include "DataAssets/EntityData.h"
+
+#include "Interfaces/AnimatorProvider.h"
 
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/GameplayStatics.h"
-#include "SceneEvents/NewGameModeBase.h"
-
-#include "Enemy/Paladin.h"
-#include "Interfaces/HitInterface.h"
-#include "Interfaces/CharacterState.h"
-#include "Interfaces/FormInterface.h"
-
-#include "Player/PlayerMain.h"
-#include "Items/Weapons/Sword.h"
+#include "SceneEvents/VelmaraGameModeBase.h"
+#include "Interfaces/CharacterStateProvider.h"
+#include "Interfaces/OwnerUtilsInterface.h"
+#include "Interfaces/CombatTargetInterface.h"
+#include "Interfaces/ControllerProvider.h"
+#include "Interfaces/CharacterMovementProvider.h"
+#include "Interfaces/CameraProvider.h"
+#include "Player/CharacterWeaponStates.h"
+#include "Subsystems/EffectsManager.h"
 
 UCombatComponent::UCombatComponent()
 {
-	PrimaryComponentTick.bCanEverTick = false;
+	PrimaryComponentTick.bCanEverTick = true;
 
 	BufferAttackTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("BufferAttackTimeline"));
-
-	SoftLockTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("SoftLockTimeline"));
-	
 	LaunchCharacterTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("LaunchCharacterTimeline"));
+	BufferBackwardsTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("BufferBackwardsTimeline"));
+
+	/*static ConstructorHelpers::FObjectFinder<UCurveFloat> LaunchCharacterUpCurveObject (TEXT("/Game/Blueprints/Curves/CF_LaunchUpCharacter.CF_LaunchUpCharacter"));
+	if (LaunchCharacterUpCurveObject.Succeeded())
+	{
+		LaunchCharacterUpCurve = LaunchCharacterUpCurveObject.Object;
+	}
+	else if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "LaunchCharacterUpCurve not found.");*/
+}
+
+void UCombatComponent::InitializeValues(const FCombatData& CombatData)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Combat Component values assigned by CombatData"));
+
+	BufferAttackDistance = CombatData.BufferAttackDistance;
+	LaunchCharacterUpCurve = CombatData.LaunchUpCurve;
+	BufferBackwardsCurve = CombatData.BufferBackwardsCurve;
+	BufferCurve = CombatData.BufferCurve;
 }
 
 void UCombatComponent::ResetState()
 {
-	if (OwningCharacter->GetCharacterMovement()->IsFlying())
+	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Purple, "RESET STATE!");
+	
+	if (OwnerUtils->IsFlying())
 	{
-		OwningCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
+		OwnerUtils->SetMovementMode(MOVE_Falling);
 	}
+	
+	CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetAction(ECharacterActionsStates::ECAS_Nothing);
 
-	const TArray<ECharacterActions> CharacterActionsToCheck = { ECharacterActions::ECA_Block };
-	if (!CharacterStateComponent->IsActionEqualToAny(CharacterActionsToCheck))
-	{
-		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Nothing);
-	}
-
-	ResetLightAttackStats();
-	ResetJumpAttackStats();
-	ResetHeavyAttackStats();
-
-	if (SpectralAttacks) SpectralAttacks->Execute_ResetSpectralAttack(GetOwner());
-
-	if (OnAttackEnd.IsBound()) OnAttackEnd.Broadcast(); //esto se llama desde AN_ResetState en el montage de ataque
-
-	ExtraMovementComponent->bIsSaveDodge = false;
+	if (OnResetState.IsBound()) OnResetState.Broadcast(); //this is called by AN_ResetState during the anim event
 }
-
 
 void UCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	EntityOwner = Cast<AEntity>(GetOwner());
-
-	OwningCharacter = Cast<ACharacter>(GetOwner());
-
-	SpectralAttacks = Cast<IFormInterface>(GetOwner());
-
-	CharacterStateComponent = EntityOwner->GetCharacterStateComponent();
-
-	ExtraMovementComponent = GetOwner()->GetComponentByClass<UExtraMovementComponent>();
-
+	
+	PrimaryComponentTick.bStartWithTickEnabled = false;
+	SetComponentTickEnabled(false);
+	
+	OwnerUtils = GetOwner();
+	ControllerProvider = GetOwner();
+	CharacterStateProvider = GetOwner();
+	CharacterMovementProvider = GetOwner();
+	CameraProvider = GetOwner();
+	AnimatorProvider = GetOwner();
+	
 	if (BufferCurve)
 	{
 		FOnTimelineFloat ProgressAttackFunction;
@@ -75,156 +80,60 @@ void UCombatComponent::BeginPlay()
 		BufferAttackTimeline->AddInterpFloat(BufferCurve, ProgressAttackFunction);
 	}
 
-	if (SoftLockCurve)
+	if (LaunchCharacterUpCurve)
 	{
-		FOnTimelineFloat ProgressSoftLockFunction;
-		ProgressSoftLockFunction.BindUFunction(this, FName("UpdateSoftLockOn"));
-		SoftLockTimeline->AddInterpFloat(SoftLockCurve, ProgressSoftLockFunction);
-
 		FOnTimelineFloat ProgressLaunchUpFunction;
 		ProgressLaunchUpFunction.BindUFunction(this, FName("UpdateLaunchCharacterUp"));
-		LaunchCharacterTimeline->AddInterpFloat(SoftLockCurve, ProgressLaunchUpFunction);
-	}
-}
+		LaunchCharacterTimeline->AddInterpFloat(LaunchCharacterUpCurve, ProgressLaunchUpFunction);
 
-void UCombatComponent::LightAttack(int AttackIndex)
-{
-	if (CanAttack())
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Magenta, GetOwner()->GetName() + " using curve: " + LaunchCharacterUpCurve->GetName());
+	}
+		
+	if (BufferBackwardsCurve)
 	{
-		StopAttackBufferEvent();
-		StartAttackBufferEvent(BufferAttackDistance);
-		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
-		SoftLockOn();
-
-		if (ASword* TempSword = GetCurrentSword())
-		{
-			OwningCharacter->PlayAnimMontage(TempSword->LightAttackCombo[AttackIndex]);
-			LightAttackIndex++;
-
-			if (LightAttackIndex >= TempSword->LightAttackCombo.Num())
-			{
-				LightAttackIndex = 0;
-			}
-		}
-		else
-		{
-			OwningCharacter->PlayAnimMontage(LightAttackCombo[AttackIndex]);
-			LightAttackIndex++;
-
-			if (LightAttackIndex >= LightAttackCombo.Num())
-			{
-				LightAttackIndex = 0;
-			}
-		}
+		FOnTimelineFloat ProgressBufferBackwardsFunction;
+		ProgressBufferBackwardsFunction.BindUFunction(this, FName("UpdateBufferBackwards"));
+		BufferBackwardsTimeline->AddInterpFloat(BufferBackwardsCurve, ProgressBufferBackwardsFunction);
 	}
 }
 
-void UCombatComponent::JumpAttack(int AttackIndex)
-{
-	if (CanAttack())
-	{
-		StopAttackBufferEvent();
-		StartAttackBufferEvent(BufferAttackDistance);
-		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
-		SoftLockOn();
-
-		if (ASword* TempSword = GetCurrentSword())
-		{
-			OwningCharacter->PlayAnimMontage(TempSword->JumpAttackCombo[AttackIndex]);
-			JumpAttackIndex++;
-
-			if (JumpAttackIndex >= TempSword->JumpAttackCombo.Num())
-			{
-				JumpAttackIndex = 0;
-				OwningCharacter->PlayAnimMontage(CrasherMontage, 1.f);
-				bIsLaunched = false;
-			}
-		}
-		else
-		{
-			OwningCharacter->PlayAnimMontage(JumpAttackCombo[AttackIndex]);
-			JumpAttackIndex++;
-
-			if (LightAttackIndex >= JumpAttackCombo.Num())
-			{
-				JumpAttackIndex = 0;
-				OwningCharacter->PlayAnimMontage(CrasherMontage, 1.f);
-				bIsLaunched = false;
-			}
-		}
-	}
-}
-
-void UCombatComponent::PerformComboStarter(int AttackIndex)
+void UCombatComponent::PerformComboStarter(const int AttackIndex)
 {
 	if (CanAttack())
 	{
 		ComboExtenderIndex = AttackIndex;
 		StopAttackBufferEvent();
-		StartAttackBufferEvent(BufferAttackDistance);
-		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
+		StartAttackBufferEvent();
+		CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetAction(ECharacterActionsStates::ECAS_Attack);
 
-		OwningCharacter->PlayAnimMontage(ComboStarterAttack[AttackIndex - 1]);
+		AnimatorProvider->Execute_PlayAnimMontage(GetOwner(), ComboStarterAttack[AttackIndex - 1], 1.f, "Default");
 
 		bIsSaveHeavyAttack = false;
 		bIsSaveLightAttack = false;
 
-		SoftLockOn();
+		//PerformSoftLock();
 	}
 }
 
-void UCombatComponent::PerformComboExtender(int AttackIndex)
+void UCombatComponent::PerformComboExtender(const int AttackIndex)
 {
 	if (CanAttack())
 	{
 		StopAttackBufferEvent();
-		StartAttackBufferEvent(BufferAttackDistance);
-		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
+		StartAttackBufferEvent();
+		CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetAction(ECharacterActionsStates::ECAS_Attack);
 
-		OwningCharacter->PlayAnimMontage(ComboExtenderAttack[AttackIndex - 1]);
+		//CombatComponentOwner->Execute_PlayAnimMontage(GetOwner(),  ComboExtenderAttack[AttackIndex - 1]);
 
-		ResetLightAttackStats();
-		ResetHeavyAttackStats();
-		SoftLockOn();
+		/*ResetLightAttackStats();
+		ResetHeavyAttackStats();*/
+		//PerformSoftLock();
 	}
 }
 
-void UCombatComponent::HeavyAttack(int AttackIndex)
+void UCombatComponent::StartAttackBufferEvent()
 {
-	if (CanAttack())
-	{
-		StopAttackBufferEvent();
-		StartAttackBufferEvent(BufferAttackDistance);
-		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
-		SoftLockOn();
-
-		if (ASword* TempSword = GetCurrentSword())
-		{
-			OwningCharacter->PlayAnimMontage(TempSword->HeavyAttackCombo[AttackIndex]);
-			HeavyAttackIndex++;
-
-			if (HeavyAttackIndex >= TempSword->HeavyAttackCombo.Num())
-			{
-				HeavyAttackIndex = 0;
-			}
-		}
-		else
-		{
-			if (HeavyAttackCombo.IsEmpty()) return;
-			
-			OwningCharacter->PlayAnimMontage(HeavyAttackCombo[AttackIndex]);
-			HeavyAttackIndex++;
-
-			if (HeavyAttackIndex >= HeavyAttackCombo.Num())
-			{
-				HeavyAttackIndex = 0;
-			}
-		}
-	}
-}
-
-void UCombatComponent::StartAttackBufferEvent(float BufferAmount)
-{
+	StopAttackBufferEvent();
 	if (BufferAttackTimeline)
 	{
 		BufferAttackTimeline->PlayFromStart();
@@ -239,61 +148,47 @@ void UCombatComponent::StopAttackBufferEvent()
 	}
 }
 
-void UCombatComponent::UpdateAttackBuffer(float Alpha)
+void UCombatComponent::StartBufferBackwards()
 {
-	UpdateBuffer(Alpha, BufferAttackDistance);
+	if (BufferBackwardsTimeline)
+	{
+		StopAttackBufferEvent();
+		BufferBackwardsTimeline->PlayFromStart();
+	}
 }
 
-void UCombatComponent::UpdateBuffer(float Alpha, float BufferDistance)
+void UCombatComponent::StopBufferBackwards()
 {
-	FVector CurrentLocation = GetOwner()->GetActorLocation();
-	FVector ForwardVector = GetOwner()->GetActorForwardVector();
+	if (BufferBackwardsTimeline)
+	{
+		BufferBackwardsTimeline->Stop();
+	}
+}
 
-	FVector TargetLocation = FMath::Lerp(CurrentLocation, CurrentLocation + (ForwardVector * BufferDistance), Alpha);
+void UCombatComponent::UpdateBufferBackwards(const float Alpha)
+{
+	UpdateBuffer(Alpha, -BufferAttackDistance);
+}
+
+void UCombatComponent::UpdateAttackBuffer(const float Alpha) const
+{
+	UpdateBuffer(Alpha, BufferAttackDistance * BufferMultiplier);
+}
+
+void UCombatComponent::UpdateBuffer(const float Alpha, const float BufferDistance) const
+{
+	const FVector CurrentLocation = GetOwner()->GetActorLocation();
+	const FVector ForwardVector = GetOwner()->GetActorForwardVector();
+
+	const FVector TargetLocation = FMath::Lerp(CurrentLocation, CurrentLocation + (ForwardVector * BufferDistance), Alpha);
 
 	GetOwner()->SetActorLocation(TargetLocation, false);
 }
 
-void UCombatComponent::ResetLightAttackStats()
-{
-	LightAttackIndex = 0;
-	bIsSaveLightAttack = false;
-}
-
-void UCombatComponent::ResetJumpAttackStats()
-{
-	JumpAttackIndex = 0;
-	bIsLaunched = false;
-}
-
-void UCombatComponent::ResetHeavyAttackStats()
-{
-	HeavyAttackIndex = 0;
-	bIsSaveHeavyAttack = false;
-}
-
-void UCombatComponent::SoftLockOn()
-{
-	if (OwningCharacter)
-	{
-		FVector Start = GetOwner()->GetActorLocation();
-		FVector End = (OwningCharacter->GetLastMovementInputVector() * SoftLockDistance) + GetOwner()->GetActorLocation();
-
-		if (APaladin* Enemy = Cast<APaladin>(SphereTraceForEnemies(Start, End)))
-		{
-			if (Enemy->GetCharacterStateComponent()->GetCurrentCharacterState().Action != ECharacterActions::ECA_Dead)
-			{
-				SoftLockTarget = Enemy;
-				RotationToTarget();
-			}
-			else SoftLockTarget = nullptr;
-		}
-		else SoftLockTarget = nullptr;
-	}
-}
-
 void UCombatComponent::ValidateWall()
 {
+	if (!CanAttack()) return;
+	
 	TArray<AActor*> ObjectsToIgnore;
 	ObjectsToIgnore.Add(GetOwner());
 
@@ -304,24 +199,20 @@ void UCombatComponent::ValidateWall()
 	QueryParams.bTraceComplex = true;
 	QueryParams.bReturnPhysicalMaterial = false;
 
-	FVector Start = GetOwner()->GetActorLocation();
-	FVector End = Start + (GetOwner()->GetActorForwardVector() * 100.f);
+	const FVector Start = GetOwner()->GetActorLocation();
+	const FVector End = Start + (GetOwner()->GetActorForwardVector() * 100.f);
 
-	bool bHit = GetWorld()->LineTraceSingleByChannel(
+	const bool bHit = GetWorld()->LineTraceSingleByChannel(
 		Hit,
 		Start,
 		End,
-		ECollisionChannel::ECC_GameTraceChannel4,
+		ECC_GameTraceChannel4,
 		QueryParams
 	);
 
-	if (bHit)
+	if (bHit && OnWallHit.IsBound())
 	{
-		AActor* HitActor = Hit.GetActor();
-		if (HitActor)
-		{
-			OnWallHit.Broadcast(Hit);
-		}
+		OnWallHit.Broadcast(Hit);
 	}
 
 	DrawDebugLine(
@@ -336,157 +227,109 @@ void UCombatComponent::ValidateWall()
 	);
 }
 
-void UCombatComponent::RotationToTarget()
+void UCombatComponent::UpdateLaunchCharacterUp(const float Alpha)
 {
-	if (SoftLockTarget)
-	{
-		SoftLockTimeline->PlayFromStart();
-	}
-	else
-	{
-		SoftLockOn();
-	}
-}
-
-void UCombatComponent::UpdateSoftLockOn(float Alpha)
-{
-	FVector Start = GetOwner()->GetActorLocation();
-
-	if (!SoftLockTarget) return;
-	FVector End = SoftLockTarget->GetActorLocation();
-
-	FRotator NewRotation = FRotator(
-		GetOwner()->GetActorRotation().Pitch,
-		UKismetMathLibrary::FindLookAtRotation(Start, End).Yaw,
-		UKismetMathLibrary::FindLookAtRotation(Start, End).Roll
-	);
-
-	NewRotation = FMath::Lerp(GetOwner()->GetActorRotation(), NewRotation, Alpha);
-
-	GetOwner()->SetActorRotation(NewRotation);
-}
-
-void UCombatComponent::UpdateLaunchCharacterUp(float Alpha)
-{
-	FVector TargetLocation = FMath::Lerp(CurrentLocationLaunch, CurrentLocationLaunch + (UpVectorLaunch * 300.f), Alpha);
+	const FVector TargetLocation = FMath::Lerp(CurrentLocationLaunch, CurrentLocationLaunch + (UpVectorLaunch * 300.f), Alpha);
 	GetOwner()->SetActorLocation(TargetLocation, true);
 }
 
-void UCombatComponent::Block()
+void UCombatComponent::PerformBlock(const bool bIsTriggered, UAnimMontage* BlockMontage) const
 {
-	if (CharacterStateComponent->GetCurrentCharacterState().State != ECharacterStates::ECS_Unequipped)
+	bIsTriggered ? Block(BlockMontage) : ReleaseBlock(BlockMontage);
+}
+
+void UCombatComponent::Block(UAnimMontage* BlockMontage) const
+{
+	AnimatorProvider->Execute_PlayAnimMontage(GetOwner(), BlockMontage, 1.f, FName("BlockIdle"));
+	CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetAction(ECharacterActionsStates::ECAS_Block);
+}
+
+void UCombatComponent::ReceiveBlock(UAnimMontage* BlockMontage) const
+{
+	AnimatorProvider->Execute_StopAnimMontage(GetOwner(), BlockMontage);
+	AnimatorProvider->Execute_PlayAnimMontage(GetOwner(), BlockMontage, 1.f, FName("BlockReact"));
+	CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetAction(ECharacterActionsStates::ECAS_Stun);
+	
+	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "TODO: Change the stun time.");
+	
+	if (UEffectsManager* EffectsManager = GetWorld()->GetSubsystem<UEffectsManager>())
 	{
-		OwningCharacter->PlayAnimMontage(BlockMontage, 1.f, FName("BlockIdle"));
-		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Block);
+		EffectsManager->CameraShake(ECameraShakePreset::ECSP_SwordHit, GetOwner()->GetActorLocation());
 	}
 }
 
-void UCombatComponent::ReceiveBlock()
+void UCombatComponent::ReleaseBlock(UAnimMontage* BlockMontage) const
 {
-	OwningCharacter->PlayAnimMontage(BlockMontage, 1.f, FName("BlockReact"));
+	AnimatorProvider->Execute_StopAnimMontage(GetOwner(), BlockMontage);
+	CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetAction(ECharacterActionsStates::ECAS_Nothing);
 }
 
-void UCombatComponent::ReleaseBlock()
+bool UCombatComponent::CanAttack() const
 {
-	OwningCharacter->StopAnimMontage(BlockMontage);
-	CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Nothing);
+	return !CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Attack, ECharacterActionsStates::ECAS_Dodge }) &&
+		!CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->IsWeaponStateEqualToAny({ ECharacterWeaponStates::ECWS_Unequipped }) &&
+		!CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->IsModeEqualToAny({ECharacterModeStates::ECMS_Spectral});
 }
 
-void UCombatComponent::Execute()
+bool UCombatComponent::PerformLaunch(const TScriptInterface<ICombatTargetInterface>& TargetToCheck, const float DistanceToCheck, UAnimMontage* LaunchMontage)
 {
-	/*if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Red, FString("Execute Finisher"));*/
-
-	if (CharacterStateComponent->IsStateEqualToAny({ ECharacterStates::ECS_Unequipped })) return;
-
-	if (CharacterStateComponent->IsActionEqualToAny({ 
-		ECharacterActions::ECA_Dead,
-		/*ECharacterActions::ECA_Dodge, que pueda ser cancelable*/
-		ECharacterActions::ECA_Finish,
-		ECharacterActions::ECA_Stun
-		})) return;
-
-	if (EntityOwner->GetCharacterMovement()->MovementMode == MOVE_Falling || EntityOwner->GetCharacterMovement()->MovementMode == MOVE_Flying) return;
-
-	if (AEntity* Enemy = SphereTraceForEnemies(OwningCharacter->GetActorLocation(), OwningCharacter->GetActorLocation() + OwningCharacter->GetActorForwardVector() * 40.f))
+	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, "PerformLaunch");
+	
+	if (OnLightAttack.IsBound())
 	{
-		if (Enemy->GetClass()->ImplementsInterface(UHitInterface::StaticClass()))
-		{
-			if (IHitInterface::Execute_CanBeFinished(Enemy) && Enemy->GetCharacterStateComponent()->GetCurrentCharacterState().Action != ECharacterActions::ECA_Dead)
-			{
-				CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Finish);
-
-				FVector Start = OwningCharacter->GetActorLocation();
-				FVector End = Enemy->GetActorLocation();
-				FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(Start, End);
-				OwningCharacter->SetActorRotation(LookAtRotation);
-
-				OwningCharacter->PlayAnimMontage(FinisherMontage, 1.0f);
-
-				Cast<ANewGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->SetEnemiesAIEnabled(false);
-			}
-			else return;
-		}
+		OnLightAttack.Broadcast();
 	}
+		
+	if (CheckDistance(TargetToCheck, DistanceToCheck))
+	{
+		AnimatorProvider->Execute_PlayAnimMontage(GetOwner(), LaunchMontage, 1.f, "Default");
+		return true;
+	}
+	return false;
 }
 
-void UCombatComponent::GetDirectionalReact(const FVector& ImpactPoint)
+bool UCombatComponent::IsInAir() const
 {
-	const FVector Forward = GetOwner()->GetActorForwardVector();
-	const FVector ToHit = (ImpactPoint - GetOwner()->GetActorLocation()).GetSafeNormal();
-
-	const double CosAngle = FVector::DotProduct(Forward, ToHit);
-
-	double Angle = FMath::Acos(CosAngle);
-
-	Angle = FMath::RadiansToDegrees(Angle);
-
-	const FVector CrossProduct = FVector::CrossProduct(Forward, ToHit);
-	if (CrossProduct.Z < 0)
-	{
-		Angle *= -1.f;
-	}
-
-	FName Section("FromBack");
-
-	if (Angle >= -45.f && Angle < 45.f)
-	{
-		Section = FName("FromFront");
-	}
-
-	else if (Angle >= -135.f && Angle < -45.f)
-	{
-		Section = FName("FromLeft");
-	}
-
-	else if (Angle >= 45.f && Angle < 135.f)
-	{
-		Section = FName("FromRight");
-	}
-
-	OwningCharacter->PlayAnimMontage(HitReactMontage, 1.f, Section);
+	return OwnerUtils->IsFalling() || OwnerUtils->IsFlying() || bIsLaunched;
 }
 
-void UCombatComponent::HitReactJumpToSection(FName Section)
+void UCombatComponent::PerformExecute(const TScriptInterface<ICombatTargetInterface>& Target, UAnimMontage* FinisherMontage) const
 {
-	if (HitReactMontage)
+	if (!Target) return;
+	
+	if (Target->CanBeFinished() && Target->IsAlive())
 	{
-		OwningCharacter->PlayAnimMontage(HitReactMontage, 1.f, Section);
+		CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetAction(ECharacterActionsStates::ECAS_Finish);
+
+		const FVector Start = GetOwner()->GetActorLocation();
+		const FVector End = Target->GetTargetActorLocation();
+		const FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(Start, End);
+		GetOwner()->SetActorRotation(LookAtRotation);
+
+		AnimatorProvider->Execute_PlayAnimMontage(GetOwner(), FinisherMontage, 1.f, "Default");
+
+		Cast<AVelmaraGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->SetEnemiesAIEnabled(false);
 	}
 }
 
-void UCombatComponent::LaunchCharacterUp()
+void UCombatComponent::LaunchCharacterUp(const TScriptInterface<ICombatTargetInterface> Target)
 {
-	IHitInterface* Paladin = Cast<IHitInterface>(SoftLockTarget);
-
-	if (SoftLockTarget && Paladin->Execute_IsLaunchable(SoftLockTarget))
+	/*if (!Target) return;*/
+	
+	/*if (Target->IsLaunchable())*/
 	{
-		OwningCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
+		OwnerUtils->SetMovementMode(MOVE_Flying);
 		bIsLaunched = true;
 
 		StartLaunchingUp();
+		/*Target->LaunchUp();*/
 
-		Paladin->Execute_LaunchUp(SoftLockTarget, FVector(GetOwner()->GetActorLocation())); 
+		if (UEffectsManager* EffectsManager = GetWorld()->GetSubsystem<UEffectsManager>())
+		{
+			EffectsManager->TimeWarp(ETimeWarpPreset::ETWP_Crasher);
+		}
 	}
+	/*else if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Not launchable");*/
 }
 
 void UCombatComponent::StartLaunchingUp()
@@ -497,25 +340,25 @@ void UCombatComponent::StartLaunchingUp()
 	LaunchCharacterTimeline->PlayFromStart();
 }
 
-void UCombatComponent::Crasher()
+void UCombatComponent::PerformCrasher()
 {
-	SoftLockOn();
-	OwningCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
-	CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
+	//PerformSoftLock();
+	OwnerUtils->IsFalling();
+	CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetAction(ECharacterActionsStates::ECAS_Attack);
 
-	FVector Start = GetOwner()->GetActorLocation();
-	FVector End = Start + FVector(0.f, 0.f, -100000.f);
+	const FVector Start = GetOwner()->GetActorLocation();
+	const FVector End = Start + FVector(0.f, 0.f, -100000.f);
 
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
-	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_WorldStatic));
-	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_WorldDynamic));
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_WorldStatic));
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_WorldDynamic));
 
 	TArray<AActor*> ObjectsToIgnore;
 	ObjectsToIgnore.Add(GetOwner());
 
 	FHitResult Hit;
 
-	bool bHit = UKismetSystemLibrary::LineTraceSingleForObjects(
+	const bool bHit = UKismetSystemLibrary::LineTraceSingleForObjects(
 		GetWorld(),
 		Start,
 		End,
@@ -529,159 +372,27 @@ void UCombatComponent::Crasher()
 
 	if (bHit)
 	{
-		OwningCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
+		OwnerUtils->IsFalling();
 
-		FVector NewLocation = FVector(Hit.ImpactPoint.X, Hit.ImpactPoint.Y, Hit.ImpactPoint.Z + 50.f);
+		const FVector NewLocation = FVector(Hit.ImpactPoint.X, Hit.ImpactPoint.Y, Hit.ImpactPoint.Z + 50.f);
 		GetOwner()->SetActorLocation(NewLocation);
 	}
 }
 
-AEntity* UCombatComponent::SphereTraceForEnemies(FVector Start, FVector End)
+bool UCombatComponent::CheckDistance(const TScriptInterface<ICombatTargetInterface>& TargetToCheck, const float DistanceToCheck)
 {
-	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
-	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
-
-	TArray<AActor*> ActorsToIgnore;
-	ActorsToIgnore.Add(GetOwner());
-
-	FHitResult ResultHit;
-
-	UKismetSystemLibrary::SphereTraceSingleForObjects(
-		GetWorld(),
-		Start,
-		End,
-		TrackTargetRadius,
-		ObjectTypes,
-		false,
-		ActorsToIgnore,
-		EDrawDebugTrace::None,
-		ResultHit,
-		true
-	);
-
-	return Cast<AEntity>(ResultHit.GetActor());
-}
-
-bool UCombatComponent::CanAttack()
-{
-	return (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Attack, ECharacterActions::ECA_Dodge }) &&
-			!CharacterStateComponent->IsStateEqualToAny({ ECharacterStates::ECS_Unequipped }) &&
-			!CharacterStateComponent->IsFormEqualToAny({ECharacterForm::ECF_Spectral}));
-}
-
-void UCombatComponent::Input_Attack()
-{
-	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }) || EntityOwner->IsEquipping()) return;
+	if (!TargetToCheck) return false;
 	
-	ExtraMovementComponent->bIsSaveDodge = false;
-
-	bIsSaveHeavyAttack = false;
-
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Attack, ECharacterActions::ECA_Dodge }))
-	{
-		LightAttackEvent();
-	}
-	else
-	{
-		bIsSaveLightAttack = true;
-	}
+	const float Distance = FVector::Distance(TargetToCheck->GetTargetActorLocation(), GetOwner()->GetActorLocation());
+	if (Distance < DistanceToCheck)
+		return true;
+	
+	return false;
 }
 
-void UCombatComponent::Input_HeavyAttack()
+bool UCombatComponent::IsBlocking() const
 {
-	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }) || EntityOwner->IsEquipping()) return;
-
-	ExtraMovementComponent->bIsSaveDodge = false;
-
-	bIsSaveLightAttack = false;
-
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Attack, ECharacterActions::ECA_Dodge }))
-	{
-		if (!bIsLaunched || OwningCharacter->GetCharacterMovement()->MovementMode != EMovementMode::MOVE_Falling)
-		{
-			HeavyAttackEvent();
-		}
-		else
-		{	
-			OwningCharacter->PlayAnimMontage(CrasherMontage);
-		}	
-	}
-	else
-	{
-		bIsSaveHeavyAttack = true;
-	}
-}
-
-void UCombatComponent::Input_Launch()
-{
-	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }) || EntityOwner->IsEquipping()) return;
-
-	if (CanAttack())
-	{
-		SoftLockOn();
-		if (SoftLockTarget)
-		{
-			CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Attack);
-			OwningCharacter->PlayAnimMontage(LaunchMontage);
-		}
-	}
-}
-
-void UCombatComponent::Input_Block()
-{
-	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }) || EntityOwner->IsEquipping()) return;
-
-	Block();
-}
-
-void UCombatComponent::Input_ReleaseBlock()
-{
-	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }) || EntityOwner->IsEquipping()) return;
-
-	ReleaseBlock();
-}
-
-void UCombatComponent::Input_Execute()
-{
-	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }) || EntityOwner->IsEquipping()) return;
-
-	Execute();
-}
-
-void UCombatComponent::LightAttackEvent()
-{
-	if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
-	{
-		SpectralAttacks->Execute_PerformSpectralAttack(GetOwner());
-	}
-	else if (bIsLaunched 
-		|| OwningCharacter->GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Flying 
-		|| OwningCharacter->GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling)
-	{
-		JumpAttack(JumpAttackIndex);
-		ValidateWall();
-	}
-	else
-	{
-		LightAttack(LightAttackIndex);
-		ValidateWall();
-	}
-}
-
-void UCombatComponent::HeavyAttackEvent()
-{
-	if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
-	{
-		SpectralAttacks->Execute_PerformSpectralBarrier(GetOwner());
-	}
-	else if (OwningCharacter->GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling)
-	{
-		OwningCharacter->PlayAnimMontage(CrasherMontage);
-	}
-	else
-	{
-		HeavyAttack(HeavyAttackIndex);
-	}
+	return CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->CurrentStates.Action == ECharacterActionsStates::ECAS_Block;
 }
 
 void UCombatComponent::SaveLightAttackEvent()
@@ -689,15 +400,19 @@ void UCombatComponent::SaveLightAttackEvent()
 	if (bIsSaveLightAttack)
 	{
 		bIsSaveLightAttack = false;
-		CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Nothing);
-		LightAttackEvent();
-	}
-	else if (bIsSaveLightAttack && LightAttackIndex > 0)
-	{
-		if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Attack }))
+		CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetAction(ECharacterActionsStates::ECAS_Nothing);
+		
+		if (OnSaveLightAttack.IsBound())
 		{
-			CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Nothing);
-			PerformComboStarter(LightAttackIndex);
+			OnSaveLightAttack.Broadcast();
+		}
+	}
+	else if (bIsSaveHeavyAttack /*TODO: get the combo index from the strategy "it used to ask if the LightAttackIndex were greater than zero"*/)
+	{
+		if (CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Attack }))
+		{
+			CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetAction(ECharacterActionsStates::ECAS_Nothing);
+			//PerformComboStarter(1); //TODO: combo index from strategy "LightAttackIndex"
 		}
 	}
 }
@@ -706,36 +421,40 @@ void UCombatComponent::SaveHeavyAttackEvent()
 {
 	if (bIsSaveHeavyAttack)
 	{
-		bIsSaveHeavyAttack = false;
 		if (!bIsLaunched)
 		{
-			if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Attack }))
+			if (CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Attack }))
 			{
-				CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Nothing);
-				HeavyAttackEvent();
+				CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetAction(ECharacterActionsStates::ECAS_Nothing);
 			}
-			else
+			
+			if (OnSaveHeavyAttack.IsBound())
 			{
-				HeavyAttackEvent();
+				OnSaveHeavyAttack.Broadcast();
 			}
 		}
 		else
 		{
-			OwningCharacter->PlayAnimMontage(CrasherMontage);
+			if (GEngine)
+			{
+				GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "WARNING! Crasher anim needed on save heavy attack.");
+			}
+			/*AnimatorProvider->Execute_PlayAnimMontage(GetOwner(),  CrasherMontage); <=== */
 		}
+		bIsSaveHeavyAttack = false;
 	}
-	else if (bIsSaveHeavyAttack && ComboExtenderIndex > 0)
+	/*else if (bIsSaveLightAttack && ComboExtenderIndex > 0)
 	{
-		if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Attack }))
+		if (CharacterStateProvider->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Attack }))
 		{
-			CharacterStateComponent->SetCharacterAction(ECharacterActions::ECA_Nothing);
+			CharacterStateProvider->SetAction(ECharacterActionsStates::ECAS_Nothing);
 		}
 		else if (ComboExtenderAttack.Num() >= ComboExtenderIndex)
 		{
 			PerformComboExtender(ComboExtenderIndex);
 			ComboExtenderIndex++;
 		}
-	}
+	}*/
 }
 
 void UCombatComponent::ResetAttackSave()
@@ -744,15 +463,8 @@ void UCombatComponent::ResetAttackSave()
 	bIsSaveHeavyAttack = false;
 }
 
-ASword* UCombatComponent::GetCurrentSword()
+/*TScriptInterface<IWeaponInterface> UCombatComponent::GetCurrentWeapon()
 {
-	if (APlayerMain* PlayerRef = Cast<APlayerMain>(GetOwner()))
-	{
-		if (UInventoryComponent* InventoryComp = PlayerRef->GetComponentByClass<UInventoryComponent>())
-		{
-			return Cast<ASword>(InventoryComp->EquippedItem);
-		}
-		else return nullptr;
-	}
-	else return nullptr;
-}
+	WeaponProvider = GetOwner();
+	return WeaponProvider->GetCurrentWeapon();
+}*/

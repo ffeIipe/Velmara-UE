@@ -27,9 +27,9 @@ protected:
 		class AController* EventInstigator,
 		AActor* DamageCauser) override;
 
-	virtual bool IsLaunchable_Implementation() override;
+	virtual bool IsLaunchable() override;
 
-	virtual bool CanBeFinished_Implementation() override;
+	virtual bool CanBeFinished() override { return false; }
 
 	virtual void ApplyPossessionParameters(bool bShouldEnable) override;
 

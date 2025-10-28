@@ -3,120 +3,96 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Weapon.h"
+#include "Interfaces/Weapon/MeleeWeapon.h"
 #include "Items/Item.h"
 #include "Sword.generated.h"
 
+class USwordDataAsset;
+class UCommand;
+class UMeleeDamage;
 class UBoxComponent;
-class ICharacterState;
-class UCharacterStateComponent;
 
 UCLASS()
-class TESISUE_API ASword : public AItem
+class TESISUE_API ASword : public AWeapon, public IMeleeWeapon
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWallHitSignature, const FHitResult&, HitResult);
+    DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWallHitSignature, const FHitResult&, HitResult);
 
-	UPROPERTY(BlueprintAssignable, Category = "Collision")
-	FOnWallHitSignature OnWallHit;
+    UPROPERTY(BlueprintAssignable, Category = "Collision")
+    FOnWallHitSignature OnWallHit;
 
-	ASword();
+    ASword();
 
-	virtual void BeginPlay() override;
+    virtual void BeginPlay() override;
+    
+    UBoxComponent* GetWeaponDamageBox() const { return WeaponDamageBox; }
 
-	UFUNCTION(BlueprintCallable)
-	void AttachMeshToSocket(USceneComponent* InParent, const FName& InSocketName);
-	
-	FORCEINLINE UBoxComponent* GetWeaponBox() const { return WeaponBox; }
+    UPROPERTY()
+    TArray<AActor*> IgnoreActors;
 
-	TArray<AActor*> IgnoreActors;
+    UPROPERTY(BlueprintReadWrite)
+    TSubclassOf<UMeleeDamage> DamageTypeClass;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Properties | Damage")
-	TSubclassOf<UDamageType> DamageTypeClass;
+    virtual void Unequip() override;
+    
+    virtual UPrimitiveComponent* GetCollisionComponent() override;
 
-	virtual void Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOwner, APawn* NewInstigator) override;
-	
-	virtual void Unequip() override;
-
-	UFUNCTION(BlueprintCallable)
-	void EnableSwordState(bool bEnable);
-	
-	virtual UPrimitiveComponent* GetCollisionComponent() override;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Weapon Properties | LightAttackAnims")
-	TArray<UAnimMontage*> LightAttackCombo;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Weapon Properties | HeavyAttackAnims")
-	TArray<UAnimMontage*> HeavyAttackCombo;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Weapon Properties | JumpAttackAnims")
-	TArray<UAnimMontage*> JumpAttackCombo;
+    virtual void AttachMeshToSocket(USceneComponent* InParent) override;
+    void ImpactEffects(const FHitResult& Hit, bool bIsHittable) const;
 
 protected:
-	virtual void OnSphereBeginOverlap(
-		UPrimitiveComponent* OverlappedComponent,
-		AActor* OtherActor,
-		UPrimitiveComponent* OtherComp,
-		int32 OtherBodyIndex, bool bFromSweep,
-		const FHitResult& SweepResult);
+    UFUNCTION(BlueprintCallable)
+    void OnBoxOverlap(
+       UPrimitiveComponent* OverlappedComponent,
+       AActor* OtherActor,
+       UPrimitiveComponent* OtherComp,
+       int32 OtherBodyIndex,
+       bool bFromSweep,
+       const FHitResult& SweepResult);
 
-	virtual void OnSphereEndOverlap(
-		UPrimitiveComponent* OverlappedComponent,
-		AActor* OtherActor,
-		UPrimitiveComponent* OtherComp,
-		int32 OtherBodyIndex);
-
-	UFUNCTION(BlueprintCallable)
-	void OnBoxOverlap(
-		UPrimitiveComponent* OverlappedComponent,
-		AActor* OtherActor,
-		UPrimitiveComponent* OtherComp,
-		int32 OtherBodyIndex,
-		bool bFromSweep,
-		const FHitResult& SweepResult);
-
-	UFUNCTION(BlueprintImplementableEvent)
-	void CameraShake();
-
+    virtual void UsePrimaryAttack_Implementation() override;
+    virtual void UseLaunchAttack_Implementation() override;
+    virtual void UseSecondaryAttack_Implementation() override;
+    virtual void UseAbilityAttack_Implementation() override;
+    
+    virtual void SetDamageType_Implementation(TSubclassOf<UMeleeDamage> DamageType) override;
+    virtual void ResetWeapon_Implementation() override;
+    
 private:
-	UPROPERTY(EditAnywhere, Category = "Weapon Properties | FX | SFX")
-	USoundBase* ShieldImpactSFX;
-	
-	UPROPERTY(EditAnywhere, Category = "Weapon Properties | FX | VFX")
-	class UNiagaraSystem* SparksEffect;
-	
-	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Mesh | Attachment Socket")
-	FName CustomInSocketName;
+    UPROPERTY(EditAnywhere)
+    USwordDataAsset* SwordDataAsset;
+    
+    UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
+    UBoxComponent* WeaponDamageBox;
 
-	ICharacterState* CharacterStateInterface = nullptr;
-	
-	UPROPERTY()
-	UCharacterStateComponent* CharacterStateComponent = nullptr;
+    UPROPERTY(VisibleAnywhere)
+    USceneComponent* BoxTraceStart;
 
-	UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
-	UBoxComponent* WeaponBox;
+    UPROPERTY(VisibleAnywhere)
+    USceneComponent* BoxTraceEnd;
 
-	UPROPERTY(VisibleAnywhere)
-	USceneComponent* BoxTraceStart;
+    float CalculateDamage() const;
 
-	UPROPERTY(VisibleAnywhere)
-	USceneComponent* BoxTraceEnd;
+    /*void OnWallCollision(const FHitResult& Hit);*/
+    
+    bool PerformCommand(UCommand* CommToPlay, bool bShouldSoftLock) const;
+    
+    virtual void ClearIgnoreActors() override;
+    virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled) override;
 
-	UPROPERTY(EditAnywhere, Category = "Damage")
-	float Damage;
-	
-	UPROPERTY(EditAnywhere, Category = "Damage")
-	float CriticalChance = .15f;
-	
-	UPROPERTY(EditAnywhere, Category = "Damage")
-	float CriticalDamageMultiplier = 2.f;
-
-	float CalculateDamage();
-
-	void OnWallCollision(const FHitResult& Hit);
-
-	void HitStop(float Duration, float TimeScale);
-
-	void ResetTimeDilation();
+    UPROPERTY()
+    UCommand* LightCommandInstance;
+    UPROPERTY()
+    UCommand* LaunchCommandInstance;
+    UPROPERTY()
+    UCommand* JumpCommandInstance;
+    UPROPERTY()
+    UCommand* HeavyCommandInstance;
+    UPROPERTY()
+    UCommand* HeavyJumpCommandInstance;
+    UPROPERTY()
+    UCommand* AbilityCommandInstance;
 };

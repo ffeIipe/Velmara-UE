@@ -6,118 +6,62 @@
 #include "Components/ActorComponent.h"
 #include "ExtraMovementComponent.generated.h"
 
+class IStrategyProvider;
+class ICharacterMovementProvider;
+class ICharacterStateProvider;
+class IAnimatorProvider;
+class IOwnerUtilsInterface;
+struct FMovementData;
 class AEntity;
 struct FInputActionValue;
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+DECLARE_DYNAMIC_DELEGATE(FOnDodgeStarted);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDodgeSaved);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDoubleJumpStarted);
+
+UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class TESISUE_API UExtraMovementComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
 public:	
-	// Sets default values for this component's properties
 	UExtraMovementComponent();
-
-	UPROPERTY(EditAnywhere, Category = "Montages | Dodge")
-	UAnimMontage* DodgeMontage;
-
-	UPROPERTY(EditAnywhere, Category = "Montages | Dodge")
-	UAnimMontage* SpectralDodgeMontage;
-
-	UPROPERTY(EditAnywhere, Category = "Montages | Jump")
-	UAnimMontage* JumpMontage;
-
-	UPROPERTY(EditAnywhere, Category = "Montages | DoubleJump")
-	UAnimMontage* DoubleJumpMontage;
 	
-	UPROPERTY(EditAnywhere, Category = "Montages | TurnInPlace")
-	UAnimMontage* TurnInPlaceMontage;
+	UFUNCTION()
+	void ResetDodge() { bIsSaveDodge = false; }
 
-	UPROPERTY(BlueprintReadWrite, Category = "Dodge")
-	bool bIsSaveDodge = false;
-	
-	UPROPERTY(BlueprintReadWrite, Category = "Dodge")
-	bool bIsTurningInPlace = false;
-
-	UFUNCTION(BlueprintCallable)
-	void PlayTurnInPlaceMontage(const FVector& DesiredInputDirection);
-	
-	FVector LastInputDirection;
-
-	/*UFUNCTION(BlueprintCallable)
-	void OnTurnMontageEnded(UAnimMontage* Montage, bool bInterrupted);*/
+	void PerformDoubleJump(UAnimMontage* DoubleJumpMontage);
+	void PerformMove(const FVector2D& MoveVector, bool bIsTriggered);
+	void PerformLook(const FVector2D& LookingVector) const;
 
 	UFUNCTION(BlueprintCallable)
 	void DodgeSaveEvent();
-
-	UFUNCTION(BlueprintCallable, Category = "Dodge")
-	void PerformDodge();
-
-	void DodgeAnimBasedOnInput() const;
-
-	UPROPERTY()
-	class UTimelineComponent* BufferDodgeTimeline;
-
-	UPROPERTY(EditAnywhere, Category = "Stats | Buffer")
-	class UCurveFloat* BufferCurve;
-
-	UPROPERTY(EditAnywhere, Category = "Stats | Buffer")
-	float BufferDodgeDistance;
-
-	UFUNCTION(BlueprintCallable)
-	void DodgeBufferEvent(float BufferAmount);
-
-	UFUNCTION(BlueprintCallable)
-	void StopDodgeBufferEvent();
-
-	UFUNCTION(BlueprintCallable)
-	void UpdateDodgeBuffer(float Alpha);
-
-	UFUNCTION(BlueprintCallable)
-	void UpdateBuffer(float Alpha, float BufferDistance);
-
-	UPROPERTY(EditAnywhere, Category = "Stats | DoubleJump")
-	float LaunchStrength = 800.f;
-
-	float DefaultWalkSpeed;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stats | Movement")
-	float MaxRunSpeed = 800.f;
-	
-	UPROPERTY(EditAnywhere, Category = "Stats | Movement")
-	float MaxStrafeSpeed = 650.f;
+	bool IsMovingBackward() const;
 
-	UPROPERTY()
-	class UCharacterStateComponent* OwnerCharacterStateComponent;
-	
-	void Input_Move(const FInputActionValue& Value);
-	
-	void Input_Look(const FInputActionValue& Value);
+	bool IsMoving() const { return bIsMoving; }
 
-	void Input_Run(const FInputActionValue& Value);
-
-	void Input_DoubleJump();
-
-	void Input_Dodge();
+	UFUNCTION(BlueprintCallable, meta=(AutoCreateRefTerm = "EventToCall"))
+	void PlayDodgeAnim(UAnimMontage* DodgeMontage, const FOnDodgeStarted& OnDodgeStartedEvent) const;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	bool CanDoubleJump = true;
+	float DoubleJumpForce = 800.f;
+	bool bIsSaveDodge = false;
 
-	void CustomInitialize(AEntity* NewEntity, UCharacterStateComponent* NewOwnerCharStateComp);
-
+	FOnDodgeStarted OnDodgeStarted;
+	FOnDodgeSaved OnDodgeSaved;
+	FOnDoubleJumpStarted OnDoubleJumpStarted;
+	
 private:
 	virtual void BeginPlay() override;
+	
+	void DodgeAnimBasedOnInput(UAnimMontage* DodgeMontage) const;
 
-	UPROPERTY()
-	AEntity* EntityOwner;
-
-	void UpdateAllowRunStrafe();
-
-	bool bAllowRun = true;
-	bool bAllowRunStrafe = true;
-	bool bIsRunInputPressed = false;
-
-	FVector2D MoveVector;
-
-	FVector LastMovementInput;
+	bool bIsMoving = false;
+	FVector2D CurrentMoveVector = FVector2D::ZeroVector;
+	
+	TScriptInterface<IAnimatorProvider> AnimatorProvider;
+	TScriptInterface<ICharacterStateProvider> CharacterStateProvider;
+	TScriptInterface<ICharacterMovementProvider> CharacterMovementProvider;
 };

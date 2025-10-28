@@ -4,11 +4,23 @@
 #include "Components/ActorComponent.h"
 #include "MementoComponent.generated.h"
 
+class AEntity;
+class AWeapon;
+
 USTRUCT(BlueprintType)
 struct FEntityMementoState
 {
     GENERATED_BODY()
 
+    UPROPERTY(VisibleAnywhere, Category = "Memento State")
+    FName UniqueSaveID;
+
+    UPROPERTY(VisibleAnywhere, Category = "Memento State")
+    TSubclassOf<AEntity> OwnerClass;
+
+    UPROPERTY(VisibleAnywhere, Category = "Memento State")
+    bool bIsAlive;
+    
     UPROPERTY(VisibleAnywhere, Category = "Memento State")
     FTransform Transform;
 
@@ -18,12 +30,22 @@ struct FEntityMementoState
     UPROPERTY(VisibleAnywhere, Category = "Memento State")
     float Energy;
 
-    // Constructor por defecto para inicializar valores
+    UPROPERTY(VisibleAnywhere, Category = "Memento State")
+    TArray<TSubclassOf<AWeapon>> InventorySlots;
+
+    UPROPERTY(VisibleAnywhere, Category = "Memento State")
+    int32 ActiveSaveSlotIndex;
+    
     FEntityMementoState()
-        : Health(100.0f) // Valores por defecto, ajústalos según tu juego
-        , Energy(100.0f)
+        : UniqueSaveID(NAME_None)
+        , OwnerClass(nullptr)
+        , bIsAlive(false)
+        , Health(100.0f)
+        , Energy(10.f)
+        , ActiveSaveSlotIndex(0)
     {
         Transform = FTransform::Identity;
+        /*InventorySlots.Empty();*/
     }
 };
 
@@ -35,22 +57,18 @@ class TESISUE_API UMementoComponent : public UActorComponent
 public:
     UMementoComponent();
 
-    UFUNCTION(BlueprintCallable, Category = "Memento")
-    void SaveState();
-
-    UFUNCTION(BlueprintCallable, Category = "Memento")
-    void LoadState();
-
     UFUNCTION(BlueprintPure, Category = "Memento")
-    FEntityMementoState GetCurrentSavedState() const { return InternalMementoState; }
+    FEntityMementoState GetInternalSavedState() const { return InternalMementoState; }
 
     UFUNCTION(BlueprintCallable, Category = "Memento")
     void ApplyExternalState(const FEntityMementoState& StateToApply);
 
-    FORCEINLINE FTransform GetLastSavedTransform() { return InternalMementoState.Transform; }
+    FORCEINLINE FTransform GetLastSavedTransform() const { return InternalMementoState.Transform; }
 
-    FEntityMementoState CaptureOwnerState() const;
+    FEntityMementoState CaptureOwnerState();
 
+    bool bShouldSaveInventory = true;
+    
 protected:
     virtual void BeginPlay() override;
 

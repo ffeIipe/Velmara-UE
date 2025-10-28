@@ -21,6 +21,27 @@ public:
     UPROPERTY(VisibleAnywhere, Category = "Settings|Graphics")
     int32 ShadowQuality;
 
+    UPROPERTY(VisibleAnywhere, Category = "Settings|Graphics")
+    int AntiAliasingQuality;
+
+    UPROPERTY(VisibleAnywhere, Category = "Settings|Graphics")
+    int ViewDistanceQuality;
+
+    UPROPERTY(VisibleAnywhere, Category = "Settings|Graphics")
+    int PostProcessingQuality;
+
+    UPROPERTY(VisibleAnywhere, Category = "Settings|Graphics")
+    int VisualEffectQuality;
+
+    UPROPERTY(VisibleAnywhere, Category = "Settings|Graphics")
+    int GlobalIlluminationQuality;
+
+    UPROPERTY(VisibleAnywhere, Category = "Settings|Graphics")
+    int ShadingQuality;
+
+    UPROPERTY(VisibleAnywhere, Category = "Settings|Graphics")
+    float FrameRateLimit = 120;
+    
     UPROPERTY(VisibleAnywhere, Category = "Metadata")
     FString SaveSlotName;
 

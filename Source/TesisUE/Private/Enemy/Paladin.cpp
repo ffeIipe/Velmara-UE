@@ -1,56 +1,35 @@
 #include "Enemy/Paladin.h"
 #include "Player/PlayerMain.h"
 
-#include "Engine/DamageEvents.h"
 #include "GameFramework/DamageType.h"
-#include "DamageTypes/DamageTypeMain.h"
+#include "DamageTypes/MeleeDamage.h"
 
 #include "GameFramework/CharacterMovementComponent.h"
-#include "Components/BoxComponent.h"
 #include "Components/AttributeComponent.h"
-#include "Components/CombatComponent.h"
 #include "Components/CharacterStateComponent.h"
-#include "Components/PossessionComponent.h"
 #include "Components/CapsuleComponent.h"
 
 #include "Kismet/GameplayStatics.h"
-#include "Kismet/KismetSystemLibrary.h"
-
-#include "Interfaces/HitInterface.h"
 
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIController.h"
 #include <Kismet/KismetMathLibrary.h>
 
+#include "DataAssets/EntityData.h"
+#include "Interfaces/Weapon/WeaponInterface.h"
+
+#include "DataAssets/MontagesData.h"
+
 
 APaladin::APaladin()
 {
+	WeaponToEquip = CreateDefaultSubobject<UChildActorComponent>(TEXT("Weapon"));
+	WeaponToEquip->SetupAttachment(GetMesh());
+	
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_GameTraceChannel2, ECR_Ignore);
 	GetMesh()->SetCollisionResponseToChannel(ECC_GameTraceChannel2, ECR_Ignore);
-
+	
 	GetAttributeComponent()->AttachShield(GetMesh(), FName("LeftHandSocket"));
-
-	DefaultDamage = Damage;
-	DefaultMaxWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
-
-	SwordMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SwordMesh"));
-	SwordMesh->SetupAttachment(GetMesh(), TEXT("RightHandSocket"));
-	SwordMesh->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
-	SwordMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-
-	SwordCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("SwordBoxCollider"));
-	SwordCollider->SetupAttachment(SwordMesh);
-	SwordCollider->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
-	SwordCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	SwordCollider->SetCollisionResponseToChannel(ECC_Camera, ECR_Overlap);
-
-	BoxTraceStart = CreateDefaultSubobject<USceneComponent>(TEXT("Box Trace Start"));
-	BoxTraceStart->SetupAttachment(SwordMesh);
-
-	BoxTraceEnd = CreateDefaultSubobject<USceneComponent>(TEXT("Box Trace End"));
-	BoxTraceEnd->SetupAttachment(SwordMesh);
-
-	SwordCollider->OnComponentBeginOverlap.AddDynamic(this, &APaladin::OnSwordOverlap);
 
 	OnShieldTakeDamage.AddDynamic(this, &APaladin::ShieldHit);
 }
@@ -71,15 +50,51 @@ void APaladin::BeginPlay()
 			BBComponent = Cast<UBlackboardComponent>(AIController->GetBlackboardComponent());
 		}
 	}
+
+	if (!WeaponToEquip->GetChildActor())
+	{
+		WeaponToEquip->CreateChildActor();
+	}
+	
+	TArray<AActor*> AttachedActors;
+	GetAttachedActors(AttachedActors);
+	
+	for (AActor* AttachedActor : AttachedActors)
+	{
+		if (const TScriptInterface<IWeaponInterface> WeaponInterface = AttachedActor)
+		{
+			if (!GetInventoryComponent()->TryAddWeapon(WeaponInterface))
+			{
+				WeaponToEquip->DestroyChildActor();
+			}
+		}
+		else if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Not valid weapon attached to actor.");
+		}
+	}
+}
+
+void APaladin::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
+
+	if (EntityData)
+	{
+		if (EntityData->InitialWeapon)
+		{
+			WeaponToEquip->SetChildActorClass(EntityData->InitialWeapon);
+		}
+	}
 }
 
 void APaladin::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 {
 	Super::ActivateEnemy(Location, Rotation);
 
-	if (GetCharacterStateComponent())
+	if (CharacterStateComponent)
 	{
-		GetCharacterStateComponent()->SetCharacterState(ECharacterStates::ECS_EquippedSword);
+		CharacterStateComponent->SetWeaponState(ECharacterWeaponStates::ECWS_EquippedWeapon);
 	}
 
 	SetWeaponCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -92,185 +107,109 @@ void APaladin::DeactivateEnemy()
 	Super::DeactivateEnemy();
 }
 
-bool APaladin::IsLaunchable_Implementation()
+bool APaladin::IsLaunchable()
 {
 	return !GetAttributeComponent()->IsShielded(); //returns false if it has shield equipped or not detached yet.
+}
+
+void APaladin::LaunchUp()
+{
+	/*if (bIsLaunched) return;*/
+	GetCharacterMovement()->SetMovementMode(MOVE_Flying);
+	Super::LaunchUp();
+	
+	bIsLaunched = true;
+
+	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, GetName() + " was launched.");
+	DisableAI();
+	Execute_PlayAnimMontage(this, MontagesData->Montages.HitReactMontage, 1.f, FName("FromAir"));
 }
 
 void APaladin::Die(UAnimMontage* DeathAnim, const FName Section)
 {
 	Super::Die(DeathAnim, Section);
-
-	if (GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Flying || GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling)
-	{
-		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
-		LaunchCharacter(FVector(0.f, 0.f, -300.f), true, true);
-	}
 	
 	NotifyDamageTakenToBlackboard(LastDamageCauser);
 }
 
-void APaladin::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled)
-{
-	GetAttributeComponent()->DecreaseEnergyBy(PossessionAttackCost);
-
-	if (SwordCollider)
-	{
-		SwordCollider->SetCollisionEnabled(CollisionEnabled);
-		IgnoreActors.Empty();
-	}
-}
-
-void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	const FVector Start = BoxTraceStart->GetComponentLocation();
-	const FVector End = BoxTraceEnd->GetComponentLocation();
-
-	TArray<FHitResult> HitResults;
-	
-	IgnoreActors.Add(this);
-
-	const bool bHitOccurred = UKismetSystemLibrary::BoxTraceMulti(
-		this,
-		Start,
-		End,
-		FVector(10.f, 10.f, 10.f),
-		BoxTraceStart->GetComponentRotation(),
-		UEngineTypes::ConvertToTraceType(ECC_Pawn),
-		false,
-		IgnoreActors,
-		EDrawDebugTrace::None,
-		HitResults,
-		true
-	);
-
-	for (const FHitResult& Hit : HitResults)
-	{
-		if (bHitOccurred && Hit.GetActor() && !IgnoreActors.Contains(Hit.GetActor()))
-		{
-			if (const IHitInterface* Entity = Cast<IHitInterface>(Hit.GetActor()))
-			{
-				UGameplayStatics::ApplyDamage(
-					Hit.GetActor(),
-					Damage,
-					GetController(),
-					this,
-					UDamageType::StaticClass()
-				);
-
-				FDamageEvent DamageEvent(UDamageType::StaticClass());
-				
-				AEntity* FinalDamageCauser = nullptr;	
-				if (GetPossessionComponent()->IsPossessed()) FinalDamageCauser =  this;
-				
-				Entity->Execute_GetHit(Hit.GetActor(), FinalDamageCauser, Hit.ImpactPoint, DamageEvent, Damage);
-				
-				PlayCameraShake(SwordMesh->GetComponentLocation(), 0.f, 500.f);
-				IgnoreActors.Add(Hit.GetActor());
-			}
-		}
-	}
-}
-
-void APaladin::ApplyPossessionParameters(bool bShouldEnable)
-{
-	Super::ApplyPossessionParameters(bShouldEnable);
-	if (bShouldEnable)
-	{
-		Damage = PossessionDamage;
-		GetCharacterMovement()->MaxWalkSpeed = PossessionMaxWalkSpeed;
-	}
-	else
-	{
-		Damage = DefaultDamage;
-		GetCharacterMovement()->MaxWalkSpeed = DefaultMaxWalkSpeed;
-	}
-}
-
 void APaladin::ShieldHit()
 {
-	if (HitReactMontage)
+	if (MontagesData->Montages.HitReactMontage)
 	{
-		StopAnimMontage();
-		PlayAnimMontage(HitReactMontage, 1.f, FName("ShieldHit"));
+		Execute_StopAnimMontage(this, GetCurrentMontage());
+		Execute_PlayAnimMontage(this, MontagesData->Montages.HitReactMontage, 1.f, FName("ShieldHit"));
 	}
-}
-
-void APaladin::LaunchUp_Implementation(const FVector& InstigatorLocation)
-{
-	Super::LaunchUp_Implementation(InstigatorLocation);
-	LaunchEnemyUp(InstigatorLocation);
-}
-
-void APaladin::LaunchEnemyUp(const FVector& InstigatorLocation)
-{
-	if (bIsLaunched) return;
-
-	bIsLaunched = true;
-	DisableAI();
-	PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
-	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
 }
 
 void APaladin::CrashDown()
 {
-	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
-	PlayAnimMontage(HitReactMontage, 1.f, FName("KnockDown"));
+	GetCharacterMovement()->SetMovementMode(MOVE_Falling);
+	Execute_PlayAnimMontage(this, MontagesData->Montages.HitReactMontage, 1.f, FName("KnockDown"));
 	LaunchCharacter(FVector(0.f, 0.f, -100000.f), true, true);
 }
 
 void APaladin::HitInAir()
 {
-	float PlayerLocationZ = UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->GetActorLocation().Z;
-	SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, PlayerLocationZ));
-	PlayAnimMontage(HitReactMontage, 1.f, FName("FromAir"));
+	const float PlayerLocationHeight = UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->GetActorLocation().Z;
+	SetActorLocation(FVector(GetTargetActorLocation().X, GetTargetActorLocation().Y, PlayerLocationHeight));
+	Execute_PlayAnimMontage(this, MontagesData->Montages.HitReactMontage, 1.f, FName("FromAir"));
 	DisableAI();
 }
 
-void APaladin::ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoint)
+void APaladin::ReactToDamage(const EMeleeDamageTypes DamageType, const FVector& ImpactPoint)
 {
+	if (!IsAlive()) return;
+	
 	switch (DamageType)
 	{
-	case EMainDamageTypes::EMDT_CrashDown:
+	case EMeleeDamageTypes::EMDT_CrashDown:
 		CrashDown();
 		break;
 
-	case EMainDamageTypes::EMDT_InAir:
+	case EMeleeDamageTypes::EMDT_InAir:
 		HitInAir();
 		break;
 
-	case EMainDamageTypes::EMDT_Finisher:
+	case EMeleeDamageTypes::EMDT_Finisher:
 		FinishedDamage();
 		break;
 
-	case EMainDamageTypes::EMDT_Slash:
+	case EMeleeDamageTypes::EMDT_Slash:
 		Slash();
 		break;
 
-	case EMainDamageTypes::EMDT_Puncture:
-		PlayAnimMontage(HitReactMontage, 1.f, FName("PunctureReact"));
+	case EMeleeDamageTypes::EMDT_Puncture:
+		Execute_PlayAnimMontage(this, MontagesData->Montages.HitReactMontage, 1.f, FName("PunctureReact"));
 		break;
 
-	case EMainDamageTypes::EMDT_Impact:
-		PlayAnimMontage(HitReactMontage, 1.f, FName("ImpactReact"));
+	case EMeleeDamageTypes::EMDT_Impact:
+		Execute_PlayAnimMontage(this, MontagesData->Montages.HitReactMontage, 1.f, FName("ImpactReact"));
 		break;
 
-	case EMainDamageTypes::EMDT_None:
-		GetCombatComponent()->GetDirectionalReact(ImpactPoint);
+	/*case EMainDamageTypes::EMDT_Pistol:*/
+
+	case EMeleeDamageTypes::EMDT_Launch:
+		LaunchUp();
+		break;
+		
+	case EMeleeDamageTypes::EMDT_None:
+		GetDirectionalReact(ImpactPoint);
 		break;
 
 	default:
-		GetCombatComponent()->GetDirectionalReact(ImpactPoint);
+		GetDirectionalReact(ImpactPoint);
 		break;
 	}
 }
 
 void APaladin::Slash()
 {
-	FRotator DamageCauserLocation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), LastDamageCauser->GetActorLocation());
+	if (!IsAlive()) return;
+	
+	const FRotator DamageCauserLocation = UKismetMathLibrary::FindLookAtRotation(GetTargetActorLocation(), LastDamageCauser->GetTargetActorLocation());
 
 	SetActorRotation(FRotator(0.f, DamageCauserLocation.Yaw, 0.f));
 
-	StopAnimMontage();
-	PlayAnimMontage(HitReactMontage, 1.f, FName("FromFrontBig"));
+	Execute_StopAnimMontage(this, GetCurrentMontage());
+	Execute_PlayAnimMontage(this, MontagesData->Montages.HitReactMontage, 1.f, FName("FromFrontBig"));
 }

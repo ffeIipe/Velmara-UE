@@ -1,51 +1,70 @@
 #include "Components/PossessionComponent.h"
 #include "Components/CharacterStateComponent.h"
 #include "Components/AttributeComponent.h"
-#include "Components/InventoryComponent.h"
-#include "Items/Item.h"
+#include "DataAssets/EntityData.h"
 #include "Entities/Entity.h"
+#include "Interfaces/AnimatorProvider.h"
+#include "Interfaces/AttributeProvider.h"
+#include "Interfaces/Weapon/WeaponInterface.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
 
-UPossessionComponent::UPossessionComponent(): OwnerEntity(nullptr), PlayerController(nullptr)
+UPossessionComponent::UPossessionComponent(): OwnerUtils(nullptr), PlayerController(nullptr)
 {
     PrimaryComponentTick.bCanEverTick = false;
+}
+
+void UPossessionComponent::InitializeValues(const FPossessionData& PossessionData)
+{
+    ReleaseAndExecuteEnergyTax = PossessionData.ReleaseAndExecuteEnergyTax;
 }
 
 void UPossessionComponent::BeginPlay()
 {
     Super::BeginPlay();
 
-    OwnerEntity = Cast<AEntity>(GetOwner());
-    check(OwnerEntity != nullptr);
+    OwnerUtils = GetOwner();
+    CharacterStateProvider = GetOwner();
+    AttributeProvider = GetOwner();
+    AnimatorProvider = GetOwner();
+    WeaponProvider = GetOwner();
+    
+    check(OwnerUtils != nullptr);
 
     PlayerController = UGameplayStatics::GetPlayerController(this, 0);
 }
 
-void UPossessionComponent::AttemptPossession()
+void UPossessionComponent::AttemptPossession(AEntity* Victim)
 {
-    if (IsPossessing() || OwnerEntity->GetCharacterStateComponent()->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
+    if (IsPossessing() || CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->IsModeEqualToAny({ECharacterModeStates::ECMS_Spectral}))
     {
-        if (OwnerEntity->GetAttributeComponent()->RequiresEnergy(10.f))
+        if (AttributeProvider->RequiresEnergy(10.f))
         {
-            AEntity* Victim = FindPossessionVictim();
             if (!Victim) return;
 
-            Victim->GetPossessionComponent()->OnPossessionReceived(OwnerEntity);
-
+            Victim->GetPossessionComponent()->OnPossessionReceived(Cast<AEntity>(OwnerUtils.GetObject()));
+            
             check(PlayerController != nullptr);
             PlayerController->Possess(Victim);
 
             CurrentlyPossessedEntity = Victim;
-            OwnerEntity->GetCharacterStateComponent()->SetCharacterForm(ECharacterForm::ECF_Possessing);
-            OwnerEntity->AttachFollowCamera(Victim->GetSpringArmComponent());
-            OwnerEntity->SetActorHiddenInGame(true);
-            OwnerEntity->SetActorEnableCollision(false);
-            OwnerEntity->GetMesh()->bPauseAnims = true;
+            CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetMode(ECharacterModeStates::ECMS_Possessing);
+            
+            GetOwner()->SetActorHiddenInGame(true);
+            GetOwner()->SetActorEnableCollision(false);
+            AnimatorProvider->PauseAnims(true);
 
-            if (OwnerEntity->GetInventoryComponent()->GetEquippedItem())
+            if (WeaponProvider)
             {
-                OwnerEntity->GetInventoryComponent()->GetEquippedItem()->SetActorHiddenInGame(true);
+                if (WeaponProvider->Execute_GetCurrentWeapon(GetOwner()))
+                {
+                    WeaponProvider->Execute_GetCurrentWeapon(GetOwner())->EnableVisuals();
+                }
+            }
+
+            if (OnPossessionAttemptSucceed.IsBound())
+            {
+                OnPossessionAttemptSucceed.Broadcast();
             }
         }
     }
@@ -57,23 +76,27 @@ void UPossessionComponent::ReleasePossession()
     if (!IsPossessing() || !CurrentlyPossessedEntity) return;
 
     check(PlayerController != nullptr);
-    PlayerController->Possess(OwnerEntity);
+    PlayerController->Possess(Cast<APawn>(OwnerUtils.GetObject()));
 
-    const FVector ReleaseLocation = CurrentlyPossessedEntity->GetActorLocation() + CurrentlyPossessedEntity->GetActorForwardVector() * 100.f;
+    const FVector ReleaseLocation = CurrentlyPossessedEntity->GetTargetActorLocation() + CurrentlyPossessedEntity->GetActorForwardVector() * 100.f;
     
-    OwnerEntity->AttachFollowCamera(OwnerEntity->GetSpringArmComponent());
-    OwnerEntity->SetActorLocationAndRotation(ReleaseLocation, CurrentlyPossessedEntity->GetActorRotation(), true);
-    OwnerEntity->SetActorHiddenInGame(false);
-    OwnerEntity->SetActorEnableCollision(true);
-    OwnerEntity->GetMesh()->bPauseAnims = false;
-    OwnerEntity->GetCharacterStateComponent()->SetCharacterForm(ECharacterForm::ECF_Spectral);
+    GetOwner()->SetActorLocationAndRotation(ReleaseLocation, CurrentlyPossessedEntity->GetActorRotation(), true);
+    GetOwner()->SetActorHiddenInGame(false);
+    GetOwner()->SetActorEnableCollision(true);
+    AnimatorProvider->PauseAnims(false);
+    CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetMode(ECharacterModeStates::ECMS_Spectral);
 
-    if (OwnerEntity->GetInventoryComponent()->GetEquippedItem())
+    if (WeaponProvider)
     {
-        OwnerEntity->GetInventoryComponent()->GetEquippedItem()->SetActorHiddenInGame(false);
+        if (WeaponProvider->Execute_GetCurrentWeapon(GetOwner()))
+        {
+            WeaponProvider->Execute_GetCurrentWeapon(GetOwner())->EnableVisuals();
+        }
     }
 
-    CurrentlyPossessedEntity->GetPossessionComponent()->OnPossessionReleased();
+    if (OnPossessionReleased.IsBound()) OnPossessionReleased.Broadcast();
+    
+    CurrentlyPossessedEntity->GetPossessionComponent()->ReleasingPossession();
     CurrentlyPossessedEntity = nullptr;
 }
 
@@ -97,16 +120,12 @@ void UPossessionComponent::OnPossessionReceived(AEntity* NewPossessor)
     PossessedByEntity = NewPossessor;
 
     const float EnergyFromPossessor = NewPossessor->GetAttributeComponent()->GetEnergy();
-    OwnerEntity->GetAttributeComponent()->SetEnergy(EnergyFromPossessor);
-    OwnerEntity->GetAttributeComponent()->StartDecreaseEnergy();
+    AttributeProvider->SetEnergy(EnergyFromPossessor);
 }
 
-void UPossessionComponent::OnPossessionReleased()
+void UPossessionComponent::ReleasingPossession()
 {
-    OwnerEntity->AttachFollowCamera(PossessedByEntity->GetSpringArmComponent());
     PossessedByEntity = nullptr;
-
-    OwnerEntity->GetAttributeComponent()->StopDecreaseEnergy();
 
     if (OnPossessorEjected.IsBound()) OnPossessorEjected.Broadcast();
 }
@@ -117,18 +136,26 @@ void UPossessionComponent::EjectAndExecute()
 
     if (PossessedByEntity->GetAttributeComponent()->RequiresEnergy(ReleaseAndExecuteEnergyTax))
     {
-        OwnerEntity->GetAttributeComponent()->IncreaseHealth(20.f);
+        if (OnPossessorExecutedMeAndEjected.IsBound()) OnPossessorExecutedMeAndEjected.Broadcast();
+
+        AttributeProvider->IncreaseHealth(20.f);
         
         PossessedByEntity->GetAttributeComponent()->SetEnergy(
             PossessedByEntity->GetAttributeComponent()->GetEnergy() - ReleaseAndExecuteEnergyTax);
 
         PossessedByEntity->GetPossessionComponent()->ReleasePossession();
-
-        if (OnPossessorExecutedMeAndEjected.IsBound()) OnPossessorExecutedMeAndEjected.Broadcast();
     }
 }
 
-AEntity* UPossessionComponent::FindPossessionVictim() const
+void UPossessionComponent::TryReleasePossession()
+{
+    if (GetPossessedEntity())
+    {
+        ReleasePossession();
+    }
+}
+
+AEntity* UPossessionComponent::FindPossessionVictim(const float PossessDistance, const float PossessRadius) const
 {
     if (!PlayerController) return nullptr;
 
@@ -140,7 +167,7 @@ AEntity* UPossessionComponent::FindPossessionVictim() const
     const FVector TraceEnd = TraceStart + ViewRotation.Vector() * PossessDistance;
 
     TArray<AActor*> ActorsToIgnore;
-    ActorsToIgnore.Add(OwnerEntity);
+    ActorsToIgnore.Add(GetOwner());
 
     FHitResult HitResult;
     const bool bHit = UKismetSystemLibrary::SphereTraceSingle(
@@ -148,22 +175,22 @@ AEntity* UPossessionComponent::FindPossessionVictim() const
         TraceStart,
         TraceEnd,
         PossessRadius,
-        ETraceTypeQuery::TraceTypeQuery4,
+        TraceTypeQuery4,
         false,
         ActorsToIgnore,
-        EDrawDebugTrace::None,
+        EDrawDebugTrace::ForDuration,
         HitResult,
         true
     );
 
     if (!bHit) return nullptr;
 
-    if (AEntity* HitEntity = Cast<AEntity>(HitResult.GetActor()); HitEntity && HitEntity->GetPossessionComponent())
+    if (const TScriptInterface<ICombatTargetInterface> Target = HitResult.GetActor())
     {
-        if (HitEntity->GetCharacterStateComponent()->GetCurrentCharacterState().Action != ECharacterActions::ECA_Dead &&
-            !HitEntity->GetPossessionComponent()->IsPossessed() && HitEntity->IsLaunchable_Implementation())
+        if (Target->IsAlive() &&
+            !Target->IsPossessed() && Target->IsLaunchable())
         {
-            return HitEntity;
+            return Cast<AEntity>(Target.GetObject());
         }
     }
 

@@ -1,19 +1,15 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "Player/PlayerHeroController.h"
 #include "Blueprint/UserWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundMix.h"
 
-#include "EnhancedInputComponent.h"
-#include "EnhancedInputSubsystems.h"
-#include "InputActionValue.h"
-
 #include "HUD/PlayerMainHUD.h"
 #include "HUD/PlayerMainWidget.h"
 #include "HUD/PaladinBossHealthBar.h"
 #include <Player/PlayerMain.h>
+
 
 APlayerHeroController::APlayerHeroController()
 {
@@ -97,7 +93,7 @@ void APlayerHeroController::TogglePauseMenu()
 
         if (CurrentPauseMenuInstance && CurrentPauseMenuInstance->IsInViewport())
         {
-            // Ya está visible, no debería pasar si la lógica es correcta, pero por si acaso
+            // Ya estï¿½ visible, no deberï¿½a pasar si la lï¿½gica es correcta, pero por si acaso
             return;
         }
 
@@ -108,7 +104,7 @@ void APlayerHeroController::TogglePauseMenu()
             SetShowMouseCursor(true);
 
             FInputModeGameAndUI InputModeData;
-            InputModeData.SetWidgetToFocus(CurrentPauseMenuInstance->TakeWidget()); // Enfocar el menú de pausa
+            InputModeData.SetWidgetToFocus(CurrentPauseMenuInstance->TakeWidget()); // Enfocar el menï¿½ de pausa
             InputModeData.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
             SetInputMode(InputModeData);
 
@@ -143,20 +139,21 @@ void APlayerHeroController::HandleBossHealth(float HealthHP, float ShieldHP)
     }
 }
 
-void APlayerHeroController::ToggleInput(bool Bool)
+void APlayerHeroController::ToggleInput(const bool Bool)
 {
+    const TScriptInterface<ICharacterStateProvider> CharacterStateProvider = GetPawn();
     if (Bool)
     {
-        if (APlayerMain* PlayerRef = Cast<APlayerMain>(GetPawn()))
+        if (CharacterStateProvider)
         {
-            PlayerRef->GetCharacterStateComponent()->SetCharacterAction(ECharacterActions::ECA_Nothing);
+            CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetAction(ECharacterActionsStates::ECAS_Nothing);
         }
     }
     else
     {
-        if (APlayerMain* PlayerRef = Cast<APlayerMain>(GetPawn()))
+        if (CharacterStateProvider)
         {
-            PlayerRef->GetCharacterStateComponent()->SetCharacterAction(ECharacterActions::ECA_Stun);
+            CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetAction(ECharacterActionsStates::ECAS_Stun);
         }
     }
 }

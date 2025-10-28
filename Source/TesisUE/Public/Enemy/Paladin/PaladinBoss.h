@@ -35,8 +35,8 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	UStaticMeshComponent* AuraMeshComponent;
 
-	virtual void GetHit_Implementation(AEntity* DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived) override;
-
+	virtual void GetHit(TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived) override;
+	
 	UPROPERTY(EditDefaultsOnly, Category = "Attacks | Flood")
 	float FloodDamage;
 
