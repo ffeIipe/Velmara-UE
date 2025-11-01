@@ -39,7 +39,7 @@ public:
 	virtual bool IsPossessed() override { return true; } //true by default, because it wouldn't be marked as a threat if not
 	
 	// --- Components ---
-	UPROPERTY(BlueprintReadOnly, Category = "Components | Modes")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components | Modes")
 	UChangeModeComponent* ChangeModeComponent;
 
 	UPROPERTY(EditAnywhere, Category = "Gameplay | SpectralMode | SpectralAttack | Targeting")

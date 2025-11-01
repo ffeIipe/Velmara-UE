@@ -4,8 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
+/*#include "Player/CharacterWeaponStates.h"*/
 #include "SwordDataAsset.generated.h"
 
+enum class EWeaponCommandType : uint8;
 enum class EHitStopPreset : uint8;
 enum class ECameraShakePreset : uint8;
 class UNiagaraSystem;
@@ -58,22 +60,7 @@ class TESISUE_API USwordDataAsset : public UDataAsset
 
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Attacks")
-	TSubclassOf<UCommand> LightComboCommandClass;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Attacks")
-	TSubclassOf<UCommand> LaunchCommandClass;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Attacks")
-	TSubclassOf<UCommand> JumpComboCommandClass;
-    
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Attacks")
-	TSubclassOf<UCommand> HeavyComboCommandClass;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Attacks")
-	TSubclassOf<UCommand> HeavyJumpComboCommandClass;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Attacks")
-	TSubclassOf<UCommand> AbilityCommandClass;
+	TMap<EWeaponCommandType, TSubclassOf<UCommand>> Commands;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Properties")
 	FSwordProperties Stats;

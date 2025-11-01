@@ -22,7 +22,7 @@ void ATutorialTrigger::BeginPlay()
 
     bHasBeenActivated = false;
 
-    OnPlayerBeginOverlap.AddDynamic(this, &ATutorialTrigger::EnableTutorial);
+    OnPlayerControllerBeginOverlap.AddDynamic(this, &ATutorialTrigger::EnableTutorial);
 }
 
 //void ATutorialTrigger::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
