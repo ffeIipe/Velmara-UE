@@ -6,6 +6,7 @@
 #include "UObject/Object.h"
 #include "Command.generated.h"
 
+struct FInputActionValue;
 DECLARE_DYNAMIC_DELEGATE(FOnComboFinished);
 
 class AEntity;
@@ -30,7 +31,7 @@ public:
 	//Shut down the command, and if it is an instance, it will be destroyed.
 	UFUNCTION(BlueprintNativeEvent)
 	void TerminateCommand();
-
+	
 	UPROPERTY(BlueprintReadWrite)
 	FOnComboFinished OnComboFinished;
 	

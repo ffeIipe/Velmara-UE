@@ -27,3 +27,14 @@ enum class ECharacterModeStates : uint8
 	ECMS_Spectral UMETA(DisplayName = "Spectral"),
 	ECMS_Possessing UMETA(DisplayName = "Possessing")
 };
+
+UENUM(BlueprintType)
+enum class EWeaponCommandType : uint8
+{
+	EWCT_None UMETA(DisplayName = "None"),
+	EWCT_PrimaryAttack UMETA(DisplayName = "PrimaryAttack"),
+	EWCT_SecondaryAttack UMETA(DisplayName = "SecondaryAttack"),
+	EWCT_JumpAttack UMETA(DisplayName = "JumpAttack"),
+	EWCT_LaunchAttack UMETA(DisplayName = "LaunchAttack"),
+	EWCT_CrasherAttack UMETA(DisplayName = "CrasherAttack")
+};

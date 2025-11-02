@@ -19,7 +19,7 @@ void AZone::BeginPlay()
 
 	if (Trigger)
 	{
-		Trigger->OnPlayerBeginOverlap.AddDynamic(EnemySpawner, &AEnemySpawner::StartSpawning);
+		Trigger->OnPlayerControllerBeginOverlap.AddDynamic(EnemySpawner, &AEnemySpawner::StartSpawning);
 	}
 
 	for (ALever* Lever : Levers)
@@ -33,7 +33,7 @@ void AZone::OnLeverActivation()
 	if (CheckLevers())
 	{
 		EnemySpawner->EndSpawning();
-		Trigger->OnPlayerBeginOverlap.Clear();
+		Trigger->OnPlayerControllerBeginOverlap.Clear();
 		for (ALever* Lever : Levers)
 		{
 			Lever->ClearDoorTimer();

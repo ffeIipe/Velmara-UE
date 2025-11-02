@@ -64,6 +64,11 @@ void APlayerMain::BeginPlay()
 
 	ChangeModeComponent->OnHumanEffectApplied.AddDynamic(this, &APlayerMain::ApplyHumanMode);
 	ChangeModeComponent->OnSpectralEffectApplied.AddDynamic(this, &APlayerMain::ApplySpectralMode);
+
+	if (UVelmaraGameInstance* GameInst = GetGameInstance<UVelmaraGameInstance>())
+	{
+		GameInst->SavePlayerProgress(GameInst->ActiveSaveSlotIndex, this);
+	}
 	
 	if (const APlayerController* PlayerController = CastChecked<APlayerController>(GetController()))
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))

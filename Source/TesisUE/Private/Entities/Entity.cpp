@@ -21,6 +21,29 @@
 #include "Items/Weapons/Sword.h"
 #include "Items/Weapons/Strategies/CombatStrategy.h"
 #include "Kismet/GameplayStatics.h"
+#include "Entities/Entity.h"
+
+#include "NiagaraFunctionLibrary.h"
+
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
+#include "Camera/CameraComponent.h"
+#include "Components/BufferComponent.h"
+#include "Components/FieldCreationComponent.h"
+#include "Components/MementoComponent.h"
+#include "DamageTypes/SpectralTrapDamageType.h"
+#include "DataAssets/CombatStrategyDataAsset.h"
+#include "DataAssets/EffectsData.h"
+#include "DataAssets/EntityData.h"
+#include "DataAssets/InputData.h"
+#include "DataAssets/MontagesData.h"
+#include "Engine/DamageEvents.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/SpringArmComponent.h"
+#include "Interfaces/EntityAnimInstanceProvider.h"
+#include "Items/Weapons/Sword.h"
+#include "Items/Weapons/Strategies/CombatStrategy.h"
+#include "Kismet/GameplayStatics.h"
 
 AEntity::AEntity()
 {
@@ -63,7 +86,7 @@ AEntity::AEntity()
 
 	CombatComponent->OnResetState.AddDynamic(ExtraMovementComponent, &UExtraMovementComponent::ResetDodge);
 	CombatComponent->OnResetState.AddDynamic(TargetingComponent, &UTargetingComponent::RemoveCombatTarget);
-	CombatComponent->OnSaveLightAttack.AddDynamic(this, &AEntity::PerformPrimaryAttack);
+	//CombatComponent->OnSaveLightAttack.AddDynamic(this, &AEntity::PerformPrimaryAttack);
 	CombatComponent->OnSaveHeavyAttack.AddDynamic(this, &AEntity::Input_SecondaryAttack);
 	CombatComponent->OnLightAttack.AddDynamic(TargetingComponent, &UTargetingComponent::PerformSoftLock);
 	CombatComponent->OnHeavyAttack.AddDynamic(TargetingComponent, &UTargetingComponent::PerformSoftLock);
@@ -139,6 +162,11 @@ void AEntity::AddStunBehavior()
 	GetMesh()->GlobalAnimRateScale = .5f;
 	GetCharacterMovement()->MaxWalkSpeed = EntityData->MovementData.StunMaxWalkSpeed;
 	CharacterStateComponent->SetAction(ECharacterActionsStates::ECAS_Stun);
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Blue, "Stun Behavior added!");
+	}
 }
 
 void AEntity::RemoveStunBehavior()
@@ -146,6 +174,11 @@ void AEntity::RemoveStunBehavior()
 	GetMesh()->GlobalAnimRateScale = 1.f;
 	GetCharacterMovement()->MaxWalkSpeed = CurrentStrategy->CombatStrategyData->StrategyProperties.MaxWalkSpeed;
 	CharacterStateComponent->SetAction(ECharacterActionsStates::ECAS_Nothing);
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, "Stun Behavior removed!");
+	}
 }
 
 void AEntity::GetDirectionalReact(const FVector& ImpactPoint)
@@ -218,7 +251,7 @@ void AEntity::SetCombatStrategy(const ECharacterModeStates Mode)
 	if (CurrentStrategy)
 	{
 		CurrentStrategy->InitializeStrategy();
-		CurrentStrategy->SetCurrentValues(this);
+		//CurrentStrategy->SetCurrentValues(this);
 	}
 	else if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, "MISSING! Strategy is not valid! Stop the game or it will crash.");
 }
@@ -430,7 +463,11 @@ void AEntity::Jump()
 
 void AEntity::Input_Dodge()
 {
-	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Finish, ECharacterActionsStates::ECAS_Stun })) return;
+	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Stun, ECharacterActionsStates::ECAS_Dead })) return;
+	
+	GetCurrentStrategy()->Strategy_UseCommand(this, ECT_Dodge);
+	
+	/*if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Finish, ECharacterActionsStates::ECAS_Stun })) return;
 
 	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Dodge }))
 	{
@@ -440,25 +477,34 @@ void AEntity::Input_Dodge()
 	{
 		GetCurrentStrategy()->Strategy_Dodge(this);
 		CharacterStateComponent->SetAction(ECharacterActionsStates::ECAS_Dodge);
-	}
+	}*/
 }
 
 void AEntity::Input_PrimaryAttack(const FInputActionValue& Value)
 {
 	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Stun, ECharacterActionsStates::ECAS_Dead })) return;
+	const bool bIsMovingBackwards = GetTargetingComponent()->IsLocking() && IsMovingBackwards();
+	
+	bIsMovingBackwards ?
+	GetCurrentStrategy()->Strategy_UseCommand(this, ECT_LaunchAttack) :
+	GetCurrentStrategy()->Strategy_UseCommand(this, ECT_PrimaryAttack);
+	
+	/*if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Stun, ECharacterActionsStates::ECAS_Dead })) return;
 	
 	ExtraMovementComponent->bIsSaveDodge = false;
 	CombatComponent->bIsSaveHeavyAttack = false;
 
 	const bool bCheckInput = GetTargetingComponent()->IsLocking() && IsMovingBackwards();
-	bCheckInput ? bPrimaryInputHeld = true : bPrimaryInputHeld = false;
+	bCheckInput ? bPrimaryInputHeld = true : bPrimaryInputHeld = false;*/
 
-	PerformPrimaryAttack();
+	//PerformPrimaryAttack(TODO);
 }
 
-void AEntity::PerformPrimaryAttack()
+void AEntity::PerformPrimaryAttack(const FInputActionValue& Value)
 {
-	ExtraMovementComponent->bIsSaveDodge = false;
+	//GetCurrentStrategy()->Strategy_UseCommand(this, "First", Value);
+	
+	/*ExtraMovementComponent->bIsSaveDodge = false;
 	CombatComponent->bIsSaveHeavyAttack = false;
 
 	const bool bCanAttack = !CharacterStateComponent->IsActionEqualToAny(
@@ -472,7 +518,7 @@ void AEntity::PerformPrimaryAttack()
 	else
 	{
 		CombatComponent->bIsSaveLightAttack = true;
-	}
+	}*/
 }
 
 void AEntity::EnableControllerRatoationYaw()
@@ -484,8 +530,10 @@ void AEntity::EnableControllerRatoationYaw()
 void AEntity::Input_SecondaryAttack()
 {
 	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Stun, ECharacterActionsStates::ECAS_Dead })) return;
-
-	ExtraMovementComponent->bIsSaveDodge = false;
+	
+	GetCurrentStrategy()->Strategy_UseCommand(this, ECT_SecondaryAttack);
+	
+	/*ExtraMovementComponent->bIsSaveDodge = false;
 	CombatComponent->bIsSaveLightAttack = false;
 
 	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Attack, ECharacterActionsStates::ECAS_Dodge }) &&
@@ -496,16 +544,18 @@ void AEntity::Input_SecondaryAttack()
 	else
 	{
 		CombatComponent->bIsSaveHeavyAttack = true;
-	}
+	}*/
 }
 
 void AEntity::Input_Ability() //'F' input
 {
-	if (CharacterStateComponent->IsActionEqualToAny({
+	GetCurrentStrategy()->Strategy_UseCommand(this, ECT_Ability);
+	
+	/*if (CharacterStateComponent->IsActionEqualToAny({
 		ECharacterActionsStates::ECAS_Dead, ECharacterActionsStates::ECAS_Finish, ECharacterActionsStates::ECAS_Stun
 	})) return;
 	
-	GetCurrentStrategy()->Strategy_UseAbility(this);
+	GetCurrentStrategy()->Strategy_UseAbility(this);*/
 }
 
 void AEntity::Input_Block(const FInputActionValue& Value)

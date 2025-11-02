@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Interfaces/Weapon/WeaponInterface.h"
 #include "Items/Item.h"
+#include "Player/CharacterWeaponStates.h"
 #include "Weapon.generated.h"
 
 class IAnimatorProvider;
@@ -19,10 +20,9 @@ class TESISUE_API AWeapon : public AItem, public IWeaponInterface
 	GENERATED_BODY()
 
 public:
-	virtual void UsePrimaryAttack_Implementation() override {}
-	virtual void UseLaunchAttack_Implementation() override {}
-	virtual void UseSecondaryAttack_Implementation() override {}
-	virtual void UseAbilityAttack_Implementation() override {}
+	virtual void UseWeapon_Implementation(const EWeaponCommandType& CommandType) override {}
+	virtual void SaveWeaponAttack_Implementation(const EWeaponCommandType& CommandType) override {}
+	virtual EWeaponCommandType GetCommandTypeSaved_Implementation() override { return CommandTypeSaved; }
 	
 	virtual void SetDamageType_Implementation(TSubclassOf<UMeleeDamage> DamageType) override {}
 	virtual void ResetWeapon_Implementation() override {}

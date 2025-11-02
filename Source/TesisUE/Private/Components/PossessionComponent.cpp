@@ -36,7 +36,7 @@ void UPossessionComponent::BeginPlay()
 
 void UPossessionComponent::AttemptPossession(AEntity* Victim)
 {
-    if (IsPossessing() || CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->IsModeEqualToAny({ECharacterModeStates::ECMS_Spectral}))
+    if (!IsPossessing() || CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->IsModeEqualToAny({ECharacterModeStates::ECMS_Spectral}))
     {
         if (AttributeProvider->RequiresEnergy(10.f))
         {
@@ -157,6 +157,11 @@ void UPossessionComponent::TryReleasePossession()
 
 AEntity* UPossessionComponent::FindPossessionVictim(const float PossessDistance, const float PossessRadius) const
 {
+    if (GEngine)
+    {
+        GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "FindPossessionVictim");
+    }
+    
     if (!PlayerController) return nullptr;
 
     FVector StartLocation;

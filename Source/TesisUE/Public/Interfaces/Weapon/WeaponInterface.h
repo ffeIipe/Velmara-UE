@@ -5,11 +5,12 @@
 #include "CoreMinimal.h"
 #include "Components/CombatComponent.h"
 #include "UObject/Interface.h"
+#include "Player/CharacterWeaponStates.h"
 #include "WeaponInterface.generated.h"
 
 class UMeleeDamage;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnWeaponUsed);
-// This class does not need to be modified.
+
 UINTERFACE(MinimalAPI, Blueprintable)
 class UWeaponInterface : public UInterface
 {
@@ -26,18 +27,16 @@ class TESISUE_API IWeaponInterface
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
 	FOnWeaponUsed OnWeaponUsed;
-
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
-	void UsePrimaryAttack();
-
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
-	void UseLaunchAttack();
+	EWeaponCommandType CommandTypeSaved;
 	
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
-	void UseSecondaryAttack();
+	void UseWeapon(const EWeaponCommandType& CommandType);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
-	void UseAbilityAttack();
+	void SaveWeaponAttack(const EWeaponCommandType& CommandType);
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	EWeaponCommandType GetCommandTypeSaved();
 	
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void ResetWeapon();

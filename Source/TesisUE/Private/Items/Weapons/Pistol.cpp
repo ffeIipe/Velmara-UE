@@ -37,18 +37,6 @@ void APistol::BeginPlay()
 	}
 }
 
-void APistol::UsePrimaryAttack_Implementation()
-{
-	Super::UsePrimaryAttack_Implementation();
-	PrimaryShoot();
-}
-
-void APistol::UseSecondaryAttack_Implementation()
-{
-	Super::UseSecondaryAttack_Implementation();
-	SecondaryShoot();
-}
-
 void APistol::PrimaryShoot()
 {
 	Fire();

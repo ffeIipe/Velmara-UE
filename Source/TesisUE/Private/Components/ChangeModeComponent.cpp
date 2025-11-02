@@ -17,10 +17,20 @@ UChangeModeComponent::UChangeModeComponent()
 
     SpectralEffectTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("SpectralEffectTimeline"));
 
-    static ConstructorHelpers::FObjectFinder<UMaterialParameterCollection> MaterialCollection(TEXT("/Game/BloodsenseV2/PC_BloodSenseV2"));
+    static ConstructorHelpers::FObjectFinder<UMaterialParameterCollection> MaterialCollection(TEXT("/Game/BloodsenseV2/PC_BloodSenseV2.PC_BloodSenseV2"));
     if (MaterialCollection.Succeeded())
     {  
         BloodSenseMaterialCollection = MaterialCollection.Object;
+    }
+
+    static ConstructorHelpers::FObjectFinder<UCurveFloat> TrySpectralCurve(TEXT("/Game/Blueprints/Curves/C_SpectralCurve.C_SpectralCurve"));
+    if (TrySpectralCurve.Succeeded())
+    {
+        SpectralCurve = TrySpectralCurve.Object;
+    }
+    else
+    {
+        if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Invalid Spectral Curve!");
     }
 }
 

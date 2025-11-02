@@ -10,31 +10,25 @@
  * 
  */
 
+enum EInputCommandType : uint8;
+class UCommand;
+
 USTRUCT(BlueprintType)
 struct FStrategyProperties
 {
 	GENERATED_BODY()
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float JumpForce = 800.f;
+	float JumpForce;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float DoubleJumpForce = 800.f;
+	float DoubleJumpForce;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float MaxWalkSpeed = 500.f;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FName FirstCommandName;
+	float MaxWalkSpeed;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FName SecondCommandName;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FName AbilityCommandName;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FName DodgeCommandName;
+	TMap<TEnumAsByte<EInputCommandType>, TSubclassOf<UCommand>> CommandsClasses;
 };
 
 UCLASS(Blueprintable)

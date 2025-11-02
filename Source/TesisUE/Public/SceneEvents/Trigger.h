@@ -15,8 +15,12 @@ class TESISUE_API ATrigger : public AActor
 {
 	GENERATED_BODY()
 	
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerControllerBeginOverlap);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerControllerEndOverlap);
+	
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerBeginOverlap);
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerEndOverlap);
+	
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEntityBeginOverlap);
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEntityEndOverlap);
 
@@ -24,11 +28,17 @@ public:
 	ATrigger();
 
 	UPROPERTY(BlueprintAssignable)
+	FOnPlayerControllerBeginOverlap OnPlayerControllerBeginOverlap;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnPlayerControllerEndOverlap OnPlayerControllerEndOverlap;
+
+	UPROPERTY(BlueprintAssignable)
 	FOnPlayerBeginOverlap OnPlayerBeginOverlap;
 
 	UPROPERTY(BlueprintAssignable)
 	FOnPlayerEndOverlap OnPlayerEndOverlap;
-
+	
 	UPROPERTY(BlueprintAssignable)
 	FOnEntityBeginOverlap OnEntityBeginOverlap;
 	

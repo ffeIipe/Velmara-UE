@@ -6,6 +6,7 @@
 #include "Weapon.h"
 #include "Interfaces/Weapon/MeleeWeapon.h"
 #include "Items/Item.h"
+#include "Player/CharacterWeaponStates.h"
 #include "Sword.generated.h"
 
 class USwordDataAsset;
@@ -53,13 +54,15 @@ protected:
        bool bFromSweep,
        const FHitResult& SweepResult);
 
-    virtual void UsePrimaryAttack_Implementation() override;
-    virtual void UseLaunchAttack_Implementation() override;
-    virtual void UseSecondaryAttack_Implementation() override;
-    virtual void UseAbilityAttack_Implementation() override;
+
+    virtual void UseWeapon_Implementation(const EWeaponCommandType& CommandType) override;
+    virtual void SaveWeaponAttack_Implementation(const EWeaponCommandType& CommandType) override;
     
     virtual void SetDamageType_Implementation(TSubclassOf<UMeleeDamage> DamageType) override;
     virtual void ResetWeapon_Implementation() override;
+
+    UPROPERTY()
+    TMap<EWeaponCommandType, TObjectPtr<UCommand>> CommandsInstances;
     
 private:
     UPROPERTY(EditAnywhere)
@@ -78,21 +81,8 @@ private:
 
     /*void OnWallCollision(const FHitResult& Hit);*/
     
-    bool PerformCommand(UCommand* CommToPlay, bool bShouldSoftLock) const;
+    /*bool PerformCommand(const EWeaponCommandType& CommToPlay, bool bShouldSoftLock) const;*/
     
     virtual void ClearIgnoreActors() override;
     virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled) override;
-
-    UPROPERTY()
-    UCommand* LightCommandInstance;
-    UPROPERTY()
-    UCommand* LaunchCommandInstance;
-    UPROPERTY()
-    UCommand* JumpCommandInstance;
-    UPROPERTY()
-    UCommand* HeavyCommandInstance;
-    UPROPERTY()
-    UCommand* HeavyJumpCommandInstance;
-    UPROPERTY()
-    UCommand* AbilityCommandInstance;
 };

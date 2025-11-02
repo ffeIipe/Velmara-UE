@@ -339,7 +339,7 @@ protected:
 private:
 	// === Aux. Functions ===
 	UFUNCTION()
-	void PerformPrimaryAttack();
+	void PerformPrimaryAttack(const FInputActionValue& Value);
 
 	bool bPrimaryInputHeld;
 
