@@ -7,7 +7,7 @@
 #include "Pickable.generated.h"
 
 // This class does not need to be modified.
-UINTERFACE()
+UINTERFACE(MinimalAPI, Blueprintable)
 class UPickable : public UInterface
 {
 	GENERATED_BODY()

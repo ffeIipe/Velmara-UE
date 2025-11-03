@@ -54,6 +54,7 @@ void APaladin::BeginPlay()
 	if (!WeaponToEquip->GetChildActor())
 	{
 		WeaponToEquip->CreateChildActor();
+		GetCharacterStateComponent_Implementation()->SetWeaponState(ECharacterWeaponStates::ECWS_EquippedWeapon);
 	}
 	
 	TArray<AActor*> AttachedActors;

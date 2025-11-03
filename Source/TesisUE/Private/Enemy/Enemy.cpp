@@ -15,6 +15,7 @@
 #include "Engine/DamageEvents.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/DamageType.h"
+#include "Items/Weapons/Strategies/CombatStrategy.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Misc/Guid.h"
@@ -365,6 +366,8 @@ void AEnemy::OnPossessed()
 	ReturnAttackTokenToTarget();
 	DisableAI();
 	ApplyPossessionParameters(true);
+
+	SetCombatStrategy(ECharacterModeStates::ECMS_Spectral);
 }
 
 void AEnemy::OnUnpossessed()
@@ -377,6 +380,8 @@ void AEnemy::OnUnpossessed()
 	{
 		OtherTeamAgent->SetGenericTeamId(FGenericTeamId(0));
 	}
+
+	SetCombatStrategy(ECharacterModeStates::ECMS_Human);
 }
 
 void AEnemy::UpdateDissolveEffect(float Value)
