@@ -63,7 +63,7 @@ class UCameraShakeBase;
 class UEntityData;
 
 // === Delegates ===
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEntityDead, AEntity*, LastDamageCauser);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEntityDead, AEntity*, EntityDead);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEntityDamaged, AEntity*, LastDamageCauser);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEntityCanBeFinished);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEntityShieldTakeDamage);
@@ -168,7 +168,7 @@ public:
 	virtual TScriptInterface<ICombatTargetInterface> GetLastDamageCauser() override { return LastDamageCauser; }
 	virtual bool IsFalling() override { return GetCharacterMovement()->IsFalling(); }
 	virtual bool IsFlying() override { return GetCharacterMovement()->IsFlying(); }
-	virtual bool IsMovingBackwards() override { return ExtraMovementComponent->IsMovingBackward(); }
+	virtual bool IsMovingBackwards() override { return ExtraMovementComponent->IsMovingBackwards(); }
 	virtual bool IsEquipped() override;
 	virtual bool IsLocking() override { return GetTargetingComponent()->IsLocking(); }
 	virtual void SetMovementMode(const EMovementMode MovementMode) override { GetCharacterMovement()->SetMovementMode(MovementMode); }

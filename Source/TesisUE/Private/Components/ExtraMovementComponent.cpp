@@ -11,7 +11,7 @@ UExtraMovementComponent::UExtraMovementComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 }
 
-bool UExtraMovementComponent::IsMovingBackward() const
+bool UExtraMovementComponent::IsMovingBackwards() const
 {
 	if (CurrentMoveVector.Y < -.7f) //threshold
 		return true;

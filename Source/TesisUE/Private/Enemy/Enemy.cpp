@@ -165,7 +165,7 @@ void AEnemy::DeactivateEnemy()
 	GetWorldTimerManager().ClearTimer(ReturnToPoolTimerHandle);
 }
 
-void AEnemy::Die(UAnimMontage* DeathAnim, FName Section)
+void AEnemy::Die(UAnimMontage* DeathAnim, const FName Section)
 {
 	Super::Die(DeathAnim, Section);
 
@@ -189,7 +189,7 @@ void AEnemy::Die(UAnimMontage* DeathAnim, FName Section)
 		GetPossessionComponent()->ReleasePossession();
 	}
 
-	if (OnDead.IsBound()) OnDead.Broadcast(Cast<AEntity>(LastDamageCauser.GetObject()));
+	if (OnDead.IsBound()) OnDead.Broadcast(Cast<AEntity>(this));
 	
 	GetWorldTimerManager().SetTimer(ReturnToPoolTimerHandle, this, &AEnemy::RequestReturnToPool, 5.0f, false);
 }

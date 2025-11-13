@@ -6,17 +6,14 @@
 #include "SceneEvents/EnemySpawner/SpawnPoint.h"
 
 
-// Sets default values
 AEnemySpawner::AEnemySpawner()
 {
 	PrimaryActorTick.bCanEverTick = false;
-
+	MaxEnemiesSpawn = 10;
 }
 
 void AEnemySpawner::StartSpawning()
 {
-	/*if (bHasBeenStopped) return;*/
-	
 	const float TimeBetweenSpawn = FMath::RandRange(TimeBetweenSpawnMin, TimeBetweenSpawnMax);
 	
 	GetWorld()->GetTimerManager().SetTimer(
@@ -48,11 +45,8 @@ void AEnemySpawner::SpawnEnemyFromSpawnPoint()
 void AEnemySpawner::EndSpawning()
 {
 	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "End of spawning!");
-
-	/*
-	bHasBeenStopped = true;*/
-	GetWorld()->GetTimerManager().ClearTimer(SpawnTimerHandle);
 	
+	GetWorld()->GetTimerManager().ClearTimer(SpawnTimerHandle);
 }
 
 void AEnemySpawner::BeginPlay()
