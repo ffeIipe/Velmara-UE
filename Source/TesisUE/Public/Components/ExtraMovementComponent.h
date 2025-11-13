@@ -36,8 +36,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void DodgeSaveEvent();
-	
-	bool IsMovingBackward() const;
+
+	UFUNCTION(BlueprintCallable)
+	bool IsMovingBackwards() const;
 
 	bool IsMoving() const { return bIsMoving; }
 

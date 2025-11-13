@@ -34,6 +34,9 @@ protected:
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
 	float TimeBetweenSpawnMax = 3.f;
 
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
+	int32 MaxEnemiesSpawn;
+	
 	FTimerHandle SpawnTimerHandle;
 
 private:

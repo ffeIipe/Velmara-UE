@@ -484,20 +484,12 @@ void AEntity::Input_PrimaryAttack(const FInputActionValue& Value)
 {
 	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Stun, ECharacterActionsStates::ECAS_Dead })) return;
 	const bool bIsMovingBackwards = GetTargetingComponent()->IsLocking() && IsMovingBackwards();
+
+	const bool bIsInAir = CombatComponent->IsInAir();
 	
-	bIsMovingBackwards ?
+	bIsMovingBackwards && !bIsInAir ?
 	GetCurrentStrategy()->Strategy_UseCommand(this, ECT_LaunchAttack) :
 	GetCurrentStrategy()->Strategy_UseCommand(this, ECT_PrimaryAttack);
-	
-	/*if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Stun, ECharacterActionsStates::ECAS_Dead })) return;
-	
-	ExtraMovementComponent->bIsSaveDodge = false;
-	CombatComponent->bIsSaveHeavyAttack = false;
-
-	const bool bCheckInput = GetTargetingComponent()->IsLocking() && IsMovingBackwards();
-	bCheckInput ? bPrimaryInputHeld = true : bPrimaryInputHeld = false;*/
-
-	//PerformPrimaryAttack(TODO);
 }
 
 void AEntity::PerformPrimaryAttack(const FInputActionValue& Value)

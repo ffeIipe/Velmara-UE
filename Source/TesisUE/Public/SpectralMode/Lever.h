@@ -16,9 +16,6 @@ class TESISUE_API ALever : public ASpectralObject
 	DECLARE_DYNAMIC_DELEGATE(FOnLeverDeactivation_Internal);
 
 public:
-	/*UPROPERTY(BlueprintAssignable)
-	FOnLeverActivation OnLeverActivation;*/
-	
 	FOnLeverActivation_Internal OnLeverActivation_Internal;
 	FOnLeverDeactivation_Internal OnLeverDeactivation_Internal;
 
@@ -41,7 +38,7 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Properties")
 	TArray<ADoor*> DoorArray;
-
+	
 	UPROPERTY(EditAnywhere, Category = "Properties")
 	USoundBase* LeverActivatedSFX;
 
