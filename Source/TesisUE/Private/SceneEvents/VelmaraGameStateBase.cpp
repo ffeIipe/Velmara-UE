@@ -143,15 +143,10 @@ void AVelmaraGameStateBase::InitializeItems(const TArray<FItemMementoState>& Ite
 		WorldItemsStates.Add(ItemState.UniqueSaveID, ItemState);
 	}
 
-	for (AItem* Item : GetMementoItems())
+	for (const AItem* Item : GetMementoItems())
 	{
 		if (const FItemMementoState* ItemData = WorldItemsStates.Find(Item->GetUniqueSaveID()))
 		{
-			/*if (ItemData->bWasOpened)
-			{
-				Item->Destroy();
-			}*/
-
 			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Turquoise, Item->GetUniqueSaveID().ToString());
 			
 			const FItemMementoState& ItemState = *ItemData;
@@ -182,10 +177,6 @@ TArray<FItemMementoState> AVelmaraGameStateBase::SaveAllItemMementoStates()
 
 	for (const AItem* Item : GetMementoItems())
 	{
-		/*if (GEngine)
-			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, Item->GetName() + " saved.");
-			*/
-
 		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Yellow, Item->GetUniqueSaveID().ToString());
 		Result.Add(Item->GetItemMementoComponent()->CaptureItemState());
 	}

@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -58,6 +56,8 @@ public:
 	void RequestReturnToPool();
 
 	// === Combat & Damage ===
+	virtual bool IsAlive() override;
+	
 	virtual void Die(UAnimMontage* DeathAnim, FName Section) override;
 
 	virtual void GetHit(TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived) override;

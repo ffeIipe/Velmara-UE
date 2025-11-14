@@ -1,10 +1,9 @@
 #include "SpectralMode/SpectralTrap.h"
 #include "Player/PlayerMain.h"
 #include "Components/BoxComponent.h"
+#include "DamageTypes/EnvironmentalDamage.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/DamageEvents.h"
-#include "DamageTypes/SpectralTrapDamageType.h"
-
 
 ASpectralTrap::ASpectralTrap()
 {
@@ -54,7 +53,7 @@ void ASpectralTrap::FinishDamage()
 	if (!HitActor) return;
 
 	TimeOnTarget = 0.f;
-	InitialDamage = 0.0f;
+	InitialDamage = 0.f;
 	
 	HitActor->RemoveStunBehavior();
 	GetWorld()->GetTimerManager().ClearTimer(ContinuousDamageTimerHandle);
@@ -75,8 +74,8 @@ void ASpectralTrap::DealContinuousDamage()
 		if (GEngine) GEngine->AddOnScreenDebugMessage(4, 3.f, FColor::White, "Dealing damage: " + FString::SanitizeFloat(InitialDamage));
 	}
 	
-	UGameplayStatics::ApplyDamage(Cast<AActor>(HitActor.GetObject()), InitialDamage, nullptr, this, USpectralTrapDamageType::StaticClass());
+	UGameplayStatics::ApplyDamage(Cast<AActor>(HitActor.GetObject()), InitialDamage, nullptr, this, UEnvironmentalDamage::StaticClass());
 	
-	const FDamageEvent DamageEvent(USpectralTrapDamageType::StaticClass());
+	const FDamageEvent DamageEvent(UEnvironmentalDamage::StaticClass());
 	HitActor->GetHit(GetOwner(), FVector::ZeroVector, DamageEvent, InitialDamage);
 }

@@ -145,6 +145,11 @@ void ASword::SetDamageType_Implementation(const TSubclassOf<UMeleeDamage> Damage
 {
 	Super::SetDamageType_Implementation(DamageType);
 
+	if (DamageType == nullptr)
+	{
+		DamageTypeClass = UMeleeDamage::StaticClass();
+	}
+	
 	DamageTypeClass = DamageType;
 }
 
@@ -168,20 +173,6 @@ float ASword::CalculateDamage() const
 	}
 	return CriticalDamage;
 }
-
-/*bool ASword::PerformCommand(const EWeaponCommandType& CommToPlay, const bool bShouldSoftLock) const
-{
-	if (CommandsInstances.Contains(CommToPlay))
-	{
-		/*if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5, FColor::Yellow, "Missing Anim/Anims to play");
-		return false;#1#
-		
-		CommandsInstances[CommToPlay]->ExecuteCommand(Cast<AEntity>(GetOwner()));
-		if (bShouldSoftLock) if (OnWeaponUsed.IsBound()) OnWeaponUsed.Broadcast();
-	}
-	
-	return true;
-}*/
 
 void ASword::ClearIgnoreActors()
 {

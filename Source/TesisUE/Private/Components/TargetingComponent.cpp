@@ -114,12 +114,37 @@ void UTargetingComponent::PerformSoftLock()
 bool UTargetingComponent::PickHardLockTarget()
 {
     CombatTargets = GetCombatTargets(HardLockRadius);
-    if (CombatTargets.Num() > 0)
+
+    float MinDistance = 0.f;
+    TScriptInterface<ICombatTargetInterface> ClosestCombatTarget = nullptr;
+    
+    for (const TScriptInterface CombatTarget : CombatTargets)
     {
-        CombatTargetIndex = 0;
-        CurrentTarget = CombatTargets[CombatTargetIndex];
-        return true;
+        if (CombatTarget && CombatTarget->IsAlive())
+        {
+            const float NewDistance = (CombatTarget->GetTargetActorLocation() - GetOwner()->GetActorLocation()).Length();
+
+            if (MinDistance == 0.f)
+            {
+                MinDistance = NewDistance;
+                ClosestCombatTarget = CombatTarget;
+            }
+        
+            if (MinDistance > NewDistance)
+            {
+                MinDistance = NewDistance;
+                ClosestCombatTarget = CombatTarget;
+            }
+        }
+        
+        if (CombatTargets.Num() > 0)
+        {
+            CombatTargetIndex = 0;
+            CurrentTarget = ClosestCombatTarget;
+            return true;
+        }
     }
+       
     return false;
 }
 

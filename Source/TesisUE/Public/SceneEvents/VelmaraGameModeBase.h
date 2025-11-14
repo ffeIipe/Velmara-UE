@@ -23,8 +23,6 @@ public:
 	void SetEnemiesAIEnabled(bool bEnabled);
 
 private:
-	virtual void BeginPlay();
-	
 	UPROPERTY()
 	TArray<AEnemy*> RegisteredEnemies;
 };

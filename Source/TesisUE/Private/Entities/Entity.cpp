@@ -8,30 +8,9 @@
 #include "Components/BufferComponent.h"
 #include "Components/FieldCreationComponent.h"
 #include "Components/MementoComponent.h"
-#include "DamageTypes/SpectralTrapDamageType.h"
-#include "DataAssets/CombatStrategyDataAsset.h"
-#include "DataAssets/EffectsData.h"
-#include "DataAssets/EntityData.h"
-#include "DataAssets/InputData.h"
-#include "DataAssets/MontagesData.h"
-#include "Engine/DamageEvents.h"
-#include "GameFramework/CharacterMovementComponent.h"
-#include "GameFramework/SpringArmComponent.h"
-#include "Interfaces/EntityAnimInstanceProvider.h"
-#include "Items/Weapons/Sword.h"
-#include "Items/Weapons/Strategies/CombatStrategy.h"
-#include "Kismet/GameplayStatics.h"
-#include "Entities/Entity.h"
-
-#include "NiagaraFunctionLibrary.h"
-
-#include "EnhancedInputComponent.h"
-#include "EnhancedInputSubsystems.h"
-#include "Camera/CameraComponent.h"
-#include "Components/BufferComponent.h"
-#include "Components/FieldCreationComponent.h"
-#include "Components/MementoComponent.h"
-#include "DamageTypes/SpectralTrapDamageType.h"
+#include "DamageTypes/EnvironmentalDamage.h"
+#include "DamageTypes/MeleeDamage.h"
+#include "DamageTypes/PistolDamage.h"
 #include "DataAssets/CombatStrategyDataAsset.h"
 #include "DataAssets/EffectsData.h"
 #include "DataAssets/EntityData.h"
@@ -86,7 +65,6 @@ AEntity::AEntity()
 
 	CombatComponent->OnResetState.AddDynamic(ExtraMovementComponent, &UExtraMovementComponent::ResetDodge);
 	CombatComponent->OnResetState.AddDynamic(TargetingComponent, &UTargetingComponent::RemoveCombatTarget);
-	//CombatComponent->OnSaveLightAttack.AddDynamic(this, &AEntity::PerformPrimaryAttack);
 	CombatComponent->OnSaveHeavyAttack.AddDynamic(this, &AEntity::Input_SecondaryAttack);
 	CombatComponent->OnLightAttack.AddDynamic(TargetingComponent, &UTargetingComponent::PerformSoftLock);
 	CombatComponent->OnHeavyAttack.AddDynamic(TargetingComponent, &UTargetingComponent::PerformSoftLock);
@@ -97,7 +75,7 @@ AEntity::AEntity()
 
 	GetSpringArmComponent()->bUsePawnControlRotation = true;
 
-	TargetingComponent->OnHardLockToggled.AddDynamic(this, &AEntity::EnableControllerRatoationYaw);
+	TargetingComponent->OnHardLockToggled.AddDynamic(this, &AEntity::EnableControllerRotationYaw);
 }
 
 void AEntity::GetHit(const TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint,
@@ -108,42 +86,61 @@ void AEntity::GetHit(const TScriptInterface<ICombatTargetInterface> DamageCauser
 	if (IsBlocking()) CombatComponent->ReceiveBlock(MontagesData->Montages.BlockMontage);
 	
 	LastDamageCauser = DamageCauser;
-	
-	if (EffectsData->EntityEffects.ReceiveDamageSFX)
-	{
-		UGameplayStatics::PlaySoundAtLocation(
-			GetWorld(),
-			EffectsData->EntityEffects.ReceiveDamageSFX,
-			GetTargetActorLocation()
-		);
-	}
 
-	if (EffectsData->EntityEffects.HitSound)
-	{
-		UGameplayStatics::PlaySoundAtLocation(
-			this,
-			EffectsData->EntityEffects.HitSound,
-			ImpactPoint
-		);
-	}
+	const UClass* DamageClass = DamageEvent.DamageTypeClass;
+
+	if (!DamageClass) return;
 	
-	if (EffectsData->EntityEffects.ReceiveDamageFX)
+	if (DamageClass->IsChildOf(UEnvironmentalDamage::StaticClass()))
 	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-			GetWorld(),
-			EffectsData->EntityEffects.ReceiveDamageFX,
-			ImpactPoint
-		);
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, "Environmental Damage");
 	}
-	CombatComponent->StartBufferBackwards();
-	
-	if (DamageEvent.DamageTypeClass != USpectralTrapDamageType::StaticClass())
+	else if (DamageClass->IsChildOf(UMeleeDamage::StaticClass()))
 	{
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, "Melee Damage");
+		
+		if (EffectsData->EntityEffects.ReceiveDamageSFX)
+		{
+			UGameplayStatics::PlaySoundAtLocation(
+				GetWorld(),
+				EffectsData->EntityEffects.ReceiveDamageSFX,
+				GetTargetActorLocation()
+			);
+		}
+
+		if (EffectsData->EntityEffects.HitSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(
+				this,
+				EffectsData->EntityEffects.HitSound,
+				ImpactPoint
+			);
+		}
+	
+		if (EffectsData->EntityEffects.ReceiveDamageFX)
+		{
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+				GetWorld(),
+				EffectsData->EntityEffects.ReceiveDamageFX,
+				ImpactPoint
+			);
+		}
+		
+		CombatComponent->StartBufferBackwards();
 		GetDirectionalReact(ImpactPoint);
 	}
-	else
+	else if (DamageClass->IsChildOf(UPistolDamage::StaticClass()))
 	{
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, "Pistol Damage");
 		
+		if (EffectsData->EntityEffects.ShieldImpactSFX)
+		{
+			UGameplayStatics::PlaySoundAtLocation(
+			GetWorld(),
+			EffectsData->EntityEffects.ShieldImpactSFX,
+			GetAttributeComponent()->GetShieldMeshComponent()->GetComponentLocation()
+			);	
+		}
 	}
 }
 
@@ -369,8 +366,6 @@ void AEntity::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_Look, ETriggerEvent::Triggered, this, &AEntity::Input_Look);
 
 		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_Attack, ETriggerEvent::Triggered, this, &AEntity::Input_PrimaryAttack);
-		/*EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_Attack, ETriggerEvent::Completed, this, &AEntity::OnPrimaryAttackReleased);*/
-		
 		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_HeavyAttack, ETriggerEvent::Started, this, &AEntity::Input_SecondaryAttack);
 
 		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_Inventory, ETriggerEvent::Started, this, &AEntity::Input_ToggleHardLock);
@@ -414,9 +409,8 @@ float AEntity::TakeDamage(const float DamageAmount, FDamageEvent const& DamageEv
 {
 	LastDamageCauser = Cast<AEntity>(DamageCauser);
 
-	if (GetAttributeComponent()->IsShielded() && DamageEvent.DamageTypeClass == USpectralTrapDamageType::StaticClass())
+	if (GetAttributeComponent()->IsShielded() && DamageEvent.DamageTypeClass == UPistolDamage::StaticClass())
 	{
-		UGameplayStatics::PlaySoundAtLocation(GetWorld(), EffectsData->EntityEffects.ShieldImpactSFX, GetAttributeComponent()->GetShieldMeshComponent()->GetComponentLocation());
 		GetAttributeComponent()->ReceiveShieldDamage(DamageAmount);
 
 		if (OnShieldTakeDamage.IsBound()) OnShieldTakeDamage.Broadcast();
@@ -466,18 +460,6 @@ void AEntity::Input_Dodge()
 	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Stun, ECharacterActionsStates::ECAS_Dead })) return;
 	
 	GetCurrentStrategy()->Strategy_UseCommand(this, ECT_Dodge);
-	
-	/*if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Finish, ECharacterActionsStates::ECAS_Stun })) return;
-
-	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Dodge }))
-	{
-		ExtraMovementComponent->bIsSaveDodge = true;
-	}
-	else
-	{
-		GetCurrentStrategy()->Strategy_Dodge(this);
-		CharacterStateComponent->SetAction(ECharacterActionsStates::ECAS_Dodge);
-	}*/
 }
 
 void AEntity::Input_PrimaryAttack(const FInputActionValue& Value)
@@ -492,28 +474,7 @@ void AEntity::Input_PrimaryAttack(const FInputActionValue& Value)
 	GetCurrentStrategy()->Strategy_UseCommand(this, ECT_PrimaryAttack);
 }
 
-void AEntity::PerformPrimaryAttack(const FInputActionValue& Value)
-{
-	//GetCurrentStrategy()->Strategy_UseCommand(this, "First", Value);
-	
-	/*ExtraMovementComponent->bIsSaveDodge = false;
-	CombatComponent->bIsSaveHeavyAttack = false;
-
-	const bool bCanAttack = !CharacterStateComponent->IsActionEqualToAny(
-	{ ECharacterActionsStates::ECAS_Attack, ECharacterActionsStates::ECAS_Dodge })
-	&& CharacterStateComponent->IsModeEqualToAny({ ECharacterModeStates::ECMS_Human });
-	
-	if (bCanAttack)
-	{
-		GetCurrentStrategy()->Strategy_UseFirstCommand(this, bPrimaryInputHeld);
-	}
-	else
-	{
-		CombatComponent->bIsSaveLightAttack = true;
-	}*/
-}
-
-void AEntity::EnableControllerRatoationYaw()
+void AEntity::EnableControllerRotationYaw()
 {
 	bUseControllerRotationYaw = !bUseControllerRotationYaw;
 	GetCharacterMovement()->bOrientRotationToMovement = !GetCharacterMovement()->bOrientRotationToMovement;
@@ -524,30 +485,11 @@ void AEntity::Input_SecondaryAttack()
 	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Stun, ECharacterActionsStates::ECAS_Dead })) return;
 	
 	GetCurrentStrategy()->Strategy_UseCommand(this, ECT_SecondaryAttack);
-	
-	/*ExtraMovementComponent->bIsSaveDodge = false;
-	CombatComponent->bIsSaveLightAttack = false;
-
-	if (!CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Attack, ECharacterActionsStates::ECAS_Dodge }) &&
-		CharacterStateComponent->IsModeEqualToAny({ ECharacterModeStates::ECMS_Human }))
-	{
-		GetCurrentStrategy()->Strategy_UseSecondCommand(this);
-	}
-	else
-	{
-		CombatComponent->bIsSaveHeavyAttack = true;
-	}*/
 }
 
 void AEntity::Input_Ability() //'F' input
 {
 	GetCurrentStrategy()->Strategy_UseCommand(this, ECT_Ability);
-	
-	/*if (CharacterStateComponent->IsActionEqualToAny({
-		ECharacterActionsStates::ECAS_Dead, ECharacterActionsStates::ECAS_Finish, ECharacterActionsStates::ECAS_Stun
-	})) return;
-	
-	GetCurrentStrategy()->Strategy_UseAbility(this);*/
 }
 
 void AEntity::Input_Block(const FInputActionValue& Value)

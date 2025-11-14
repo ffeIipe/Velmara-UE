@@ -21,8 +21,6 @@
 
 #include "Kismet/GameplayStatics.h"
 
-#include "Engine/DamageEvents.h"
-#include "DamageTypes/SpectralTrapDamageType.h"
 #include "DataAssets/InputData.h"
 #include "DataAssets/MontagesData.h"
 #include "Interfaces/Weapon/WeaponInterface.h"
@@ -64,11 +62,6 @@ void APlayerMain::BeginPlay()
 
 	ChangeModeComponent->OnHumanEffectApplied.AddDynamic(this, &APlayerMain::ApplyHumanMode);
 	ChangeModeComponent->OnSpectralEffectApplied.AddDynamic(this, &APlayerMain::ApplySpectralMode);
-
-	if (UVelmaraGameInstance* GameInst = GetGameInstance<UVelmaraGameInstance>())
-	{
-		GameInst->SavePlayerProgress(GameInst->ActiveSaveSlotIndex, this);
-	}
 	
 	if (const APlayerController* PlayerController = CastChecked<APlayerController>(GetController()))
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))

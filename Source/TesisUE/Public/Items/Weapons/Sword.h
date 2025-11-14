@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Weapon.h"
+#include "DamageTypes/MeleeDamage.h"
 #include "Interfaces/Weapon/MeleeWeapon.h"
 #include "Items/Item.h"
 #include "Player/CharacterWeaponStates.h"
@@ -35,7 +36,7 @@ public:
     TArray<AActor*> IgnoreActors;
 
     UPROPERTY(BlueprintReadWrite)
-    TSubclassOf<UMeleeDamage> DamageTypeClass;
+    TSubclassOf<UMeleeDamage> DamageTypeClass = UMeleeDamage::StaticClass();
 
     virtual void Unequip() override;
     

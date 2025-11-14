@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
+#include "CombatTargetInterface.h"
 #include "HitInterface.generated.h"
 
 class ICombatTargetInterface;

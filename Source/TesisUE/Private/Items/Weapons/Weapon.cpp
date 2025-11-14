@@ -10,11 +10,19 @@
 
 void AWeapon::Pick(AActor* NewOwner)
 {
-	Super::Pick(NewOwner);
-	
 	ControllerProvider = NewOwner;
 	CharacterStateProvider = NewOwner;
 	AnimatorProvider = NewOwner;
+	
+	if (CharacterStateProvider != nullptr)
+	{
+		if (CharacterStateProvider->Execute_GetCharacterStateComponent(NewOwner)->IsModeEqualToAny({ECharacterModeStates::ECMS_Spectral}))
+		{
+			return;
+		}
+	}
+
+	Super::Pick(NewOwner);
 	
 	if (CharacterStateProvider)
 	{

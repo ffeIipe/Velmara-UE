@@ -42,12 +42,9 @@ void UMementoComponent::ApplyExternalState(const FEntityMementoState& StateToApp
                     AWeapon* WeaponToAdd = GetWorld()->SpawnActor<AWeapon>(StateToApply.InventorySlots[i], GetOwner()->GetActorLocation(), GetOwner()->GetActorRotation(), SpawnParams);
                     
                     if (!InventoryComp->TryAddWeapon(WeaponToAdd)) WeaponToAdd->Destroy();
-                    
-                    //InventoryComp->EquipWeaponFromSlot(StateToApply.ActiveSaveSlotIndex);
                 }
             }
         }
-        /*InternalMementoState = StateToApply;*/
     }
 }
 

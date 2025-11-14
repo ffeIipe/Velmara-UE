@@ -30,13 +30,3 @@ void AVelmaraGameModeBase::SetEnemiesAIEnabled(bool bEnabled)
 		}
 	}
 }
-
-void AVelmaraGameModeBase::BeginPlay()
-{
-	Super::BeginPlay();
-
-	if (UVelmaraGameInstance* NewGameInstance = Cast<UVelmaraGameInstance>(GetGameInstance()))
-	{
-		NewGameInstance->ApplyPendingLoadedDataToWorld();
-	}
-}

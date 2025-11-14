@@ -28,6 +28,7 @@
 #include "Subsystems/EnemyPoolManager.h"
 #include "Subsystems/EnemyTokenManager.h"
 #include "Tutorial/PromptWidgetComponent.h"
+#include "Interfaces/CombatTargetInterface.h"
 
 AEnemy::AEnemy()
 {
@@ -203,7 +204,7 @@ void AEnemy::GetHit(const TScriptInterface<ICombatTargetInterface> DamageCauser,
 	{
 		if (const UMeleeDamage* MainDamageTypeClass = Cast<UMeleeDamage>(DamageEvent.DamageTypeClass->GetDefaultObject()))
 		{
-			const EMeleeDamageTypes MainDamageType = MainDamageTypeClass->DamageType;
+			const EMeleeDamageTypes MainDamageType = MainDamageTypeClass->MeleeDamageType;
 			ReactToDamage(MainDamageType, ImpactPoint);
 
 			if (bShouldDropOrbs) DropOrbs(DamageReceived, DamageCauser);
@@ -230,6 +231,11 @@ void AEnemy::RequestReturnToPool()
 	{
 		Destroy();
 	}
+}
+
+bool AEnemy::IsAlive()
+{
+	return Super::IsAlive() && !IsHidden();
 }
 
 void AEnemy::BeginPlay()

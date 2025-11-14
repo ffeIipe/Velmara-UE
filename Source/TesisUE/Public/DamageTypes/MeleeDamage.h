@@ -26,5 +26,5 @@ class TESISUE_API UMeleeDamage : public UDamageType
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	EMeleeDamageTypes DamageType;
+	EMeleeDamageTypes MeleeDamageType;
 };

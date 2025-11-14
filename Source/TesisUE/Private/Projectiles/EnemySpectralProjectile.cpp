@@ -3,9 +3,8 @@
 
 #include "Projectiles/EnemySpectralProjectile.h"
 #include "Player/PlayerMain.h"
-#include <Kismet/GameplayStatics.h>
+#include "Kismet/GameplayStatics.h"
 #include "Engine/DamageEvents.h"
-#include "DamageTypes/SpectralTrapDamageType.h"
 
 void AEnemySpectralProjectile::BeginPlay()
 {

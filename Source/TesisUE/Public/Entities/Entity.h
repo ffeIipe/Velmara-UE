@@ -337,14 +337,10 @@ protected:
 	FName UniqueSaveID;
 	
 private:
-	// === Aux. Functions ===
-	UFUNCTION()
-	void PerformPrimaryAttack(const FInputActionValue& Value);
-
 	bool bPrimaryInputHeld;
 
 	UFUNCTION()
-	void EnableControllerRatoationYaw();
+	void EnableControllerRotationYaw();
 	
 	UPROPERTY()
 	UCombatStrategy* CurrentStrategy;

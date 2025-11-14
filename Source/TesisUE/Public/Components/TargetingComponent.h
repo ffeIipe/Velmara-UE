@@ -77,7 +77,7 @@ private:
     float HardLockRadius = 1500.f;
     int32 CombatTargetIndex = 0;
     TArray<TScriptInterface<ICombatTargetInterface>> CombatTargets;
-
+    
     UFUNCTION()
     bool PickHardLockTarget();
 

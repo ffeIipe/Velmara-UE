@@ -1,4 +1,4 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "PistolDamage.h"
+#include "DamageTypes/PistolDamage.h"
