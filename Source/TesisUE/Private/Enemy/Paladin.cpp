@@ -37,19 +37,24 @@ APaladin::APaladin()
 	GetAttributeComponent()->AttachShield(GetMesh(), FName("LeftHandSocket"));
 
 	SwordMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SwordMesh"));
+	
 	SwordMesh->SetupAttachment(GetMesh(), TEXT("RightHandSocket"));
 	SwordMesh->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
 	SwordMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	SwordCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("SwordBoxCollider"));
 	SwordCollider->SetupAttachment(SwordMesh);
+	
 	SwordCollider->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
-	SwordCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	if (SwordCollider)
+	{
+		SwordCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
 	SwordCollider->SetCollisionResponseToChannel(ECC_Camera, ECR_Overlap);
 
 	BoxTraceStart = CreateDefaultSubobject<USceneComponent>(TEXT("Box Trace Start"));
 	BoxTraceStart->SetupAttachment(SwordMesh);
-
+	
 	BoxTraceEnd = CreateDefaultSubobject<USceneComponent>(TEXT("Box Trace End"));
 	BoxTraceEnd->SetupAttachment(SwordMesh);
 }
@@ -62,12 +67,33 @@ bool APaladin::IsLaunchable_Implementation(ACharacter* DamageCauser)
 void APaladin::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	 SwordCollider->OnComponentBeginOverlap.AddDynamic(this, &APaladin::OnSwordOverlap);
 
-	SwordCollider->OnComponentBeginOverlap.AddDynamic(this, &APaladin::OnSwordOverlap);
+	 OnShieldTakeDamage.AddDynamic(this, &APaladin::ShieldHit);
 
-	OnShieldTakeDamage.AddDynamic(this, &APaladin::ShieldHit);
+	if (GetAttributeComponent())
+	{
+		GetAttributeComponent()->OnDettachShield.AddLambda(
+			[this]
+			{
+				if (AAIController* AIController = Cast<AAIController>(GetController()))
+				{
+					if (UBlackboardComponent* BBComponent = AIController->GetBlackboardComponent())
+					{
+						BBComponent->SetValueAsBool(FName("IsShielded"), false);
+					}
+				}
+			}
+		);
 
-	GetAttributeComponent()->OnDettachShield.AddDynamic(this, &APaladin::NotifyIsNotShieldedToBlackboard);
+		GetAttributeComponent()->OnEntityDead.AddLambda(
+			[this]
+			{
+				Die();
+			}
+		);
+	}
 
 	if (!BBComponent)
 	{
@@ -83,26 +109,13 @@ void APaladin::BeginPlay()
 	}
 }
 
-void APaladin::NotifyIsNotShieldedToBlackboard()
-{
-	if (AIController)
-	{
-		if (BBComponent)
-		{
-			BBComponent->SetValueAsBool(FName("IsShielded"), false);
-		}
-		else GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, FString("BBComponent not found!"));
-	}
-	else GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, FString("AIController not found!"));
-}
-
 void APaladin::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 {
 	Super::ActivateEnemy(Location, Rotation);
 
 	if (GetCharacterStateComponent())
 	{
-		GetCharacterStateComponent()->SetCharacterState(ECharacterStates::ECS_EquippedSword);
+		GetCharacterStateComponent()->SetCharacterState(ECharacterStates::ECS_EquippedSword); // Set Paladin's default active state
 	}
 
 	SetWeaponCollisionEnabled(ECollisionEnabled::NoCollision);

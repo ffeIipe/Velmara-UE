@@ -19,7 +19,7 @@ public:
 protected:
 	ASpectre();
 
-	//void BeginPlay() override;
+	void BeginPlay() override;
 
 	float TakeDamage(
 		float DamageAmount,

@@ -6,7 +6,6 @@
 #include "Components/ActorComponent.h"
 #include "ExtraMovementComponent.generated.h"
 
-struct FInputActionValue;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class TESISUE_API UExtraMovementComponent : public UActorComponent
@@ -59,16 +58,18 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void UpdateBuffer(float Alpha, float BufferDistance);
 
+	UPROPERTY(EditAnywhere, Category = "Input | Movement")
+	class UInputAction* JumpAction;
+
+	UPROPERTY(EditAnywhere, Category = "Input | Movement")
+	class UInputAction* DodgeAction;
+
 	UPROPERTY(EditAnywhere, Category = "Stats | DoubleJump")
 	float LaunchStrenght = 800.f;
 
 	ACharacter* OwningCharacter;
 
 	class UCharacterStateComponent* OwnerCharacterStateComponent;
-	
-	void Input_Move(const FInputActionValue& Value);
-	
-	void Input_Look(const FInputActionValue& Value);
 
 	void Input_DoubleJump();
 
@@ -80,6 +81,4 @@ public:
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
-
-	class AEntity* EntityOwner;
 };

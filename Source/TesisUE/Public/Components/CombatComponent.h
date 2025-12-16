@@ -4,6 +4,8 @@
 #include "Components/ActorComponent.h"
 #include "CombatComponent.generated.h"
 
+class UInputAction;
+struct FInputActionValue;
 class UTimelineComponent;
 class UCurveFloat;
 class IFormInterface;
@@ -257,6 +259,4 @@ private:
 	void ResetAttackSave();
 
 	class ASword* GetCurrentSword();
-
-	class AEntity* EntityOwner;
 };

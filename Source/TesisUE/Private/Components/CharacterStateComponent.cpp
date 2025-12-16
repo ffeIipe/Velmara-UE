@@ -9,7 +9,7 @@ UCharacterStateComponent::UCharacterStateComponent()
 	CharacterStates.Form = ECharacterForm::ECF_Human;
 }
 
-const FCharacterStates& UCharacterStateComponent::GetCurrentCharacterState()
+FCharacterStates UCharacterStateComponent::GetCurrentCharacterState()
 {
 	return CharacterStates;
 }

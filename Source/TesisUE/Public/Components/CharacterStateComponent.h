@@ -40,7 +40,7 @@ public:
 	UCharacterStateComponent();
 
 	UFUNCTION(BlueprintCallable, Category = "States")
-	const FCharacterStates& GetCurrentCharacterState();
+	FCharacterStates GetCurrentCharacterState();
 
 	UFUNCTION(BlueprintCallable, Category = "Character States | Character State")
 	ECharacterStates SetCharacterState(ECharacterStates NewState);

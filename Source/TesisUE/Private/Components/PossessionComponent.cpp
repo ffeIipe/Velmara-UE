@@ -4,7 +4,6 @@
 #include "Components/CharacterStateComponent.h"
 #include "Components/AttributeComponent.h"
 #include "Components/InventoryComponent.h"
-#include "Components/CombatComponent.h"
 
 //Entities
 #include "Entities/Entity.h"
@@ -26,20 +25,61 @@ void UPossessionComponent::BeginPlay()
 	Super::BeginPlay();
 
 	EntityOwner = Cast<AEntity>(GetOwner());
-	PlayerControllerRef = Cast<APlayerController>(EntityOwner->GetController());
 }
 
-
-AEntity* UPossessionComponent::GetPossessionVictim()
+void UPossessionComponent::Possess()
 {
-	if (!PlayerControllerRef) return nullptr;
+	//if (EntityReference->GetCharacterStateComponent()->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral && !IsEquipping())
+	{
+		AEnemy* EnemyToPossess = GetPossessionVictim();
+		APlayerController* PlayerControllerRef = Cast<APlayerController>(EntityOwner->GetController());
 
-	FRotator CameraRotation;
-	FVector Start = EntityOwner->GetActorLocation() + EntityOwner->GetActorForwardVector() * 100.f;
-	PlayerControllerRef->GetPlayerViewPoint(Start, CameraRotation);
-	FVector Direction = CameraRotation.Vector();
+		if (!PlayerControllerRef || !EnemyToPossess) return;
 
-	FVector End = Start + Direction * PossessDistance;
+		if (EnemyToPossess->GetCharacterStateComponent()->GetCurrentCharacterState().Action == ECharacterActions::ECA_Dead) return;
+
+		if (EnemyToPossess->GetAttributeComponent()->RequiresEnergy(10.f))
+		{
+			EnemyToPossess->DisableAI();
+			PlayerControllerRef->Possess(EnemyToPossess);
+			EnemyToPossess = EnemyPossessed;
+
+			EnemyPossessed->EnableInput(PlayerControllerRef);
+			EnemyPossessed->AutoPossessPlayer = EAutoReceiveInput::Player0;
+			EnemyPossessed->GetPossessionComponent()->ReceivePossession(EntityOwner, EnemyPossessed, EntityOwner->GetAttributeComponent()->GetEnergy());
+
+			EntityOwner->AttachFollowCamera(EnemyToPossess->GetSpringArmComponent());
+
+			EntityOwner->GetCharacterStateComponent()->SetCharacterForm(ECharacterForm::ECF_Possessing);
+			EntityOwner->SetActorHiddenInGame(true);
+
+			if (EntityOwner->GetInventoryComponent()->GetEquippedItem())
+			{
+				EntityOwner->GetInventoryComponent()->GetEquippedItem()->SetActorHiddenInGame(true);
+			}
+
+			EntityOwner->SetActorEnableCollision(false);
+			EntityOwner->GetMesh()->bPauseAnims = true;
+		}
+		else
+		{
+			if (OnCannotPossess.IsBound())
+			{
+				OnCannotPossess.Broadcast();
+			}
+		}
+
+	}
+	//else CombatComponent->Execute();
+}
+
+AEnemy* UPossessionComponent::GetPossessionVictim()
+{
+	FVector Start;
+	FVector End;
+
+	Start = GetOwner()->GetActorLocation();
+	End = Start + EntityOwner->GetLastMovementInputVector() * PossessDistance;
 
 	TArray<AActor*> ActorsToIgnore;
 	ActorsToIgnore.Add(GetOwner());
@@ -61,7 +101,7 @@ AEntity* UPossessionComponent::GetPossessionVictim()
 
 	if (!bHit) return nullptr;
 
-	AEntity* EnemyTraced = Cast<AEntity>(ResultHit.GetActor());
+	AEnemy* EnemyTraced = Cast<AEnemy>(ResultHit.GetActor());
 	if (!EnemyTraced) return nullptr;
 
 	UPossessionComponent* EntityPossessionComponent = EnemyTraced->GetPossessionComponent();
@@ -74,61 +114,13 @@ AEntity* UPossessionComponent::GetPossessionVictim()
 	else return nullptr;
 }
 
-void UPossessionComponent::Possess()
+void UPossessionComponent::ReceivePossession(AEntity* NewOwner, AEnemy* TargetEnemy, float OwnerEnergy)
 {
-	if (EntityOwner->GetCharacterStateComponent()->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
-	{
-		AEntity* EntityTraced = GetPossessionVictim();
-		
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Yellow, FString("1"));
+	if (!IsValid(NewOwner) || !IsValid(TargetEnemy)) return;
 
-		if (!PlayerControllerRef || !EntityTraced) return;
-
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Orange, FString("2"));
-
-		if (EntityTraced->GetCharacterStateComponent()->GetCurrentCharacterState().Action == ECharacterActions::ECA_Dead) return;
-
-		if (EntityOwner->GetAttributeComponent()->RequiresEnergy(10.f))
-		{
-			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("3"));
-
-			PlayerControllerRef->Possess(EntityTraced);
-
-			EntityPossessed = EntityTraced;
-			EntityPossessed->GetPossessionComponent()->ReceivePossession(EntityOwner, EntityPossessed, EntityOwner->GetAttributeComponent()->GetEnergy());
-
-			if (EntityOwner->GetInventoryComponent()->GetEquippedItem())
-			{
-				EntityOwner->GetInventoryComponent()->GetEquippedItem()->SetActorHiddenInGame(true);
-			}
-
-			EntityOwner->GetCharacterStateComponent()->SetCharacterForm(ECharacterForm::ECF_Possessing);
-			EntityOwner->SetActorHiddenInGame(true);
-			EntityOwner->SetActorEnableCollision(false);
-			EntityOwner->GetMesh()->bPauseAnims = true;
-		}
-		else
-		{
-			if (OnCannotPossess.IsBound())
-			{
-				OnCannotPossess.Broadcast();
-			}
-		}
-
-	}
-	else EntityOwner->GetCombatComponent()->Input_Execute();
-}
-
-void UPossessionComponent::ReceivePossession(AEntity* NewOwner, AEntity* TargetEntity, float OwnerEnergy)
-{
-	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Receiving possession..."));
-
-	if (!IsValid(NewOwner) || !IsValid(TargetEntity)) return;
-
-	PossessionOwner = NewOwner;
-	EntityOwner->GetAttributeComponent()->SetEnergy(OwnerEnergy);
-	EntityOwner->bUseControllerRotationYaw = false;
-	PossessionOwner->AttachFollowCamera(EntityOwner->GetSpringArmComponent());
+	TargetEnemy->GetPossessionComponent()->PossessionOwner = NewOwner;
+	TargetEnemy->GetAttributeComponent()->SetEnergy(OwnerEnergy);
+	TargetEnemy->bUseControllerRotationYaw = false;
 
 	if (OnPossessed.IsBound())
 	{
@@ -137,32 +129,24 @@ void UPossessionComponent::ReceivePossession(AEntity* NewOwner, AEntity* TargetE
 
 	//NewOwner->PlayerControllerRef->PlayerMainHUD->TogglePaladinUI(true);
 
-	if (EntityOwner->GetAttributeComponent())
+	if (TargetEnemy->GetAttributeComponent())
 	{
-		EntityOwner->GetAttributeComponent()->StartDecreaseEnergy();
+		TargetEnemy->GetAttributeComponent()->StartDecreaseEnergy();
 	}
 }
 
 void UPossessionComponent::ReleasePossession()
 {
-	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, FString("Releasing possession..."));
-	PlayerControllerRef->Possess(EntityOwner);
+	EnemyPossessed->bUseControllerRotationYaw = true;
 
-	EntityOwner->SetActorLocationAndRotation(EntityPossessed->GetActorLocation() + FVector(100.f, 0.f, 0.f), EntityPossessed->GetActorRotation());
-	EntityOwner->SetActorHiddenInGame(false);
-	EntityOwner->SetActorEnableCollision(true);
-	EntityOwner->GetMesh()->bPauseAnims = false;
-	EntityOwner->AttachFollowCamera(EntityOwner->GetSpringArmComponent());
+	//GetDefaultParameters(); // gettear y settear parametros por defecto... se puede mejorar con algo mas lindo como un struct que gettee y settee... 
 
-	EntityPossessed->bUseControllerRotationYaw = true;
-	EntityPossessed->GetPossessionComponent()->PossessionOwner = nullptr;
+	//PlayerControllerRef->PlayerMainHUD->TogglePaladinUI(false);
 
-	if (EntityPossessed->GetPossessionComponent()->OnReleasePossession.IsBound())
-	{
-		EntityPossessed->GetPossessionComponent()->OnReleasePossession.Broadcast();
-	}
+	EnemyPossessed->DisableAI();
+	EnemyPossessed->EnableAI();
 
-	EntityPossessed = nullptr;
+	EnemyPossessed->GetPossessionComponent()->PossessionOwner = nullptr;
 }
 
 void UPossessionComponent::ReleaseAndExecute()
@@ -170,17 +154,20 @@ void UPossessionComponent::ReleaseAndExecute()
 	if (EntityOwner && EntityOwner->GetAttributeComponent()->RequiresEnergy(ReleaseAndExecuteEnergyTax))
 	{
 		EntityOwner->GetAttributeComponent()->IncreaseHealth(15.f);
-		EntityPossessed->GetAttributeComponent()->IncreaseEnergy(-ReleaseAndExecuteEnergyTax);
+		EnemyPossessed->GetAttributeComponent()->IncreaseEnergy(-ReleaseAndExecuteEnergyTax);
 
-		EntityPossessed->StopAnimMontage();
+		EnemyPossessed->DisableAI();
+		EnemyPossessed->StopAnimMontage();
+		//EnemyPossessed->PlayAnimMontage(DeathMontage, 1.f, FName("UnpossessDeath"));
+		EnemyPossessed->GetLastDamageCauser();
+		EnemyPossessed->Die();
 
-		if (EntityPossessed->GetPossessionComponent()->OnReleaseAndExecute.IsBound())
+		if (OnReleaseAndExecute.IsBound())
 		{
-			EntityPossessed->GetPossessionComponent()->OnReleaseAndExecute.Broadcast();
+			OnReleaseAndExecute.Broadcast();
 		}
 
-		EntityPossessed->GetPossessionComponent()->PossessionOwner = nullptr;
-		EntityPossessed = nullptr;
+		EnemyPossessed->GetPossessionComponent()->PossessionOwner = nullptr;
 	}
 	else
 	{
