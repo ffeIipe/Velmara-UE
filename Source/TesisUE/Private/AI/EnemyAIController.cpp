@@ -39,27 +39,14 @@ ETeamAttitude::Type AEnemyAIController::GetTeamAttitudeTowards(const AActor& Oth
 	return ETeamAttitude::Friendly;
 }
 
-void AEnemyAIController::BeginPlay()
-{
-    Super::BeginPlay();
-
-    CachedOwner = Cast<AEntity>(GetPawn());
-}
-
 void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
-    AEntity* PlayerPawn = Cast<AEntity>(Actor);
-    UCharacterStateComponent* CharacterStateComponent = PlayerPawn ? PlayerPawn->GetCharacterStateComponent() : nullptr; // Añadir null check
+    AEnemy* Enemy = Cast<AEnemy>(GetPawn());
+    APawn* PlayerPawn = Cast<APawn>(Actor);
+    UCharacterStateComponent* CharacterStateComponent = PlayerPawn ? PlayerPawn->FindComponentByClass<UCharacterStateComponent>() : nullptr; // Añadir null check
     UBlackboardComponent* BlackboardComponent = GetBlackboardComponent();
 
-    if (!CachedOwner->GetCharacterStateComponent())
-    {
-        if (GEngine)GEngine->AddOnScreenDebugMessage(INDEX_NONE, -1.f, FColor::Red, FString("Invalid Character State Component..."));
-    }
-
-    if (!BlackboardComponent || !PlayerPawn || !CachedOwner || !CachedOwner->GetCharacterStateComponent()) return;
-   
-    if (CachedOwner->GetCharacterStateComponent()->GetCurrentCharacterState().Action == ECharacterActions::ECA_Dead) return;
+    if (!BlackboardComponent || !PlayerPawn || !Enemy || Enemy->GetCharacterStateComponent()->GetCurrentCharacterState().Action == ECharacterActions::ECA_Dead) return;
 
     if (!CharacterStateComponent)
     {

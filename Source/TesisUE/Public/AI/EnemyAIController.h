@@ -29,8 +29,6 @@ public:
 	AActor* DamageCauser;
 
 protected:
-	void BeginPlay() override;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UAIPerceptionComponent* EnemyPerceptionComponent;
 
@@ -39,10 +37,4 @@ protected:
 
 	UFUNCTION()
 	virtual void OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
-
-private:
-	class AEntity* CachedOwner;
-	AEntity* CachedTarget;
-	
-		
 };

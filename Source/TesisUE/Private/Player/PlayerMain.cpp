@@ -77,11 +77,11 @@ void APlayerMain::ResetSpectralAttack_Implementation()
 	GetCombatComponent()->bIsSaveLightAttack = false;
 }
 
-void APlayerMain::GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived)
+void APlayerMain::GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived)
 {
-	Super::GetHit_Implementation(DamageCauser, ImpactPoint, DamageEvent, DamageReceived);
+	Super::GetHit_Implementation(DamageCauser, ImpactPoint, DamageType, DamageReceived);
 
-	if (DamageEvent.DamageTypeClass == USpectralTrapDamageType::StaticClass())
+	if (DamageType == USpectralTrapDamageType::StaticClass())
 	{
 		StunBehavior();
 	}	

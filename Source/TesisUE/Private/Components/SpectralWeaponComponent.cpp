@@ -8,7 +8,7 @@
 #include "Particles/ParticleSystem.h"
 
 #include "Interfaces/HitInterface.h"
-#include "Engine/DamageEvents.h"
+
 #include "Engine/World.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/PlayerController.h"
@@ -209,8 +209,7 @@ void USpectralWeaponComponent::Fire(bool bIsPrimary)
 
                 if (IHitInterface* Entity = Cast<IHitInterface>(HitActor))
                 {
-                    FDamageEvent DamageEvent(USpectralTrapDamageType::StaticClass());
-                    Entity->Execute_GetHit(Hit.GetActor(), GetOwner(), Hit.ImpactPoint, DamageEvent, BaseDamage);
+                    Entity->Execute_GetHit(Hit.GetActor(), GetOwner(), Hit.ImpactPoint, USpectralTrapDamageType::StaticClass(), BaseDamage);
 
                     if (SparksEffect)
                     {
@@ -223,6 +222,8 @@ void USpectralWeaponComponent::Fire(bool bIsPrimary)
                             true
                         );
                     }
+
+                    /*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Orange, FString(HitActor->GetName()));*/
                 }
                 else
                 {

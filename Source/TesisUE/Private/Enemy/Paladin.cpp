@@ -178,9 +178,7 @@ void APaladin::OnSwordOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 					UDamageType::StaticClass()
 				);
 
-				FDamageEvent DamageEvent(UDamageType::StaticClass());
-				Entity->Execute_GetHit(Hit.GetActor(), GetOwner(), Hit.ImpactPoint, DamageEvent, Damage);
-
+				Entity->Execute_GetHit(Hit.GetActor(), GetOwner(), Hit.ImpactPoint, UDamageType::StaticClass(), Damage);
 				PlayCameraShake(SwordMesh->GetComponentLocation(), 0.f, 500.f);
 				IgnoreActors.Add(Hit.GetActor());
 			}

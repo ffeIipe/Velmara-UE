@@ -4,8 +4,9 @@
 #include "Projectiles/EnemySpectralProjectile.h"
 #include "Player/PlayerMain.h"
 #include <Kismet/GameplayStatics.h>
-#include "Engine/DamageEvents.h"
 #include "DamageTypes/SpectralTrapDamageType.h"
+
+
 
 void AEnemySpectralProjectile::BeginPlay()
 {
@@ -28,9 +29,7 @@ void AEnemySpectralProjectile::OnBoxOverlap(UPrimitiveComponent* OverlappedCompo
 				UDamageType::StaticClass()
 			);
 
-			FDamageEvent DamageEvent(UDamageType::StaticClass());
-			HitInterface->Execute_GetHit(OtherActor, GetOwner(), SweepResult.ImpactPoint, DamageEvent, Damage);
-
+			HitInterface->Execute_GetHit(OtherActor, GetOwner(), SweepResult.ImpactPoint, UDamageType::StaticClass(), Damage);
 			ActorsToIgnore.AddUnique(OtherActor);
 		}
 	}	

@@ -2,7 +2,6 @@
 #include "Components/SphereComponent.h"
 #include <Player/PlayerMain.h>
 #include <Kismet/GameplayStatics.h>
-#include "Engine/DamageEvents.h"
 #include <DamageTypes/SpectralTrapDamageType.h>
 
 USpectralTrapComponent::USpectralTrapComponent()
@@ -68,8 +67,7 @@ void USpectralTrapComponent::DealContinuousDamage()
 
 		if (IHitInterface* PlayerGetHit = Cast<IHitInterface>(OverlappingPlayer))
 		{
-			FDamageEvent DamageEvent(UDamageType::StaticClass());
-			PlayerGetHit->Execute_GetHit(OverlappingPlayer, GetOwner(), FVector::ZeroVector, DamageEvent, Damage);
+			PlayerGetHit->Execute_GetHit(OverlappingPlayer, GetOwner(), FVector::ZeroVector, USpectralTrapDamageType::StaticClass(), Damage);
 		}
 	}
 }
