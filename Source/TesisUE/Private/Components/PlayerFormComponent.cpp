@@ -120,7 +120,7 @@ void UPlayerFormComponent::ApplyHumanEffects()
         EntityOwner->GetInventoryComponent()->GetEquippedItem()->EnableVisuals(true);
     }
 
-    if (EntityOwner->GetPossessionComponent()->GetPossessedEntity())
+    if (EntityOwner->GetPossessionComponent()->GetEntityPossessed())
     {
         EntityOwner->GetPossessionComponent()->ReleasePossession();
     }

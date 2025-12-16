@@ -27,8 +27,6 @@ UCombatComponent::UCombatComponent()
 	BufferAttackTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("BufferAttackTimeline"));
 
 	SoftLockTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("SoftLockTimeline"));
-	
-	LaunchCharacterTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("LaunchCharacterTimeline"));
 }
 
 void UCombatComponent::ResetState()
@@ -62,6 +60,8 @@ void UCombatComponent::BeginPlay()
 
 	OwningCharacter = Cast<ACharacter>(GetOwner());
 
+	CharacterStateInterface = Cast<ICharacterState>(GetOwner());
+
 	SpectralAttacks = Cast<IFormInterface>(GetOwner());
 
 	CharacterStateComponent = EntityOwner->GetCharacterStateComponent();
@@ -80,10 +80,6 @@ void UCombatComponent::BeginPlay()
 		FOnTimelineFloat ProgressSoftLockFunction;
 		ProgressSoftLockFunction.BindUFunction(this, FName("UpdateSoftLockOn"));
 		SoftLockTimeline->AddInterpFloat(SoftLockCurve, ProgressSoftLockFunction);
-
-		FOnTimelineFloat ProgressLaunchUpFunction;
-		ProgressLaunchUpFunction.BindUFunction(this, FName("UpdateLaunchCharacterUp"));
-		LaunchCharacterTimeline->AddInterpFloat(SoftLockCurve, ProgressLaunchUpFunction);
 	}
 }
 
@@ -340,10 +336,6 @@ void UCombatComponent::RotationToTarget()
 	{
 		SoftLockTimeline->PlayFromStart();
 	}
-	else
-	{
-		SoftLockOn();
-	}
 }
 
 void UCombatComponent::UpdateSoftLockOn(float Alpha)
@@ -364,11 +356,10 @@ void UCombatComponent::UpdateSoftLockOn(float Alpha)
 	GetOwner()->SetActorRotation(NewRotation);
 }
 
-void UCombatComponent::UpdateLaunchCharacterUp(float Alpha)
-{
-	FVector TargetLocation = FMath::Lerp(CurrentLocationLaunch, CurrentLocationLaunch + (UpVectorLaunch * 300.f), Alpha);
-	GetOwner()->SetActorLocation(TargetLocation, true);
-}
+//void UCombatComponent::GetDirectionalReact(FName Section)
+//{
+//	OwningCharacter->PlayAnimMontage(HitReactMontage, 1.f, Section);
+//}
 
 void UCombatComponent::Block()
 {
@@ -431,7 +422,7 @@ void UCombatComponent::Execute()
 	}
 }
 
-void UCombatComponent::GetDirectionalReact(const FVector& ImpactPoint)
+void UCombatComponent::GetDirectionalReact(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType)
 {
 	const FVector Forward = GetOwner()->GetActorForwardVector();
 	const FVector ToHit = (ImpactPoint - GetOwner()->GetActorLocation()).GetSafeNormal();
@@ -484,21 +475,9 @@ void UCombatComponent::LaunchCharacterUp()
 	{
 		OwningCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
 		bIsLaunched = true;
-		/*GetOwner()->AddActorLocalOffset(FVector(0.f, 0.f, 300.f));
-		GetOwner()->SetActorLocation()*/
-
-		StartLaunchingUp();
-
-		Paladin->Execute_LaunchUp(SoftLockTarget, FVector(GetOwner()->GetActorLocation())); //llamar a su componente de combate y activar su timeline de 
+		GetOwner()->AddActorLocalOffset(FVector(0.f, 0.f, 300.f));
+		Paladin->Execute_LaunchUp(SoftLockTarget, FVector(GetOwner()->GetActorLocation()));
 	}
-}
-
-void UCombatComponent::StartLaunchingUp()
-{
-	CurrentLocationLaunch = GetOwner()->GetActorLocation();
-	UpVectorLaunch = GetOwner()->GetActorUpVector();
-
-	LaunchCharacterTimeline->PlayFromStart();
 }
 
 void UCombatComponent::Crasher()

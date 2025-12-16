@@ -51,7 +51,7 @@ public:
 	FORCEINLINE UAttributeComponent* GetAttributeComponent() const { return AttributeComponent; }
 
 	UFUNCTION(BlueprintPure, Category = "Components | Character State")
-	FORCEINLINE UCharacterStateComponent* GetCharacterStateComponent() { return CharacterStateComponent; }
+	FORCEINLINE UCharacterStateComponent* GetCharacterStateComponent() const { return CharacterStateComponent; }
 
 	UFUNCTION(BlueprintPure, Category = "Components | Extra Movement")
 	FORCEINLINE UExtraMovementComponent* GetExtraMovementComponent() const { return ExtraMovementComponent; }
@@ -91,7 +91,7 @@ public:
 
 	// --- Gameplay Actions ---
 	UFUNCTION(BlueprintCallable, Category = "Combat | Weapon")
-	virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
+	void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
 
 	void AttachFollowCamera(USpringArmComponent* AttachTarget);
 
@@ -104,7 +104,6 @@ public:
 	UFUNCTION()
 	virtual void OutOfEnergy();
 
-	UFUNCTION()
 	virtual void Die();
 
 	void PlayCameraShake(const FVector& Epicenter, float InnerRadius, float OuterRadius);

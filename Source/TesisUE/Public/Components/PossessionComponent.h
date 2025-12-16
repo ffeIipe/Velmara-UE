@@ -1,3 +1,5 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
 #pragma once
 
 #include "CoreMinimal.h"
@@ -5,76 +7,72 @@
 #include "PossessionComponent.generated.h"
 
 class AEntity;
-class APlayerController;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPossessionAttemptFailed);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPossessed);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPossessorEjected);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPossessorExecutedMeAndEjected);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnReleasePossession);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnReleaseAndExecute);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCannotPossess);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCannotRelease);
 
-UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
+UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class TESISUE_API UPossessionComponent : public UActorComponent
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
-public:
-    UPossessionComponent();
+public:	
+	UPossessionComponent();
 
-    void AttemptPossession();
-    void ReleasePossession();
-    void EjectPossessor();
-    void EjectAndExecute();
+	UFUNCTION(BlueprintCallable)
+	AEntity* GetPossessionOwner() { return PossessionOwner; };
+	
+	UFUNCTION(BlueprintCallable)
+	AEntity* GetEntityPossessed() { return EntityPossessed; };
 
-    UFUNCTION(BlueprintPure, Category = "Possession")
-    AEntity* GetPossessedEntity() const { return CurrentlyPossessedEntity; }
+	void Possess();
 
-    UFUNCTION(BlueprintPure, Category = "Possession")
-    AEntity* GetPossessingEntity() const { return PossessedByEntity; }
+	bool CanBePossessed() { return bCanBePossessed; };
 
-    UFUNCTION(BlueprintPure, Category = "Possession")
-    bool IsPossessed() const { return PossessedByEntity != nullptr; }
+	FOnPossessed OnPossessed;
+	FOnReleasePossession OnReleasePossession;
+	FOnReleaseAndExecute OnReleaseAndExecute;
+	FOnCannotPossess OnCannotPossess;
+	FOnCannotRelease OnCannotRelease;
 
-    UFUNCTION(BlueprintPure, Category = "Possession")
-    bool IsPossessing() const { return CurrentlyPossessedEntity != nullptr; }
+	void ReceivePossession(AEntity* NewOwner, AEntity* TargetEnemy, float OwnerEnergy);
 
-    UPROPERTY(BlueprintAssignable)
-    FOnPossessionAttemptFailed OnPossessionAttemptFailed;
-    
-    UPROPERTY(BlueprintAssignable)
-    FOnPossessed OnPossessed;
+	void ReleasePossession();
 
-    UPROPERTY(BlueprintAssignable)
-    FOnPossessorEjected OnPossessorEjected;
-    
-    UPROPERTY(BlueprintAssignable)
-    FOnPossessorExecutedMeAndEjected OnPossessorExecutedMeAndEjected;
-
-protected:
-    virtual void BeginPlay() override;
+	void ReleaseAndExecute();
 
 private:
-    void OnPossessionReceived(AEntity* NewPossessor);
-    void OnPossessionReleased();
-    AEntity* FindPossessionVictim();
+	void BeginPlay() override;
 
-    UPROPERTY(EditDefaultsOnly, Category = "Possession")
-    float PossessDistance = 1500.f;
 
-    UPROPERTY(EditDefaultsOnly, Category = "Possession")
-    float PossessRadius = 50.f;
+	AEntity* GetPossessionVictim();
 
-    UPROPERTY(EditDefaultsOnly, Category = "Possession")
-    float ReleaseAndExecuteEnergyTax = 25.f;
+	/*
+	* ----------Stats----------
+	*/
+	UPROPERTY(EditAnywhere, Category = "Stats");
+	float PossessDistance;
+	
+	UPROPERTY(EditAnywhere, Category = "Stats");
+	float PossessRadius;
+	
+	UPROPERTY(EditAnywhere, Category = "Stats");
+	bool bCanBePossessed = true;
 
-    UPROPERTY()
-    AEntity* OwnerEntity;
+	UPROPERTY(EditAnywhere, Category = "Energy| Energy Tax");
+	float ReleaseEnergyTax = 3.f;
 
-    UPROPERTY()
-    APlayerController* PlayerController;
+	UPROPERTY(EditAnywhere, Category = "Energy| Energy Tax");
+	float ReleaseAndExecuteEnergyTax = 3.f;
+	
+	AEntity* PossessionOwner;
 
-    UPROPERTY()
-    AEntity* CurrentlyPossessedEntity;
+	AEntity* EntityPossessed;
+	
+	AEntity* EntityOwner;
 
-    UPROPERTY()
-    AEntity* PossessedByEntity;
+	APlayerController* PlayerControllerRef;
 };

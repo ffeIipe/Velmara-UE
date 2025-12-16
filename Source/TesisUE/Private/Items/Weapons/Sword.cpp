@@ -113,7 +113,7 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 		UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_GameTraceChannel3),
 		false,
 		IgnoreActors,
-		EDrawDebugTrace::ForDuration,
+		EDrawDebugTrace::None,
 		HitResults,
 		true
 	);
@@ -125,16 +125,20 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 			if (IHitInterface* HitInterface = Cast<IHitInterface>(HitActor))
 			{
 				float TempDamage = CalculateDamage();
-				HitInterface->Execute_GetHit(HitActor, GetOwner(), Hit.ImpactPoint, DamageTypeClass, Damage);
+
+				/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Cyan, FString::SanitizeFloat(Damage));*/
+				HitInterface->Execute_GetHit(HitActor, GetOwner(), Hit.ImpactPoint, UDamageType::StaticClass(), Damage);
 
 				if (HitInterface->Execute_IsLaunchable(HitActor, Cast<ACharacter>(Owner)))
 				{
+					TSubclassOf<UDamageType> FinalDamageType = DamageTypeClass ? DamageTypeClass : TSubclassOf<UDamageType>(UDamageType::StaticClass());
+
 					UGameplayStatics::ApplyDamage(
 						HitActor,
 						Damage,
 						GetInstigator()->GetController(),
 						GetOwner(),
-						DamageTypeClass
+						FinalDamageType
 					);
 
 					//fx when the hit is true

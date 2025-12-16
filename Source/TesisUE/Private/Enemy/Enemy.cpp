@@ -39,12 +39,9 @@ AEnemy::AEnemy()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	
-	GetMesh()->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
+	GetMesh()->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
-	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
-	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel3, ECollisionResponse::ECR_Block);
-	GetMesh()->SetGenerateOverlapEvents(true);
 	GetMesh()->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
 	InitialMeshCollisionEnabled = GetMesh()->GetCollisionEnabled();
 
@@ -59,7 +56,7 @@ AEnemy::AEnemy()
 
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationRoll = false;
-	bUseControllerRotationYaw = false;
+	bUseControllerRotationYaw = true;
 
 	GetCharacterMovement()->bUseControllerDesiredRotation = false;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
@@ -220,7 +217,7 @@ void AEnemy::Die()
 	DisableAI();
 	HandleEnemyCollision(ECR_Ignore);
 
-	if (GetPossessionComponent()->GetPossessedEntity())
+	if (GetPossessionComponent()->GetPossessionOwner())
 	{
 		GetPossessionComponent()->ReleasePossession();
 	}
@@ -266,20 +263,19 @@ void AEnemy::BeginPlay()
 	Super::BeginPlay();
 
 	OnCanBeFinished.AddDynamic(this, &AEnemy::EnableFinisherWidget);
-	
-	GetPossessionComponent()->OnPossessorEjected.AddDynamic(this, &AEnemy::EnableAI);
-	GetPossessionComponent()->OnPossessorExecutedMeAndEjected.AddDynamic(this, &AEnemy::GetExecuted);
 
+	GetAttributeComponent()->OnOutOfEnergy.AddDynamic(this, &AEntity::OutOfEnergy);
+	
+	GetPossessionComponent()->OnReleasePossession.AddDynamic(this, &AEnemy::EnableAI);
+	GetPossessionComponent()->OnReleasePossession.AddDynamic(this, &AEnemy::EnableAI);
+	GetPossessionComponent()->OnReleaseAndExecute.AddDynamic(this, &AEnemy::GetExecuted);
 	PlayerControllerRef = Cast<APlayerHeroController>(UGameplayStatics::GetPlayerController(this, 0));
 
 	HandleEnemyCollision(ECR_Block);
 
 	GetDefaultParameters();
 
-	if (GetCharacterStateComponent())
-	{
-		GetCharacterStateComponent()->SetCharacterState(ECharacterStates::ECS_EquippedSword);
-	}
+	GetCharacterStateComponent()->SetCharacterState(ECharacterStates::ECS_EquippedSword);
 
 	if (DissolveCurve)
 	{
@@ -348,8 +344,8 @@ void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		EnhancedInputComponent->BindAction(InputAction_Possess, ETriggerEvent::Started, GetPossessionComponent(), &UPossessionComponent::EjectPossessor);
-		EnhancedInputComponent->BindAction(InputAction_SwitchForm, ETriggerEvent::Started, GetPossessionComponent(), &UPossessionComponent::EjectAndExecute);
+		EnhancedInputComponent->BindAction(InputAction_Possess, ETriggerEvent::Started, GetPossessionComponent(), &UPossessionComponent::ReleasePossession);
+		EnhancedInputComponent->BindAction(InputAction_SwitchForm, ETriggerEvent::Started, GetPossessionComponent(), &UPossessionComponent::ReleaseAndExecute);
 	}
 }
 
@@ -412,13 +408,10 @@ void AEnemy::GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPo
 {
 	Super::GetHit_Implementation(DamageCauser, ImpactPoint, DamageType, DamageReceived);
 
-	if (UDamageTypeMain* DamageTypeMainObject = Cast<UDamageTypeMain>(DamageType->GetDefaultObject()))
-	{
-		EMainDamageTypes MainDamageType = DamageTypeMainObject->DamageType;
-		ReactToDamage(MainDamageType, ImpactPoint);
-	}
+	ReactToDamage(LastDamageType, ImpactPoint);
 
 	DropOrbs(DamageReceived, DamageCauser);
+
 	NotifyDamageTakenToBlackboard(DamageCauser);
 }
 
@@ -442,7 +435,7 @@ void AEnemy::DropOrbs(const float DamageReceived, AActor* DamageCauser)
 
 	if (AEnemy* EnemyRef = Cast<AEnemy>(DamageCauser))
 	{
-		if (EnemyRef->GetPossessionComponent()->GetPossessedEntity())
+		if (EnemyRef->GetPossessionComponent()->GetPossessionOwner())
 		{
 			EnemyRef->GetAttributeComponent()->IncreaseEnergy(Percentage);
 
@@ -482,7 +475,7 @@ bool AEnemy::CanBeFinished_Implementation()
 
 bool AEnemy::IsLaunchable_Implementation(ACharacter* Character)
 {
-	return GetAttributeComponent()->IsShielded();
+	return false;
 }
 
 void AEnemy::GetDefaultParameters()
@@ -513,21 +506,17 @@ void AEnemy::SetOnPossessedParameters()
 
 void AEnemy::HandleEnemyCollision(ECollisionResponse CollisionResponse)
 {
-	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, CollisionResponse);
-	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_GameTraceChannel3, CollisionResponse);
-
 	GetMesh()->SetCollisionResponseToChannel(ECC_Pawn, CollisionResponse);
 	GetMesh()->SetCollisionResponseToChannel(ECC_GameTraceChannel3, CollisionResponse); //sword trace
 	//GetMesh()->SetCollisionResponseToChannel(ECC_GameTraceChannel2, CollisionResponse); //spectral weapon trace
+	//GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, CollisionResponse);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_GameTraceChannel3, CollisionResponse);
 }
 
 void AEnemy::GetExecuted()
 {
-	Die();
-	StopAnimMontage();
+	//other details to add
 	PlayAnimMontage(DeathMontage, 1.f, FName("UnpossessDeath"));
-
-	DropOrbs(25.f, GetPossessionComponent()->GetPossessingEntity());
 }	
 
 FName AEnemy::SelectRandomDieAnim()
@@ -678,7 +667,7 @@ void AEnemy::NotifyDamageTakenToBlackboard(AActor* DamageCauser)
 	AEnemy* EnemyRef = Cast<AEnemy>(DamageCauser);
 	APlayerMain* PlayerRef = Cast<APlayerMain>(DamageCauser);
 	
-	if (EnemyRef && EnemyRef->GetPossessionComponent()->GetPossessedEntity() || PlayerRef)
+	if (EnemyRef && EnemyRef->GetPossessionComponent()->GetPossessionOwner() || PlayerRef)
 	{
 		if (AIController)
 		{
@@ -697,9 +686,4 @@ void AEnemy::NotifyDamageTakenToBlackboard(AActor* DamageCauser)
 			Enemy->NotifyThreat(DamageCauser);
 		}
 	}
-}
-
-void AEnemy::LaunchUp_Implementation(const FVector& InstigatorLocation)
-{
-	GetCombatComponent()->StartLaunchingUp();
 }

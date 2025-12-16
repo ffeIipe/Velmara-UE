@@ -92,7 +92,7 @@ void AEntity::GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactP
 
 	if (!IsEquipping())
 	{
-		GetCombatComponent()->GetDirectionalReact(ImpactPoint);
+		GetCombatComponent()->GetDirectionalReact(ImpactPoint, DamageType);
 	}
 }
 
@@ -145,7 +145,6 @@ void AEntity::BeginPlay()
 	PlayerControllerRef = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 
 	GetAttributeComponent()->OnEntityDead.AddDynamic(this, &AEntity::Die);
-	GetAttributeComponent()->OnOutOfEnergy.AddDynamic(this, &AEntity::OutOfEnergy);
 }
 
 void AEntity::AttachFollowCamera(USpringArmComponent* AttachTarget)
@@ -320,7 +319,7 @@ float AEntity::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, A
 
 void AEntity::OutOfEnergy()
 {
-	if (GetPossessionComponent()->GetPossessedEntity())
+	if (GetPossessionComponent()->GetEntityPossessed())
 	{
 		GetPossessionComponent()->ReleasePossession();
 	}

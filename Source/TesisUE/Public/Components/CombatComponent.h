@@ -7,6 +7,7 @@
 class UTimelineComponent;
 class UCurveFloat;
 class IFormInterface;
+class ICharacterState;
 class UCharacterStateComponent;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -30,6 +31,8 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category = "Attack")
 	void ResetState();
+
+	ICharacterState* CharacterStateInterface;
 
 	IFormInterface* SpectralAttacks;
 
@@ -81,16 +84,7 @@ protected:
 
 	UFUNCTION(BlueprintCallable, Category = "SoftLock")
 	void UpdateSoftLockOn(float Alpha);
-		
-	UFUNCTION(BlueprintCallable, Category = "LaunchCharacter")
-	void UpdateLaunchCharacterUp(float Alpha);
 
-	UPROPERTY(BlueprintReadOnly, Category = "LaunchCharacter")
-	FVector CurrentLocationLaunch;
-
-	UPROPERTY(BlueprintReadOnly, Category = "LaunchCharacter")
-	FVector UpVectorLaunch;
-	
 	UPROPERTY(BlueprintReadWrite, Category = "SoftLock")
 	AActor* SoftLockTarget = nullptr;
 
@@ -103,16 +97,11 @@ protected:
 	UPROPERTY()
 	UTimelineComponent* SoftLockTimeline;
 
-	UPROPERTY()
-	UTimelineComponent* LaunchCharacterTimeline;
-
-protected:
 	UPROPERTY(EditAnywhere, Category = "SoftLock")
 	UCurveFloat* SoftLockCurve;
 
 	UFUNCTION(BlueprintCallable, Category = "Attack | JumpAttack")
 	void LaunchCharacterUp();
-
 
 	UFUNCTION(BlueprintCallable, Category = "Attack | JumpAttack")
 	void Crasher();
@@ -127,13 +116,11 @@ protected:
 	void ReleaseBlock();
 	
 public:
-	void StartLaunchingUp();
-
 	UFUNCTION()
 	void Execute();
 
 	UFUNCTION()
-	void GetDirectionalReact(const FVector& ImpactPoint);
+	void GetDirectionalReact(const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType);
 	
 	UFUNCTION()
 	void HitReactJumpToSection(FName Section);
