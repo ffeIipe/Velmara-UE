@@ -20,6 +20,8 @@ public:
 	virtual void ActivateEnemy(const FVector& Location, const FRotator& Rotation) override;
 
 	virtual void DeactivateEnemy() override;
+	
+	virtual bool IsLaunchable_Implementation(ACharacter* DamageCauser) override;
 
 	virtual void LaunchUp_Implementation(const FVector& InstigatorLocation) override;
 

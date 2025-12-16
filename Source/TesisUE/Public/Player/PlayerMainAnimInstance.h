@@ -32,9 +32,6 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
 	bool IsFalling;
 	
-	UPROPERTY(BlueprintReadOnly, Category = "Movement")
-	bool bHasAcceleration;
-
 	UPROPERTY(BlueprintReadWrite, Category = "Movement")
 	float Direction;
 	

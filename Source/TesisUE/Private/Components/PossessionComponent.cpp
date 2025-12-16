@@ -24,29 +24,31 @@ void UPossessionComponent::BeginPlay()
 
 void UPossessionComponent::AttemptPossession()
 {
-    if (IsPossessing() || OwnerEntity->GetCharacterStateComponent()->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
+    if (IsPossessing() || OwnerEntity->GetCharacterStateComponent()->GetCurrentCharacterState().Form != ECharacterForm::ECF_Spectral)
     {
-        if (OwnerEntity->GetAttributeComponent()->RequiresEnergy(10.f))
+        return;
+    }
+
+    if (OwnerEntity->GetAttributeComponent()->RequiresEnergy(10.f))
+    {
+        AEntity* Victim = FindPossessionVictim();
+        if (!Victim) return;
+
+        Victim->GetPossessionComponent()->OnPossessionReceived(OwnerEntity);
+
+        check(PlayerController != nullptr);
+        PlayerController->Possess(Victim);
+
+        CurrentlyPossessedEntity = Victim;
+        OwnerEntity->GetCharacterStateComponent()->SetCharacterForm(ECharacterForm::ECF_Possessing);
+        OwnerEntity->AttachFollowCamera(Victim->GetSpringArmComponent());
+        OwnerEntity->SetActorHiddenInGame(true);
+        OwnerEntity->SetActorEnableCollision(false);
+        OwnerEntity->GetMesh()->bPauseAnims = true;
+
+        if (OwnerEntity->GetInventoryComponent()->GetEquippedItem())
         {
-            AEntity* Victim = FindPossessionVictim();
-            if (!Victim) return;
-
-            Victim->GetPossessionComponent()->OnPossessionReceived(OwnerEntity);
-
-            check(PlayerController != nullptr);
-            PlayerController->Possess(Victim);
-
-            CurrentlyPossessedEntity = Victim;
-            OwnerEntity->GetCharacterStateComponent()->SetCharacterForm(ECharacterForm::ECF_Possessing);
-            OwnerEntity->AttachFollowCamera(Victim->GetSpringArmComponent());
-            OwnerEntity->SetActorHiddenInGame(true);
-            OwnerEntity->SetActorEnableCollision(false);
-            OwnerEntity->GetMesh()->bPauseAnims = true;
-
-            if (OwnerEntity->GetInventoryComponent()->GetEquippedItem())
-            {
-                OwnerEntity->GetInventoryComponent()->GetEquippedItem()->SetActorHiddenInGame(true);
-            }
+            OwnerEntity->GetInventoryComponent()->GetEquippedItem()->SetActorHiddenInGame(true);
         }
     }
     else if (OnPossessionAttemptFailed.IsBound()) OnPossessionAttemptFailed.Broadcast();

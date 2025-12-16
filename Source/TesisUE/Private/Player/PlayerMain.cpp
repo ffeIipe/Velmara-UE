@@ -98,8 +98,6 @@ void APlayerMain::BeginPlay()
 
 	GetCombatComponent()->OnWallHit.AddDynamic(this, &APlayerMain::OnWallCollision);
 	
-	GetPossessionComponent()->OnPossessionAttemptFailed.AddDynamic(GetCombatComponent(), &UCombatComponent::Input_Execute);
-
 	GetCharacterStateComponent()->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral ?
 		SpectralWeaponComponent->EnableSpectralWeapon(true) : SpectralWeaponComponent->EnableSpectralWeapon(false);
 

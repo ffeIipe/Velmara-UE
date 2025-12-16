@@ -103,7 +103,7 @@ void AEntity::PlayCameraShake(const FVector& Epicenter, float InnerRadius, float
 
 bool AEntity::CanBeFinished_Implementation()
 {
-	//if (GEngine)GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("CanBeFinished Exec..."));
+	if (GEngine)GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("CanBeFinished Exec..."));
 	if (GetAttributeComponent()->GetHealthPercent() <= .2f)
 	{
 		if (OnCanBeFinished.IsBound())
@@ -148,7 +148,7 @@ void AEntity::BeginPlay()
 
 	if (!GetCharacterStateComponent())
 	{
-		//if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("CharacterStateComponent invalid"));
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("CharacterStateComponent invalid"));
 	}
 
 	GetAttributeComponent()->OnEntityDead.AddDynamic(this, &AEntity::Die);
@@ -189,7 +189,7 @@ void AEntity::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);
 
-	//if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Red, FString("Landed	..."));
+	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Red, FString("Landed	..."));
 
 	GetCombatComponent()->bIsLaunched = false;
 	GetExtraMovementComponent()->CanDoubleJump = true;
@@ -243,7 +243,7 @@ void AEntity::Interact(const FInputActionValue& Value)
 		ETraceTypeQuery::TraceTypeQuery1, //visibility trace
 		false,
 		ActorsToIgnore,
-		EDrawDebugTrace::None,
+		EDrawDebugTrace::ForDuration,
 		ResultHit,
 		true
 	);

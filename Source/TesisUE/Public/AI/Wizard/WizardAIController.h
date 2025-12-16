@@ -14,5 +14,5 @@ class TESISUE_API AWizardAIController : public AEnemyAIController
 {
 	GENERATED_BODY()
 
-	/*void OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus) override;*/
+	void OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus) override;
 };

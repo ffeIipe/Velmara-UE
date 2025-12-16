@@ -193,7 +193,7 @@ void USpectralWeaponComponent::Fire(bool bIsPrimary)
 
         if (bHit)
         {
-            //if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::White, FString("Hit something..."));
+            if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::White, FString("Hit something..."));
 
             if (AActor* HitActor = Hit.GetActor())
             {

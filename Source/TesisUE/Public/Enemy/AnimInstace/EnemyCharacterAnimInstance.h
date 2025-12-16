@@ -42,11 +42,11 @@ protected:
 	UPROPERTY(BlueprintReadWrite, Category = "Movement")
 	float WalkForward;
 
-	/*UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable)
 	float const CalculateWalkRight();
 
 	UFUNCTION(BlueprintCallable)
-	float const CalculateWalkForward();*/
+	float const CalculateWalkForward();
 
 	UPROPERTY(BlueprintReadWrite)
 	EEnemyState CurrentEnemyState;

@@ -81,6 +81,7 @@ public:
 	FOnEntityShieldTakeDamage OnShieldTakeDamage;
 
 	// --- Interface Implementations ---
+
 	virtual void GetHit_Implementation(
 		AActor* DamageCauser,
 		const FVector& ImpactPoint, FDamageEvent const& DamageEvent,
@@ -149,7 +150,7 @@ protected:
 	UInputMappingContext* CharacterContext;
 
 	// --- Camera ---
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
+	UPROPERTY(EditAnywhere, Category = "Camera")
 	ACameraActor* FollowCamera;
 
 	// --- Input Actions ---

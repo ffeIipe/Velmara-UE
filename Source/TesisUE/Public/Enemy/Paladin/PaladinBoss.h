@@ -10,8 +10,8 @@ class TESISUE_API APaladinBoss : public APaladin
 	GENERATED_BODY()
 
 public:
-	/*UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
-	void ResetKeyBool(float Duration, struct FBlackboardKeySelector Key, bool SetBool, APawn* TargetPawn);*/
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+	void ResetKeyBool(float Duration, struct FBlackboardKeySelector Key, bool SetBool, APawn* TargetPawn);
 
 protected:
 	APaladinBoss();

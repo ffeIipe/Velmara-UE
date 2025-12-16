@@ -110,7 +110,7 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 		UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_GameTraceChannel3),
 		false,
 		IgnoreActors,
-		EDrawDebugTrace::None,
+		EDrawDebugTrace::ForDuration,
 		HitResults,
 		true
 	);

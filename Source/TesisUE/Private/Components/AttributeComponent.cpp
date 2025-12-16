@@ -13,14 +13,14 @@ UAttributeComponent::UAttributeComponent()
 
 void UAttributeComponent::ReceiveDamage(float Damage)
 {
-	if (!IsAlive()) return;
-
-	Health = FMath::Clamp(Health - Damage, 0.f, MaxHealth);
-
-	if (!IsAlive() && OnEntityDead.IsBound())
+	if (IsAlive())
+	{
+		Health = FMath::Clamp(Health - Damage, 0.f, MaxHealth);
+	}
+	else if (OnEntityDead.IsBound())
 	{
 		OnEntityDead.Broadcast();
-		//OnEntityDead.Clear();
+		OnEntityDead.Clear();
 	}
 }
 

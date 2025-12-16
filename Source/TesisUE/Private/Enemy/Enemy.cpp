@@ -493,19 +493,17 @@ void AEnemy::GetFinished_Implementation()
 		FRotator NewRotation = UKismetMathLibrary::FindLookAtRotation(Start, End);
 		SetActorRotation(NewRotation);
 
-		Die();
-
+		DisableAI();
 		StopAnimMontage();
 		PlayAnimMontage(FinisherDeathMontage, 1.f); 
 
-		//GetAttributeComponent()->ReceiveDamage(100.f);
-		//DisableAI();
+		Die();
 	}
 }
 
 bool AEnemy::IsLaunchable_Implementation(ACharacter* Character)
 {
-	return !GetAttributeComponent()->IsShielded() && GetAttributeComponent()->IsAlive();
+	return GetAttributeComponent()->IsShielded();
 }
 
 void AEnemy::GetDefaultParameters()
@@ -616,19 +614,22 @@ EEnemyState AEnemy::SetEnemyState(EEnemyState NewState)
 
 void AEnemy::DisableAI()
 {
-	if (!AIController)
+	if (AIController)
+	{
+		BBComponent = Cast<UBlackboardComponent>(AIController->GetBlackboardComponent());
+		AIController->StopMovement();
+		AIController->UnPossess();
+	}
+	else
 	{
 		AIController = Cast<AAIController>(GetController());
 		BBComponent = Cast<UBlackboardComponent>(AIController->GetBlackboardComponent());
 	}
 
-	AIController->StopMovement();
-	AIController->UnPossess();
-	AIController->GetBrainComponent()->StopLogic(FString("AI Disabled"));
-	AIController->RunBehaviorTree(nullptr);
-
-	ClearBlackboardValues();
-
+	if (BBComponent)
+	{
+		ClearBlackboardValues();
+	}
 }
 
 void AEnemy::ClearBlackboardValues()
@@ -653,8 +654,6 @@ void AEnemy::EnableAI()
 	if (AIController)
 	{
 		AIController->Possess(this);
-		AIController->GetBrainComponent()->RestartLogic();
-		AIController->GetBrainComponent()->RestartLogic();
 
 		if (AIController->GetPawn() == this)
 		{
