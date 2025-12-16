@@ -20,7 +20,6 @@ void UAttributeComponent::ReceiveDamage(float Damage)
 	else if (OnEntityDead.IsBound())
 	{
 		OnEntityDead.Broadcast();
-		OnEntityDead.Clear();
 	}
 }
 
