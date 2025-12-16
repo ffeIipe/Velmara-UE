@@ -70,11 +70,6 @@ void UPossessionComponent::ReleasePossession()
     OwnerEntity->GetMesh()->bPauseAnims = false;
     OwnerEntity->GetCharacterStateComponent()->SetCharacterForm(ECharacterForm::ECF_Spectral);
 
-    if (OwnerEntity->GetInventoryComponent()->GetEquippedItem())
-    {
-        OwnerEntity->GetInventoryComponent()->GetEquippedItem()->SetActorHiddenInGame(false);
-    }
-
     CurrentlyPossessedEntity->GetPossessionComponent()->OnPossessionReleased();
     CurrentlyPossessedEntity = nullptr;
 }

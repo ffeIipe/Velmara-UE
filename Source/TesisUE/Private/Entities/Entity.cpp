@@ -180,8 +180,8 @@ void AEntity::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 		EnhancedInputComponent->BindAction(InputAction_Attack, ETriggerEvent::Started, GetCombatComponent(), &UCombatComponent::Input_Attack);
 		EnhancedInputComponent->BindAction(InputAction_HeavyAttack, ETriggerEvent::Started, GetCombatComponent(), &UCombatComponent::Input_HeavyAttack);
 		EnhancedInputComponent->BindAction(InputAction_Launch, ETriggerEvent::Started, GetCombatComponent(), &UCombatComponent::Input_Launch);
-		//EnhancedInputComponent->BindAction(InputAction_Block, ETriggerEvent::Started, GetCombatComponent(), &UCombatComponent::Input_Block);
-		//EnhancedInputComponent->BindAction(InputAction_Block, ETriggerEvent::Completed, GetCombatComponent(), &UCombatComponent::Input_ReleaseBlock);
+		EnhancedInputComponent->BindAction(InputAction_Block, ETriggerEvent::Started, GetCombatComponent(), &UCombatComponent::Input_Block);
+		EnhancedInputComponent->BindAction(InputAction_Block, ETriggerEvent::Completed, GetCombatComponent(), &UCombatComponent::Input_ReleaseBlock);
 	}
 }
 
@@ -319,6 +319,7 @@ float AEntity::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, A
 		{
 			GetAttributeComponent()->ReceiveDamage(DamageAmount);
 
+			//if (GEngine)GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Damaged"));
 			CanBeFinished_Implementation();
 		}
 	}

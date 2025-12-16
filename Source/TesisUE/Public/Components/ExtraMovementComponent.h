@@ -28,23 +28,9 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Montages | DoubleJump")
 	UAnimMontage* DoubleJumpMontage;
-	
-	UPROPERTY(EditAnywhere, Category = "Montages | TurnInPlace")
-	UAnimMontage* TurnInPlaceMontage;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Dodge")
 	bool bIsSaveDodge = false;
-	
-	UPROPERTY(BlueprintReadWrite, Category = "Dodge")
-	bool bIsTurningInPlace = false;
-
-	UFUNCTION(BlueprintCallable)
-	void PlayTurnInPlaceMontage(const FVector& DesiredInputDirection);
-	
-	FVector LastInputDirection;
-
-	/*UFUNCTION(BlueprintCallable)
-	void OnTurnMontageEnded(UAnimMontage* Montage, bool bInterrupted);*/
 
 	UFUNCTION(BlueprintCallable)
 	void DodgeSaveEvent();
@@ -75,12 +61,6 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Stats | DoubleJump")
 	float LaunchStrenght = 800.f;
-	
-	UPROPERTY(EditAnywhere, Category = "Stats | DoubleJump")
-	float DefaultWalkSpeed = 700.f;
-	
-	UPROPERTY(EditAnywhere, Category = "Stats | DoubleJump")
-	float RunSpeed = 1200.f;
 
 	ACharacter* OwningCharacter;
 
@@ -89,8 +69,6 @@ public:
 	void Input_Move(const FInputActionValue& Value);
 	
 	void Input_Look(const FInputActionValue& Value);
-
-	void Input_Run(const FInputActionValue& Value);
 
 	void Input_DoubleJump();
 

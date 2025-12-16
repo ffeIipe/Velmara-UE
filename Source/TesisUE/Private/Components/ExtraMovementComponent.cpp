@@ -123,20 +123,6 @@ void UExtraMovementComponent::Input_Move(const FInputActionValue& Value)
 	{
 		const FVector2D MoveVector = Value.Get<FVector2D>();
 
-		/*if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, -1.f, FColor::Purple, FString::SanitizeFloat(EntityOwner->GetCharacterMovement()->GetMaxSpeed()));
-
-		const FVector CurrentCharacterForward = EntityOwner->GetActorForwardVector();
-		const FVector CurrentCharacterRight = EntityOwner->GetActorRightVector();
-		const FVector DesiredInputDirection = (CurrentCharacterForward * MoveVector.Y + CurrentCharacterRight * MoveVector.X).GetSafeNormal();
-
-		LastInputDirection = DesiredInputDirection;
-
-		if (EntityOwner->GetCharacterMovement()->Velocity.SizeSquared() < KINDA_SMALL_NUMBER &&
-			!DesiredInputDirection.IsNearlyZero())
-		{
-			PlayTurnInPlaceMontage(DesiredInputDirection);
-		}*/
-
 		const FRotator ControlRotation = EntityOwner->GetControlRotation();
 		const FRotator YawRotation(0.f, ControlRotation.Yaw, 0.f);
 
@@ -145,7 +131,7 @@ void UExtraMovementComponent::Input_Move(const FInputActionValue& Value)
 
 		EntityOwner->AddMovementInput(DirectionForward, MoveVector.Y);
 		EntityOwner->AddMovementInput(DirectionSideward, MoveVector.X);
-	}
+	}	
 }
 
 void UExtraMovementComponent::Input_Look(const FInputActionValue& Value)
@@ -154,23 +140,6 @@ void UExtraMovementComponent::Input_Look(const FInputActionValue& Value)
 
 	EntityOwner->AddControllerPitchInput(LookingVector.Y);
 	EntityOwner->AddControllerYawInput(LookingVector.X);
-}
-
-void UExtraMovementComponent::Input_Run(const FInputActionValue& Value)
-{
-	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, -1.f, FColor::White, FString("Enter Input_Run"));
-	if (Value.Get<bool>())
-	{
-		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, -1.f, FColor::Cyan, FString("True pressing Input_Run"));
-
-		EntityOwner->GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
-	}
-	else
-	{
-		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, -1.f, FColor::Purple, FString("False Input_Run"));
-
-		EntityOwner->GetCharacterMovement()->MaxWalkSpeed = DefaultWalkSpeed;
-	}
 }
 
 void UExtraMovementComponent::Input_DoubleJump()
@@ -182,45 +151,3 @@ void UExtraMovementComponent::Input_DoubleJump()
 		CanDoubleJump = false;
 	}
 }
-
-void UExtraMovementComponent::PlayTurnInPlaceMontage(const FVector& DesiredInputDirection)
-{
-	const FVector CharacterForward = OwningCharacter->GetActorForwardVector();
-	const FVector NormalizedDesiredInputDirection = DesiredInputDirection.GetSafeNormal();
-
-	const double CosAngle = FVector::DotProduct(CharacterForward, NormalizedDesiredInputDirection);
-	double Angle = FMath::Acos(CosAngle);
-	Angle = FMath::RadiansToDegrees(Angle);
-
-	const FVector CrossProduct = FVector::CrossProduct(CharacterForward, NormalizedDesiredInputDirection);
-	if (CrossProduct.Z < 0)
-	{
-		Angle *= -1.f;
-	}
-
-	FName SectionToPlay = FName("Default");
-
-	if (Angle >= -45.f && Angle < 45.f)
-	{
-		return;
-	}
-	else if (Angle >= 45.f && Angle < 135.f)
-	{
-		SectionToPlay = FName("TurnRight");
-	}
-	else if (Angle >= -135.f && Angle < -45.f)
-	{
-		SectionToPlay = FName("TurnLeft");
-	}
-	else
-	{
-		SectionToPlay = FName("Turn180");
-	}
-
-	OwningCharacter->PlayAnimMontage(TurnInPlaceMontage, 1.f, SectionToPlay);
-}
-
-//void UExtraMovementComponent::OnTurnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
-//{
-//	bIsTurningInPlace = false;
-//}

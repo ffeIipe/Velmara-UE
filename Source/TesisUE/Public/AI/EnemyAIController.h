@@ -28,8 +28,6 @@ public:
 
 	AActor* DamageCauser;
 
-	void SetHasReservedAttackToken(bool bHasToken);
-
 protected:
 	void BeginPlay() override;
 
@@ -42,11 +40,9 @@ protected:
 	UFUNCTION()
 	virtual void OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
 
-	UBlackboardComponent* BlackboardComponent;
-
 private:
 	class AEntity* CachedOwner;
 	AEntity* CachedTarget;
 	
-	bool bHasReservedAttackToken;
+		
 };

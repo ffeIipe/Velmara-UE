@@ -31,7 +31,6 @@
 #include "SceneEvents/NewGameModeBase.h"
 #include "SceneEvents/NewGameStateBase.h"
 #include "Subsystems/EnemyPoolManager.h"
-#include "Subsystems/EnemyTokenManager.h"
 #include "Tutorial/PromptWidgetComponent.h"
 #include "Player/PlayerHeroController.h"
 #include "HUD/PlayerMainHUD.h"
@@ -190,11 +189,6 @@ void AEnemy::DeactivateEnemy()
 
 void AEnemy::Die()
 {
-	if (GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling || GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Flying)
-	{
-		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
-	}
-
 	Super::Die();
 
 	DissolveTimeline->PlayFromStart();
@@ -218,8 +212,7 @@ void AEnemy::Die()
 		}
 	} 
 
-	//disable 'F' widget
-	if (PromptWidgetComponent && PromptWidgetComponent->GetWidget())
+	if (PromptWidgetComponent && PromptWidgetComponent->GetWidget())//enemy
 	{
 		PromptWidgetComponent->GetPromptWidgetComponent()->EnablePromptWidget(false);
 	}
@@ -227,14 +220,16 @@ void AEnemy::Die()
 	DisableAI();
 	HandleEnemyCollision(ECR_Ignore);
 
-	//release possessor
 	if (GetPossessionComponent()->GetPossessedEntity())
 	{
 		GetPossessionComponent()->ReleasePossession();
 	}
 
-	if (OnDeactivated.IsBound()) OnDeactivated.Broadcast(this);
-	
+	if (OnDeactivated.IsBound())
+	{
+		OnDeactivated.Broadcast(this);
+	}
+
 	GetWorldTimerManager().SetTimer(ReturnToPoolTimerHandle, this, &AEnemy::RequestReturnToPool, 5.0f, false);
 }
 
@@ -274,10 +269,6 @@ void AEnemy::BeginPlay()
 	
 	GetPossessionComponent()->OnPossessorEjected.AddDynamic(this, &AEnemy::EnableAI);
 	GetPossessionComponent()->OnPossessorExecutedMeAndEjected.AddDynamic(this, &AEnemy::GetExecuted);
-
-	GetCombatComponent()->OnAttackEnd.AddDynamic(this, &AEnemy::ReturnAttackTokenToTarget);
-	
-	GetAttributeComponent()->OnEntityDead.AddDynamic(this, &AEnemy::ReturnAttackTokenToTarget);
 
 	PlayerControllerRef = Cast<APlayerHeroController>(UGameplayStatics::GetPlayerController(this, 0));
 
@@ -348,25 +339,6 @@ void AEnemy::BeginPlay()
 			DissolveMaterials.Add(UMaterialInstanceDynamic::Create(CurrentMaterial, this));
 			GetMesh()->SetMaterial(MatIndex, DissolveMaterials[MatIndex]);
 		}
-	}
-}
-
-void AEnemy::ReturnAttackTokenToTarget()
-{
-	UWorld* World = GetWorld();
-	if (World)
-	{
-		UEnemyTokenManager* TokenManager = World->GetSubsystem<UEnemyTokenManager>();
-		if (TokenManager)
-		{
-			TokenManager->ReturnAttackToken();
-		}
-	}
-
-	EnemyAIController = Cast<AEnemyAIController>(AIController);
-	if (EnemyAIController)
-	{
-		EnemyAIController->SetHasReservedAttackToken(false);
 	}
 }
 
@@ -592,28 +564,37 @@ void AEnemy::DisableAI()
 {
 	if (AIController)
 	{
-		BBComponent = Cast<UBlackboardComponent>(AIController->GetBlackboardComponent());
 		AIController->StopMovement();
 		AIController->UnPossess();
-	}
-	else
-	{
-		AIController = Cast<AAIController>(GetController());
-		BBComponent = Cast<UBlackboardComponent>(AIController->GetBlackboardComponent());
 	}
 
 	if (BBComponent)
 	{
-		ClearBlackboardValues();
+		BBComponent->ClearValue(FName("TargetActor"));
+		BBComponent->ClearValue(FName("CanSeePlayer"));
+		BBComponent->ClearValue(FName("DistToTarget"));
+		BBComponent->ClearValue(FName("DamageTakenRecently"));
 	}
-}
+	else
+	{
+		if (AIController)
+		{
+			BBComponent = Cast<UBlackboardComponent>(AIController->GetBlackboardComponent());
+		}
+		else
+		{
+			AIController = Cast<AAIController>(GetController());
+			BBComponent = Cast<UBlackboardComponent>(AIController->GetBlackboardComponent());
+		}
 
-void AEnemy::ClearBlackboardValues()
-{
-	BBComponent->ClearValue(FName("TargetActor"));
-	BBComponent->ClearValue(FName("CanSeePlayer"));
-	BBComponent->ClearValue(FName("DistToTarget"));
-	BBComponent->ClearValue(FName("DamageTakenRecently"));
+		if (BBComponent)
+		{
+			BBComponent->ClearValue(FName("TargetActor"));
+			BBComponent->ClearValue(FName("CanSeePlayer"));
+			BBComponent->ClearValue(FName("DistToTarget"));
+			BBComponent->ClearValue(FName("DamageTakenRecently"));
+		}
+	}
 }
 
 void AEnemy::EnableAI()

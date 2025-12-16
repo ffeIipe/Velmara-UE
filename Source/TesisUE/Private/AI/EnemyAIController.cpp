@@ -7,7 +7,6 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Components/CharacterStateComponent.h"
 #include "Enemy/Enemy.h"
-#include "Subsystems/EnemyTokenManager.h"
 
 AEnemyAIController::AEnemyAIController(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer.SetDefaultSubobjectClass<UCrowdFollowingComponent>("PathFollowingComponent"))
 {
@@ -45,13 +44,13 @@ void AEnemyAIController::BeginPlay()
     Super::BeginPlay();
 
     CachedOwner = Cast<AEntity>(GetPawn());
-    BlackboardComponent = GetBlackboardComponent();
 }
 
 void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
     AEntity* PlayerPawn = Cast<AEntity>(Actor);
     UCharacterStateComponent* CharacterStateComponent = PlayerPawn ? PlayerPawn->GetCharacterStateComponent() : nullptr; // Añadir null check
+    UBlackboardComponent* BlackboardComponent = GetBlackboardComponent();
 
     if (!CachedOwner->GetCharacterStateComponent())
     {
@@ -75,29 +74,10 @@ void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Sti
     {
         if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Human)
         {
-            if (!bHasReservedAttackToken)
-            {
-                UEnemyTokenManager* TokenManager = GetWorld()->GetSubsystem<UEnemyTokenManager>();
-
-                if (TokenManager && TokenManager->TryReserveAttackToken())
-                {
-                    bHasReservedAttackToken = true;
-                    BlackboardComponent->SetValueAsBool(FName("CanPerformMelee"), true);
-                }
-                else
-                {
-                    BlackboardComponent->SetValueAsBool(FName("CanPerformMelee"), false);
-                }
-            }
-            else
-            {
-                BlackboardComponent->SetValueAsBool(FName("CanPerformMelee"), true);
-            }
-
             BlackboardComponent->SetValueAsObject(FName("TargetActor"), Actor);
             BlackboardComponent->SetValueAsBool(FName("CanSeePlayer"), true);
         }
-        else
+        else 
         {
             if (DamageCauser != Actor)
             {
@@ -111,20 +91,5 @@ void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Sti
                 DamageCauser = nullptr;
             }
         }
-    }
-    else
-    {
-        if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Not sensed..."));
-        UEnemyTokenManager* TokenManager = GetWorld()->GetSubsystem<UEnemyTokenManager>();
-        TokenManager->ReturnAttackToken();
-    }
-}
-
-void AEnemyAIController::SetHasReservedAttackToken(bool bHasToken)
-{
-    bHasReservedAttackToken = bHasToken;
-    if (!bHasToken && BlackboardComponent)
-    {
-        BlackboardComponent->SetValueAsBool(FName("CanPerformMelee"), false);
     }
 }
