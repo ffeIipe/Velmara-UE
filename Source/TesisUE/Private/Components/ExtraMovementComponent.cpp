@@ -32,7 +32,6 @@ void UExtraMovementComponent::BeginPlay()
 	}
 }
 
-
 void UExtraMovementComponent::Input_Dodge()
 {
 	if (EntityOwner->GetCharacterMovement()->GetGroundMovementMode() == EMovementMode::MOVE_Falling || EntityOwner->GetCharacterMovement()->GetGroundMovementMode() == EMovementMode::MOVE_Flying || !EntityOwner->IsEquipping())
@@ -124,6 +123,20 @@ void UExtraMovementComponent::Input_Move(const FInputActionValue& Value)
 	{
 		const FVector2D MoveVector = Value.Get<FVector2D>();
 
+		/*if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, -1.f, FColor::Purple, FString::SanitizeFloat(EntityOwner->GetCharacterMovement()->GetMaxSpeed()));
+
+		const FVector CurrentCharacterForward = EntityOwner->GetActorForwardVector();
+		const FVector CurrentCharacterRight = EntityOwner->GetActorRightVector();
+		const FVector DesiredInputDirection = (CurrentCharacterForward * MoveVector.Y + CurrentCharacterRight * MoveVector.X).GetSafeNormal();
+
+		LastInputDirection = DesiredInputDirection;
+
+		if (EntityOwner->GetCharacterMovement()->Velocity.SizeSquared() < KINDA_SMALL_NUMBER &&
+			!DesiredInputDirection.IsNearlyZero())
+		{
+			PlayTurnInPlaceMontage(DesiredInputDirection);
+		}*/
+
 		const FRotator ControlRotation = EntityOwner->GetControlRotation();
 		const FRotator YawRotation(0.f, ControlRotation.Yaw, 0.f);
 
@@ -132,8 +145,6 @@ void UExtraMovementComponent::Input_Move(const FInputActionValue& Value)
 
 		EntityOwner->AddMovementInput(DirectionForward, MoveVector.Y);
 		EntityOwner->AddMovementInput(DirectionSideward, MoveVector.X);
-
-		UpdateAllowRunStrafe(MoveVector.Y);
 	}
 }
 
@@ -147,60 +158,20 @@ void UExtraMovementComponent::Input_Look(const FInputActionValue& Value)
 
 void UExtraMovementComponent::Input_Run(const FInputActionValue& Value)
 {
+	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, -1.f, FColor::White, FString("Enter Input_Run"));
 	if (Value.Get<bool>())
 	{
-		if (OwnerCharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
-		{
-			if (!bAllowRunStrafe)
-			{
-				EntityOwner->GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
-			}
-			else
-			{
-				EntityOwner->GetCharacterMovement()->MaxWalkSpeed = DefaultWalkSpeed;
-			}
-		}
-		else
-		{
-			EntityOwner->GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
-		}	
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, -1.f, FColor::Cyan, FString("True pressing Input_Run"));
+
+		EntityOwner->GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
 	}
 	else
 	{
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, -1.f, FColor::Purple, FString("False Input_Run"));
+
 		EntityOwner->GetCharacterMovement()->MaxWalkSpeed = DefaultWalkSpeed;
 	}
 }
-
-void UExtraMovementComponent::UpdateAllowRunStrafe(float MoveVectorY)
-{
-	if (MoveVectorY >= KINDA_SMALL_NUMBER)
-	{
-		bAllowRunStrafe = false;
-	}
-	else bAllowRunStrafe = true;
-}
-
-//void UExtraMovementComponent::UpdateHumanRun(const FVector& MoveVector)
-//{
-//	FVector MoveInputDirection = FVector(MoveVector.X, MoveVector.Y, 0.f).GetSafeNormal();
-//
-//	FVector CharacterForwardVector = EntityOwner->GetActorForwardVector();
-//	CharacterForwardVector.Z = 0.f;
-//	CharacterForwardVector.Normalize();
-//
-//	float DotProductForward = FVector::DotProduct(MoveInputDirection, CharacterForwardVector);
-//
-//	const float ForwardMovementThreshold = 0.5f;
-//
-//	if (bIsRunPressed && DotProductForward > ForwardMovementThreshold)
-//	{
-//		EntityOwner->GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
-//	}
-//	else
-//	{
-//		EntityOwner->GetCharacterMovement()->MaxWalkSpeed = DefaultWalkSpeed;
-//	}
-//}
 
 void UExtraMovementComponent::Input_DoubleJump()
 {

@@ -21,6 +21,11 @@ AItem::AItem()
 
 	PromptWidget = CreateDefaultSubobject<UPromptWidgetComponent>(TEXT("PromptTrigger"));
 	PromptWidget->SetupAttachment(GetRootComponent());
+
+	//if (UniqueSaveID == NAME_None)
+	//{
+	//	UniqueSaveID = FName(*FGuid::NewGuid().ToString());
+	//}
 }
 
 void AItem::BeginPlay()

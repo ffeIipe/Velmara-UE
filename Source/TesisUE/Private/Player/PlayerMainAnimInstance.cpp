@@ -25,24 +25,21 @@ void UPlayerMainAnimInstance::NativeUpdateAnimation(float DeltaTime)
 	{
 		GroundSpeed = UKismetMathLibrary::VSizeXY(PlayerMainCharacterMovement->Velocity);
 		IsFalling = PlayerMainCharacterMovement->IsFalling();
-
 		CharacterState = PlayerMain->GetCharacterStateComponent()->GetCurrentCharacterState().State;
 		CharacterForm = PlayerMain->GetCharacterStateComponent()->GetCurrentCharacterState().Form;
 		SpectralState = PlayerMain->GetCharacterStateComponent()->GetCurrentCharacterState().SpectralState;
 
-		Direction = CalculateDirection(PlayerMain->GetVelocity(), PlayerMain->GetActorRotation());
-
-		//WalkRight = FMath::Sin(Direction) * GroundSpeed
-		//WalkForward = CalculateWalkForward();
+		WalkRight = CalculateWalkRight();
+		WalkForward = CalculateWalkForward();
 	}
 }
 
 float const UPlayerMainAnimInstance::CalculateWalkRight()
 {
-	return UKismetMathLibrary::Sin(FMath::DegreesToRadians(Direction)) * UKismetMathLibrary::Clamp(GroundSpeed, 0.f, 1.f);
+	return UKismetMathLibrary::Sin(FMath::DegreesToRadians(Direction)) * UKismetMathLibrary::Clamp(GroundSpeed, 0, 1);
 }
 
 float const UPlayerMainAnimInstance::CalculateWalkForward()
 {
-	return UKismetMathLibrary::Cos(FMath::DegreesToRadians(Direction)) * UKismetMathLibrary::Clamp(GroundSpeed, 0.f, 1.f);
+	return UKismetMathLibrary::Cos(FMath::DegreesToRadians(Direction)) * UKismetMathLibrary::Clamp(GroundSpeed, 0, 1);
 }

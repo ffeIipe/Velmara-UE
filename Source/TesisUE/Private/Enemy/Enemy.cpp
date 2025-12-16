@@ -565,7 +565,7 @@ void AEnemy::HandleEnemyCollision(bool bEnable)
 		GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
 		GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block);
 
-		GetMesh()->SetCollisionResponseToAllChannels(ECR_Ignore);//
+		GetMesh()->SetCollisionResponseToAllChannels(ECR_Ignore);
 
 		GetAttributeComponent()->GetShieldMeshComponent()->SetCollisionResponseToAllChannels(ECR_Ignore);
 	}
