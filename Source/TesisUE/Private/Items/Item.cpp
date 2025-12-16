@@ -12,12 +12,9 @@ AItem::AItem()
 
 	ItemMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Item Mesh"));
 	RootComponent = ItemMesh;
-	ItemMesh->SetCollisionResponseToAllChannels(ECR_Block);
-	ItemMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 
 	BoxCollider->SetupAttachment(GetRootComponent());
-	BoxCollider->SetCollisionResponseToAllChannels(ECR_Ignore);
-	BoxCollider->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+	BoxCollider->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 
 	PromptWidget = CreateDefaultSubobject<UPromptWidgetComponent>(TEXT("PromptTrigger"));
 	PromptWidget->SetupAttachment(GetRootComponent());

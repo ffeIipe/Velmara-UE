@@ -48,6 +48,5 @@ private:
 	class AEntity* CachedOwner;
 	AEntity* CachedTarget;
 	
-	UPROPERTY(VisibleAnywhere)
 	bool bHasReservedAttackToken;
 };

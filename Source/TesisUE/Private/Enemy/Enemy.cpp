@@ -102,7 +102,7 @@ void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 
 	GetMesh()->bPauseAnims = false;
 
-	HandleEnemyCollision(true);
+	HandleEnemyCollision(ECR_Block);
 
 	EnemyState = EEnemyState::EES_None;
 	isLaunched = false;
@@ -152,7 +152,7 @@ void AEnemy::DeactivateEnemy()
 {
 	SetActorHiddenInGame(true);
 	SetActorTickEnabled(false);
-	HandleEnemyCollision(false);
+	HandleEnemyCollision(ECR_Ignore);
 
 	StopAnimMontage();
 	GetMesh()->bPauseAnims = true;
@@ -190,6 +190,11 @@ void AEnemy::DeactivateEnemy()
 
 void AEnemy::Die()
 {
+	if (GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling || GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Flying)
+	{
+		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
+	}
+
 	Super::Die();
 
 	DissolveTimeline->PlayFromStart();
@@ -220,7 +225,7 @@ void AEnemy::Die()
 	}
 
 	DisableAI();
-	HandleEnemyCollision(false);
+	HandleEnemyCollision(ECR_Ignore);
 
 	//release possessor
 	if (GetPossessionComponent()->GetPossessedEntity())
@@ -276,7 +281,7 @@ void AEnemy::BeginPlay()
 
 	PlayerControllerRef = Cast<APlayerHeroController>(UGameplayStatics::GetPlayerController(this, 0));
 
-	HandleEnemyCollision(true);
+	HandleEnemyCollision(ECR_Block);
 
 	GetDefaultParameters();
 
@@ -532,43 +537,14 @@ void AEnemy::SetOnPossessedParameters()
 	}
 }
 
-void AEnemy::HandleEnemyCollision(bool bEnable)
+void AEnemy::HandleEnemyCollision(ECollisionResponse CollisionResponse)
 {
-	if (bEnable)
-	{
-		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-		GetCapsuleComponent()->SetCollisionObjectType(ECC_Pawn);
-		GetCapsuleComponent()->SetCollisionResponseToAllChannels(ECR_Ignore); 
-		GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_GameTraceChannel3, ECR_Block);
-		GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
-		GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block);
-		GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
-		
-		GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-		GetMesh()->SetCollisionObjectType(ECC_Pawn);
-		GetMesh()->SetCollisionResponseToAllChannels(ECR_Ignore);
-		GetMesh()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
-		GetMesh()->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
-		GetMesh()->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block);
-		GetMesh()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, CollisionResponse);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_GameTraceChannel3, CollisionResponse);
 
-		GetAttributeComponent()->GetShieldMeshComponent()->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-		GetAttributeComponent()->GetShieldMeshComponent()->SetCollisionObjectType(ECC_WorldDynamic);
-		GetAttributeComponent()->GetShieldMeshComponent()->SetCollisionResponseToAllChannels(ECR_Ignore);
-		GetAttributeComponent()->GetShieldMeshComponent()->SetCollisionResponseToChannel(ECC_GameTraceChannel2, ECR_Block);
-		GetAttributeComponent()->GetShieldMeshComponent()->SetCollisionResponseToChannel(ECC_GameTraceChannel3, ECR_Block);
-		GetAttributeComponent()->GetShieldMeshComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
-	}
-	else
-	{
-		GetCapsuleComponent()->SetCollisionResponseToAllChannels(ECR_Ignore);
-		GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
-		GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block);
-
-		GetMesh()->SetCollisionResponseToAllChannels(ECR_Ignore);
-
-		GetAttributeComponent()->GetShieldMeshComponent()->SetCollisionResponseToAllChannels(ECR_Ignore);
-	}
+	GetMesh()->SetCollisionResponseToChannel(ECC_Pawn, CollisionResponse);
+	GetMesh()->SetCollisionResponseToChannel(ECC_GameTraceChannel3, CollisionResponse); //sword trace
+	//GetMesh()->SetCollisionResponseToChannel(ECC_GameTraceChannel2, CollisionResponse); //spectral weapon trace
 }
 
 void AEnemy::GetExecuted()

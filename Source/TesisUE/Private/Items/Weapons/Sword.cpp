@@ -1,3 +1,6 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
 #include "Items/Weapons/Sword.h"
 #include "Components/BoxComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -128,15 +131,6 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 
 				if (HitInterface->Execute_IsLaunchable(HitActor, Cast<ACharacter>(Owner)))
 				{
-					/*if (DamageTypeClass)
-					{
-						if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::White, FString(DamageTypeClass->GetName()));
-					}
-					else 
-					{
-						DamageTypeClass = UDamageType::StaticClass();
-					}*/
-
 					UGameplayStatics::ApplyDamage(
 						HitActor,
 						Damage,
@@ -176,6 +170,10 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 				
 				
 			}
+			//else
+			//{
+			//	OnWallHit.Broadcast(Hit);
+			//}
 		}
 	}
 }
