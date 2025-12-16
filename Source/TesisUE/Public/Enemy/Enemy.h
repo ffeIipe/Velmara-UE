@@ -94,8 +94,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Enemy|Combat")
 	FORCEINLINE AActor* GetDamageCauserActor() const { return LastDamageCauser; }
 
-	UFUNCTION(BlueprintCallable)
-	EEnemyState SetEnemyState(EEnemyState NewState);
+	void SetEnemyState(EEnemyState NewState);
 
 	UFUNCTION(BlueprintCallable)
 	void DisableAI();
