@@ -553,9 +553,11 @@ FName AEnemy::SelectRandomDieAnim()
 	}
 }
 
-void AEnemy::SetEnemyState(EEnemyState NewState)
+EEnemyState AEnemy::SetEnemyState(EEnemyState NewState)
 {
 	EnemyState = NewState;
+
+	return EnemyState;
 }
 
 void AEnemy::DisableAI()
