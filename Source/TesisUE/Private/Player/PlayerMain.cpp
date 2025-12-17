@@ -186,7 +186,7 @@ void APlayerMain::Equipping(bool bIsSwordBeingEquipped)
 				if (SpectralWeaponComponent->bWasInitialized && GetCharacterStateComponent()->GetCurrentCharacterState().SpectralState == ECharacterSpectralStates::ECSS_EquippedPistol)
 				{
 					PlayAnimMontage(EquipPistolMontage, 1.f, FName("BackToSword"));
-					GetCharacterStateComponent()->SetCharacterState(ECharacterStates::ECS_EquippingSword);
+					
 				}
 				else
 				{
