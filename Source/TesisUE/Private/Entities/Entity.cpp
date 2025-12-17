@@ -188,8 +188,20 @@ void AEntity::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 void AEntity::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);
+
+	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Red, FString("Landed	..."));
+
 	GetCombatComponent()->bIsLaunched = false;
 	GetExtraMovementComponent()->CanDoubleJump = true;
+
+	if (!GetAttributeComponent()->IsAlive())
+	{
+		GetCharacterMovement()->DisableMovement();
+		GetCharacterMovement()->StopMovementImmediately();
+		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
+
+		Die();
+	}
 }
 
 void AEntity::Jump()
@@ -283,8 +295,12 @@ void AEntity::Die()
 {
 	if (GetCharacterStateComponent()->GetCurrentCharacterState().Action == ECharacterActions::ECA_Dead) return;
 
-	GetCharacterMovement()->DisableMovement();
 	GetCharacterStateComponent()->SetCharacterAction(ECharacterActions::ECA_Dead);
+	
+	if (GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling || GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Flying)
+	{
+		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
+	}
 
 	if (DeathMontage)
 	{
@@ -318,7 +334,6 @@ float AEntity::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, A
 		else if (!GetAttributeComponent()->IsShielded() && DamageEvent.DamageTypeClass != USpectralTrapDamageType::StaticClass())
 		{
 			GetAttributeComponent()->ReceiveDamage(DamageAmount);
-
 			CanBeFinished_Implementation();
 		}
 	}
