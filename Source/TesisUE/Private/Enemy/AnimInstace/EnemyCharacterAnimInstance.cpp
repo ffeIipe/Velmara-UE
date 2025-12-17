@@ -26,32 +26,32 @@ void UEnemyCharacterAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSec
 
 	CurrentEnemyState = OwningEnemy->GetEnemyState();
 
-	WalkRight = CalculateWalkRight();
-	WalkForward = CalculateWalkForward();
+	//WalkRight = CalculateWalkRight();
+	//WalkForward = CalculateWalkForward();
 }
 
-float const UEnemyCharacterAnimInstance::CalculateWalkRight()
-{
-	if (CurrentEnemyState == EEnemyState::EES_Walk)
-	{
-		return (UKismetMathLibrary::Sin(FMath::DegreesToRadians(Direction)) * UKismetMathLibrary::Clamp(GroundSpeed, 0, 1)) / 2;
-	}
-	else if (CurrentEnemyState == EEnemyState::EES_Run)
-	{
-		return UKismetMathLibrary::Sin(FMath::DegreesToRadians(Direction)) * UKismetMathLibrary::Clamp(GroundSpeed, 0, 1);
-	}
-	return 0.f;
-}
-
-float const UEnemyCharacterAnimInstance::CalculateWalkForward()
-{
-	if (CurrentEnemyState == EEnemyState::EES_Walk)
-	{
-		return (UKismetMathLibrary::Cos(FMath::DegreesToRadians(Direction)) * UKismetMathLibrary::Clamp(GroundSpeed, 0, 1)) / 2;
-	}
-	else if (CurrentEnemyState == EEnemyState::EES_Run)
-	{
-		return UKismetMathLibrary::Cos(FMath::DegreesToRadians(Direction)) * UKismetMathLibrary::Clamp(GroundSpeed, 0, 1);
-	}
-	return 0.f;
-}
+//float const UEnemyCharacterAnimInstance::CalculateWalkRight()
+//{
+//	if (CurrentEnemyState == EEnemyState::EES_Walk)
+//	{
+//		return (UKismetMathLibrary::Sin(FMath::DegreesToRadians(Direction)) * UKismetMathLibrary::Clamp(GroundSpeed, 0, 1)) / 2;
+//	}
+//	else if (CurrentEnemyState == EEnemyState::EES_Run)
+//	{
+//		return UKismetMathLibrary::Sin(FMath::DegreesToRadians(Direction)) * UKismetMathLibrary::Clamp(GroundSpeed, 0, 1);
+//	}
+//	return 0.f;
+//}
+//
+//float const UEnemyCharacterAnimInstance::CalculateWalkForward()
+//{
+//	if (CurrentEnemyState == EEnemyState::EES_Walk)
+//	{
+//		return (UKismetMathLibrary::Cos(FMath::DegreesToRadians(Direction)) * UKismetMathLibrary::Clamp(GroundSpeed, 0, 1)) / 2;
+//	}
+//	else if (CurrentEnemyState == EEnemyState::EES_Run)
+//	{
+//		return UKismetMathLibrary::Cos(FMath::DegreesToRadians(Direction)) * UKismetMathLibrary::Clamp(GroundSpeed, 0, 1);
+//	}
+//	return 0.f;
+//}

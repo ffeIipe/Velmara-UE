@@ -21,6 +21,8 @@ protected:
 
 	//void BeginPlay() override;
 
+	void HandleEnemyCollision(bool bEnable) override;
+	
 	float TakeDamage(
 		float DamageAmount,
 		struct FDamageEvent const& DamageEvent,

@@ -57,6 +57,8 @@ public:
 	void Input_Launch();
 	void Input_Block();
 	void Input_ReleaseBlock();
+
+	UFUNCTION()
 	void Input_Execute();
 
 	// --- Attack Events ---

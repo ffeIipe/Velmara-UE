@@ -120,6 +120,10 @@ public:
 	// --- Status Flags ---
 	bool bWasPossessed = false;
 
+	//---
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+	void ResetKeyBool(float Duration, struct FBlackboardKeySelector Key, bool SetBool, APawn* TargetPawn);
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -151,13 +155,13 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Energy | Energy Drop");
 	float MinEnergy = 1.f;
 
-	UPROPERTY(EditAnywhere, Category = "Energy| Energy Drop");
+	UPROPERTY(EditAnywhere, Category = "Energy | Energy Drop");
 	float MaxEnergy = 3.f;
 
-	UPROPERTY(EditAnywhere, Category = "Energy| Energy Tax");
+	UPROPERTY(EditAnywhere, Category = "Energy | Energy Tax");
 	float UnpossesEnergyTax = 3.f;
 
-	UPROPERTY(EditAnywhere, Category = "Energy| Energy Tax");
+	UPROPERTY(EditAnywhere, Category = "Energy | Energy Tax");
 	float ReleaseAndExecuteEnergyTax = 3.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Energy | OnPossession")
@@ -237,13 +241,12 @@ protected:
 	// --- Timers ---
 	FTimerHandle ReturnToPoolTimerHandle;
 
+	UFUNCTION(BlueprintCallable)
+	virtual void HandleEnemyCollision(bool bEnable);
 
 private:
 	UPROPERTY()
 	FTimerHandle HitFlashTimerHandle;
-
-	UFUNCTION(BlueprintCallable)
-	void HandleEnemyCollision(bool bEnable);
 
 	UFUNCTION()
 	void GetExecuted();

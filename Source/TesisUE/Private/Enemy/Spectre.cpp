@@ -23,6 +23,21 @@ void ASpectre::PerformSpectralAttack()
 	}
 }
 
+void ASpectre::HandleEnemyCollision(bool bEnable)
+{
+	Super::HandleEnemyCollision(bEnable);
+
+	if (bEnable)
+	{
+		GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+
+		GetMesh()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+		GetMesh()->SetCollisionResponseToChannel(ECC_GameTraceChannel2, ECR_Block);
+
+		GetAttributeComponent()->GetShieldMeshComponent()->SetCollisionResponseToChannel(ECC_GameTraceChannel2, ECR_Block);
+	}
+}
+
 float ASpectre::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	if (DamageEvent.DamageTypeClass == USpectralTrapDamageType::StaticClass())

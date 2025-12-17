@@ -44,25 +44,36 @@ void AEnemyAIController::BeginPlay()
 {
     Super::BeginPlay();
 
-    CachedOwner = Cast<AEntity>(GetPawn());
+    EntityOwner = Cast<AEntity>(GetPawn());
     BlackboardComponent = GetBlackboardComponent();
 }
+
+
 
 void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
     if (GEngine) GEngine->AddOnScreenDebugMessage(449, 3.f, FColor::Blue, FString("Enemy Perception Updated"));
 
-    AEntity* PlayerPawn = Cast<AEntity>(Actor);
-    UCharacterStateComponent* CharacterStateComponent = PlayerPawn ? PlayerPawn->GetCharacterStateComponent() : nullptr; // Añadir null check
-
-    if (!CachedOwner->GetCharacterStateComponent())
+    if (!EntityOwner)
     {
-        if (GEngine)GEngine->AddOnScreenDebugMessage(INDEX_NONE, -1.f, FColor::Red, FString("Invalid Character State Component..."));
+        EntityOwner = Cast<AEntity>(GetPawn());
     }
 
-    if (!BlackboardComponent || !PlayerPawn || !CachedOwner || !CachedOwner->GetCharacterStateComponent()) return;
-   
-    if (CachedOwner->GetCharacterStateComponent()->GetCurrentCharacterState().Action == ECharacterActions::ECA_Dead) return;
+    if (!EntityOwner->GetCharacterStateComponent())
+    {
+        if (GEngine)GEngine->AddOnScreenDebugMessage(INDEX_NONE, -1.f, FColor::Red, FString("Invalid Character State Component..."));
+        return;
+    }
+
+    if (!BlackboardComponent)
+    {
+        BlackboardComponent = GetBlackboardComponent();
+    }
+
+    if (EntityOwner->GetCharacterStateComponent()->GetCurrentCharacterState().Action == ECharacterActions::ECA_Dead) return;
+
+    AEntity* PlayerPawn = Cast<AEntity>(Actor);
+    UCharacterStateComponent* CharacterStateComponent = PlayerPawn ? PlayerPawn->GetCharacterStateComponent() : nullptr;
 
     if (!CharacterStateComponent)
     {
@@ -75,31 +86,24 @@ void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Sti
 
     if (Stimulus.WasSuccessfullySensed())
     {
-        /*if (GEngine) GEngine->AddOnScreenDebugMessage(440, 3.f, FColor::White, FString("Sensing..."));*/
-
-        if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Human)
+        if (CharacterStateComponent->GetCurrentCharacterState().Form == ECharacterForm::ECF_Human || !bHasToCheckPlayerForm)
         {
             if (!bHasReservedAttackToken)
             {
                 UEnemyTokenManager* TokenManager = GetWorld()->GetSubsystem<UEnemyTokenManager>();
 
-                /*if (GEngine) GEngine->AddOnScreenDebugMessage(442, 3.f, FColor::Purple, FString("Sensed and i do not have a token..."));*/
-
                 if (TokenManager && TokenManager->TryReserveAttackToken())
                 {
-                    /*if (GEngine) GEngine->AddOnScreenDebugMessage(444, 3.f, FColor::Green, FString("Sensed an i am reserving a token..."));*/
                     bHasReservedAttackToken = true;
                     BlackboardComponent->SetValueAsBool(FName("CanPerformMelee"), true);
                 }
                 else
                 {
-                    /*if (GEngine) GEngine->AddOnScreenDebugMessage(443, 3.f, FColor::Orange, FString("Sensed but cannot reserve a token..."));*/
                     BlackboardComponent->SetValueAsBool(FName("CanPerformMelee"), false);
                 }
             }
             else
             {
-               /*if (GEngine) GEngine->AddOnScreenDebugMessage(441, 3.f, FColor::Magenta, FString("Sensed and i have a token..."));*/
                 BlackboardComponent->SetValueAsBool(FName("CanPerformMelee"), true);
             }
 
@@ -123,7 +127,6 @@ void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Sti
     }
     else
     {
-        /*if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Not sensed..."));*/
         UEnemyTokenManager* TokenManager = GetWorld()->GetSubsystem<UEnemyTokenManager>();
         
         if (bHasReservedAttackToken)

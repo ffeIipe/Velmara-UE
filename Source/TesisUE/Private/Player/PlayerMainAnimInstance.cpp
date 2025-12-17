@@ -26,6 +26,8 @@ void UPlayerMainAnimInstance::NativeUpdateAnimation(float DeltaTime)
 		GroundSpeed = UKismetMathLibrary::VSizeXY(PlayerMainCharacterMovement->Velocity);
 		IsFalling = PlayerMainCharacterMovement->IsFalling();
 
+		bHasAcceleration = PlayerMainCharacterMovement->GetCurrentAcceleration().SizeSquared2D() > 0.f;
+
 		CharacterState = PlayerMain->GetCharacterStateComponent()->GetCurrentCharacterState().State;
 		CharacterForm = PlayerMain->GetCharacterStateComponent()->GetCurrentCharacterState().Form;
 		SpectralState = PlayerMain->GetCharacterStateComponent()->GetCurrentCharacterState().SpectralState;

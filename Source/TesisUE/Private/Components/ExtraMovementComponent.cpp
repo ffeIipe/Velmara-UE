@@ -35,7 +35,9 @@ void UExtraMovementComponent::BeginPlay()
 
 void UExtraMovementComponent::Input_Dodge()
 {
-	if (EntityOwner->GetCharacterMovement()->GetGroundMovementMode() == EMovementMode::MOVE_Falling || EntityOwner->GetCharacterMovement()->GetGroundMovementMode() == EMovementMode::MOVE_Flying || !EntityOwner->IsEquipping())
+	if (EntityOwner->GetCharacterMovement()->GetGroundMovementMode() == EMovementMode::MOVE_Falling 
+		|| EntityOwner->GetCharacterMovement()->GetGroundMovementMode() == EMovementMode::MOVE_Flying 
+		|| !EntityOwner->IsEquipping()) return;
 
 	if (OwnerCharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Dodge }))
 	{
