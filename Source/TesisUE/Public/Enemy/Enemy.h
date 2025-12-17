@@ -5,23 +5,14 @@
 #include "CoreMinimal.h"
 #include "Entities/Entity.h"
 #include "Interfaces/HitInterface.h"
-#include "Interfaces/MementoEntity.h"
-#include "Interfaces/CharacterState.h"
+
 #include "Subsystems/EnemyPoolManager.h"
 #include "Enemy.generated.h"
 
-class UAttributeComponent;
-class USpringArmComponent;
-class UInputAction;
-struct FInputActionValue;
 class UCameraComponent;
 class UInputMappingContext;
-class APlayerMain;
 class AAIController;
 class UPromptWidgetComponent;
-class UMementoComponent;
-class UCombatComponent;
-class UCharacterStateComponent;
 class UBehaviorTree;
 
 class UNiagaraSystem;
@@ -92,7 +83,7 @@ public:
 
 	void NotifyDamageTakenToBlackboard(AActor* DamageCauser);
 
-	//virtual void LaunchUp_Implementation(const FVector& InstigatorLocation) override;
+	virtual void LaunchUp_Implementation(const FVector& InstigatorLocation) override;
 	//virtual void ShieldHit_Implementation() {};
 
 	// --- AI & State ---
@@ -146,7 +137,7 @@ protected:
 	UPROPERTY();
 	EMainDamageTypes LastDamageType;
 
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 	virtual void ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoint) {};
 
 	// --- Energy & Orbs ---
@@ -204,7 +195,7 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void ResetEnemy();
 
-	// --- Initial Component States (for pooling reset) ---
+	// --- Initial Component States ---
 	ECollisionEnabled::Type InitialMeshCollisionEnabled;
 	ECollisionEnabled::Type InitialCapsuleCollisionEnabled;
 	TMap<TEnumAsByte<ECollisionChannel>, ECollisionResponse> InitialMeshCollisionResponses;

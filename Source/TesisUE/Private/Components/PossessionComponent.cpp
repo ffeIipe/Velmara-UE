@@ -1,192 +1,168 @@
 #include "Components/PossessionComponent.h"
-
-//Components
 #include "Components/CharacterStateComponent.h"
 #include "Components/AttributeComponent.h"
 #include "Components/InventoryComponent.h"
-#include "Components/CombatComponent.h"
-
-//Entities
+#include "Items/Item.h"
 #include "Entities/Entity.h"
 #include "Kismet/KismetSystemLibrary.h"
-#include <Enemy/Enemy.h>
-
-//Misc
-#include "Items/Item.h"
-#include <Kismet/GameplayStatics.h>
+#include "Kismet/GameplayStatics.h"
 
 UPossessionComponent::UPossessionComponent()
 {
-	PrimaryComponentTick.bCanEverTick = false;
-
+    PrimaryComponentTick.bCanEverTick = false;
 }
 
 void UPossessionComponent::BeginPlay()
 {
-	Super::BeginPlay();
+    Super::BeginPlay();
 
-	EntityOwner = Cast<AEntity>(GetOwner());
-	PlayerControllerRef = Cast<APlayerController>(EntityOwner->GetController());
+    OwnerEntity = Cast<AEntity>(GetOwner());
+    check(OwnerEntity != nullptr);
+
+    PlayerController = UGameplayStatics::GetPlayerController(this, 0);
 }
 
-
-AEntity* UPossessionComponent::GetPossessionVictim()
+void UPossessionComponent::AttemptPossession()
 {
-	if (!PlayerControllerRef) return nullptr;
+    if (IsPossessing() || OwnerEntity->GetCharacterStateComponent()->GetCurrentCharacterState().Form != ECharacterForm::ECF_Spectral)
+    {
+        return;
+    }
 
-	FRotator CameraRotation;
-	FVector Start = EntityOwner->GetActorLocation() + EntityOwner->GetActorForwardVector() * 100.f;
-	PlayerControllerRef->GetPlayerViewPoint(Start, CameraRotation);
-	FVector Direction = CameraRotation.Vector();
+    if (OwnerEntity->GetAttributeComponent()->RequiresEnergy(10.f))
+    {
+        AEntity* Victim = FindPossessionVictim();
+        if (!Victim) return;
 
-	FVector End = Start + Direction * PossessDistance;
+        Victim->GetPossessionComponent()->OnPossessionReceived(OwnerEntity);
 
-	TArray<AActor*> ActorsToIgnore;
-	ActorsToIgnore.Add(GetOwner());
+        check(PlayerController != nullptr);
+        PlayerController->Possess(Victim);
 
-	FHitResult ResultHit;
+        CurrentlyPossessedEntity = Victim;
+        OwnerEntity->GetCharacterStateComponent()->SetCharacterForm(ECharacterForm::ECF_Possessing);
+        OwnerEntity->AttachFollowCamera(Victim->GetSpringArmComponent());
+        OwnerEntity->SetActorHiddenInGame(true);
+        OwnerEntity->SetActorEnableCollision(false);
+        OwnerEntity->GetMesh()->bPauseAnims = true;
 
-	bool bHit = UKismetSystemLibrary::SphereTraceSingle(
-		GetWorld(),
-		Start,
-		End,
-		PossessRadius,
-		ETraceTypeQuery::TraceTypeQuery4,
-		false,
-		ActorsToIgnore,
-		EDrawDebugTrace::ForDuration,
-		ResultHit,
-		true
-	);
-
-	if (!bHit) return nullptr;
-
-	AEntity* EnemyTraced = Cast<AEntity>(ResultHit.GetActor());
-	if (!EnemyTraced) return nullptr;
-
-	UPossessionComponent* EntityPossessionComponent = EnemyTraced->GetPossessionComponent();
-	if (!EntityPossessionComponent) return nullptr;
-
-	if (EntityPossessionComponent->CanBePossessed())
-	{
-		return EnemyTraced;
-	}
-	else return nullptr;
-}
-
-void UPossessionComponent::Possess()
-{
-	if (EntityOwner->GetCharacterStateComponent()->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral)
-	{
-		AEntity* EntityTraced = GetPossessionVictim();
-		
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Yellow, FString("1"));
-
-		if (!PlayerControllerRef || !EntityTraced) return;
-
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Orange, FString("2"));
-
-		if (EntityTraced->GetCharacterStateComponent()->GetCurrentCharacterState().Action == ECharacterActions::ECA_Dead) return;
-
-		if (EntityOwner->GetAttributeComponent()->RequiresEnergy(10.f))
-		{
-			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("3"));
-
-			PlayerControllerRef->Possess(EntityTraced);
-
-			EntityPossessed = EntityTraced;
-			EntityPossessed->GetPossessionComponent()->ReceivePossession(EntityOwner, EntityPossessed, EntityOwner->GetAttributeComponent()->GetEnergy());
-
-			if (EntityOwner->GetInventoryComponent()->GetEquippedItem())
-			{
-				EntityOwner->GetInventoryComponent()->GetEquippedItem()->SetActorHiddenInGame(true);
-			}
-
-			EntityOwner->GetCharacterStateComponent()->SetCharacterForm(ECharacterForm::ECF_Possessing);
-			EntityOwner->SetActorHiddenInGame(true);
-			EntityOwner->SetActorEnableCollision(false);
-			EntityOwner->GetMesh()->bPauseAnims = true;
-		}
-		else
-		{
-			if (OnCannotPossess.IsBound())
-			{
-				OnCannotPossess.Broadcast();
-			}
-		}
-
-	}
-	else EntityOwner->GetCombatComponent()->Input_Execute();
-}
-
-void UPossessionComponent::ReceivePossession(AEntity* NewOwner, AEntity* TargetEntity, float OwnerEnergy)
-{
-	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Receiving possession..."));
-
-	if (!IsValid(NewOwner) || !IsValid(TargetEntity)) return;
-
-	PossessionOwner = NewOwner;
-	EntityOwner->GetAttributeComponent()->SetEnergy(OwnerEnergy);
-	EntityOwner->bUseControllerRotationYaw = false;
-	PossessionOwner->AttachFollowCamera(EntityOwner->GetSpringArmComponent());
-
-	if (OnPossessed.IsBound())
-	{
-		OnPossessed.Broadcast();
-	}
-
-	//NewOwner->PlayerControllerRef->PlayerMainHUD->TogglePaladinUI(true);
-
-	if (EntityOwner->GetAttributeComponent())
-	{
-		EntityOwner->GetAttributeComponent()->StartDecreaseEnergy();
-	}
+        if (OwnerEntity->GetInventoryComponent()->GetEquippedItem())
+        {
+            OwnerEntity->GetInventoryComponent()->GetEquippedItem()->SetActorHiddenInGame(true);
+        }
+    }
+    else if (OnPossessionAttemptFailed.IsBound()) OnPossessionAttemptFailed.Broadcast();
 }
 
 void UPossessionComponent::ReleasePossession()
 {
-	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, FString("Releasing possession..."));
-	PlayerControllerRef->Possess(EntityOwner);
+    if (!IsPossessing() || !CurrentlyPossessedEntity) return;
 
-	EntityOwner->SetActorLocationAndRotation(EntityPossessed->GetActorLocation() + FVector(100.f, 0.f, 0.f), EntityPossessed->GetActorRotation());
-	EntityOwner->SetActorHiddenInGame(false);
-	EntityOwner->SetActorEnableCollision(true);
-	EntityOwner->GetMesh()->bPauseAnims = false;
-	EntityOwner->AttachFollowCamera(EntityOwner->GetSpringArmComponent());
+    check(PlayerController != nullptr);
+    PlayerController->Possess(OwnerEntity);
 
-	EntityPossessed->bUseControllerRotationYaw = true;
-	EntityPossessed->GetPossessionComponent()->PossessionOwner = nullptr;
+    const FVector ReleaseLocation = CurrentlyPossessedEntity->GetActorLocation() + CurrentlyPossessedEntity->GetActorForwardVector() * 100.f;
+    
+    OwnerEntity->AttachFollowCamera(OwnerEntity->GetSpringArmComponent());
+    OwnerEntity->SetActorLocationAndRotation(ReleaseLocation, CurrentlyPossessedEntity->GetActorRotation(), true);
+    OwnerEntity->SetActorHiddenInGame(false);
+    OwnerEntity->SetActorEnableCollision(true);
+    OwnerEntity->GetMesh()->bPauseAnims = false;
+    OwnerEntity->GetCharacterStateComponent()->SetCharacterForm(ECharacterForm::ECF_Spectral);
 
-	if (EntityPossessed->GetPossessionComponent()->OnReleasePossession.IsBound())
-	{
-		EntityPossessed->GetPossessionComponent()->OnReleasePossession.Broadcast();
-	}
-
-	EntityPossessed = nullptr;
+    CurrentlyPossessedEntity->GetPossessionComponent()->OnPossessionReleased();
+    CurrentlyPossessedEntity = nullptr;
 }
 
-void UPossessionComponent::ReleaseAndExecute()
+void UPossessionComponent::EjectPossessor()
 {
-	if (EntityOwner && EntityOwner->GetAttributeComponent()->RequiresEnergy(ReleaseAndExecuteEnergyTax))
-	{
-		EntityOwner->GetAttributeComponent()->IncreaseHealth(15.f);
-		EntityPossessed->GetAttributeComponent()->IncreaseEnergy(-ReleaseAndExecuteEnergyTax);
+    if (IsPossessed() && PossessedByEntity)
+    {
+        UPossessionComponent* PossessorComponent = PossessedByEntity->GetPossessionComponent();
+        if (PossessorComponent)
+        {
+            PossessorComponent->ReleasePossession();
 
-		EntityPossessed->StopAnimMontage();
+            if (OnPossessorEjected.IsBound()) OnPossessorEjected.Broadcast();
+        }
+    }
+}
 
-		if (EntityPossessed->GetPossessionComponent()->OnReleaseAndExecute.IsBound())
-		{
-			EntityPossessed->GetPossessionComponent()->OnReleaseAndExecute.Broadcast();
-		}
+void UPossessionComponent::OnPossessionReceived(AEntity* NewPossessor)
+{
+    PossessedByEntity = NewPossessor;
 
-		EntityPossessed->GetPossessionComponent()->PossessionOwner = nullptr;
-		EntityPossessed = nullptr;
-	}
-	else
-	{
-		if (OnCannotRelease.IsBound())
-		{
-			OnCannotRelease.Broadcast();
-		}
-	}
+    const float EnergyFromPossessor = NewPossessor->GetAttributeComponent()->GetEnergy();
+    OwnerEntity->GetAttributeComponent()->SetEnergy(EnergyFromPossessor);
+    OwnerEntity->GetAttributeComponent()->StartDecreaseEnergy();
+
+    if (OnPossessed.IsBound()) OnPossessed.Broadcast();
+}
+
+void UPossessionComponent::OnPossessionReleased()
+{
+    OwnerEntity->AttachFollowCamera(PossessedByEntity->GetSpringArmComponent());
+    PossessedByEntity = nullptr;
+
+    OwnerEntity->GetAttributeComponent()->StopDecreaseEnergy();
+
+    if (OnPossessorEjected.IsBound()) OnPossessorEjected.Broadcast();
+}
+
+void UPossessionComponent::EjectAndExecute()
+{
+    if (!IsPossessed() || !PossessedByEntity) return;
+
+    if (PossessedByEntity->GetAttributeComponent()->RequiresEnergy(ReleaseAndExecuteEnergyTax))
+    {
+        OwnerEntity->GetAttributeComponent()->IncreaseHealth(15.f);
+        PossessedByEntity->GetAttributeComponent()->IncreaseEnergy(-ReleaseAndExecuteEnergyTax);
+
+        PossessedByEntity->GetPossessionComponent()->ReleasePossession();
+
+        if (OnPossessorExecutedMeAndEjected.IsBound()) OnPossessorExecutedMeAndEjected.Broadcast();
+    }
+}
+
+AEntity* UPossessionComponent::FindPossessionVictim()
+{
+    if (!PlayerController) return nullptr;
+
+    FVector StartLocation;
+    FRotator ViewRotation;
+    PlayerController->GetPlayerViewPoint(StartLocation, ViewRotation);
+
+    const FVector TraceStart = StartLocation;
+    const FVector TraceEnd = TraceStart + ViewRotation.Vector() * PossessDistance;
+
+    TArray<AActor*> ActorsToIgnore;
+    ActorsToIgnore.Add(OwnerEntity);
+
+    FHitResult HitResult;
+    bool bHit = UKismetSystemLibrary::SphereTraceSingle(
+        GetWorld(),
+        TraceStart,
+        TraceEnd,
+        PossessRadius,
+        ETraceTypeQuery::TraceTypeQuery4,
+        false,
+        ActorsToIgnore,
+        EDrawDebugTrace::None,
+        HitResult,
+        true
+    );
+
+    if (!bHit) return nullptr;
+
+    AEntity* HitEntity = Cast<AEntity>(HitResult.GetActor());
+    if (HitEntity && HitEntity->GetPossessionComponent())
+    {
+        if (HitEntity->GetCharacterStateComponent()->GetCurrentCharacterState().Action != ECharacterActions::ECA_Dead &&
+            !HitEntity->GetPossessionComponent()->IsPossessed())
+        {
+            return HitEntity;
+        }
+    }
+
+    return nullptr;
 }

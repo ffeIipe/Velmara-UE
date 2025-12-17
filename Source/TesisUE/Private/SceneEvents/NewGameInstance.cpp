@@ -230,7 +230,7 @@ bool UNewGameInstance::SavePlayerProgress(int32 SlotIndex, APawn* Entity)
     {
         if (AEnemy* EnemyRef = Cast<AEnemy>(Entity))
         {
-            PlayerCharacter = Cast<APlayerMain>(EnemyRef->GetPossessionComponent()->GetPossessionOwner());
+            PlayerCharacter = Cast<APlayerMain>(EnemyRef->GetPossessionComponent()->GetPossessedEntity());
             if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Magenta, FString("Player reference obtained from Enemy possessed."));
         }
         else

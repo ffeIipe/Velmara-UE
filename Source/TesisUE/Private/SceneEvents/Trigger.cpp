@@ -37,7 +37,7 @@ void ATrigger::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AA
 	{
 		/*if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::White, FString("Enemy Begin Overlap"));*/
 
-		if (EnemyTemp->GetPossessionComponent()->GetPossessionOwner() != nullptr)
+		if (EnemyTemp->GetPossessionComponent()->GetPossessedEntity() != nullptr)
 		{
 			/*if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Emerald, FString("Enemy has a Possession Owner valid..."));*/
 
