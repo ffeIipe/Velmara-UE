@@ -14,16 +14,22 @@ class ASword;
 class ICharacterState;
 class UCharacterStateComponent;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHumanEffectApplied);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSpectralEffectApplied);
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class TESISUE_API UPlayerFormComponent : public UActorComponent
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
     UPlayerFormComponent();
 
     UFUNCTION(BlueprintCallable)
-    void ToggleForm(bool CanToggle);
+    void ToggleForm();
+
+    FOnHumanEffectApplied OnHumanEffectApplied;
+    FOnSpectralEffectApplied OnSpectralEffectApplied;
 
 protected:
     virtual void BeginPlay() override;
@@ -35,7 +41,11 @@ private:
     UPROPERTY(EditDefaultsOnly, Category = "SFX")
     USoundBase* DisableSpectralModeSFX;
 
-    ICharacterState* CharacterStateInterface;
+    UPROPERTY(EditDefaultsOnly, Category = "Stats | Forms | Cooldown")
+    float TransformationCooldown = 1.f;
+
+    UPROPERTY(EditAnywhere, Category = "State | Forms | Cooldown")
+    float LastTransformationTime;
 
     UCharacterStateComponent* CharacterStateComponent;
 
@@ -57,7 +67,7 @@ private:
     UFUNCTION()
     void UpdateSpectralEffect(float Value);
 
-    class ACharacter* OwningCharacter;
+    class AEntity* EntityOwner;
 
     UPROPERTY(EditDefaultsOnly)
     UAnimMontage* EquipMontage;

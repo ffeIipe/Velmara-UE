@@ -14,21 +14,6 @@ ASpectre::ASpectre()
 	GetMesh()->SetCollisionResponseToChannel(ECC_GameTraceChannel2, ECR_Block);
 }
 
-void ASpectre::BeginPlay()
-{
-	Super::BeginPlay();
-
-	if (GetAttributeComponent())
-	{
-		GetAttributeComponent()->OnEntityDead.AddLambda(
-			[this]
-			{
-				Die();
-			}
-		);
-	}
-}
-
 void ASpectre::PerformSpectralAttack()
 {
 	int RandomValue = UKismetMathLibrary::RandomIntegerInRange(0, SpectralAttackMontages.Max());

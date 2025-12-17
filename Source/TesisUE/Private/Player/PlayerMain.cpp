@@ -16,9 +16,9 @@
 #include "Components/CombatComponent.h"
 #include "Components/InventoryComponent.h"
 #include "Components/CharacterStateComponent.h"
+#include "Components/PossessionComponent.h"
 #include "Components/SpectralWeaponComponent.h"
 #include "Components/ExtraMovementComponent.h"
-#include "Components/PossessionComponent.h"
 #include "Curves/CurveFloat.h"
 
 #include "Camera/CameraActor.h"
@@ -50,6 +50,7 @@ APlayerMain::APlayerMain()
 	PrimaryActorTick.bCanEverTick = false;
 
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
+	AutoPossessAI = EAutoPossessAI::Disabled;
 
 	PlayerFormComponent = CreateDefaultSubobject<UPlayerFormComponent>(TEXT("PlayerFormComponent"));
 
@@ -91,18 +92,12 @@ void APlayerMain::BeginPlay()
 	Super::BeginPlay();
 
 	GetAttributeComponent()->RegenerateTick();
-
-	GetAttributeComponent()->OnEntityDead.AddLambda(
-		[this]
-		{
-			Die();
-		}
-	);
-
-	GetCharacterStateComponent()->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral ?
-		SpectralWeaponComponent->EnableSpectralWeapon(true) : SpectralWeaponComponent->EnableSpectralWeapon(false);
+	GetAttributeComponent()->OnEntityDead.AddDynamic(this, &APlayerMain::Die);
 
 	GetCombatComponent()->OnWallHit.AddDynamic(this, &APlayerMain::OnWallCollision);
+	
+	GetCharacterStateComponent()->GetCurrentCharacterState().Form == ECharacterForm::ECF_Spectral ?
+		SpectralWeaponComponent->EnableSpectralWeapon(true) : SpectralWeaponComponent->EnableSpectralWeapon(false);
 
 	for (TActorIterator<ACameraActor> It(GetWorld()); It; ++It)
 	{
@@ -130,6 +125,16 @@ void APlayerMain::BeginPlay()
 				NewGameStateBase->RegisterMementoEntity(this);
 			}
 		}
+	}
+}
+
+void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
+	{
+		EnhancedInputComponent->BindAction(InputAction_SwitchForm, ETriggerEvent::Started, this, &APlayerMain::ToggleForm);
+		EnhancedInputComponent->BindAction(InputAction_Possess, ETriggerEvent::Started, GetPossessionComponent(), &UPossessionComponent::Possess);
 	}
 }
 
@@ -265,12 +270,6 @@ void APlayerMain::Equipping(bool bIsSwordBeingEquipped)
 
 void APlayerMain::ToggleForm()
 {
-	if (!IsValid(GetCharacterStateComponent())) return;
-	
-	if (!GetWorld()) return;
-
-	if (!IsValid(GetAttributeComponent())) return;
-
 	if (IsEquipping()) return;
 
 	if (GetCharacterStateComponent()->IsActionEqualToAny({
@@ -278,74 +277,22 @@ void APlayerMain::ToggleForm()
 		ECharacterActions::ECA_Block,
 		ECharacterActions::ECA_Finish,
 		ECharacterActions::ECA_Attack,
-		ECharacterActions::ECA_Stun })
-		)
-	{
-		return;
-	}
-
-	float CurrentTime = GetWorld()->GetTimeSeconds();
-	if (CurrentTime - LastTransformationTime < TransformationCooldown) return;
-
-	if (GetCharacterStateComponent()->GetCurrentCharacterState().Form == ECharacterForm::ECF_Human)
-	{
-		GetAttributeComponent()->StartDecreaseEnergy();
-		WithEnergy();
-		GetAttributeComponent()->StopRegenerateTick();
-	}
-	else
-	{
-		GetAttributeComponent()->StopDecreaseEnergy();
-		OutOfEnergy();
-		GetAttributeComponent()->RegenerateTick();
-	}
-
-	LastTransformationTime = CurrentTime;
-}
-
-void APlayerMain::WithEnergy()
-{
-	if (GetAttributeComponent()->ItHasEnergy())
-	{
-		PlayerFormComponent->ToggleForm(true);
-		GetAttributeComponent()->StartDecreaseEnergy();
-		GetAttributeComponent()->OnDepletedCallback = [this]() { OutOfEnergy(); };
-		GetAttributeComponent()->RegenerateTick();
-		GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = true;
-	}
+		ECharacterActions::ECA_Stun })) return;
+	
+	PlayerFormComponent->ToggleForm();
 }
 
 void APlayerMain::OutOfEnergy()
 {
-	PlayerFormComponent->ToggleForm(false);
-	if (GetAttributeComponent())
-	{
-		GetAttributeComponent()->RegenerateTick();
-	}
+	Super::OutOfEnergy();
 
-	if (GetCharacterMovement() && GetCharacterMovement()->GetPawnOwner())
-	{
-		GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = false;
-	}
-
-	if (SpectralWeaponComponent)
-	{
-		SpectralWeaponComponent->EnableSpectralWeapon(false);
-	}
-
-	if (GetInventoryComponent() && GetInventoryComponent()->GetEquippedItem())
-	{
-		GetInventoryComponent()->GetEquippedItem()->EnableVisuals(true);
-	}
-
-	if (GetPossessionComponent()->GetEnemyPossessed())
-	{
-		GetPossessionComponent()->ReleasePossession();
-	}
+	PlayerFormComponent->ToggleForm();
 }
 
 void APlayerMain::Die()
 {
+	Super::Die();
+
 	if (PlayerControllerRef)
 	{
 		DisableInput(PlayerControllerRef);
@@ -409,29 +356,3 @@ void APlayerMain::ChangeSecondaryWeapon()
 	GetInventoryComponent()->ChangeWeapon(1);
 	Equipping(true);
 }
-
-//void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-//{
-//	Super::SetupPlayerInputComponent(PlayerInputComponent);
-//
-//	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
-//	{
-//		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APlayerMain::Move);
-//		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlayerMain::Look);
-//		EnhancedInputComponent->BindAction(GetExtraMovementComponent()->JumpAction, ETriggerEvent::Triggered, this, &APlayerMain::Jump);
-//		EnhancedInputComponent->BindAction(GetExtraMovementComponent()->DodgeAction, ETriggerEvent::Started, this, &APlayerMain::Dodge);
-//		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &APlayerMain::Interact);
-//
-//		EnhancedInputComponent->BindAction(GetCombatComponent()->AttackAction, ETriggerEvent::Triggered, this, &APlayerMain::Attack);
-//		EnhancedInputComponent->BindAction(GetCombatComponent()->HeavyAttackAction, ETriggerEvent::Started, this, &APlayerMain::HeavyAttack);
-//		EnhancedInputComponent->BindAction(GetCombatComponent()->LaunchAction, ETriggerEvent::Triggered, this, &APlayerMain::LaunchAttack);
-//		//EnhancedInputComponent->BindAction(GetCombatComponent()->BlockAction, ETriggerEvent::Started, this, &APlayerMain::Block);
-//		//EnhancedInputComponent->BindAction(GetCombatComponent()->BlockAction, ETriggerEvent::Completed, this, &APlayerMain::ReleaseBlock);
-//
-//		EnhancedInputComponent->BindAction(ChangeFormAction, ETriggerEvent::Started, this, &APlayerMain::ToggleForm);
-//		EnhancedInputComponent->BindAction(PossessAction, ETriggerEvent::Completed, this, &APlayerMain::PossessEnemy);
-//		
-//		//EnhancedInputComponent->BindAction(GetInventoryComponent()->Slot1_InventoryAction, ETriggerEvent::Started, this, &APlayerMain::ChangePrimaryWeapon);
-//		//EnhancedInputComponent->BindAction(GetInventoryComponent()->Slot2_InventoryAction, ETriggerEvent::Started, this, &APlayerMain::ChangeSecondaryWeapon);
-//	}
-//}

@@ -10,8 +10,8 @@
 #include "Components/ExtraMovementComponent.h"
 #include "Components/InputComponent.h"
 #include "Components/MementoComponent.h"
-#include "Components/TimelineComponent.h"
 #include "Components/PossessionComponent.h"
+#include "Components/TimelineComponent.h"
 #include "DamageTypes/DamageTypeMain.h"
 #include "Engine/DamageEvents.h"
 #include "EnhancedInputComponent.h"
@@ -38,8 +38,6 @@
 AEnemy::AEnemy()
 {
 	PrimaryActorTick.bCanEverTick = false;
-
-	//UniqueSaveID = FName(*FGuid::NewGuid().ToString());
 	
 	GetMesh()->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
@@ -52,13 +50,6 @@ AEnemy::AEnemy()
 	GetCapsuleComponent()->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
 	GetCapsuleComponent()->SetCapsuleRadius(45.f);
 	InitialCapsuleCollisionEnabled = GetCapsuleComponent()->GetCollisionEnabled();
-
-	/*SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
-	SpringArm->SetupAttachment(GetRootComponent());
-	SpringArm->SetRelativeLocation(FVector(0.f, 0.f, 50.f));
-	SpringArm->SocketOffset = FVector(0.f, 0.f, 45.f);
-	SpringArm->bEnableCameraLag = true;
-	SpringArm->CameraLagSpeed = 10.f;*/
 
 	PromptWidgetComponent = CreateDefaultSubobject<UPromptWidgetComponent>(TEXT("PromptWidget"));
 	PromptWidgetComponent->SetupAttachment(GetRootComponent());
@@ -155,17 +146,6 @@ void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 
 void AEnemy::DeactivateEnemy()
 {
-	/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::White, FString("Deactivating " + this->GetName()));*/
-	/*if (GetPossessionComponent()->GetPossessionOwner())
-	{
-		APlayerMain* PlayerOwnerRef = Cast<APlayerMain>(GetPossessionComponent()->GetPossessionOwner());
-		if (PlayerOwnerRef && IsValid(PlayerOwnerRef))
-		{
-			UnPossessBase();
-		}
-		PossessionOwner = nullptr;
-	}*/
-
 	SetActorHiddenInGame(true);
 	SetActorTickEnabled(false);
 	HandleEnemyCollision(ECR_Ignore);
@@ -204,11 +184,11 @@ void AEnemy::DeactivateEnemy()
 	GetWorldTimerManager().ClearTimer(ReturnToPoolTimerHandle);
 }
 
-void AEnemy::Die(/*AActor* DamageCauser*/)
+void AEnemy::Die()
 {
-	Super::Die(/*DamageCauser*/);
+	Super::Die();
 
-	DissolveTimeline->PlayFromStart(); //enemy
+	DissolveTimeline->PlayFromStart();
 
 	//save data de que murio
 	if (UWorld* World = GetWorld())
@@ -250,15 +230,13 @@ void AEnemy::Die(/*AActor* DamageCauser*/)
 	GetWorldTimerManager().SetTimer(ReturnToPoolTimerHandle, this, &AEnemy::RequestReturnToPool, 5.0f, false);
 }
 
-void AEnemy::PoolableDie(/*AActor* DamageCauser*/)
+void AEnemy::PoolableDie()
 {
-	Die(/*DamageCauser*/);
+	Die();
 }
 
 void AEnemy::RequestReturnToPool()
 {
-	/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Purple, FString("Request return to pool..."));*/
-
 	DeactivateEnemy();
 
 	UWorld* World = GetWorld();
@@ -286,16 +264,11 @@ void AEnemy::BeginPlay()
 
 	OnCanBeFinished.AddDynamic(this, &AEnemy::EnableFinisherWidget);
 
-	GetAttributeComponent()->OnOutOfEnergy.AddLambda(
-		[this]
-		{
-			if (GetPossessionComponent()->GetPossessionOwner())
-			{
-				GetPossessionComponent()->ReleasePossession();
-			}
-		}
-	);
-
+	GetAttributeComponent()->OnOutOfEnergy.AddDynamic(this, &AEntity::OutOfEnergy);
+	
+	GetPossessionComponent()->OnReleasePossession.AddDynamic(this, &AEnemy::EnableAI);
+	GetPossessionComponent()->OnReleasePossession.AddDynamic(this, &AEnemy::EnableAI);
+	GetPossessionComponent()->OnReleaseAndExecute.AddDynamic(this, &AEnemy::GetExecuted);
 	PlayerControllerRef = Cast<APlayerHeroController>(UGameplayStatics::GetPlayerController(this, 0));
 
 	HandleEnemyCollision(ECR_Block);
@@ -362,6 +335,17 @@ void AEnemy::BeginPlay()
 			DissolveMaterials.Add(UMaterialInstanceDynamic::Create(CurrentMaterial, this));
 			GetMesh()->SetMaterial(MatIndex, DissolveMaterials[MatIndex]);
 		}
+	}
+}
+
+void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
+	{
+		EnhancedInputComponent->BindAction(InputAction_Possess, ETriggerEvent::Started, GetPossessionComponent(), &UPossessionComponent::ReleasePossession);
+		EnhancedInputComponent->BindAction(InputAction_SwitchForm, ETriggerEvent::Started, GetPossessionComponent(), &UPossessionComponent::ReleaseAndExecute);
 	}
 }
 
@@ -494,42 +478,6 @@ bool AEnemy::IsLaunchable_Implementation(ACharacter* Character)
 	return false;
 }
 
-//float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
-//{
-//	/*if (EnemyState == EEnemyState::EES_Died)
-//	{
-//		return 0.f;
-//	}
-//
-//	const UDamageTypeMain* MainDamageType = DamageEvent.DamageTypeClass
-//		? Cast<UDamageTypeMain>(DamageEvent.DamageTypeClass->GetDefaultObject())
-//		: nullptr;
-//
-//	LastDamageType = MainDamageType
-//		? MainDamageType->DamageType
-//		: EMainDamageTypes::EMDT_None;*/
-//
-//
-//	if (GetAttributeComponent())
-//	{
-//		if (GetAttributeComponent()->IsAlive())
-//		{
-//			GetAttributeComponent()->ReceiveDamage(DamageAmount);
-//			NotifyDamageTakenToBlackboard(DamageCauser);
-//
-//			if (Execute_CanBeFinished(this))
-//			{
-//				if (PromptWidgetComponent && PromptWidgetComponent->GetWidget())
-//				{
-//					PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Visible);
-//					PromptWidgetComponent->LoadAndApplyPrompt();
-//				}
-//			}
-//		}
-//	}
-//	return DamageAmount;
-//}
-
 void AEnemy::GetDefaultParameters()
 {
 	if (GetCharacterMovement())
@@ -564,6 +512,12 @@ void AEnemy::HandleEnemyCollision(ECollisionResponse CollisionResponse)
 	//GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, CollisionResponse);
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_GameTraceChannel3, CollisionResponse);
 }
+
+void AEnemy::GetExecuted()
+{
+	//other details to add
+	PlayAnimMontage(DeathMontage, 1.f, FName("UnpossessDeath"));
+}	
 
 FName AEnemy::SelectRandomDieAnim()
 {
@@ -641,139 +595,21 @@ void AEnemy::EnableAI()
 		{
 			AIController = CurrentController;
 		}
-		else return;
 	}
 
 	if (AIController)
 	{
-		if (!GetPossessionComponent()->GetPossessionOwner())
-		{
-			AIController->Possess(this);
+		AIController->Possess(this);
 
-			if (AIController->GetPawn() == this)
+		if (AIController->GetPawn() == this)
+		{
+			if (BTAsset)
 			{
-				if (BTAsset)
-				{
-					bool bRunResult = AIController->RunBehaviorTree(BTAsset);
-				}
+				bool bRunResult = AIController->RunBehaviorTree(BTAsset);
 			}
 		}
 	}
 }
-
-//void AEnemy::OnPossessed(AEntity* NewOwner, float OwnerEnergy)
-//{
-//	if (!IsValid(NewOwner)) return;
-//
-//	PossessionOwner = NewOwner;
-//
-//	GetAttributeComponent()->SetEnergy(OwnerEnergy);
-//
-//	bUseControllerRotationYaw = false;
-//	
-//	SetOnPossessedParameters();
-//
-//	PlayerControllerRef->PlayerMainHUD->TogglePaladinUI(true);
-//
-//	if (GetAttributeComponent())
-//	{
-//		GetAttributeComponent()->StartDecreaseEnergy();
-//		GetAttributeComponent()->OnDepletedCallback = [this, WeakOwningPlayer = TWeakObjectPtr<APlayerMain>(NewOwner)]() {
-//			if (WeakOwningPlayer.IsValid())
-//			{
-//				UnPossess();
-//			}
-//			else
-//			{
-//				if (PossessionOwner == WeakOwningPlayer.Get(true))
-//				{
-//					UnPossess();
-//					PossessionOwner = nullptr;
-//				}
-//			}
-//			};
-//	}
-//}
-
-//void AEnemy::UnPossessBase()
-//{
-//	bUseControllerRotationYaw = true;
-//
-//	GetDefaultParameters(); // gettear y settear parametros por defecto... se puede mejorar con algo mas lindo como un struct que gettee y settee... 
-//
-//	PlayerControllerRef->PlayerMainHUD->TogglePaladinUI(false);
-//
-//	if (PossessionOwner)
-//	{
-//		if (IsValid(PossessionOwner))
-//		{
-//			PossessionOwner->ReleasePossession(this);
-//		}
-//	}
-//
-//	if (AIController)
-//	{
-//		AIController->GetBlackboardComponent()->ClearValue(FName("TargetActor"));
-//		AIController->GetBlackboardComponent()->ClearValue(FName("CanSeePlayer"));	
-//	}
-//}
-
-//void AEnemy::UnPossess()
-//{
-//	if (PossessionOwner)
-//	{
-//		if (PossessionOwner->GetAttributesComponent())
-//		{
-//			UnPossessBase();
-//			PossessionOwner->GetAttributes()->SetEnergy(GetAttributeComponent()->GetEnergy());
-//			PossessionOwner = nullptr;
-//			EnableAI();
-//		}
-//	}
-//	else PossessionOwner = nullptr;
-//}
-//
-//void AEnemy::UnPossessAndKill()
-//{
-//	if (PossessionOwner && PossessionOwner->GetAttributes() && PossessionOwner->GetAttributes()->RequiresEnergy(UnpossesAndKillEnergyTax))
-//	{
-//		PossessionOwner->Attributes->IncreaseHealth(15.f);
-//		GetAttributeComponent()->IncreaseEnergy(-UnpossesAndKillEnergyTax);
-//
-//		DisableAI();
-//		StopAnimMontage();
-//		PlayAnimMontage(DeathMontage, 1.f, FName("UnpossessDeath"));
-//
-//		LastDamageCauser = PossessionOwner;
-//
-//		Die(LastDamageCauser);
-//
-//		float Orbs = FMath::RoundToInt(15.f) / 5;
-//
-//		if (OnDead.IsBound())
-//		{
-//			for (int32 i = 0; i < Orbs; i++)
-//			{
-//				OnDead.Broadcast();
-//			}
-//		}
-//
-//		if (IsValid(PossessionOwner))
-//		{
-//			if (IsValid(PossessionOwner->CharacterStateComponent))
-//			{
-//				PossessionOwner->ToggleForm();
-//			}
-//		}
-//
-//		UnPossessBase();
-//		PossessionOwner = nullptr;
-//	}
-//	else if (GetAttributeComponent() && !GetAttributeComponent()->RequiresEnergy(UnpossesAndKillEnergyTax) && ErrorSFX)
-//	{
-//		UGameplayStatics::PlaySound2D(GetWorld(), ErrorSFX);
-//	}
-//}
 
 TArray<AEnemy*> AEnemy::GenerateSphereOverlapToDetectOtherEnemies(const FVector& Origin, AActor* HitEnemyToExclude)
 {
@@ -851,22 +687,3 @@ void AEnemy::NotifyDamageTakenToBlackboard(AActor* DamageCauser)
 		}
 	}
 }
-	
-//void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-//{
-//	Super::SetupPlayerInputComponent(PlayerInputComponent);
-//
-//	UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent);
-//
-//	if (!EnhancedInputComponent) return;
-//
-//	EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AEnemy::Move);
-//	EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AEnemy::Look);
-//	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &AEnemy::Jump);
-//	EnhancedInputComponent->BindAction(ExtraMovementComponent->DodgeAction, ETriggerEvent::Triggered, this, &AEnemy::Dodge);
-//
-//	EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &AEnemy::Attack);
-//
-//	EnhancedInputComponent->BindAction(UnPossessAction, ETriggerEvent::Completed, this, &AEnemy::UnPossess);
-//	EnhancedInputComponent->BindAction(UnPossessAndKillAction, ETriggerEvent::Completed, this, &AEnemy::UnPossessAndKill);
-//}

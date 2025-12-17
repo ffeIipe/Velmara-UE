@@ -51,27 +51,6 @@ void UAttributeComponent::IncreaseEnergy(float Amount)
 	Energy = FMath::Clamp(Energy + Amount, 0.f, 100.f);
 }
 
-void UAttributeComponent::StartDecreaseEnergy()
-{
-	if (!bIsDraining)
-	{
-		bIsDraining = true;
-
-		GetWorld()->GetTimerManager().SetTimer(EnergyDecreaseTimerHandle, this, &UAttributeComponent::DrainTick, 1.0f, true);
-	}
-}
-
-void UAttributeComponent::StopDecreaseEnergy()
-{
-	if (OnOutOfEnergy.IsBound())
-	{
-		OnOutOfEnergy.Broadcast();
-	}
-
-	GetWorld()->GetTimerManager().ClearTimer(EnergyDecreaseTimerHandle);
-	bIsDraining = false;
-	RegenerateTick();
-}
 
 bool UAttributeComponent::ItHasEnergy()
 {
@@ -126,30 +105,58 @@ void UAttributeComponent::ResetAttributes()
 	Energy = 5.f;
 }
 
+void UAttributeComponent::StartDecreaseEnergy()
+{
+	if (!bIsDraining)
+	{
+		StopRegenerateTick();
+
+		bIsDraining = true;
+
+		GetWorld()->GetTimerManager().SetTimer(EnergyDecreaseTimerHandle, this, &UAttributeComponent::DrainTick, .1f, true);
+	}
+}
+
+void UAttributeComponent::StopDecreaseEnergy()
+{
+	GetWorld()->GetTimerManager().ClearTimer(EnergyDecreaseTimerHandle);
+	bIsDraining = false;
+}
+
 void UAttributeComponent::DrainTick()
 {
 	if (ItHasEnergy())
 	{
-		Energy = FMath::Clamp(Energy - DrainTickValue, 1.f, 100.f);
+		DecreaseEnergyBy(DrainTickValue / 10.f);
 	}
 	else
 	{
 		StopDecreaseEnergy();
+
+		if (OnOutOfEnergy.IsBound())
+		{
+			OnOutOfEnergy.Broadcast();
+		}
 	}
 }
 
 void UAttributeComponent::RegenerateTick()
 {
-	if (!ItHasFullEnergy())
-	{
-		GetWorld()->GetTimerManager().SetTimer(EnergyRegenerateTimerHandle, this, &UAttributeComponent::RegenerateEnergy, 1.0f, true); //linea 94
-	}
-	else StopRegenerateTick();
+	GetWorld()->GetTimerManager().SetTimer(EnergyRegenerateTimerHandle, this, &UAttributeComponent::RegenerateEnergy, .1f, true);
 }
 
 void UAttributeComponent::StopRegenerateTick()
 {
 	GetWorld()->GetTimerManager().ClearTimer(EnergyRegenerateTimerHandle);
+}
+
+void UAttributeComponent::RegenerateEnergy()
+{
+	if (!ItHasFullEnergy())
+	{
+		IncreaseEnergy(RegenerateTickValue / 10.f);
+	}
+	else StopRegenerateTick();
 }
 
 bool UAttributeComponent::RequiresEnergy(float EnergyRequired)
@@ -169,13 +176,5 @@ void UAttributeComponent::ReceiveShieldDamage(float Damage)
 	if (CurrentShieldHealth <= 0.f)
 	{
 		DettachShield();
-	}
-}
-
-void UAttributeComponent::RegenerateEnergy()
-{
-	if (!ItHasFullEnergy())
-	{
-		Energy = FMath::Clamp(Energy + RegenerateTickValue, 1.f, 100.f);
 	}
 }

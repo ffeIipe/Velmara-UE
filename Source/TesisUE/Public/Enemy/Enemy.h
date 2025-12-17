@@ -55,26 +55,30 @@ class TESISUE_API AEnemy : public AEntity
 public:
 	AEnemy();
 
+	// --- Pooling ---
 	UFUNCTION(BlueprintCallable, Category = "Pooling")
 	virtual void ActivateEnemy(const FVector& Location, const FRotator& Rotation);
 
 	UFUNCTION(BlueprintCallable, Category = "Pooling")
 	virtual void DeactivateEnemy();
 
-	virtual void PoolableDie(/*AActor* DamageCauser*/);
+	virtual void PoolableDie();
 
 	UPROPERTY(BlueprintAssignable, Category = "Pooling")
 	FOnEnemyDeactivated OnDeactivated;
-	
+
+	UFUNCTION(BlueprintCallable)
+	void RequestReturnToPool();
+
+	// --- Delegates ---
 	UPROPERTY(BlueprintAssignable)
 	FOnEntityDead OnDead;
 
 	UPROPERTY(BlueprintAssignable)
 	FOnEntityDamaged OnDamaged;
 
-	void Die(/*AActor* DamageCauser*/) override;
-
-	bool bWasPossessed = false;
+	// --- Combat & Damage ---
+	void Die() override;
 
 	virtual void GetHit_Implementation(AActor* DamageCauser, const FVector& ImpactPoint, TSubclassOf<UDamageType> DamageType, const float DamageReceived) override;
 
@@ -86,12 +90,12 @@ public:
 
 	virtual bool IsLaunchable_Implementation(ACharacter* Character) override;
 
-	//virtual void LaunchUp_Implementation(const FVector& InstigatorLocation) override;
-
-	//virtual void ShieldHit_Implementation() {};
-
 	void NotifyDamageTakenToBlackboard(AActor* DamageCauser);
 
+	//virtual void LaunchUp_Implementation(const FVector& InstigatorLocation) override;
+	//virtual void ShieldHit_Implementation() {};
+
+	// --- AI & State ---
 	FORCEINLINE EEnemyType GetEnemyType() const { return EnemyType; }
 
 	FORCEINLINE EEnemyState GetEnemyState() const { return EnemyState; }
@@ -109,43 +113,98 @@ public:
 
 	void NotifyThreat(AActor* ThreatActor);
 
-	UFUNCTION(BlueprintCallable, Category = "Save System")
-	FName GetUniqueSaveID() const { return UniqueSaveID; }
-	
-	/*UFUNCTION()
-	virtual void OnPossessed(AEntity* NewOwner, float OwnerEnergy);
-	
-	UFUNCTION()
-	virtual void UnPossessBase();
-	
-	UFUNCTION()
-	void UnPossess();
+	AAIController* GetAIController() { return AIController; };
 
-	UFUNCTION()
-	void UnPossessAndKill();*/
-
+	// --- Components ---
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components | PromptWidgetComponent")
 	UPromptWidgetComponent* PromptWidgetComponent;
 
+	// --- Save System ---
+	UFUNCTION(BlueprintCallable, Category = "Save System")
+	FName GetUniqueSaveID() const { return UniqueSaveID; }
+
+	// --- Status Flags ---
+	bool bWasPossessed = false;
+
 protected:
+	virtual void BeginPlay() override;
+
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+	// --- AI ---
 	UPROPERTY(EditAnywhere)
 	float RadiusToNotifyAllies = 2500.f;
 
 	TArray<AEnemy*> GenerateSphereOverlapToDetectOtherEnemies(const FVector& Origin, AActor* HitEnemyToExclude);
 
-	virtual void BeginPlay() override;
-
+	// --- Combat & Damage ---
 	void EnableFinisherWidget();
 
-	FTimerHandle ReturnToPoolTimerHandle;
+	UPROPERTY(EditAnywhere, Category = "DamageThreshold");
+	float DamageThreshold = 30.f;
 
-public:
+	UPROPERTY();
+	EMainDamageTypes LastDamageType;
+
 	UFUNCTION()
-	void RequestReturnToPool();
+	virtual void ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoint) {};
 
-	AAIController* GetAIController() { return AIController; };
+	// --- Energy & Orbs ---
+	UPROPERTY(EditAnywhere, Category = "Energy | Energy Drop");
+	float MinEnergy = 1.f;
 
-protected:
+	UPROPERTY(EditAnywhere, Category = "Energy| Energy Drop");
+	float MaxEnergy = 3.f;
+
+	UPROPERTY(EditAnywhere, Category = "Energy| Energy Tax");
+	float UnpossesEnergyTax = 3.f;
+
+	UPROPERTY(EditAnywhere, Category = "Energy| Energy Tax");
+	float ReleaseAndExecuteEnergyTax = 3.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Energy | OnPossession")
+	float EnergyDivider = 2.f;
+
+	// --- Animation Montages ---
+	UPROPERTY(EditDefaultsOnly, Category = "Montages");
+	UAnimMontage* HitReactMontage;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Montages");
+	UAnimMontage* FinisherDeathMontage;
+
+	FName SelectRandomDieAnim();
+
+	// --- Dissolve Effect ---
+	UPROPERTY(EditAnywhere, Category = "Effects | Dissolve")
+	TArray<UMaterialInstanceDynamic*> DissolveMaterials;
+
+	UPROPERTY(VisibleAnywhere)
+	class UTimelineComponent* DissolveTimeline;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Effects | Dissolve")
+	class UCurveFloat* DissolveCurve;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Effects | Dissolve")
+	UNiagaraComponent* DissolveParticleComponent;
+
+	UFUNCTION()
+	void UpdateDissolveEffect(float Value);
+
+	// --- Enemy Properties ---
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "EnemyType")
+	EEnemyType EnemyType;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "EnemyState")
+	EEnemyState EnemyState;
+
+	UPROPERTY(VisibleAnywhere)
+	bool isLaunched = false;
+
+	// --- Resetting & Defaults ---
+	UFUNCTION(BlueprintCallable)
+	void ResetEnemy();
+
+	// --- Initial Component States (for pooling reset) ---
 	ECollisionEnabled::Type InitialMeshCollisionEnabled;
 	ECollisionEnabled::Type InitialCapsuleCollisionEnabled;
 	TMap<TEnumAsByte<ECollisionChannel>, ECollisionResponse> InitialMeshCollisionResponses;
@@ -161,65 +220,10 @@ protected:
 	bool bDefaultUseControllerDesiredRotation;
 	bool bOriginalUseControllerRotationYaw;
 
-	UPROPERTY(EditAnywhere, Category = "Energy | Energy Drop");
-	float MinEnergy = 1.f;
-	
-	UPROPERTY(EditAnywhere, Category = "Energy| Energy Drop");
-	float MaxEnergy = 3.f;
-	
-	UPROPERTY(EditAnywhere, Category = "Energy| Energy Tax");
-	float UnpossesEnergyTax = 3.f;
-	
-	UPROPERTY(EditAnywhere, Category = "Energy| Energy Tax");
-	float UnpossesAndKillEnergyTax = 3.f;
+	virtual void GetDefaultParameters();
+	virtual void SetOnPossessedParameters();
 
-	UPROPERTY(EditDefaultsOnly, Category = "Energy | OnPossession")
-	float EnergyDivider = 2.f;
-
-	UPROPERTY(EditAnywhere, Category = "DamageThreshold");
-	float DamageThreshold = 30.f;
-	
-	UPROPERTY(EditDefaultsOnly, Category = "Montages");
-	UAnimMontage* HitReactMontage;
-	
-	UPROPERTY(EditDefaultsOnly, Category = "Montages");
-	UAnimMontage* FinisherDeathMontage;
-
-	UPROPERTY(EditAnywhere, Category = "Effects | Dissolve")
-	TArray<UMaterialInstanceDynamic*> DissolveMaterials;
-
-	UPROPERTY(VisibleAnywhere)
-	class UTimelineComponent* DissolveTimeline;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Effects | Dissolve")
-	class UCurveFloat* DissolveCurve;
-	
-	UPROPERTY(EditDefaultsOnly, Category = "Effects | Dissolve")
-	UNiagaraComponent* DissolveParticleComponent;
-
-	UFUNCTION()
-	void UpdateDissolveEffect(float Value);
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "EnemyType")
-	EEnemyType EnemyType;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "EnemyState")
-	EEnemyState EnemyState;
-	
-	UPROPERTY(VisibleAnywhere)
-	bool isLaunched = false;
-
-	UFUNCTION(BlueprintCallable)
-	void ResetEnemy();
-		
-	UFUNCTION()		
-	virtual void ReactToDamage(EMainDamageTypes DamageType, const FVector& ImpactPoint) {};
-	
-	UPROPERTY();
-	EMainDamageTypes LastDamageType;
-
-	FName SelectRandomDieAnim();
-
+	// --- AI Controllers & Blackboard ---
 	UPROPERTY(EditAnywhere)
 	UBehaviorTree* BTAsset;
 
@@ -227,14 +231,14 @@ protected:
 	FName UniqueSaveID;
 
 	AAIController* AIController;
-	
+
 	class AEnemyAIController* EnemyAIController;
 
-	virtual void GetDefaultParameters();
-
-	virtual void SetOnPossessedParameters();
-
 	class UBlackboardComponent* BBComponent;
+
+	// --- Timers ---
+	FTimerHandle ReturnToPoolTimerHandle;
+
 
 private:
 	UPROPERTY()
@@ -242,4 +246,7 @@ private:
 
 	UFUNCTION(BlueprintCallable)
 	void HandleEnemyCollision(ECollisionResponse CollisionResponse);
+
+	UFUNCTION()
+	void GetExecuted();
 };

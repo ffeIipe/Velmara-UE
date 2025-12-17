@@ -56,13 +56,15 @@ void UCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	EntityOwner = Cast<AEntity>(GetOwner());
+
 	OwningCharacter = Cast<ACharacter>(GetOwner());
 
 	CharacterStateInterface = Cast<ICharacterState>(GetOwner());
 
 	SpectralAttacks = Cast<IFormInterface>(GetOwner());
 
-	CharacterStateComponent = GetOwner()->GetComponentByClass<UCharacterStateComponent>();
+	CharacterStateComponent = EntityOwner->GetCharacterStateComponent();
 
 	ExtraMovementComponent = GetOwner()->GetComponentByClass<UExtraMovementComponent>();
 
@@ -552,6 +554,8 @@ bool UCombatComponent::CanAttack()
 
 void UCombatComponent::Input_Attack()
 {
+	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }) || EntityOwner->IsEquipping()) return;
+	
 	ExtraMovementComponent->bIsSaveDodge = false;
 
 	bIsSaveHeavyAttack = false;
@@ -568,6 +572,8 @@ void UCombatComponent::Input_Attack()
 
 void UCombatComponent::Input_HeavyAttack()
 {
+	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }) || EntityOwner->IsEquipping()) return;
+
 	ExtraMovementComponent->bIsSaveDodge = false;
 
 	bIsSaveLightAttack = false;
@@ -591,6 +597,8 @@ void UCombatComponent::Input_HeavyAttack()
 
 void UCombatComponent::Input_Launch()
 {
+	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }) || EntityOwner->IsEquipping()) return;
+
 	if (CanAttack())
 	{
 		SoftLockOn();
@@ -604,16 +612,22 @@ void UCombatComponent::Input_Launch()
 
 void UCombatComponent::Input_Block()
 {
+	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }) || EntityOwner->IsEquipping()) return;
+
 	Block();
 }
 
 void UCombatComponent::Input_ReleaseBlock()
 {
+	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }) || EntityOwner->IsEquipping()) return;
+
 	ReleaseBlock();
 }
 
 void UCombatComponent::Input_Execute()
 {
+	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActions::ECA_Stun, ECharacterActions::ECA_Dead }) || EntityOwner->IsEquipping()) return;
+
 	Execute();
 }
 

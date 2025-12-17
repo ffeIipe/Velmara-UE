@@ -1,8 +1,10 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Entities/Entity.h"
-#include "CharacterStates.h"
+#include "CharacterStates.h" // Assuming this is a custom enum or struct
 #include "Interfaces/FormInterface.h"
 #include "Interfaces/HitInterface.h"
 #include "Interfaces/CharacterState.h"
@@ -35,25 +37,16 @@ class TESISUE_API APlayerMain : public AEntity, public IFormInterface
 public:
 	APlayerMain();
 
-	//~PAGINATION____________________________________________________________//
-	//~ Interface Implementations
-	//~______________________________________________________________________//
-
+	// --- Interfaces ---
 	virtual void PerformSpectralAttack_Implementation() override;
 	virtual void PerformSpectralBarrier_Implementation() override;
 	virtual void ResetSpectralAttack_Implementation() override;
 
-	void GetHit_Implementation(
+	virtual void GetHit_Implementation(
 		AActor* DamageCauser,
 		const FVector& ImpactPoint,
 		TSubclassOf<UDamageType> DamageType,
 		const float DamageReceived) override;
-
-	//~PAGINATION____________________________________________________________//
-	//~ Core Overrides
-	//~______________________________________________________________________//
-
-	/*virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;*/
 
 	virtual float TakeDamage(
 		float DamageAmount,
@@ -61,20 +54,14 @@ public:
 		class AController* EventInstigator,
 		AActor* DamageCauser) override;
 
-	//~PAGINATION____________________________________________________________//
-	//~ Components
-	//~______________________________________________________________________//
-
+	// --- Components ---
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components | Forms")
 	UPlayerFormComponent* PlayerFormComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components | Spectral Weapon")
 	USpectralWeaponComponent* SpectralWeaponComponent;
 
-	//~PAGINATION____________________________________________________________//
-	//~ Spectral Mode & Attack
-	//~______________________________________________________________________//
-
+	// --- Spectral Mode - Attack ---
 	UPROPERTY(BlueprintReadWrite, Category = "Gameplay | SpectralMode | SpectralAttack")
 	int SpectralAttackIndex = 0;
 
@@ -93,93 +80,48 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Gameplay | SpectralMode | SpectralAttack | Targeting")
 	float TrackTargetRadius;
 
-	//~PAGINATION____________________________________________________________//
-	//~ State & Flags
-	//~______________________________________________________________________//
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "State | Damage")
-	bool bCanReceiveDamage = true;
-
-
-	//~PAGINATION____________________________________________________________//
-	//~ Getters & Setters
-	//~______________________________________________________________________//
-
 	UFUNCTION(BlueprintPure, Category = "Gameplay | SpectralMode | SpectralAttack")
 	FORCEINLINE AEnemy* GetSpectralTarget() const { return SpectralTarget; }
-
-	FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }
-
-	//~PAGINATION____________________________________________________________//
-	//~ Gameplay Actions (Callable)
-	//~______________________________________________________________________//
-
-	/*UFUNCTION(BlueprintCallable, Category = "Gameplay | Possess")
-	void ReleasePossession(AEnemy* EnemyPossessed);*/
-
-	UFUNCTION(BlueprintCallable, Category = "Camera")
-	void ResetFollowCamera();
-
-	UFUNCTION(BlueprintCallable, Category = "Gameplay | Forms")
-	void ToggleForm();
 
 	UFUNCTION(BlueprintCallable, Category = "Gameplay | SpectralMode | SpectralAttack")
 	void SearchTarget();
 
-	//~PAGINATION____________________________________________________________//
-	//~ Event Handlers (Bound via Delegates, etc.)
-	//~______________________________________________________________________//
+	// --- State & Interaction ---
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "State | Damage")
+	bool bCanReceiveDamage = true;
+
+	FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }
+
+	void Equipping(bool bIsSwordBeingEquipped);
+
+	// --- Camera ---
+	UFUNCTION(BlueprintCallable, Category = "Camera")
+	void ResetFollowCamera();
+
+	// --- Forms ---
+	UFUNCTION(BlueprintCallable, Category = "Gameplay | Forms")
+	void ToggleForm();
 
 protected:
 	virtual void BeginPlay() override;
-	/*virtual void Landed(const FHitResult& Hit) override;
-	virtual void Jump() override;*/
+
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 private:
-
-	//~PAGINATION____________________________________________________________//
-	//~ Configuration | Stats & Cooldowns
-	//~______________________________________________________________________//
-
-	UPROPERTY(EditDefaultsOnly, Category = "Stats | Forms | Cooldown")
-	float TransformationCooldown;
-
-	UPROPERTY(EditAnywhere, Category = "State | Forms | Cooldown")
-	float LastTransformationTime;
-
+	// --- Movement & Default Parameters ---
 	float DefaultMaxWalkSpeed = 700.f;
 
-	//~PAGINATION____________________________________________________________//
-	//~ Internal References & State
-	//~______________________________________________________________________//
+	// --- Interaction ---
 	UPROPERTY(VisibleInstanceOnly, Category = "Runtime | Interact")
 	AItem* OverlappingItem;
 
-	//~PAGINATION____________________________________________________________//
-	//~ Internal Gameplay Logic & Input Handlers
-	//~______________________________________________________________________//
-	/*void Interact(const FInputActionValue& Value);*/
-
-public:
-	void Equipping(bool bIsSwordBeingEquipped);
-	/*bool IsEquipping();*/
-
-private:
-	/*UFUNCTION(BlueprintCallable, Category = "Gameplay | Possess") 
-	AEnemy* GetTargetEnemy();*/
-
-	/*UFUNCTION(BlueprintCallable, Category = "Gameplay | Possess")
-	void PossessEnemy();*/
-
-	void Die();
+	// --- Life Cycle ---
+	void Die() override;
 	void Revive();
 	void LoadLastCheckpoint();
+	void OutOfEnergy() override;
 
+	// --- Weapon Management ---
 	void ChangePrimaryWeapon();
 	void ChangeSecondaryWeapon();
-
-	UFUNCTION()
-	void WithEnergy();
-
-	UFUNCTION()
-	void OutOfEnergy();
 };

@@ -33,27 +33,8 @@ void APaladinBoss::BeginPlay()
 
 	UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("SpawnPoint"), SpawnPoints);
 
-	if (GetAttributeComponent())
-	{
-		GetAttributeComponent()->OnDettachShield.AddLambda(
-			[this] 
-			{
-				if (AAIController* AIController = Cast<AAIController>(GetController()))
-				{
-					if (UBlackboardComponent* BBComponent = AIController->GetBlackboardComponent())
-					{
-						BBComponent->SetValueAsBool(FName("IsShielded"), false);
-						/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::White, FString("IS NOT SHIELDED ANYMORE"));*/
-					}
-				}
-
-				SpectralTrapComponent2->FinishDamaging();
-				SpectralTrapComponent2->DestroyComponent();
-				AuraMeshComponent->DestroyComponent();
-			}
-		);
-	}
-
+	GetAttributeComponent()->OnDettachShield.AddDynamic(this, &APaladinBoss::ShieldDettach);
+	
 	if (!BBComponent)
 	{
 		if (AIController)
@@ -66,6 +47,12 @@ void APaladinBoss::BeginPlay()
 			BBComponent = Cast<UBlackboardComponent>(AIController->GetBlackboardComponent());
 		}
 	}
+}
+
+void APaladinBoss::ShieldDettach()
+{
+	SpectralTrapComponent2->FinishDamaging();
+	AuraMeshComponent->DestroyComponent();
 }
 
 float APaladinBoss::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
@@ -134,7 +121,6 @@ void APaladinBoss::TryToInvoke()
 
 bool APaladinBoss::CanInvoke()
 {
-	/*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Magenta, FString::SanitizeFloat(Minions.Num()));*/
 	return Minions.Num() <= 0;
 }
 
@@ -161,10 +147,6 @@ void APaladinBoss::Invoke()
 
 				Minions.Add(EnemyFromPool);
 			}
-			/*else
-			{
-				GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, FString("Failed to spawn minion from pool!"));
-			}*/
 		}
 	}
 }
