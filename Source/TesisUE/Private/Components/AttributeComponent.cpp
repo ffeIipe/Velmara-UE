@@ -17,6 +17,10 @@ void UAttributeComponent::ReceiveDamage(float Damage)
 	{
 		Health = FMath::Clamp(Health - Damage, 0.f, MaxHealth);
 	}
+	else if (OnEntityDead.IsBound())
+	{
+		OnEntityDead.Broadcast();
+	}
 }
 
 float UAttributeComponent::GetHealthPercent()
@@ -28,11 +32,6 @@ bool UAttributeComponent::IsAlive()
 {
 	if (Health <= 0)
 	{
-		if (OnEntityDead.IsBound())
-		{
-			OnEntityDead.Broadcast();
-		}
-
 		return false;
 	}
 	else
