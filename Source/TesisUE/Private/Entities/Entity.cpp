@@ -1,18 +1,15 @@
 #include "Entities/Entity.h"
 
-#include "NiagaraFunctionLibrary.h"
-
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "NiagaraFunctionLibrary.h"
 #include "Camera/CameraComponent.h"
 #include "Components/BufferComponent.h"
 #include "Components/FieldCreationComponent.h"
 #include "Components/MementoComponent.h"
-#include "DamageTypes/EnvironmentalDamage.h"
-#include "DamageTypes/MeleeDamage.h"
 #include "DamageTypes/PistolDamage.h"
+#include "DamageTypes/BaseDamageType.h"
 #include "DataAssets/CombatStrategyDataAsset.h"
-#include "DataAssets/EffectsData.h"
 #include "DataAssets/EntityData.h"
 #include "DataAssets/InputData.h"
 #include "DataAssets/MontagesData.h"
@@ -75,7 +72,8 @@ AEntity::AEntity()
 
 	GetSpringArmComponent()->bUsePawnControlRotation = true;
 
-	TargetingComponent->OnHardLockToggled.AddDynamic(this, &AEntity::EnableControllerRotationYaw);
+	TargetingComponent->OnHardLockOn.AddDynamic(this, &AEntity::EnableControllerRotationYaw);
+	TargetingComponent->OnHardLockOff.AddDynamic(this, &AEntity::DisableControllerRotationYaw);
 }
 
 void AEntity::GetHit(const TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint,
@@ -87,61 +85,20 @@ void AEntity::GetHit(const TScriptInterface<ICombatTargetInterface> DamageCauser
 	
 	LastDamageCauser = DamageCauser;
 
-	const UClass* DamageClass = DamageEvent.DamageTypeClass;
-
-	if (!DamageClass) return;
-	
-	if (DamageClass->IsChildOf(UEnvironmentalDamage::StaticClass()))
+	if (const UBaseDamageType* DamageTypeCDO = Cast<UBaseDamageType>(DamageEvent.DamageTypeClass->GetDefaultObject()))
 	{
-		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, "Environmental Damage");
-	}
-	else if (DamageClass->IsChildOf(UMeleeDamage::StaticClass()))
-	{
-		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, "Melee Damage");
-		
-		if (EffectsData->EntityEffects.ReceiveDamageSFX)
+		if (DamageTypeCDO->HitSound)
 		{
-			UGameplayStatics::PlaySoundAtLocation(
-				GetWorld(),
-				EffectsData->EntityEffects.ReceiveDamageSFX,
-				GetTargetActorLocation()
-			);
+			UGameplayStatics::PlaySoundAtLocation(this, DamageTypeCDO->HitSound, ImpactPoint);
 		}
 
-		if (EffectsData->EntityEffects.HitSound)
+		if (DamageTypeCDO->HitFX)
 		{
-			UGameplayStatics::PlaySoundAtLocation(
-				this,
-				EffectsData->EntityEffects.HitSound,
-				ImpactPoint
-			);
-		}
-	
-		if (EffectsData->EntityEffects.ReceiveDamageFX)
-		{
-			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-				GetWorld(),
-				EffectsData->EntityEffects.ReceiveDamageFX,
-				ImpactPoint
-			);
-		}
-		
-		CombatComponent->StartBufferBackwards();
-		GetDirectionalReact(ImpactPoint);
-	}
-	else if (DamageClass->IsChildOf(UPistolDamage::StaticClass()))
-	{
-		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, "Pistol Damage");
-		
-		if (EffectsData->EntityEffects.ShieldImpactSFX)
-		{
-			UGameplayStatics::PlaySoundAtLocation(
-			GetWorld(),
-			EffectsData->EntityEffects.ShieldImpactSFX,
-			GetAttributeComponent()->GetShieldMeshComponent()->GetComponentLocation()
-			);	
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), DamageTypeCDO->HitFX, ImpactPoint);
 		}
 	}
+
+	GetDirectionalReact(ImpactPoint);
 }
 
 void AEntity::GetFinished()
@@ -476,8 +433,14 @@ void AEntity::Input_PrimaryAttack(const FInputActionValue& Value)
 
 void AEntity::EnableControllerRotationYaw()
 {
-	bUseControllerRotationYaw = !bUseControllerRotationYaw;
-	GetCharacterMovement()->bOrientRotationToMovement = !GetCharacterMovement()->bOrientRotationToMovement;
+	bUseControllerRotationYaw = true;
+	GetCharacterMovement()->bOrientRotationToMovement = false;
+}
+
+void AEntity::DisableControllerRotationYaw()
+{
+	bUseControllerRotationYaw = false;
+	GetCharacterMovement()->bOrientRotationToMovement = true;
 }
 
 void AEntity::Input_SecondaryAttack()

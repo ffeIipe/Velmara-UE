@@ -17,7 +17,7 @@ void ASunDamage::BeginPlay()
 {
 	Super::BeginPlay();
 
-	DirectionalLight = UGameplayStatics::GetActorOfClass(this, ADirectionalLight::StaticClass());
+	DirectionalLight = Cast<ADirectionalLight>(UGameplayStatics::GetActorOfClass(this, ADirectionalLight::StaticClass()));
 	PlayerActor = GetWorld()->GetFirstPlayerController()->GetPawn();
 	PlayerHittable = PlayerActor;
 	
@@ -32,6 +32,11 @@ void ASunDamage::BeginPlay()
 
 	PrimaryActorTick.TickInterval = DamageInterval;
 	SunLocation = DirectionalLight->GetActorLocation();
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 10.f, FColor::Blue, SunLocation.ToString());
+	}
 }
 
 void ASunDamage::Tick(const float DeltaTime)
@@ -45,6 +50,8 @@ void ASunDamage::Tick(const float DeltaTime)
 
 	const TArray<AActor*> IgnoreActors;
 	FHitResult Hit;
+
+	//SunLocation = FVector(PlayerActor->GetActorLocation().X, PlayerActor->GetActorLocation().Y, SunLocation.Z);
 	
 	const bool bIsWallHit = UKismetSystemLibrary::LineTraceSingle(
 		GetWorld(),

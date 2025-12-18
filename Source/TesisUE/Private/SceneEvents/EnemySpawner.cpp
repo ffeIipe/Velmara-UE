@@ -29,13 +29,13 @@ void AEnemySpawner::SpawnEnemyFromSpawnPoint()
 	if (EnemiesSpawned < SpawnPoints.Num())
 	{
 		EnemiesSpawned++;
-
+		
 		if (bIsNumericalSpawn)
 		{
 			if (EnemiesSpawned >= MaxEnemiesSpawn)
 			{
-				EnemiesSpawned = 0;
 				EndSpawning();
+				EnemiesSpawned = 0;
 			}
 		}
 		

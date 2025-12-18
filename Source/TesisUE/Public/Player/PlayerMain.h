@@ -3,24 +3,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "DataAssets/CombatStrategyDataAsset.h"
 #include "Entities/Entity.h"
 #include "PlayerMain.generated.h"
 
-class UInputAction;
-struct FInputActionValue;
-class AEnemy;
-class AItem;
-class UAttributeComponent;
-class UMementoComponent;
-class UCombatComponent;
-class UInventoryComponent;
-class UCharacterStateComponent;
+
 class UChangeModeComponent;
-class UCameraComponent;
-class USpringArmComponent;
-class ACameraActor;
-class UDamageType;
-class USoundBase;
+class AEnemy;
 
 UCLASS()
 class TESISUE_API APlayerMain : public AEntity
@@ -44,6 +33,9 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Gameplay | SpectralMode | SpectralAttack | Targeting")
 	AEnemy* SpectralTarget;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Input | Config")
+	TObjectPtr<UInputMappingContext> DefaultInputContext;
 
 	UFUNCTION(BlueprintPure, Category = "Gameplay | SpectralMode | SpectralAttack")
 	FORCEINLINE AEnemy* GetSpectralTarget() const { return SpectralTarget; }
@@ -70,9 +62,13 @@ protected:
 
 private:
 	// --- Life Cycle ---
-	void Die(UAnimMontage* DeathAnim, FName Section) override;
+	virtual void Die(UAnimMontage* DeathAnim, FName Section) override;
+	
 	void Revive();
+	
 	void LoadLastCheckpoint() const;
+	
+	void ApplyModeConfig(const FCharacterModeConfig& Config);
 
 	UFUNCTION()
 	void ApplyHumanMode();

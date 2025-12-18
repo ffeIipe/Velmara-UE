@@ -26,6 +26,7 @@
 #include "Interfaces/Weapon/WeaponInterface.h"
 #include "UObject/ConstructorHelpers.h"
 #include "EnhancedInput/Public/InputMappingContext.h"
+#include "Items/Weapons/Strategies/CombatStrategy.h"
 
 APlayerMain::APlayerMain()
 {
@@ -44,28 +45,22 @@ APlayerMain::APlayerMain()
 
 	ChangeModeComponent->OnHumanEffectApplied.AddDynamic(this, &APlayerMain::ApplyHumanMode);
 	ChangeModeComponent->OnSpectralEffectApplied.AddDynamic(this, &APlayerMain::ApplySpectralMode);
-
-	static ConstructorHelpers::FObjectFinder<UInputMappingContext> IMC(TEXT("/Game/Blueprints/Player/Input/IMC_PlayerMain.IMC_PlayerMain"));
-	if (IMC.Succeeded())
-	{
-		CharacterContext = IMC.Object.Get();
-	}
-	else if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, "IMC Found!");
-	}
 }
 
 void APlayerMain::BeginPlay()
 {
 	Super::BeginPlay();
 
-	ChangeModeComponent->OnHumanEffectApplied.AddDynamic(this, &APlayerMain::ApplyHumanMode);
-	ChangeModeComponent->OnSpectralEffectApplied.AddDynamic(this, &APlayerMain::ApplySpectralMode);
-	
-	if (const APlayerController* PlayerController = CastChecked<APlayerController>(GetController()))
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
-			Subsystem->AddMappingContext(CharacterContext, 0);
+	if (const APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
+		{
+			if (DefaultInputContext)
+			{
+				Subsystem->AddMappingContext(DefaultInputContext, 0);
+			}
+		}
+	}
 }
 
 void APlayerMain::PerformDead()
@@ -155,31 +150,35 @@ void APlayerMain::LoadLastCheckpoint() const
 	}
 }
 
+void APlayerMain::ApplyModeConfig(const FCharacterModeConfig& Config)
+{
+	if (const TScriptInterface<IGenericTeamAgentInterface> TeamAgent = GetController())
+	{
+		TeamAgent->SetGenericTeamId(FGenericTeamId(Config.TeamID));
+	}
+    
+	GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = Config.bUseControllerRotationYaw;
+
+	if (Execute_GetCurrentWeapon(this))
+	{
+		Config.bShowWeapon ? Execute_GetCurrentWeapon(this)->EnableVisuals() : Execute_GetCurrentWeapon(this)->DisableVisuals();
+		CharacterStateComponent->SetWeaponState(Config.bShowWeapon ? ECharacterWeaponStates::ECWS_EquippedWeapon : ECharacterWeaponStates::ECWS_Unequipped);
+	}
+
+	SetCombatStrategy(Config.StrategyClass);
+}
+
 void APlayerMain::ApplyHumanMode()
 {
 	if (CharacterStateComponent->IsModeEqualToAny({ECharacterModeStates::ECMS_Human})) return;
 	
-	if (const TScriptInterface<IGenericTeamAgentInterface> TeamAgent = GetController())
-	{
-		TeamAgent->SetGenericTeamId(FGenericTeamId(2));
-	}
-	
-	GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = false;
-
-	if (Execute_GetCurrentWeapon(this))
-	{
-		Execute_GetCurrentWeapon(this)->EnableVisuals();
-		CharacterStateComponent->SetWeaponState(ECharacterWeaponStates::ECWS_EquippedWeapon);
-	}
-
-	if (GetPossessionComponent()->GetPossessedEntity())
+	/*if (GetPossessionComponent()->GetPossessedEntity())
 	{
 		GetPossessionComponent()->ReleasePossession();
-	}
+	}*/
 
+	ApplyModeConfig(HumanStrategyInstance->CombatStrategyData->CharacterModeConfig);
 	CharacterStateComponent->SetMode(ECharacterModeStates::ECMS_Human);
-
-	SetCombatStrategy(ECharacterModeStates::ECMS_Human);
 
 	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, "HUMAN");
 }
@@ -188,22 +187,8 @@ void APlayerMain::ApplySpectralMode()
 {
 	if (CharacterStateComponent->IsModeEqualToAny({ECharacterModeStates::ECMS_Spectral})) return;
 	
-	if (const TScriptInterface<IGenericTeamAgentInterface> TeamAgent = GetController())
-	{
-		TeamAgent->SetGenericTeamId(FGenericTeamId(0));
-	}
-	
-	GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = true;
-
-	if (Execute_GetCurrentWeapon(this))
-	{
-		Execute_GetCurrentWeapon(this)->DisableVisuals();
-		CharacterStateComponent->SetWeaponState(ECharacterWeaponStates::ECWS_Unequipped);
-	}
-	
+	ApplyModeConfig(SpectralStrategyInstance->CombatStrategyData->CharacterModeConfig);
 	CharacterStateComponent->SetMode(ECharacterModeStates::ECMS_Spectral);
-
-	SetCombatStrategy(ECharacterModeStates::ECMS_Spectral);
 
 	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "VAMPIRE");
 }

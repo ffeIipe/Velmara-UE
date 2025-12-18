@@ -41,7 +41,7 @@ void UTargetingComponent::BeginPlay()
     }
 }
 
-void UTargetingComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void UTargetingComponent::TickComponent(const float DeltaTime, const ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
@@ -73,7 +73,7 @@ void UTargetingComponent::ToggleHardLock()
         if (PickHardLockTarget())
         {
             SetComponentTickEnabled(true);
-            if (OnHardLockToggled.IsBound()) OnHardLockToggled.Broadcast();
+            if (OnHardLockOn.IsBound()) OnHardLockOn.Broadcast();
         }
         else
         {
@@ -85,7 +85,7 @@ void UTargetingComponent::ToggleHardLock()
         CurrentTarget = nullptr;
         CombatTargets.Empty();
         SetComponentTickEnabled(false);
-        if (OnHardLockToggled.IsBound()) OnHardLockToggled.Broadcast();
+        if (OnHardLockOff.IsBound()) OnHardLockOff.Broadcast();
     }
 }
 
@@ -115,39 +115,31 @@ bool UTargetingComponent::PickHardLockTarget()
 {
     CombatTargets = GetCombatTargets(HardLockRadius);
 
-    float MinDistance = 0.f;
+    float MinDistance = TNumericLimits<float>::Max(); 
     TScriptInterface<ICombatTargetInterface> ClosestCombatTarget = nullptr;
     
-    for (const TScriptInterface CombatTarget : CombatTargets)
+    for (const TScriptInterface<ICombatTargetInterface>& CombatTarget : CombatTargets)
     {
         if (CombatTarget && CombatTarget->IsAlive())
         {
-            const float NewDistance = (CombatTarget->GetTargetActorLocation() - GetOwner()->GetActorLocation()).Length();
-
-            if (MinDistance == 0.f)
+            if (const float NewDistance = FVector::Dist(CombatTarget->GetTargetActorLocation(), GetOwner()->GetActorLocation()); NewDistance < MinDistance)
             {
                 MinDistance = NewDistance;
                 ClosestCombatTarget = CombatTarget;
             }
-        
-            if (MinDistance > NewDistance)
-            {
-                MinDistance = NewDistance;
-                ClosestCombatTarget = CombatTarget;
-            }
-        }
-        
-        if (CombatTargets.Num() > 0)
-        {
-            CombatTargetIndex = 0;
-            CurrentTarget = ClosestCombatTarget;
-            return true;
         }
     }
+
+    if (ClosestCombatTarget) 
+    {
+        CombatTargetIndex = 0;
+        CurrentTarget = ClosestCombatTarget;
+        return true;
+    }
        
+    CurrentTarget = nullptr;
     return false;
 }
-
 void UTargetingComponent::ValidateCurrentTarget()
 {
     if (bIsHardLocking && CurrentTarget && !CurrentTarget->IsAlive())
@@ -178,8 +170,8 @@ void UTargetingComponent::RotateTowardsHardLockTarget(const TScriptInterface<ICo
 
     OwnerController->SetControlRotation(NewControlRotation);
 
-    FRotator OwnerActorRotation = GetOwner()->GetActorRotation();
-    FRotator NewActorYawRotation = FRotator(OwnerActorRotation.Pitch, TargetRotation.Yaw, OwnerActorRotation.Roll);
+    const FRotator OwnerActorRotation = GetOwner()->GetActorRotation();
+    const FRotator NewActorYawRotation = FRotator(OwnerActorRotation.Pitch, TargetRotation.Yaw, OwnerActorRotation.Roll);
 
     GetOwner()->SetActorRotation(NewActorYawRotation);
 

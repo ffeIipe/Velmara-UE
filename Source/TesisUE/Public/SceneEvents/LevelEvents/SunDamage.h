@@ -5,6 +5,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "SunDamage.generated.h"
 
+class ADirectionalLight;
 class IHitInterface;
 
 UCLASS()
@@ -43,7 +44,7 @@ private:
 	UCurveFloat* DamageCurve = nullptr;
 	
 	UPROPERTY()
-	AActor* DirectionalLight = nullptr;
+	ADirectionalLight* DirectionalLight = nullptr;
 	
 	UPROPERTY()
 	AActor* PlayerActor = nullptr;
@@ -52,6 +53,8 @@ private:
 	TScriptInterface<IHitInterface> PlayerHittable = nullptr;
 	
 	float TimeOnTarget = 0.f;
+	
 	float Damage = 0.f;
+	
 	FVector SunLocation = FVector::ZeroVector;
 };

@@ -31,12 +31,33 @@ struct FStrategyProperties
 	TMap<TEnumAsByte<EInputCommandType>, TSubclassOf<UCommand>> CommandsClasses;
 };
 
+USTRUCT(BlueprintType)
+struct FCharacterModeConfig
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly)
+	int32 TeamID;
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UCombatStrategy> StrategyClass;
+
+	UPROPERTY(EditDefaultsOnly)
+	bool bShowWeapon;
+    
+	UPROPERTY(EditDefaultsOnly)
+	bool bUseControllerRotationYaw;
+};
+
 UCLASS(Blueprintable)
 class TESISUE_API UCombatStrategyData : public UDataAsset
 {
 	GENERATED_BODY()
 
-	public:
+public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FStrategyProperties StrategyProperties;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FCharacterModeConfig CharacterModeConfig;
 };

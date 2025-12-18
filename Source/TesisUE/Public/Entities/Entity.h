@@ -336,16 +336,21 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FName UniqueSaveID;
 	
-private:
-	bool bPrimaryInputHeld;
-
-	UFUNCTION()
-	void EnableControllerRotationYaw();
-	
 	UPROPERTY()
 	UCombatStrategy* CurrentStrategy;
 	UPROPERTY()
 	UCombatStrategy* HumanStrategyInstance;
 	UPROPERTY()
 	UCombatStrategy* SpectralStrategyInstance;
+	
+private:
+	bool bPrimaryInputHeld;
+
+	UFUNCTION()
+	void EnableControllerRotationYaw();
+
+	UFUNCTION()
+	void DisableControllerRotationYaw();
+
+	
 };

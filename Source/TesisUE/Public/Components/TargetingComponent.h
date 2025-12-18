@@ -13,6 +13,8 @@ class ICameraProvider;
 class UCurveFloat;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHardLockToggled);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHardLockOn);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHardLockOff);
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class TESISUE_API UTargetingComponent : public UActorComponent
@@ -28,6 +30,12 @@ public:
     
     UPROPERTY(BlueprintAssignable)
     FOnHardLockToggled OnHardLockToggled;
+
+    UPROPERTY(BlueprintAssignable)
+    FOnHardLockOn OnHardLockOn;
+    
+    UPROPERTY(BlueprintAssignable)
+    FOnHardLockOff OnHardLockOff;
 
     UFUNCTION(BlueprintCallable, Category = "Targeting")
     void ToggleHardLock();
