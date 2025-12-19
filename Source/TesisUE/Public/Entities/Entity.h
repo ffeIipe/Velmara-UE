@@ -15,7 +15,6 @@
 
 // Interfaces
 #include "Interfaces/AnimatorProvider.h"
-#include "Interfaces/AttributeProvider.h"
 #include "Interfaces/BufferComponentProvider.h"
 #include "Interfaces/HitInterface.h"
 #include "Interfaces/CameraProvider.h"
@@ -26,9 +25,10 @@
 #include "Interfaces/CombatTargetInterface.h"
 #include "Interfaces/ControllerProvider.h"
 #include "Interfaces/FieldCreationComponentProvider.h"
-#include "Interfaces/MementoEntity.h"
 #include "Interfaces/StrategyInterface.h"
 #include "Interfaces/Weapon/WeaponProvider.h"
+#include "GameplayTagAssetInterface.h"
+#include "Interfaces/SaveInterface.h"
 
 #include "Entity.generated.h"
 
@@ -71,7 +71,6 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEntityShieldTakeDamage);
 UCLASS()
 class TESISUE_API AEntity : public ACharacter,
 							public IHitInterface,
-							public IMementoEntity,
 							public ICameraProvider,
 							public IWeaponProvider,
                             public ICharacterStateProvider,
@@ -79,12 +78,13 @@ class TESISUE_API AEntity : public ACharacter,
 							public IOwnerUtilsInterface,
 							public ICombatTargetInterface,
 							public IControllerProvider,
-							public IAttributeProvider,
 							public IAnimatorProvider,
 							public IStrategyProvider,
 							public ICombatComponentProvider,
 							public IFieldCreationComponentProvider,
-							public IBufferComponentProvider
+							public IBufferComponentProvider,
+							public IGameplayTagAssetInterface,
+							public ISaveInterface
 {
 	
 	GENERATED_BODY()
@@ -104,7 +104,23 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
 	TObjectPtr<UMontagesData> MontagesData;
 	
-	// === Getters ===
+	// === Save System ===
+	virtual FName GetUniqueSaveID_Implementation() override { return UniqueSaveID; }
+	
+	virtual void GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const override { TagContainer = EntityTags; }
+
+	UFUNCTION(BlueprintCallable, Category = "State | Tags")
+	void AddGameplayTag(const FGameplayTag Tag) { EntityTags.AddTag(Tag); }
+
+	UFUNCTION(BlueprintCallable, Category = "State | Tags")
+	void RemoveGameplayTag(const FGameplayTag Tag) { EntityTags.RemoveTag(Tag); }
+
+	UFUNCTION(BlueprintCallable, Category = "SaveGame")
+	virtual void OnSaveGame_Implementation(FEntitySaveData& OutData) override;
+
+	UFUNCTION(BlueprintCallable, Category = "SaveGame")
+	virtual void OnLoadGame_Implementation(const FEntitySaveData& InData) override;
+	
 	UFUNCTION(BlueprintPure, Category = "Components")
 	virtual UCombatComponent* GetCombatComponent_Implementation() override { return CombatComponent; };
 
@@ -119,9 +135,6 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Components")
 	FORCEINLINE UInventoryComponent* GetInventoryComponent() const { return InventoryComponent; }
-
-	UFUNCTION(BlueprintPure, Category = "Components")
-	virtual UMementoComponent* GetMementoComponent_Implementation() override { return MementoComponent; }
 
 	UFUNCTION(BlueprintPure, Category = "Components")
 	FORCEINLINE UPossessionComponent* GetPossessionComponent() const { return PossessionComponent; }
@@ -191,9 +204,6 @@ public:
 	virtual AController* GetEntityController() override { return GetController(); }
 
 	virtual void IncreaseEnergy(const float Percentage) override { AttributeComponent->IncreaseEnergy(Percentage); }
-	virtual bool RequiresEnergy(const float X) override { return AttributeComponent->RequiresEnergy(X); }
-	virtual void SetEnergy(const float EnergyFromPossessor) override { AttributeComponent->SetEnergy(EnergyFromPossessor); }
-	virtual void IncreaseHealth(const float X) override { AttributeComponent->IncreaseHealth(X); }
 
 	virtual float PlayAnimMontage_Implementation(UAnimMontage* Montage, const float Rate = 1.f, const FName Section = "Default") override { return Super::PlayAnimMontage(Montage, Rate, Section); }
 	virtual void StopAnimMontage_Implementation(UAnimMontage* MontageToStop = nullptr) override { Super::StopAnimMontage(MontageToStop); }
@@ -214,10 +224,6 @@ public:
 	
 	bool IsEquipping() const;
 
-	// === Save System ===
-	UFUNCTION(BlueprintCallable, Category = "Save System")
-	FName GetUniqueSaveID() const { return UniqueSaveID; }
-
 	// === Delegates ===
 	UPROPERTY(BlueprintAssignable)
 	FOnEntityDead OnDead;
@@ -226,6 +232,9 @@ public:
 	FOnEntityDamaged OnDamaged;
 	
 protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "State | Tags")
+	FGameplayTagContainer EntityTags;
+	
 	// === Actor Functions ===
 	virtual void BeginPlay() override;
 	virtual void OnConstruction(const FTransform &Transform) override;
@@ -297,7 +306,7 @@ protected:
 	void Input_ToggleWeapon();
 
 	// === Components ===
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UCombatComponent* CombatComponent;
 
 	UPROPERTY(BlueprintGetter = GetAttributeComponent)
@@ -309,11 +318,8 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	UExtraMovementComponent* ExtraMovementComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintGetter = GetInventoryComponent)
+	UPROPERTY(VisibleAnywhere, BlueprintGetter = GetInventoryComponent, SaveGame) //???
 	UInventoryComponent* InventoryComponent;
-
-	UPROPERTY(BlueprintReadOnly)
-	UMementoComponent* MementoComponent;
 
 	UPROPERTY(BlueprintGetter = GetPossessionComponent)
 	UPossessionComponent* PossessionComponent;
@@ -336,12 +342,11 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FName UniqueSaveID;
 	
+	UPROPERTY(Transient)
+	TMap<ECharacterModeStates, TObjectPtr<UCombatStrategy>> StrategyInstances;
+
 	UPROPERTY()
-	UCombatStrategy* CurrentStrategy;
-	UPROPERTY()
-	UCombatStrategy* HumanStrategyInstance;
-	UPROPERTY()
-	UCombatStrategy* SpectralStrategyInstance;
+	TObjectPtr<UCombatStrategy> CurrentStrategy;
 	
 private:
 	bool bPrimaryInputHeld;
@@ -351,6 +356,4 @@ private:
 
 	UFUNCTION()
 	void DisableControllerRotationYaw();
-
-	
 };

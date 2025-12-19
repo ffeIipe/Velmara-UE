@@ -15,8 +15,8 @@ void AEnergyItem::Pick(AActor* NewOwner)
 
 	if (NewOwner)
 	{
-		AttributeProvider->IncreaseEnergy(EnergyToIncrease);
-		AttributeProvider->IncreaseHealth(HealthToIncrease);
+		//AttributeProvider->IncreaseHealth(HealthToIncrease);
+		//AttributeProvider->IncreaseEnergy(EnergyToIncrease);
 
 		if (OnUsedSpawnEnergy.IsBound())
 		{

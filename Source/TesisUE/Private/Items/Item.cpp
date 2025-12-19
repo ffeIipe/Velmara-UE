@@ -1,15 +1,12 @@
 #include "Items/Item.h"
 #include "Components/BoxComponent.h"
 #include "Tutorial/PromptWidgetComponent.h"
-#include "Interfaces/AttributeProvider.h" //do not delete this
-#include "Components/Items/ItemMementoComponent.h"
+#include "Serialization/ObjectAndNameAsStringProxyArchive.h"
 
 
 AItem::AItem()
 {
 	PrimaryActorTick.bCanEverTick = false;
-
-	ItemMementoComponent = CreateDefaultSubobject<UItemMementoComponent>(TEXT("ItemMemento"));
 	
 	ItemMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Item Mesh"));
 	RootComponent = ItemMesh;
@@ -30,25 +27,16 @@ void AItem::BeginPlay()
 void AItem::Pick(AActor* NewOwner)
 {
 	SetOwner(NewOwner);
+	OwnerOverrider = NewOwner;
 	SetInstigator(Cast<APawn>(NewOwner));
-	AttributeProvider = NewOwner;
-	
-	if (!bWasUsed)
-	{
-		bWasUsed = true;
-		ItemMementoComponent->CaptureItemState();
-	}
-	
-	/*
-	DisableCollision();*/
+	//AttributeProvider = NewOwner;
+	bWasUsed = true;
 }
 
 void AItem::EnableVisuals()
 {
 	SetActorHiddenInGame(false);
 	SetActorEnableCollision(true);
-
-	/*if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Enable visuals");*/
 }
 
 void AItem::DisableVisuals()
@@ -62,6 +50,27 @@ void AItem::DisableVisuals()
 UPrimitiveComponent* AItem::GetCollisionComponent()
 {
 	return nullptr;
+}
+
+void AItem::OnSaveGame_Implementation(FEntitySaveData& OutData)
+{
+	FMemoryWriter MemWriter(OutData.ByteData);
+	FObjectAndNameAsStringProxyArchive Ar(MemWriter, true);
+	Ar.ArIsSaveGame = true;
+	this->Serialize(Ar);
+}
+
+void AItem::OnLoadGame_Implementation(const FEntitySaveData& InData)
+{
+	FMemoryReader MemReader(InData.ByteData);
+	FObjectAndNameAsStringProxyArchive Ar(MemReader, true);
+	Ar.ArIsSaveGame = true;
+	this->Serialize(Ar);
+
+	if (bWasUsed)
+	{
+		Destroy();
+	}
 }
 
 void AItem::DisableCollision()

@@ -1,30 +1,20 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "Components/ActorComponent.h"
 #include "CombatComponent.generated.h"
 
-class IStrategyProvider;
+class IWeaponInterface;
+struct FCombatData;
+class UAttributeComponent;
+class UCharacterStateComponent;
+class UTimelineComponent;
+class ICombatTargetInterface;
 enum class ECharacterModeStates : uint8;
 struct FInputActionValue;
-class ICharacterMovementProvider;
-class IAnimatorProvider;
-class IWeaponInterface;
-class IWeaponProvider;
-class IControllerProvider;
-class ICameraProvider;
-class ICombatTargetInterface;
-class ICharacterStateProvider;
-class UCharacterStateComponent;
-class IOwnerUtilsInterface;
-struct FCombatData;
-class UEntityData;
-class UTimelineComponent;
-class UCurveFloat;
-class IFormInterface;
-class UExtraMovementComponent;
-class ASword;
-class AEntity;
+
+DECLARE_DELEGATE_RetVal_OneParam(bool, FCanPerformActionSignature, FGameplayTag);
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class TESISUE_API UCombatComponent : public UActorComponent
@@ -32,6 +22,13 @@ class TESISUE_API UCombatComponent : public UActorComponent
     GENERATED_BODY()
 
 public:
+    FCanPerformActionSignature CanPerformActionDelegate;
+
+    DECLARE_MULTICAST_DELEGATE_OneParam(FOnActionPerformedSignature, FGameplayTag);
+    FOnActionPerformedSignature OnActionPerformed;
+
+    //TODO: Delete unused Delegates
+    
     // === Delegates ===
     DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWallHitSignature, const FHitResult&, HitResult);
     DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAttackEnd);
@@ -47,6 +44,9 @@ public:
     FOnHeavyAttack OnHeavyAttack;
     FOnSaveLightAttack OnSaveLightAttack;
     FOnSaveHeavyAttack OnSaveHeavyAttack;
+
+    UFUNCTION()
+    void HandleWeaponChanged(TScriptInterface<IWeaponInterface> NewWeapon);
     
     // === Finisher Locations ===
     UPROPERTY(EditAnywhere, Category = "Attack | Finisher")
@@ -66,7 +66,7 @@ public:
     UFUNCTION(BlueprintCallable)
     bool IsInAir() const;
     
-    bool CanAttack() const;
+    bool CanAttack(FGameplayTag ActionTag) const;
     
     void PerformBlock(bool bIsTriggered, UAnimMontage* BlockMontage) const;
 
@@ -122,12 +122,6 @@ protected:
     // === Lifecycle Events ===
     virtual void BeginPlay() override;
     
-    UFUNCTION(BlueprintCallable, Category = "Attack | ComboAttack")
-    void PerformComboStarter(int AttackIndex);
-    
-    UFUNCTION(BlueprintCallable, Category = "Attack | ComboAttack")
-    void PerformComboExtender(int AttackIndex);
-    
     UFUNCTION(BlueprintCallable, Category = "Attack | JumpAttack")
     void LaunchCharacterUp(TScriptInterface<ICombatTargetInterface> Target);
     
@@ -142,8 +136,8 @@ protected:
     void ReleaseBlock(UAnimMontage* BlockMontage) const;
     
     // === Soft Lock Targeting ===
-    UFUNCTION(BlueprintCallable, Category = "SoftLock")
-    void ValidateWall();
+    //UFUNCTION(BlueprintCallable, Category = "SoftLock")
+    //void ValidateWall();
     
     // === Launch Character Timeline ===
     UFUNCTION()
@@ -154,16 +148,8 @@ protected:
     void UpdateAttackBuffer(float Alpha) const;
     void UpdateBuffer(float Alpha, float BufferDistance) const;
     
-    // === Animation Montages ===
-    UPROPERTY(EditDefaultsOnly, Category = "Montages | ComboAttack")
-    TArray<UAnimMontage*> ComboStarterAttack;
-    
-    UPROPERTY(EditDefaultsOnly, Category = "Montages | ComboAttack")
-    TArray<UAnimMontage*> ComboExtenderAttack;
-    
 private:
     // === Internal State Variables ===
-    int ComboExtenderIndex = 0;
     UPROPERTY()
     TArray<TScriptInterface<ICombatTargetInterface>> CombatTargets;
     
@@ -185,14 +171,17 @@ private:
     UPROPERTY()
     UTimelineComponent* BufferBackwardsTimeline;
 
-    // === Providers ===
-    TScriptInterface<IControllerProvider> ControllerProvider;
-    TScriptInterface<IWeaponProvider> WeaponProvider;
-    TScriptInterface<ICharacterStateProvider> CharacterStateProvider;
-    TScriptInterface<IOwnerUtilsInterface> OwnerUtils;
-    TScriptInterface<ICharacterMovementProvider> CharacterMovementProvider;
-    TScriptInterface<ICameraProvider> CameraProvider;
-    TScriptInterface<IAnimatorProvider> AnimatorProvider;
+    UPROPERTY(EditDefaultsOnly, Category = "Combat | Config")
+    FGameplayTagContainer BlockAttackTags;
+    
+    UPROPERTY()
+    TObjectPtr<UCharacterStateComponent> StateComponent;
+
+    UPROPERTY()
+    TObjectPtr<UAttributeComponent> AttributeComponent;
+
+    UPROPERTY()
+    TObjectPtr<ACharacter> OwnerCharacter;
     
     // === Stats Assigned By Data Asset ===
     float BufferAttackDistance;

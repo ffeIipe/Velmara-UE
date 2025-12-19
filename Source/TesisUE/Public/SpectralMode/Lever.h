@@ -11,7 +11,6 @@ class TESISUE_API ALever : public ASpectralObject
 {
 	GENERATED_BODY()
 
-	/*DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLeverActivation);*/
 	DECLARE_DYNAMIC_DELEGATE(FOnLeverActivation_Internal);
 	DECLARE_DYNAMIC_DELEGATE(FOnLeverDeactivation_Internal);
 

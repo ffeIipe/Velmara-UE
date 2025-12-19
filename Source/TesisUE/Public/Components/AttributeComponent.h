@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "Components/ActorComponent.h"
 #include "AttributeComponent.generated.h"
 
@@ -21,9 +22,13 @@ public:
 	UAttributeComponent();
 
 	void InitializeValues(const FAttributeData& AttributeData);
+
+	bool RequiresEnergyForTag(FGameplayTag GameplayTag);
 	
+	void ConsumeEnergyForTag(FGameplayTag GameplayTag);
+
 	UPROPERTY(BlueprintAssignable)
-	FOnDettachShieldSignature OnDettachShield;
+	FOnDettachShieldSignature OnDetachShield;
 
 	UPROPERTY(BlueprintAssignable)
 	FOnEntityDeadSignature OnEntityDead;
@@ -37,19 +42,19 @@ public:
 	float GetHealthPercent();
 
 	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Health | Getters")
-	FORCEINLINE float GetHealth() { return Health; };
+	FORCEINLINE float GetHealth() const { return Health; };
 
 	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Health | Setters")
-	FORCEINLINE void SetHealth(float Amount) { Health = Amount; };
+	FORCEINLINE void SetHealth(const float Amount) { Health = Amount; };
 
 	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Health | Setters")
-	FORCEINLINE void IncreaseHealth(float Amount) { Health += Amount; };
+	FORCEINLINE void IncreaseHealth(const float Amount) { Health += Amount; };
 
 	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Health")
 	bool IsAlive();
 
 	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Energy | Getters")
-	FORCEINLINE float GetEnergy() { return Energy; };
+	FORCEINLINE float GetEnergy() const { return Energy; };
 
 	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Energy | Getters")
 	float GetEnergyPercent();
@@ -58,7 +63,7 @@ public:
 	void IncreaseEnergy(float Amount);
 
 	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Energy | Setters")
-	FORCEINLINE void SetEnergy(float Amount) { Energy = Amount; };
+	FORCEINLINE void SetEnergy(const float Amount) { Energy = Amount; };
 
 	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Energy")
 	void StartDecreaseEnergy();
@@ -90,7 +95,7 @@ public:
 	FORCEINLINE UStaticMeshComponent* GetShieldMeshComponent() { return ShieldMeshComponent; };
 
 	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Shield")
-	FORCEINLINE float GetShieldHealthPercent() { return CurrentShieldHealth / MaxShieldHealth; };
+	FORCEINLINE float GetShieldHealthPercent() { return Shield / MaxShield; };
 
 	UFUNCTION(BlueprintCallable, Category = "Actor Functions | Shield")
 	void AttachShield(USceneComponent* InParent, FName SocketName);
@@ -114,17 +119,26 @@ protected:
 	UStaticMeshComponent* ShieldMeshComponent;
 
 private:
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(SaveGame)
 	float Health;
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(SaveGame)
 	float MaxHealth;
+
+	UPROPERTY(SaveGame)
 	float MaxEnergy;
+
+	UPROPERTY(SaveGame)
 	float Energy;
+
+	UPROPERTY(SaveGame)
+	float MaxShield;
+
+	UPROPERTY(SaveGame)
+	float Shield;
+	
 	float DrainTickValue = 2.f;
 	float RegenerateTickValue = .5f;
-	float MaxShieldHealth = 100.f;
-	float CurrentShieldHealth;
 
 	UPROPERTY()
 	UStaticMesh* ShieldMesh;

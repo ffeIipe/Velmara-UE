@@ -1,6 +1,6 @@
 #include "Player/PlayerMain.h"
 
-#include "SceneEvents/VelmaraGameModeBase.h"
+#include "SceneEvents/VelmaraGameMode.h"
 #include "SceneEvents/VelmaraGameStateBase.h"
 #include "SceneEvents/VelmaraGameInstance.h"
 
@@ -138,20 +138,23 @@ void APlayerMain::ResetFollowCamera()
 		FollowCamera->AttachToComponent(GetSpringArmComponent(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName("SpringEndpoint"));
 		PlayerControllerRef->EnableInput(PlayerControllerRef);
 		bCanReceiveDamage = true;
-		Cast<AVelmaraGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->SetEnemiesAIEnabled(true);
+		Cast<AVelmaraGameMode>(UGameplayStatics::GetGameMode(GetWorld()))->SetEnemiesAIEnabled(true);
 	}
 }
 
 void APlayerMain::LoadLastCheckpoint() const
 {
-	if (UVelmaraGameInstance* GameInst = GetGameInstance<UVelmaraGameInstance>())
+	if (UVelmaraGameInstance* VelmaraGameInstance = Cast<UVelmaraGameInstance>(GetWorld()->GetGameInstance()))
 	{
-		GameInst->LoadPlayerProgress(GameInst->ActiveSaveSlotIndex);
+		VelmaraGameInstance->LoadGame(VelmaraGameInstance->ActiveSaveSlotIndex);
 	}
 }
 
-void APlayerMain::ApplyModeConfig(const FCharacterModeConfig& Config)
+void APlayerMain::ApplyModeConfig(const ECharacterModeStates& Mode)
 {
+	const TObjectPtr<UCombatStrategy> FoundStrategy = *StrategyInstances.Find(Mode);
+	const FCharacterModeConfig Config = FoundStrategy->CombatStrategyData->CharacterModeConfig;
+	
 	if (const TScriptInterface<IGenericTeamAgentInterface> TeamAgent = GetController())
 	{
 		TeamAgent->SetGenericTeamId(FGenericTeamId(Config.TeamID));
@@ -165,7 +168,7 @@ void APlayerMain::ApplyModeConfig(const FCharacterModeConfig& Config)
 		CharacterStateComponent->SetWeaponState(Config.bShowWeapon ? ECharacterWeaponStates::ECWS_EquippedWeapon : ECharacterWeaponStates::ECWS_Unequipped);
 	}
 
-	SetCombatStrategy(Config.StrategyClass);
+	SetCombatStrategy(Mode);
 }
 
 void APlayerMain::ApplyHumanMode()
@@ -177,7 +180,7 @@ void APlayerMain::ApplyHumanMode()
 		GetPossessionComponent()->ReleasePossession();
 	}*/
 
-	ApplyModeConfig(HumanStrategyInstance->CombatStrategyData->CharacterModeConfig);
+	ApplyModeConfig(ECharacterModeStates::ECMS_Human);
 	CharacterStateComponent->SetMode(ECharacterModeStates::ECMS_Human);
 
 	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, "HUMAN");
@@ -186,8 +189,8 @@ void APlayerMain::ApplyHumanMode()
 void APlayerMain::ApplySpectralMode()
 {
 	if (CharacterStateComponent->IsModeEqualToAny({ECharacterModeStates::ECMS_Spectral})) return;
-	
-	ApplyModeConfig(SpectralStrategyInstance->CombatStrategyData->CharacterModeConfig);
+
+	ApplyModeConfig(ECharacterModeStates::ECMS_Spectral);
 	CharacterStateComponent->SetMode(ECharacterModeStates::ECMS_Spectral);
 
 	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "VAMPIRE");

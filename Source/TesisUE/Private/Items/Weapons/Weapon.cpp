@@ -4,13 +4,14 @@
 #include "Items/Weapons/Weapon.h"
 
 #include "Components/CharacterStateComponent.h"
+#include "GameFramework/Character.h"
 #include "Interfaces/AnimatorProvider.h"
 #include "Interfaces/CharacterStateProvider.h"
 #include "Interfaces/ControllerProvider.h"
 
 void AWeapon::Pick(AActor* NewOwner)
 {
-	ControllerProvider = NewOwner;
+	/*ControllerProvider = NewOwner;
 	CharacterStateProvider = NewOwner;
 	AnimatorProvider = NewOwner;
 	
@@ -20,34 +21,32 @@ void AWeapon::Pick(AActor* NewOwner)
 		{
 			return;
 		}
-	}
+	}*/
+	
+	UCharacterStateComponent* CharacterStateComponent = NewOwner->FindComponentByClass<UCharacterStateComponent>();
+	USkeletalMeshComponent* Mesh = Cast<ACharacter>(NewOwner)->GetMesh();
+	APawn* NewInstigator = Cast<APawn>(NewOwner);
 
 	Super::Pick(NewOwner);
 	
-	if (CharacterStateProvider)
+	if (CharacterStateComponent)
 	{
-		CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->SetWeaponState(ECharacterWeaponStates::ECWS_EquippedWeapon);
+		CharacterStateComponent->SetWeaponState(ECharacterWeaponStates::ECWS_EquippedWeapon);
 	}
 	
-	if (AnimatorProvider)
+	if (Mesh)
 	{
-		AttachMeshToSocket(AnimatorProvider->GetMeshComponent());
+		AttachMeshToSocket(Mesh);
 	}
 	
-	if (ControllerProvider)
+	if (NewInstigator)
 	{
-		SetInstigator(ControllerProvider->GetEntityController()->GetInstigator());
+		SetInstigator(NewInstigator);
 	}
 	
 	ItemState = EItemState::EIS_Equipped;
 	EnableWeaponState(true);
 	DisableCollision();
-}
-
-void AWeapon::BeginPlay()
-{
-	Super::BeginPlay();
-	
 }
 
 void AWeapon::EnableWeaponState(const bool bEnable) const

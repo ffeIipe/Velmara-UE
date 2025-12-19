@@ -4,10 +4,12 @@
 #include "Engine/GameInstance.h"
 #include "VelmaraGameInstance.generated.h"
 
-class USettingsSaveGame;
 class UPlayerProgressSaveGame;
+class USettingsSaveGame;
 class ACharacter;
 class AEnemy;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSaveDataUpdated);
 
 UCLASS()
 class TESISUE_API UVelmaraGameInstance : public UGameInstance
@@ -91,52 +93,59 @@ public:
 
     UPROPERTY(BlueprintReadOnly, Category = "Settings")
     USettingsSaveGame* CurrentSettings;
-
-    UPROPERTY(BlueprintReadWrite, Category = "SaveLoad|Progress")
-    int32 ActiveSaveSlotIndex;
-
-    UPROPERTY()
-    UPlayerProgressSaveGame* PendingGameDataToLoad;
-
-    UFUNCTION(BlueprintCallable, Category = "SaveLoad|Progress")
+	
+    UFUNCTION(BlueprintCallable, Category = "GameFlow")
     void CreateNewGame(int32 SlotIndex, FString StartLevelName);
 
-    UFUNCTION(BlueprintCallable, Category = "SaveLoad|Progress")
-    bool SavePlayerProgress(int32 SlotIndex, APawn* Pawn);
-
-    UFUNCTION(BlueprintCallable, Category = "SaveLoad|Progress")
-    bool LoadPlayerProgress(int32 SlotIndex);
-
-    void ApplyPendingLoadedDataToWorld();
-
-    UFUNCTION(BlueprintPure, Category = "SaveLoad|Progress")
+    UFUNCTION(BlueprintCallable, Category= "GameFlow")
     bool DoesProgressSaveExist(int32 SlotIndex) const;
+	
+    UFUNCTION(BlueprintCallable, Category = "SaveSystem")
+    void SaveGame();
 
-    UFUNCTION(BlueprintCallable, Category = "SaveLoad|Progress")
+    UFUNCTION(BlueprintCallable, Category = "SaveSystem")
+    void LoadGame(int32 SlotIndex);
+
+	void RestoreLoadedData();
+
+    UFUNCTION(BlueprintCallable, Category = "SaveSystem")
     UPlayerProgressSaveGame* GetSaveGameInfo(int32 SlotIndex) const;
 
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI|Loading")
-    TSubclassOf<UUserWidget> LoadingScreenWidgetClass;
+    FString GetSlotNameByIndex(int32 SlotIndex) const;
 
-    UFUNCTION(BlueprintCallable, Category = "UI|Loading")
-    void ShowLoadingScreen();
+	UPROPERTY(BlueprintReadWrite, Category = "SaveSystem")
+	int32 ActiveSaveSlotIndex;
 
-    UFUNCTION(BlueprintCallable, Category = "UI|Loading")
-    void HideLoadingScreen();
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI|Loading")
+	TSubclassOf<UUserWidget> LoadingScreenWidgetClass;
 
-    UPROPERTY(BlueprintReadOnly, Category = "SaveLoad|Progress")
-    bool bIsLoadingPlayerProgress;
+	UFUNCTION(BlueprintCallable, Category = "UI|Loading")
+	void ShowLoadingScreen();
 
+	UFUNCTION(BlueprintCallable, Category = "UI|Loading")
+	void HideLoadingScreen();
+
+	UPROPERTY(BlueprintAssignable, Category = "SaveSystem")
+	FOnSaveDataUpdated OnSaveDataUpdated;
+	
 private:
     const FString SettingsSlotName = TEXT("GameSettings");
 
     void SetDefaultGameSettings();
 
-    const FString ProgressSaveSlotPrefix = TEXT("PlayerProgressSlot_");
-    const int32 DefaultUserIndex = 0;
-    
-    UPROPERTY()
-    UUserWidget* CurrentLoadingScreenInstance;
+	UPROPERTY()
+    UPlayerProgressSaveGame* PendingSaveData;
+	
+	UPROPERTY(VisibleAnywhere, Category = "Metadata")
+	FString CurrentSlotName;
+	
+	const FString ProgressSaveSlotPrefix = TEXT("PlayerProgressSlot_");
 
-    FString PlayerCharacterGetNameSafe(ACharacter* Char) const;
+	UPROPERTY(VisibleAnywhere, Category = "Metadata")
+	uint32 UserIndex;
+
+	const int32 DefaultUserIndex = 0;
+	
+	UPROPERTY()
+	UUserWidget* CurrentLoadingScreenInstance;
 };

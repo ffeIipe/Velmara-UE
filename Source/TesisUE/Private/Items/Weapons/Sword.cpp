@@ -8,7 +8,7 @@
 #include "NiagaraFunctionLibrary.h"
 
 #include "DamageTypes/MeleeDamage.h" //don't delete pls
-#include "DataAssets/Items/Weapons/SwordDataAsset.h"
+#include "DataAssets/Items/Weapons/SwordData.h"
 #include "Items/Weapons/Commands/ComboCommand.h"
 #include "Subsystems/EffectsManager.h"
 

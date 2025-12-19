@@ -1,14 +1,11 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Interfaces/Pickable.h"
+#include "Interfaces/SaveInterface.h"
 #include "Tutorial/InputPromptTrigger.h"
 #include "Item.generated.h"
 
-class UItemMementoComponent;
-class IAttributeProvider;
 class UBoxComponent;
 class UPromptWidgetComponent;
 
@@ -21,17 +18,20 @@ enum class EItemState : uint8
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnItemUsed, ACharacter*, UserCharacter);
 
 UCLASS()
-class TESISUE_API AItem : public AInputPromptTrigger, public IPickable
+class TESISUE_API AItem : public AInputPromptTrigger, public IPickable, public ISaveInterface
 {
 	GENERATED_BODY()
 
 public:	
 	AItem();
 
+	UPROPERTY(VisibleAnywhere, SaveGame)
+	AActor* OwnerOverrider = nullptr;
+	
 	UPROPERTY(BlueprintAssignable)
 	FOnItemUsed OnUsed;
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, SaveGame)
 	bool bWasUsed = false;
 
 	virtual void BeginPlay() override;
@@ -46,19 +46,18 @@ public:
 	
 	virtual UPrimitiveComponent* GetCollisionComponent();
 
-	/*virtual void ApplySavedState(const struct FInteractedItemSaveData* SavedData);
-	*/
-
-	FName GetUniqueSaveID() const { return UniqueSaveID; }
+	virtual void OnSaveGame_Implementation(FEntitySaveData& OutData) override;
 	
-	UItemMementoComponent* GetItemMementoComponent() const { return ItemMementoComponent; }
+	virtual void OnLoadGame_Implementation(const FEntitySaveData& InData) override;
 
+	virtual FName GetUniqueSaveID_Implementation() override { return UniqueSaveID; };
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FName UniqueSaveID;
+	
 protected:
 	virtual void DisableCollision() override;
 	
-	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Save System")
-	FName UniqueSaveID;
-
 	struct FItemStats
 	{
 		FName Name;
@@ -74,16 +73,11 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Properties")
 	UTexture2D* ItemIcon = nullptr;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Weapon Properties")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item Properties")
 	UStaticMeshComponent* ItemMesh;
 	
 	EItemState ItemState = EItemState::EIS_Hovering;
 	
 	/*UPROPERTY(VisibleAnywhere)
 	UPromptWidgetComponent* PromptWidget;*/
-	
-	TScriptInterface<IAttributeProvider> AttributeProvider;
-
-	UPROPERTY()
-	UItemMementoComponent* ItemMementoComponent;
 };

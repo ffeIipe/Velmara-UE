@@ -5,6 +5,8 @@
 #include "Interfaces/CombatTargetInterface.h"
 #include "TargetingComponent.generated.h"
 
+class AEntity;
+class IWeaponInterface;
 struct FTargetingData;
 class UTimelineComponent;
 class ICharacterMovementProvider;
@@ -37,6 +39,12 @@ public:
     UPROPERTY(BlueprintAssignable)
     FOnHardLockOff OnHardLockOff;
 
+    UFUNCTION()
+    void HandleTargetDeath(AEntity* DeadEntity);
+    
+    UFUNCTION()
+    void HandleWeaponChanged(TScriptInterface<IWeaponInterface> NewWeapon);
+    
     UFUNCTION(BlueprintCallable, Category = "Targeting")
     void ToggleHardLock();
 
@@ -62,13 +70,10 @@ protected:
 
 private:
     UPROPERTY()
-    TScriptInterface<IControllerProvider> ControllerProvider;
+    TObjectPtr<ACharacter> OwnerCharacter;
 
     UPROPERTY()
-    TScriptInterface<ICameraProvider> CameraProvider;
-
-    UPROPERTY()
-    TScriptInterface<ICharacterMovementProvider> CharacterMovementProvider;
+    TObjectPtr<AController> OwnerController;
 
     UPROPERTY()
     TScriptInterface<ICombatTargetInterface> CurrentTarget;

@@ -13,18 +13,32 @@ class UInventory;
 class APlayerController;
 class UInputAction;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWeaponChangedSignature, TScriptInterface<IWeaponInterface>, NewWeapon);
+
+USTRUCT()
+struct FInventoryItemSaveData
+{
+    GENERATED_BODY()
+
+    UPROPERTY(SaveGame)
+    TSubclassOf<class AWeapon> WeaponClass;
+};
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class TESISUE_API UInventoryComponent : public UActorComponent
 {
     GENERATED_BODY()
 
 public:
+    UPROPERTY(BlueprintAssignable, Category = "Inventory | Events")
+    FOnWeaponChangedSignature OnWeaponChanged;
+    
     UInventoryComponent();
 
-    UPROPERTY(VisibleAnywhere, Category = "Inventory", Transient)
+    UPROPERTY(VisibleAnywhere, Category = "Inventory", SaveGame)
     int32 EquippedSlotIndex = -1;
 
-    UPROPERTY(VisibleAnywhere, Category = "Inventory", Transient)
+    UPROPERTY(VisibleAnywhere, Category = "Inventory")
     TScriptInterface<IWeaponInterface> CurrentWeapon;
 
     void InitializeValues(const FInventoryData& InventoryData);
@@ -44,7 +58,7 @@ protected:
     bool bIsInventoryOpen = false;
 
 public:
-    UPROPERTY(EditAnywhere, Category = "Inventory") //transient if it isn't needed to be saved 
+    UPROPERTY(EditAnywhere, Category = "Inventory", Transient)
     TArray<TScriptInterface<IWeaponInterface>> InventorySlots;
 
     UFUNCTION(BlueprintPure, Category = "Inventory")
@@ -82,13 +96,15 @@ public:
 
     TScriptInterface<IWeaponInterface> PerformInteract();
 
+    UPROPERTY(SaveGame)
+    TArray<FInventoryItemSaveData> SavedInventoryData;
+
+    void SaveInventory();
+    void LoadInventory();
+    
 private:
     void InitializeInventoryWidget();
 
-    // UPROPERTY(EditDefaultsOnly, Category = "Inventory")
-    // FName HandSocketName = FName("RightHandSocket");
-    
-    // --- Stats Assigned By Data Asset ---
     int32 MaxSlots;
     float InteractTraceLenght;
     float InteractTargetRadius;

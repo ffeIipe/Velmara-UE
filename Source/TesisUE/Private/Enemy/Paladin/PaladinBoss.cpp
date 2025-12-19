@@ -32,7 +32,7 @@ void APaladinBoss::BeginPlay()
 
 	UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("SpawnPoint"), SpawnPoints);
 
-	GetAttributeComponent()->OnDettachShield.AddDynamic(this, &APaladinBoss::ShieldDetach);
+	GetAttributeComponent()->OnDetachShield.AddDynamic(this, &APaladinBoss::ShieldDetach);
 	
 	if (!BBComponent)
 	{

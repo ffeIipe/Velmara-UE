@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -11,9 +9,7 @@
 class IAnimatorProvider;
 class ICharacterStateProvider;
 class IControllerProvider;
-/**
- * 
- */
+
 UCLASS(Abstract)
 class TESISUE_API AWeapon : public AItem, public IWeaponInterface
 {
@@ -36,14 +32,9 @@ public:
 	virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled) override {}
 	virtual void ClearIgnoreActors() override {}
 
-	virtual FName& GetUniqueSaveID() override { return UniqueSaveID; }
-	void SetUniqueSaveID(const FName Name) { UniqueSaveID = Name; }
-	
 	void EnableWeaponState(bool bEnable) const; //TODO: change this to enable and disable.
-
-protected:
-	virtual void BeginPlay() override;
 	
+protected:
 	UFUNCTION(BlueprintCallable)
 	virtual void AttachMeshToSocket(USceneComponent* InParent) {}
 

@@ -13,6 +13,7 @@
 #include "Interfaces/Weapon/WeaponInterface.h"
 #include "Interfaces/ControllerProvider.h"
 #include "Interfaces/Pickable.h"
+#include "Items/Weapons/Weapon.h"
 #include "Player/CharacterWeaponStates.h"
 #include "SpectralMode/Interfaces/Spectral.h"
 
@@ -48,6 +49,11 @@ void UInventoryComponent::ChangeWeapon(const int32 SlotIndex)
     if (InventorySlots.IsValidIndex(SlotIndex))
     {
         EquipWeaponFromSlot(SlotIndex);
+    }
+
+    if (OnWeaponChanged.IsBound()) 
+    {
+        OnWeaponChanged.Broadcast(CurrentWeapon);
     }
 }
 
@@ -155,6 +161,8 @@ void UInventoryComponent::UnequipCurrentWeapon()
         CurrentWeapon->EnableVisuals();
         CurrentWeapon = nullptr;
         EquippedSlotIndex = -1;
+
+        if (OnWeaponChanged.IsBound()) OnWeaponChanged.Broadcast(nullptr);
     }
     else
     {
@@ -162,6 +170,11 @@ void UInventoryComponent::UnequipCurrentWeapon()
         {
             EquippedSlotIndex = -1;
         }
+    }
+
+    if (OnWeaponChanged.IsBound()) 
+    {
+        OnWeaponChanged.Broadcast(CurrentWeapon);
     }
 }
 
@@ -266,4 +279,82 @@ TScriptInterface<IWeaponInterface> UInventoryComponent::PerformInteract()
         }
     }
     return nullptr;
+}
+
+void UInventoryComponent::SaveInventory()
+{
+    SavedInventoryData.Empty();
+
+    for (const TScriptInterface<IWeaponInterface>& SlotItem : InventorySlots)
+    {
+        if (SlotItem && SlotItem.GetObject())
+        {
+            if (AActor* WeaponActor = Cast<AActor>(SlotItem.GetObject()))
+            {
+                if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, WeaponActor->GetName());
+                    
+                FInventoryItemSaveData NewData;
+                NewData.WeaponClass = Cast<AWeapon>(WeaponActor)->GetClass();
+                
+                // NewData.AmmoCount = SlotItem->GetCurrentAmmo();
+
+                SavedInventoryData.Add(NewData);
+            }
+        }
+        else
+        {
+            FInventoryItemSaveData EmptyData;
+            SavedInventoryData.Add(EmptyData);
+        }
+    }
+}
+
+void UInventoryComponent::LoadInventory()
+{
+    InventorySlots.Empty();
+    InventorySlots.Init(nullptr, MaxSlots);
+
+    if (SavedInventoryData.IsEmpty())
+    {
+        if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Data is empty.");
+    }
+    
+    for (int32 i = 0; i < SavedInventoryData.Num(); i++)
+    {
+        const FInventoryItemSaveData& Data = SavedInventoryData[i];
+
+        if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::White, Data.WeaponClass->GetName());
+        
+        if (Data.WeaponClass)
+        {
+            FActorSpawnParameters SpawnParams;
+            SpawnParams.Owner = GetOwner();
+            SpawnParams.Instigator = Cast<APawn>(GetOwner());
+            SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+            if (AWeapon* NewWeapon = GetWorld()->SpawnActor<AWeapon>(Data.WeaponClass, GetOwner()->GetActorTransform(), SpawnParams))
+            {
+                // NewWeapon->SetAmmo(Data.AmmoCount);
+                
+                if (InventorySlots.IsValidIndex(i))
+                {
+                    InventorySlots[i] = NewWeapon;
+                    
+                    NewWeapon->Pick(GetOwner());
+
+                    if (i == EquippedSlotIndex)
+                    {
+                        CurrentWeapon = NewWeapon;
+                        NewWeapon->EnableVisuals();
+                    }
+                    else
+                    {
+                        NewWeapon->DisableVisuals();
+                    }
+                }
+            }
+        }
+    }
+
+    UpdateInventoryUI();
 }

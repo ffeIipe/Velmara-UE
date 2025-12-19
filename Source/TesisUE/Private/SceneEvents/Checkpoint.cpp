@@ -4,6 +4,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "SceneEvents/VelmaraGameInstance.h"
 
+class AVelmaraGameMode;
+
 void ACheckpoint::OnSphereBeginOverlap(
     UPrimitiveComponent* OverlappedComponent,
     AActor* OtherActor,
@@ -12,7 +14,7 @@ void ACheckpoint::OnSphereBeginOverlap(
     bool bFromSweep,
     const FHitResult& SweepResult)
 {
-    if (AEntity* OverlappingEntity = Cast<AEntity>(OtherActor))
+    if (const AEntity* OverlappingEntity = Cast<AEntity>(OtherActor))
     {
         if (OverlappingEntity->GetController() == UGameplayStatics::GetPlayerController(GetWorld(), 0))
         {
@@ -24,13 +26,11 @@ void ACheckpoint::OnSphereBeginOverlap(
                 OverlappingEntity->GetPossessionComponent()->GetPossessor()->SetActorTransform(OverlappingEntity->GetActorTransform());
             }
 
-            if (UVelmaraGameInstance* GameInst = Cast<UVelmaraGameInstance>(GetGameInstance()))
+            if (UVelmaraGameInstance* VelmaraGameInstance = Cast<UVelmaraGameInstance>(GetWorld()->GetGameInstance()))
             {
-                if (GameInst->SavePlayerProgress(GameInst->ActiveSaveSlotIndex, OverlappingEntity))
-                {
-                    if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Emerald, FString("Player progress saved via GameInstance."));
-                    UE_LOG(LogTemp, Log, TEXT("ACheckpoint: Player progress saved via GameInstance. Slot: %d"), GameInst->ActiveSaveSlotIndex);
-                }
+                VelmaraGameInstance->SaveGame();
+                if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Emerald, FString("Player progress saved via VelmaraGameMode."));
+
             }
             else if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, FString("Failed to save via VelmaraGameInstance. The current GameInstance is: " + GetGameInstance()->GetName()));
 

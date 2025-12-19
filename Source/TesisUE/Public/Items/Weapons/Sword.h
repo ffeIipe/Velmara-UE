@@ -10,7 +10,7 @@
 #include "Player/CharacterWeaponStates.h"
 #include "Sword.generated.h"
 
-class USwordDataAsset;
+class USwordData;
 class UCommand;
 class UMeleeDamage;
 class UBoxComponent;
@@ -67,7 +67,7 @@ protected:
     
 private:
     UPROPERTY(EditAnywhere)
-    USwordDataAsset* SwordDataAsset;
+    USwordData* SwordDataAsset;
     
     UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
     UBoxComponent* WeaponDamageBox;

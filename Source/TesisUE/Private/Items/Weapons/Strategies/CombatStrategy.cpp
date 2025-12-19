@@ -1,5 +1,5 @@
 #include "Items/Weapons/Strategies/CombatStrategy.h"
-#include "DataAssets/CombatStrategyDataAsset.h"
+#include "DataAssets/CombatStrategyData.h"
 #include "Items/Weapons/Commands/Command.h"
 
 

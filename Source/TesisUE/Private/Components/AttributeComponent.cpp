@@ -13,18 +13,25 @@ UAttributeComponent::UAttributeComponent()
 
 void UAttributeComponent::InitializeValues(const FAttributeData& AttributeData)
 {
-	/*if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE,3.f,FColor::White,TEXT("Attributes assigned by Data Asset"));*/
 
 	Health = AttributeData.MaxHealth;
-
-	/*if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE,3.f,FColor::White, FString::Printf(TEXT("Health: %f"), Health));*/
 	MaxHealth = AttributeData.MaxHealth;
-	CurrentShieldHealth = AttributeData.MaxShieldHealth;
-	MaxShieldHealth = AttributeData.MaxShieldHealth;
+	Shield = AttributeData.MaxShieldHealth;
+	MaxShield = AttributeData.MaxShieldHealth;
 	MaxEnergy = AttributeData.MaxEnergy;
 	Energy = AttributeData.Energy;
 	DrainTickValue = AttributeData.DrainTickValue;
 	RegenerateTickValue = AttributeData.RegenerateTickValue;
+}
+
+bool UAttributeComponent::RequiresEnergyForTag(FGameplayTag GameplayTag)
+{
+	return false;
+}
+
+void UAttributeComponent::ConsumeEnergyForTag(FGameplayTag GameplayTag)
+{
+	
 }
 
 void UAttributeComponent::ReceiveDamage(float Damage)
@@ -32,7 +39,6 @@ void UAttributeComponent::ReceiveDamage(float Damage)
 	if (!IsAlive()) return;
 
 	Health = FMath::Clamp(Health - Damage, 0.f, MaxHealth);
-	//if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Magenta, TEXT("Damage: " + FString::SanitizeFloat(Damage)));
 	
 	if (!IsAlive() && OnEntityDead.IsBound())
 	{
@@ -84,9 +90,9 @@ void UAttributeComponent::DetachShield()
 {
 	if (ShieldMeshComponent && !bIsDisarmed)
 	{
-		if (OnDettachShield.IsBound())
+		if (OnDetachShield.IsBound())
 		{
-			OnDettachShield.Broadcast();
+			OnDetachShield.Broadcast();
 		}
 
 		ShieldMeshComponent->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
@@ -99,7 +105,7 @@ void UAttributeComponent::DetachShield()
 
 bool UAttributeComponent::IsShielded()
 {
-	if (CurrentShieldHealth > .01f)
+	if (Shield > .01f)
 	{
 		bIsDisarmed = false;
 		return true;
@@ -111,7 +117,7 @@ bool UAttributeComponent::IsShielded()
 void UAttributeComponent::ResetAttributes()
 {
 	Health = MaxHealth;
-	CurrentShieldHealth = MaxShieldHealth;
+	Shield = MaxShield;
 	Energy = 5.f;
 }
 
@@ -181,9 +187,9 @@ void UAttributeComponent::DecreaseEnergyBy(float EnergyToDecrease)
 
 void UAttributeComponent::ReceiveShieldDamage(float Damage)
 {
-	CurrentShieldHealth -= Damage;
+	Shield -= Damage;
 
-	if (CurrentShieldHealth <= 0.f)
+	if (Shield <= 0.f)
 	{
 		DetachShield();
 	}

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DataAssets/CombatStrategyDataAsset.h"
+#include "DataAssets/CombatStrategyData.h"
 #include "Entities/Entity.h"
 #include "PlayerMain.generated.h"
 
@@ -68,7 +68,7 @@ private:
 	
 	void LoadLastCheckpoint() const;
 	
-	void ApplyModeConfig(const FCharacterModeConfig& Config);
+	void ApplyModeConfig(const ECharacterModeStates& Mode);
 
 	UFUNCTION()
 	void ApplyHumanMode();

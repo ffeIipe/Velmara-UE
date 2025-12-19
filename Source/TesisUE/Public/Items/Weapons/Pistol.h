@@ -7,7 +7,7 @@
 #include "Interfaces/Weapon/RangedWeapon.h"
 #include "Pistol.generated.h"
 
-class UPistolDataAsset;
+class UPistolData;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnFire);
 
@@ -57,5 +57,5 @@ private:
 	FTimerHandle TimerHandle_BetweenShots;
 	
 	UPROPERTY(EditAnywhere, Category = "Weapon Properties")
-	UPistolDataAsset* PistolData;
+	UPistolData* PistolData;
 };

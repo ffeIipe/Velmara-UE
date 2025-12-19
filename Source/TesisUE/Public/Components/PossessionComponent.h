@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "Components/ActorComponent.h"
 #include "Decoders/ADPCMAudioInfo.h"
 #include "Interfaces/CombatTargetInterface.h"
@@ -8,7 +9,6 @@
 
 class IWeaponProvider;
 class IAnimatorProvider;
-class IAttributeProvider;
 class ICharacterStateProvider;
 class IOwnerUtilsInterface;
 struct FPossessionData;
@@ -21,6 +21,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPossessionReleased);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPossessed);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPossessorEjected);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPossessorExecutedMeAndEjected);
+DECLARE_DELEGATE_RetVal_OneParam(bool, FCanPerformActionSignature, FGameplayTag);
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class TESISUE_API UPossessionComponent : public UActorComponent
@@ -82,6 +83,8 @@ public:
     UPROPERTY(BlueprintAssignable)
     FOnPossessorExecutedMeAndEjected OnPossessorExecutedMeAndEjected;
 
+    FCanPerformActionSignature OnCanPerformAction;
+
 protected:
     virtual void BeginPlay() override;
 
@@ -92,7 +95,6 @@ private:
     UPROPERTY()
     TScriptInterface<IOwnerUtilsInterface> OwnerUtils;
     TScriptInterface<ICharacterStateProvider> CharacterStateProvider;
-    TScriptInterface<IAttributeProvider> AttributeProvider;
     TScriptInterface<IAnimatorProvider> AnimatorProvider;
     TScriptInterface<IWeaponProvider> WeaponProvider;
 

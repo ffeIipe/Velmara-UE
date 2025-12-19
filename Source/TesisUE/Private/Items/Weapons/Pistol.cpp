@@ -4,7 +4,7 @@
 
 #include "NiagaraFunctionLibrary.h"
 #include "DamageTypes/PistolDamage.h"
-#include "DataAssets/Items/Weapons/PistolDataAsset.h"
+#include "DataAssets/Items/Weapons/PistolData.h"
 #include "Engine/DamageEvents.h"
 #include "Entities/Entity.h"
 #include "Interfaces/HitInterface.h"
@@ -79,18 +79,16 @@ void APistol::PlayEffects()
 
 void APistol::Fire()
 {
-	if (!AttributeProvider->RequiresEnergy(PistolData->Stats.EnergyToDecrease)) return;
+	//if (!AttributeProvider->RequiresEnergy(PistolData->Stats.EnergyToDecrease)) return;
 
 	if (CurrentAmmo >= 1 && !bIsReloading && bIsFireEnabled)
 	{
-		/*if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, "Shooting");*/
 		bIsFireEnabled = false;
 		CurrentAmmo--;
 		SetTimer(TimerHandle_BetweenShots, PistolData->Stats.FireEnableTime, &APistol::EnableFire);
 
 		if (OnFire.IsBound()) OnFire.Broadcast();
 
-		AttributeProvider->IncreaseEnergy(-PistolData->Stats.EnergyToDecrease);
 		AnimatorProvider->Execute_PlayAnimMontage(GetOwner(), PistolData->Montages.PrimaryFireMontage, 1.f, "Default");
 		
 		FVector TraceStart;
@@ -146,7 +144,6 @@ void APistol::Reload()
 {
 	if (bIsReloading || CurrentAmmo == PistolData->Stats.MaxAmmo) return;
 
-	/*if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, "Reloading");*/
 	bIsReloading = true;
 	
 	AnimatorProvider->Execute_PlayAnimMontage(GetOwner(), PistolData->Montages.ReloadMontage, 1.f, "Default");

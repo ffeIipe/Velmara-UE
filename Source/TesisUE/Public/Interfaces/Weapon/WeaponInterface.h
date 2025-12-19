@@ -48,7 +48,4 @@ public:
 	virtual void DisableVisuals() = 0;
 	virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled) = 0;
 	virtual void ClearIgnoreActors() = 0;
-	virtual FName& GetUniqueSaveID() = 0;
-	
-	
 };

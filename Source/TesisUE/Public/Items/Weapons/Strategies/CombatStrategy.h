@@ -14,7 +14,7 @@ enum EInputCommandType: uint8
 	ECT_None			UMETA(DisplayName = "None"),
 	ECT_PrimaryAttack	UMETA(DisplayName = "PrimaryAttack"),
 	ECT_SecondaryAttack UMETA(DisplayName = "SecondaryAttack"),
-	ECT_LaunchAttack UMETA(DisplayName = "LaunchAttack"),
+	ECT_LaunchAttack	UMETA(DisplayName = "LaunchAttack"),
 	ECT_Ability			UMETA(DisplayName = "Ability"),
 	ECT_Dodge			UMETA(DisplayName = "Dodge")
 };

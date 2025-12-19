@@ -41,10 +41,4 @@ public:
 
     UPROPERTY(VisibleAnywhere, Category = "Settings|Graphics")
     float FrameRateLimit = 120;
-    
-    UPROPERTY(VisibleAnywhere, Category = "Metadata")
-    FString SaveSlotName;
-
-    UPROPERTY(VisibleAnywhere, Category = "Metadata")
-    uint32 UserIndex;
 };

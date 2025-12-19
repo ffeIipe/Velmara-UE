@@ -6,10 +6,9 @@
 #include "Camera/CameraComponent.h"
 #include "Components/BufferComponent.h"
 #include "Components/FieldCreationComponent.h"
-#include "Components/MementoComponent.h"
 #include "DamageTypes/PistolDamage.h"
 #include "DamageTypes/BaseDamageType.h"
-#include "DataAssets/CombatStrategyDataAsset.h"
+#include "DataAssets/CombatStrategyData.h"
 #include "DataAssets/EntityData.h"
 #include "DataAssets/InputData.h"
 #include "DataAssets/MontagesData.h"
@@ -20,6 +19,7 @@
 #include "Items/Weapons/Sword.h"
 #include "Items/Weapons/Strategies/CombatStrategy.h"
 #include "Kismet/GameplayStatics.h"
+#include "Serialization/ObjectAndNameAsStringProxyArchive.h"
 
 AEntity::AEntity()
 {
@@ -41,8 +41,6 @@ AEntity::AEntity()
 
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("Inventory"));
 
-	MementoComponent = CreateDefaultSubobject<UMementoComponent>(TEXT("Memento"));
-
 	PossessionComponent = CreateDefaultSubobject<UPossessionComponent>(TEXT("Possession"));
 
 	TargetingComponent = CreateDefaultSubobject<UTargetingComponent>(TEXT("Targeting"));
@@ -57,23 +55,45 @@ AEntity::AEntity()
 
 	BufferComponent = CreateDefaultSubobject<UBufferComponent>(TEXT("Buffer"));
 	
-	ExtraMovementComponent->OnDodgeStarted.BindUFunction(TargetingComponent, "RemoveCombatTarget");
-	ExtraMovementComponent->OnDodgeSaved.AddDynamic(this, &AEntity::Input_Dodge);
-
-	CombatComponent->OnResetState.AddDynamic(ExtraMovementComponent, &UExtraMovementComponent::ResetDodge);
-	CombatComponent->OnResetState.AddDynamic(TargetingComponent, &UTargetingComponent::RemoveCombatTarget);
-	CombatComponent->OnSaveHeavyAttack.AddDynamic(this, &AEntity::Input_SecondaryAttack);
-	CombatComponent->OnLightAttack.AddDynamic(TargetingComponent, &UTargetingComponent::PerformSoftLock);
-	CombatComponent->OnHeavyAttack.AddDynamic(TargetingComponent, &UTargetingComponent::PerformSoftLock);
-
-	GetAttributeComponent()->OnOutOfEnergy.AddDynamic(GetPossessionComponent(), &UPossessionComponent::TryReleasePossession);
-
-	GetPossessionComponent()->OnPossessed.AddDynamic(AttributeComponent, &UAttributeComponent::StartDecreaseEnergy);
-
 	GetSpringArmComponent()->bUsePawnControlRotation = true;
+}
 
-	TargetingComponent->OnHardLockOn.AddDynamic(this, &AEntity::EnableControllerRotationYaw);
-	TargetingComponent->OnHardLockOff.AddDynamic(this, &AEntity::DisableControllerRotationYaw);
+void AEntity::OnSaveGame_Implementation(FEntitySaveData& OutData)
+{
+	if (InventoryComponent)
+	{
+		InventoryComponent->SaveInventory();
+	}
+
+	FMemoryWriter MemWriter(OutData.ByteData);
+	FObjectAndNameAsStringProxyArchive Ar(MemWriter, true);
+	Ar.ArIsSaveGame = true;
+
+	this->Serialize(Ar);
+
+	if (InventoryComponent)
+	{
+		InventoryComponent->Serialize(Ar);
+	}
+}
+
+void AEntity::OnLoadGame_Implementation(const FEntitySaveData& InData)
+{
+	FMemoryReader MemReader(InData.ByteData);
+	FObjectAndNameAsStringProxyArchive Ar(MemReader, true);
+	Ar.ArIsSaveGame = true;
+
+	this->Serialize(Ar);
+
+	if (InventoryComponent)
+	{
+		InventoryComponent->Serialize(Ar);
+	}
+
+	if (InventoryComponent)
+	{
+		InventoryComponent->LoadInventory();
+	}
 }
 
 void AEntity::GetHit(const TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint,
@@ -181,33 +201,20 @@ void AEntity::ChangeWeaponAnimationState()
 
 void AEntity::SetCombatStrategy(const ECharacterModeStates Mode)
 {
-	switch (Mode)
+	if (const TObjectPtr<UCombatStrategy>* FoundStrategy = StrategyInstances.Find(Mode))
 	{
-	case ECharacterModeStates::ECMS_Human:
-		if (HumanStrategyInstance)
-			CurrentStrategy = HumanStrategyInstance;
-		
-		break;
-		
-	case ECharacterModeStates::ECMS_Spectral:
-		if (SpectralStrategyInstance)
-			CurrentStrategy = SpectralStrategyInstance;
-		
-		break;
-		
-	default:
-		if (HumanStrategyInstance)
-			CurrentStrategy = HumanStrategyInstance;
-		
-		break;
+		CurrentStrategy = *FoundStrategy;
+        
+		if (CurrentStrategy)
+		{
+			CurrentStrategy->InitializeStrategy();
+			CurrentStrategy->SetCurrentValues(this); 
+		}
 	}
-	
-	if (CurrentStrategy)
+	else
 	{
-		CurrentStrategy->InitializeStrategy();
-		//CurrentStrategy->SetCurrentValues(this);
+		UE_LOG(LogTemp, Warning, TEXT("AEntity::SetCombatStrategy: Strategy not found %d in mode %s"), (int32)Mode, *GetName());
 	}
-	else if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, "MISSING! Strategy is not valid! Stop the game or it will crash.");
 }
 
 void AEntity::HitReactJumpToSection(const FName Section)
@@ -259,17 +266,63 @@ void AEntity::SetWeaponCollisionEnabled(const ECollisionEnabled::Type CollisionE
 void AEntity::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	if (!HumanStrategyInstance)
+
+
+	if (ExtraMovementComponent)
 	{
-		if (EntityData->FirstModeStrategyClass) HumanStrategyInstance = NewObject<UCombatStrategy>(this, EntityData->FirstModeStrategyClass);
-		else if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "MISSING! Human class from: " + GetName());
+		ExtraMovementComponent->OnDodgeStarted.BindUFunction(TargetingComponent, "RemoveCombatTarget");
+		ExtraMovementComponent->OnDodgeSaved.AddDynamic(this, &AEntity::Input_Dodge);
 	}
 
-	if (!SpectralStrategyInstance)
+	if (CombatComponent)
 	{
-		if (EntityData->SecondModeStrategyClass) SpectralStrategyInstance = NewObject<UCombatStrategy>(this, EntityData->SecondModeStrategyClass);
-		else if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "MISSING! Spectral class from: " + GetName());
+		CombatComponent->OnResetState.AddDynamic(ExtraMovementComponent, &UExtraMovementComponent::ResetDodge);
+		CombatComponent->OnResetState.AddDynamic(TargetingComponent, &UTargetingComponent::RemoveCombatTarget);
+		CombatComponent->OnSaveHeavyAttack.AddDynamic(this, &AEntity::Input_SecondaryAttack);
+		CombatComponent->OnLightAttack.AddDynamic(TargetingComponent, &UTargetingComponent::PerformSoftLock);
+		CombatComponent->OnHeavyAttack.AddDynamic(TargetingComponent, &UTargetingComponent::PerformSoftLock);
+	}
+
+	if (AttributeComponent)
+	{
+		AttributeComponent->OnOutOfEnergy.AddDynamic(GetPossessionComponent(), &UPossessionComponent::TryReleasePossession);
+	}
+
+	if (PossessionComponent)
+	{
+		PossessionComponent->OnPossessed.AddDynamic(AttributeComponent, &UAttributeComponent::StartDecreaseEnergy);
+	}
+	
+	if (InventoryComponent)
+	{
+		InventoryComponent->OnWeaponChanged.AddDynamic(CombatComponent, &UCombatComponent::HandleWeaponChanged);
+		InventoryComponent->OnWeaponChanged.AddDynamic(TargetingComponent, &UTargetingComponent::HandleWeaponChanged);
+	}
+	
+	if (CombatComponent && AttributeComponent)
+	{
+		CombatComponent->CanPerformActionDelegate.BindUObject(AttributeComponent, &UAttributeComponent::RequiresEnergyForTag);
+		CombatComponent->OnActionPerformed.AddUObject(AttributeComponent, &UAttributeComponent::ConsumeEnergyForTag);
+	}
+
+	if (TargetingComponent)
+	{
+		TargetingComponent->OnHardLockOn.AddDynamic(this, &AEntity::EnableControllerRotationYaw);
+		TargetingComponent->OnHardLockOff.AddDynamic(this, &AEntity::DisableControllerRotationYaw);
+	}
+	
+	if (EntityData)
+	{
+		for (const auto& Entry : EntityData->ModeStrategies)
+		{
+			ECharacterModeStates Mode = Entry.Key;
+
+			if (TSubclassOf<UCombatStrategy> StrategyClass = Entry.Value)
+			{
+				UCombatStrategy* NewStrategy = NewObject<UCombatStrategy>(this, StrategyClass);
+				StrategyInstances.Add(Mode, NewStrategy);
+			}
+		}
 	}
 
 	SetCombatStrategy(ECharacterModeStates::ECMS_Human);
@@ -482,11 +535,7 @@ void AEntity::Input_ToggleHardLock()
 
 void AEntity::Input_Interact(const FInputActionValue& InputActionValue)
 {
-	if (const TScriptInterface<IWeaponInterface> WeaponReached = GetInventoryComponent()->PerformInteract())
-	{
-		WeaponReached->OnWeaponUsed.AddDynamic(CombatComponent, &UCombatComponent::StartAttackBufferEvent);
-		WeaponReached->OnWeaponUsed.AddDynamic(GetTargetingComponent(), &UTargetingComponent::PerformSoftLock);
-	}
+	GetInventoryComponent()->PerformInteract();
 }
 
 void AEntity::Input_ToggleWeapon()

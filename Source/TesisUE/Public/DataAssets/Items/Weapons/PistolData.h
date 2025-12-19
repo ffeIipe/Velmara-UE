@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
-#include "PistolDataAsset.generated.h"
+#include "PistolData.generated.h"
 
 /**
  * 
@@ -72,7 +72,7 @@ struct FPistolProperties
 };
 
 UCLASS(BlueprintType)
-class TESISUE_API UPistolDataAsset : public UDataAsset
+class TESISUE_API UPistolData : public UDataAsset
 {
     GENERATED_BODY()
 

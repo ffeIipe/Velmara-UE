@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
 /*#include "Player/CharacterWeaponStates.h"*/
-#include "SwordDataAsset.generated.h"
+#include "SwordData.generated.h"
 
 enum class EWeaponCommandType : uint8;
 enum class EHitStopPreset : uint8;
@@ -54,7 +54,7 @@ struct FSwordProperties
 };
 
 UCLASS(BlueprintType)
-class TESISUE_API USwordDataAsset : public UDataAsset
+class TESISUE_API USwordData : public UDataAsset
 {
 	GENERATED_BODY()
 

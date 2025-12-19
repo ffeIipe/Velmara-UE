@@ -4,6 +4,7 @@
 #include "Engine/DataAsset.h"
 #include "EntityData.generated.h"
 
+enum class ECharacterModeStates : uint8;
 class UInputAction;
 class UNiagaraSystem;
 class UCombatStrategy;
@@ -198,19 +199,8 @@ public:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EntityData")
     FSpringArmData SpringArmData;
 
-    /**
-     This class will take part of the primary behavior of the entity,
-     besides it contains the Command classes that, in fact, are their attacks 
-    **/
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Strategy")
-    TSubclassOf<UCombatStrategy> FirstModeStrategyClass;
-
-    /**
-    This class will take part of the secondary behavior of the entity,
-     besides it contains the Command classes that, in fact, are their attacks 
-    **/
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Strategy")
-    TSubclassOf<UCombatStrategy> SecondModeStrategyClass;
+    TMap<ECharacterModeStates, TSubclassOf<UCombatStrategy>> ModeStrategies;
 
     /**
       This property is optional, so if you are filling these stats and do not

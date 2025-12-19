@@ -2,8 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/SaveGame.h"
-#include "Components/MementoComponent.h"
-#include "Components/Items/ItemMementoComponent.h"
+#include "Interfaces/SaveInterface.h"
 #include "PlayerProgressSaveGame.generated.h"
 
 class AItem;
@@ -19,12 +18,6 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SaveGameData|Level")
     FString CurrentLevelName;
 
-    UPROPERTY(VisibleAnywhere, Category = "SaveGameData|Player")
-    TArray<FEntityMementoState> EntitiesStates;
-    
-    UPROPERTY(VisibleAnywhere, Category = "SaveGameData|InteractedItems")
-    TArray<FItemMementoState> ItemsStates;
-
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SaveGameData|Metadata")
     FDateTime Timestamp;
 
@@ -33,4 +26,7 @@ public:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SaveGameData|Metadata")
     FString SaveSlotUserLabel;
+
+    UPROPERTY()
+    TMap<FName, FEntitySaveData> SavedActors;
 };

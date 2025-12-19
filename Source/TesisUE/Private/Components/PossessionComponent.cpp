@@ -4,7 +4,6 @@
 #include "DataAssets/EntityData.h"
 #include "Entities/Entity.h"
 #include "Interfaces/AnimatorProvider.h"
-#include "Interfaces/AttributeProvider.h"
 #include "Interfaces/Weapon/WeaponInterface.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
@@ -25,7 +24,6 @@ void UPossessionComponent::BeginPlay()
 
     OwnerUtils = GetOwner();
     CharacterStateProvider = GetOwner();
-    AttributeProvider = GetOwner();
     AnimatorProvider = GetOwner();
     WeaponProvider = GetOwner();
     
@@ -38,7 +36,7 @@ void UPossessionComponent::AttemptPossession(AEntity* Victim)
 {
     if (!IsPossessing() || CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->IsModeEqualToAny({ECharacterModeStates::ECMS_Spectral}))
     {
-        if (AttributeProvider->RequiresEnergy(10.f))
+        //if (OnCanPerformAction.ExecuteIfBound())
         {
             if (!Victim) return;
 
@@ -120,7 +118,7 @@ void UPossessionComponent::OnPossessionReceived(AEntity* NewPossessor)
     PossessedByEntity = NewPossessor;
 
     const float EnergyFromPossessor = NewPossessor->GetAttributeComponent()->GetEnergy();
-    AttributeProvider->SetEnergy(EnergyFromPossessor);
+    //AttributeProvider->SetEnergy(EnergyFromPossessor);
 }
 
 void UPossessionComponent::ReleasingPossession()
@@ -138,7 +136,7 @@ void UPossessionComponent::EjectAndExecute()
     {
         if (OnPossessorExecutedMeAndEjected.IsBound()) OnPossessorExecutedMeAndEjected.Broadcast();
 
-        AttributeProvider->IncreaseHealth(20.f);
+        //AttributeProvider->IncreaseHealth(20.f);
         
         PossessedByEntity->GetAttributeComponent()->SetEnergy(
             PossessedByEntity->GetAttributeComponent()->GetEnergy() - ReleaseAndExecuteEnergyTax);

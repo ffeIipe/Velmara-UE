@@ -51,73 +51,71 @@ void ASunDamage::Tick(const float DeltaTime)
 	const TArray<AActor*> IgnoreActors;
 	FHitResult Hit;
 
-	//SunLocation = FVector(PlayerActor->GetActorLocation().X, PlayerActor->GetActorLocation().Y, SunLocation.Z);
-	
-	const bool bIsWallHit = UKismetSystemLibrary::LineTraceSingle(
-		GetWorld(),
-		SunLocation,
-		PlayerActor->GetActorLocation(),
-		UEngineTypes::ConvertToTraceType(WallCollisionChannel),
-		false,
-		IgnoreActors,
-		DrawDebugType,
-		Hit,
-		true
-		) &&
-			UKismetSystemLibrary::LineTraceSingle(
-			GetWorld(),
-			SunLocation,
-			PlayerActor->GetActorLocation() + FVector(0.0f, 0.0f, 80.0f),
-			UEngineTypes::ConvertToTraceType(WallCollisionChannel),
-			false,
-			IgnoreActors,
-			DrawDebugType,
-			Hit,
-			true
-			) &&
-				UKismetSystemLibrary::LineTraceSingle(
-		 GetWorld(),
-		SunLocation,
-		PlayerActor->GetActorLocation()+ FVector(0.0f, 0.0f, -80.0f),
-		UEngineTypes::ConvertToTraceType(WallCollisionChannel),
-		false,
-		IgnoreActors,
-		DrawDebugType,
-		Hit,
-		true
-		);
-	
-	if (!bIsWallHit)
-	{
-		TimeOnTarget += DamageInterval;
-
-		if (DamageCurve && MinDamage < MaxDamage)
-		{
-			Damage = MaxDamage * DamageCurve->GetFloatValue(TimeOnTarget);
-		}
-		
-		UGameplayStatics::ApplyDamage(
-			PlayerActor,
-			Damage,
-			nullptr,
-			this,
-			UEnvironmentalDamage::StaticClass()
-			);
-		
-		const FDamageEvent DamageEvent(UEnvironmentalDamage::StaticClass());
-		if (PlayerHittable)
-		{
-			PlayerHittable->GetHit(
-				this,
-				Hit.ImpactPoint,
-				DamageEvent,
-				MaxDamage
-				);
-		}
-	}
-	else
-	{
-		TimeOnTarget = 0.f;
-		Damage = MinDamage;
-	}
+	//const bool bIsWallHit = UKismetSystemLibrary::LineTraceSingle(
+	//	GetWorld(),
+	//	SunLocation,
+	//	PlayerActor->GetActorLocation(),
+	//	UEngineTypes::ConvertToTraceType(WallCollisionChannel),
+	//	false,
+	//	IgnoreActors,
+	//	DrawDebugType,
+	//	Hit,
+	//	true
+	//	) &&
+	//		UKismetSystemLibrary::LineTraceSingle(
+	//		GetWorld(),
+	//		SunLocation,
+	//		PlayerActor->GetActorLocation() + FVector(0.0f, 0.0f, 80.0f),
+	//		UEngineTypes::ConvertToTraceType(WallCollisionChannel),
+	//		false,
+	//		IgnoreActors,
+	//		DrawDebugType,
+	//		Hit,
+	//		true
+	//		) &&
+	//			UKismetSystemLibrary::LineTraceSingle(
+	//	 GetWorld(),
+	//	SunLocation,
+	//	PlayerActor->GetActorLocation()+ FVector(0.0f, 0.0f, -80.0f),
+	//	UEngineTypes::ConvertToTraceType(WallCollisionChannel),
+	//	false,
+	//	IgnoreActors,
+	//	DrawDebugType,
+	//	Hit,
+	//	true
+	//	);
+	//
+	//if (!bIsWallHit)
+	//{
+	//	TimeOnTarget += DamageInterval;
+//
+	//	if (DamageCurve && MinDamage < MaxDamage)
+	//	{
+	//		Damage = MaxDamage * DamageCurve->GetFloatValue(TimeOnTarget);
+	//	}
+	//	
+	//	UGameplayStatics::ApplyDamage(
+	//		PlayerActor,
+	//		Damage,
+	//		nullptr,
+	//		this,
+	//		UEnvironmentalDamage::StaticClass()
+	//		);
+	//	
+	//	const FDamageEvent DamageEvent(UEnvironmentalDamage::StaticClass());
+	//	if (PlayerHittable)
+	//	{
+	//		PlayerHittable->GetHit(
+	//			this,
+	//			Hit.ImpactPoint,
+	//			DamageEvent,
+	//			MaxDamage
+	//			);
+	//	}
+	//}
+	//else
+	//{
+	//	TimeOnTarget = 0.f;
+	//	Damage = MinDamage;
+	//}
 }

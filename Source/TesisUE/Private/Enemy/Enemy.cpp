@@ -22,7 +22,7 @@
 #include "Perception/AIPerceptionComponent.h"  
 #include "Player/PlayerHeroController.h"
 #include "Player/PlayerMain.h"
-#include "SceneEvents/VelmaraGameModeBase.h"
+#include "SceneEvents/VelmaraGameMode.h"
 #include "SceneEvents/VelmaraGameStateBase.h"
 #include "Subsystems/EffectsManager.h"
 #include "Subsystems/EnemyPoolManager.h"
@@ -76,9 +76,7 @@ AEnemy::AEnemy()
 	CombatComponent->OnResetState.AddDynamic(this, &AEnemy::ReturnAttackTokenToTarget);
 
 	GetAttributeComponent()->OnEntityDead.AddDynamic(this, &AEnemy::PerformDead);
-	GetAttributeComponent()->OnDettachShield.AddDynamic(this, &AEnemy::NotifyIsNotShieldedToBlackboard);
-
-	MementoComponent->bShouldSaveInventory = false;
+	GetAttributeComponent()->OnDetachShield.AddDynamic(this, &AEnemy::NotifyIsNotShieldedToBlackboard);
 }
 
 void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
@@ -110,7 +108,7 @@ void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 	
 	CharacterStateComponent->SetAction(ECharacterActionsStates::ECAS_Nothing);
 
-	if (AVelmaraGameModeBase* NewGameMode = Cast<AVelmaraGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
+	if (AVelmaraGameMode* NewGameMode = Cast<AVelmaraGameMode>(UGameplayStatics::GetGameMode(GetWorld())))
 	{
 		NewGameMode->RegisterEnemy(this);
 	}
@@ -172,8 +170,6 @@ void AEnemy::Die(UAnimMontage* DeathAnim, const FName Section)
 
 	DissolveTimeline->PlayFromStart();
 
-	MementoComponent->CaptureOwnerState();
-	
 	//disable 'F' widget
 	if (PromptWidgetComponent && PromptWidgetComponent->GetWidget())
 	{
@@ -260,7 +256,7 @@ void AEnemy::BeginPlay()
 		DissolveTimeline->AddInterpFloat(DissolveCurve, ProgressFunction);
 	}
 
-	if (AVelmaraGameModeBase* NewGameMode = Cast<AVelmaraGameModeBase>(UGameplayStatics::GetGameMode(GetWorld())))
+	if (AVelmaraGameMode* NewGameMode = Cast<AVelmaraGameMode>(UGameplayStatics::GetGameMode(GetWorld())))
 	{
 		NewGameMode->RegisterEnemy(this);
 	}

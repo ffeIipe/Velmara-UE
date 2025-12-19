@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
-#include "CombatStrategyDataAsset.generated.h"
+#include "CombatStrategyData.generated.h"
 
 /**
  * 
@@ -12,6 +12,7 @@
 
 enum EInputCommandType : uint8;
 class UCommand;
+class UCombatStrategy;
 
 USTRUCT(BlueprintType)
 struct FStrategyProperties
