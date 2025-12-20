@@ -3,13 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "DataAssets/CombatStrategyData.h"
 #include "Entities/Entity.h"
 #include "PlayerMain.generated.h"
 
 
 class UChangeModeComponent;
-class AEnemy;
 
 UCLASS()
 class TESISUE_API APlayerMain : public AEntity
@@ -31,14 +29,8 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components | Modes")
 	UChangeModeComponent* ChangeModeComponent;
 
-	UPROPERTY(EditAnywhere, Category = "Gameplay | SpectralMode | SpectralAttack | Targeting")
-	AEnemy* SpectralTarget;
-	
 	UPROPERTY(EditDefaultsOnly, Category = "Input | Config")
 	TObjectPtr<UInputMappingContext> DefaultInputContext;
-
-	UFUNCTION(BlueprintPure, Category = "Gameplay | SpectralMode | SpectralAttack")
-	FORCEINLINE AEnemy* GetSpectralTarget() const { return SpectralTarget; }
 
 	// --- State & Interaction ---
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "State | Damage")
@@ -60,6 +52,9 @@ protected:
 
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
+	virtual void PossessedBy(AController* NewController) override;
+	virtual void OnRep_PlayerState() override;
+	
 private:
 	// --- Life Cycle ---
 	virtual void Die(UAnimMontage* DeathAnim, FName Section) override;

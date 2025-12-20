@@ -1,5 +1,6 @@
 #include "Player/PlayerMain.h"
 
+#include "AbilitySystemComponent.h"
 #include "SceneEvents/VelmaraGameMode.h"
 #include "SceneEvents/VelmaraGameStateBase.h"
 #include "SceneEvents/VelmaraGameInstance.h"
@@ -18,6 +19,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "GenericTeamAgentInterface.h"
+#include "DataAssets/CombatStrategyData.h"
 
 #include "Kismet/GameplayStatics.h"
 
@@ -75,6 +77,29 @@ void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	{
 		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_SwitchForm, ETriggerEvent::Started, this, &APlayerMain::ToggleForm);
 		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_Possess, ETriggerEvent::Started, this, &APlayerMain::Input_Ability);
+	}
+}
+
+void APlayerMain::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	if (AbilitySystemComponent)
+	{
+		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+		InitializeAttributes();
+	}
+}
+
+void APlayerMain::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	if (AbilitySystemComponent)
+	{
+		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+
+		//bind inputs
 	}
 }
 

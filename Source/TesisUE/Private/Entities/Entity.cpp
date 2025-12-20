@@ -1,5 +1,6 @@
 #include "Entities/Entity.h"
 
+#include "AbilitySystemComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "NiagaraFunctionLibrary.h"
@@ -15,6 +16,7 @@
 #include "Engine/DamageEvents.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "GAS/VelmaraAttributeSet.h"
 #include "Interfaces/EntityAnimInstanceProvider.h"
 #include "Items/Weapons/Sword.h"
 #include "Items/Weapons/Strategies/CombatStrategy.h"
@@ -31,6 +33,12 @@ AEntity::AEntity()
 
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 
+	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
+	AbilitySystemComponent->SetIsReplicated(false);
+	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
+
+	AttributeSet = CreateDefaultSubobject<UVelmaraAttributeSet>(TEXT("AttributeSet"));
+	
 	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("Combat"));
 
 	AttributeComponent = CreateDefaultSubobject<UAttributeComponent>(TEXT("Attribute"));
@@ -56,6 +64,11 @@ AEntity::AEntity()
 	BufferComponent = CreateDefaultSubobject<UBufferComponent>(TEXT("Buffer"));
 	
 	GetSpringArmComponent()->bUsePawnControlRotation = true;
+}
+
+UAbilitySystemComponent* AEntity::GetAbilitySystemComponent() const
+{
+	return AbilitySystemComponent;
 }
 
 void AEntity::OnSaveGame_Implementation(FEntitySaveData& OutData)
@@ -259,6 +272,22 @@ void AEntity::SetWeaponCollisionEnabled(const ECollisionEnabled::Type CollisionE
 		if (CollisionEnabled != ECollisionEnabled::NoCollision)
 		{
 			Execute_GetCurrentWeapon(this)->ClearIgnoreActors();
+		}
+	}
+}
+
+void AEntity::InitializeAttributes()
+{
+	if (AbilitySystemComponent && DefaultAttributeEffect)
+	{
+		FGameplayEffectContextHandle ContextHandle = AbilitySystemComponent->MakeEffectContext();
+		ContextHandle.AddSourceObject(this);
+
+		const FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(DefaultAttributeEffect, 1.f, ContextHandle);
+
+		if (SpecHandle.IsValid())
+		{
+			AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), AbilitySystemComponent);
 		}
 	}
 }

@@ -27,8 +27,10 @@
 #include "Interfaces/FieldCreationComponentProvider.h"
 #include "Interfaces/StrategyInterface.h"
 #include "Interfaces/Weapon/WeaponProvider.h"
-#include "GameplayTagAssetInterface.h"
 #include "Interfaces/SaveInterface.h"
+
+#include "GameplayTagAssetInterface.h"
+#include "AbilitySystemInterface.h"
 
 #include "Entity.generated.h"
 
@@ -36,6 +38,8 @@
  * =========-Forward Declarations=========-
  */
 
+class UGameplayEffect;
+class UVelmaraAttributeSet;
 class UBufferComponent;
 class UFieldCreationComponent;
 class UMontagesData;
@@ -83,8 +87,9 @@ class TESISUE_API AEntity : public ACharacter,
 							public ICombatComponentProvider,
 							public IFieldCreationComponentProvider,
 							public IBufferComponentProvider,
+							public ISaveInterface,
 							public IGameplayTagAssetInterface,
-							public ISaveInterface
+							public IAbilitySystemInterface
 {
 	
 	GENERATED_BODY()
@@ -115,6 +120,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "State | Tags")
 	void RemoveGameplayTag(const FGameplayTag Tag) { EntityTags.RemoveTag(Tag); }
 
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	
 	UFUNCTION(BlueprintCallable, Category = "SaveGame")
 	virtual void OnSaveGame_Implementation(FEntitySaveData& OutData) override;
 
@@ -234,6 +241,11 @@ public:
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "State | Tags")
 	FGameplayTagContainer EntityTags;
+
+	virtual void InitializeAttributes();
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Abilities")
+	TSubclassOf<UGameplayEffect> DefaultAttributeEffect;
 	
 	// === Actor Functions ===
 	virtual void BeginPlay() override;
@@ -306,6 +318,9 @@ protected:
 	void Input_ToggleWeapon();
 
 	// === Components ===
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Abilities")
+	UAbilitySystemComponent* AbilitySystemComponent;
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UCombatComponent* CombatComponent;
 
@@ -333,6 +348,9 @@ protected:
 	UPROPERTY(BlueprintGetter = GetCameraComponent)
 	UCameraComponent* CameraComponent;
 
+	UPROPERTY()
+	UVelmaraAttributeSet* AttributeSet;
+	
 	UPROPERTY()
 	TObjectPtr<UFieldCreationComponent> FieldCreationComponent;
 

@@ -1,5 +1,6 @@
 #include "Enemy/Enemy.h"
 
+#include "AbilitySystemComponent.h"
 #include "AIController.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -238,6 +239,13 @@ void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (AbilitySystemComponent)
+	{
+		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+
+		InitializeAttributes();
+	}
+	
 	if (!AttributeComponent->IsAlive())
 	{
 		DeactivateEnemy();

@@ -1,4 +1,6 @@
 #include "Items/Weapons/Sword.h"
+
+#include "AbilitySystemComponent.h"
 #include "Components/BoxComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
@@ -106,14 +108,37 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 			
 			if (bIsHittable)
 			{
-				UGameplayStatics::ApplyDamage(
-					Hit.GetActor(),
-					CalculateDamage(),
-					ControllerProvider->GetEntityController(),
-					GetOwner(),
-					DamageTypeClass
-				);
+				//UGameplayStatics::ApplyDamage(
+				//	Hit.GetActor(),
+				//	CalculateDamage(),
+				//	ControllerProvider->GetEntityController(),
+				//	GetOwner(),
+				//	DamageTypeClass
+				//);
 
+				const IAbilitySystemInterface* TargetASI = Cast<IAbilitySystemInterface>(Hit.GetActor());
+				if (!TargetASI) return;
+
+				UAbilitySystemComponent* TargetASC = TargetASI->GetAbilitySystemComponent();
+				if (!TargetASC) return;
+
+				if (const IAbilitySystemInterface* SourceASI = Cast<IAbilitySystemInterface>(GetOwner()))
+				{
+					const UAbilitySystemComponent* SourceASC = SourceASI->GetAbilitySystemComponent();
+				}
+
+				FGameplayEffectContextHandle Context = TargetASC->MakeEffectContext();
+				Context.AddSourceObject(this);
+				Context.AddInstigator(GetInstigator(), this);
+
+				FGameplayEffectSpecHandle SpecHandle = TargetASC->MakeOutgoingSpec(DamageEffectClass, 1.f, Context);
+				if (SpecHandle.IsValid())
+				{
+					const float FinalDamage =- CalculateDamage();
+					SpecHandle.Data.Get()->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag("Damage"), FinalDamage);
+					TargetASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
+				}
+				
 				HitInterface->GetHit(GetOwner(), Hit.ImpactPoint, DamageEvent, SwordDataAsset->Stats.BaseDamage);
 			}
 			ImpactEffects(Hit, bIsHittable);

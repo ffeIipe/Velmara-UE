@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayEffect.h"
 #include "Interfaces/Weapon/WeaponInterface.h"
 #include "Items/Item.h"
 #include "Player/CharacterWeaponStates.h"
@@ -35,6 +36,9 @@ public:
 	void EnableWeaponState(bool bEnable) const; //TODO: change this to enable and disable.
 	
 protected:
+	UPROPERTY(EditDefaultsOnly, Category= "GAS")
+	TSubclassOf<UGameplayEffect> DamageEffectClass;
+	
 	UFUNCTION(BlueprintCallable)
 	virtual void AttachMeshToSocket(USceneComponent* InParent) {}
 
