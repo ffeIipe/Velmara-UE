@@ -5,6 +5,7 @@
 #include "Net/UnrealNetwork.h"
 #include "GameplayEffectExtension.h"
 #include "Entities/Entity.h"
+#include "GAS/VelmaraGameplayTags.h"
 
 UVelmaraAttributeSet::UVelmaraAttributeSet()
 {
@@ -29,14 +30,10 @@ void UVelmaraAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffec
 	{
 		if (GetHealth() <= 0.0f)
 		{
-			if (AActor* TargetActor = Data.Target.AbilityActorInfo->AvatarActor.Get())
+			UAbilitySystemComponent* TargetASC = Data.Target.AbilityActorInfo->AbilitySystemComponent.Get();
+			if (TargetASC && !TargetASC->HasMatchingGameplayTag(FVelmaraGameplayTags::Get().State_Dead))
 			{
-				if (AEntity* Entity = Cast<AEntity>(TargetActor))
-				{
-					//TODO: subscribe the entity to the delegate, to perform dead
-					//Entity->PerformDead();
-					Entity->Destroy();
-				}
+				TargetASC->AddLooseGameplayTag(FVelmaraGameplayTags::Get().State_Dead);
 			}
 		}
 	}

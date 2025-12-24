@@ -1,19 +1,8 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "ExtraMovementComponent.generated.h"
-
-class IStrategyProvider;
-class ICharacterMovementProvider;
-class ICharacterStateProvider;
-class IAnimatorProvider;
-class IOwnerUtilsInterface;
-struct FMovementData;
-class AEntity;
-struct FInputActionValue;
 
 DECLARE_DYNAMIC_DELEGATE(FOnDodgeStarted);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDodgeSaved);
@@ -30,10 +19,6 @@ public:
 	UFUNCTION()
 	void ResetDodge() { bIsSaveDodge = false; }
 
-	void PerformDoubleJump(UAnimMontage* DoubleJumpMontage);
-	void PerformMove(const FVector2D& MoveVector, bool bIsTriggered);
-	void PerformLook(const FVector2D& LookingVector) const;
-
 	UFUNCTION(BlueprintCallable)
 	void DodgeSaveEvent();
 
@@ -42,12 +27,7 @@ public:
 
 	bool IsMoving() const { return bIsMoving; }
 
-	UFUNCTION(BlueprintCallable, meta=(AutoCreateRefTerm = "EventToCall"))
-	void PlayDodgeAnim(UAnimMontage* DodgeMontage, const FOnDodgeStarted& OnDodgeStartedEvent) const;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
-	bool CanDoubleJump = true;
-	float DoubleJumpForce = 800.f;
 	bool bIsSaveDodge = false;
 
 	FOnDodgeStarted OnDodgeStarted;
@@ -56,13 +36,9 @@ public:
 	
 private:
 	virtual void BeginPlay() override;
-	
-	void DodgeAnimBasedOnInput(UAnimMontage* DodgeMontage) const;
+
+	FName DodgeAnimBasedOnInput(UAnimMontage* DodgeMontage) const;
 
 	bool bIsMoving = false;
 	FVector2D CurrentMoveVector = FVector2D::ZeroVector;
-	
-	TScriptInterface<IAnimatorProvider> AnimatorProvider;
-	TScriptInterface<ICharacterStateProvider> CharacterStateProvider;
-	TScriptInterface<ICharacterMovementProvider> CharacterMovementProvider;
 };

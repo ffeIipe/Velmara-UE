@@ -27,9 +27,7 @@ void AItem::BeginPlay()
 void AItem::Pick(AActor* NewOwner)
 {
 	SetOwner(NewOwner);
-	OwnerOverrider = NewOwner;
 	SetInstigator(Cast<APawn>(NewOwner));
-	//AttributeProvider = NewOwner;
 	bWasUsed = true;
 }
 

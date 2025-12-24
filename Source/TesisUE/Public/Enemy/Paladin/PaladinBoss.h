@@ -17,11 +17,11 @@ protected:
 	UFUNCTION()
 	void ShieldDetach();
 
-	virtual float TakeDamage(
-		float DamageAmount,
-		struct FDamageEvent const& DamageEvent,
-		class AController* EventInstigator,
-		AActor* DamageCauser) override;
+	//virtual float TakeDamage(
+	//	float DamageAmount,
+	//	struct FDamageEvent const& DamageEvent,
+	//	class AController* EventInstigator,
+	//	AActor* DamageCauser) override;
 
 	UPROPERTY(EditAnywhere, Category = "Attacks | Spawning")
 	int32 InitialMinionPoolSize = 6;
@@ -35,7 +35,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	UStaticMeshComponent* AuraMeshComponent;
 
-	virtual void GetHit(TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived) override;
+	virtual void GetHit(AActor* DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived) override;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Attacks | Flood")
 	float FloodDamage;

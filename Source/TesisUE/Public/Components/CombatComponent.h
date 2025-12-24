@@ -5,14 +5,9 @@
 #include "Components/ActorComponent.h"
 #include "CombatComponent.generated.h"
 
-class IWeaponInterface;
+class AEntity;
 struct FCombatData;
-class UAttributeComponent;
-class UCharacterStateComponent;
 class UTimelineComponent;
-class ICombatTargetInterface;
-enum class ECharacterModeStates : uint8;
-struct FInputActionValue;
 
 DECLARE_DELEGATE_RetVal_OneParam(bool, FCanPerformActionSignature, FGameplayTag);
 
@@ -27,24 +22,6 @@ public:
     DECLARE_MULTICAST_DELEGATE_OneParam(FOnActionPerformedSignature, FGameplayTag);
     FOnActionPerformedSignature OnActionPerformed;
 
-    //TODO: Delete unused Delegates
-    
-    // === Delegates ===
-    DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWallHitSignature, const FHitResult&, HitResult);
-    DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAttackEnd);
-    DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLightAttack);
-    DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHeavyAttack);
-    DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSaveLightAttack);
-    DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSaveHeavyAttack);
-    
-    FOnWallHitSignature OnWallHit;
-    UPROPERTY(BlueprintAssignable)
-    FOnAttackEnd OnResetState;
-    FOnLightAttack OnLightAttack;
-    FOnHeavyAttack OnHeavyAttack;
-    FOnSaveLightAttack OnSaveLightAttack;
-    FOnSaveHeavyAttack OnSaveHeavyAttack;
-
     UFUNCTION()
     void HandleWeaponChanged(TScriptInterface<IWeaponInterface> NewWeapon);
     
@@ -56,33 +33,9 @@ public:
     UCombatComponent();
 
     void InitializeValues(const FCombatData& CombatData);
-
-    UFUNCTION(BlueprintCallable, Category = "Attack")
-    void ResetState();
-
-    UFUNCTION()
-    bool IsBlocking() const;
-
-    UFUNCTION(BlueprintCallable)
-    bool IsInAir() const;
-    
-    bool CanAttack(FGameplayTag ActionTag) const;
-    
-    void PerformBlock(bool bIsTriggered, UAnimMontage* BlockMontage) const;
-
-    UFUNCTION()
-    void ReceiveBlock(UAnimMontage* BlockMontage) const;
-
-    UFUNCTION(BlueprintCallable)
-    bool PerformLaunch(const TScriptInterface<ICombatTargetInterface>& TargetToCheck, float DistanceToCheck = 200.f, UAnimMontage* LaunchMontage = nullptr);
      
     // === Internal Utility Functions ===
-    bool CheckDistance(const TScriptInterface<ICombatTargetInterface>& TargetToCheck, float DistanceToCheck);
-    
-    
-    // === Attack Events ===
-    UFUNCTION(BlueprintCallable)
-    void PerformExecute(const TScriptInterface<ICombatTargetInterface>& Target, UAnimMontage* FinisherMontage) const;
+    bool CheckDistance(const AEntity* TargetToCheck, float DistanceToCheck) const;
     
     // === Combat Utility Functions ===
     void StartLaunchingUp();
@@ -90,6 +43,7 @@ public:
     // === Buffer Distance ===
     UFUNCTION(BlueprintCallable)
     void StartAttackBufferEvent();
+    
     UFUNCTION(BlueprintCallable)
     void StopAttackBufferEvent();
 
@@ -119,29 +73,7 @@ public:
     float BufferMultiplier = 1.f;
 
 protected:
-    // === Lifecycle Events ===
     virtual void BeginPlay() override;
-    
-    UFUNCTION(BlueprintCallable, Category = "Attack | JumpAttack")
-    void LaunchCharacterUp(TScriptInterface<ICombatTargetInterface> Target);
-    
-    UFUNCTION(BlueprintCallable, Category = "Attack | JumpAttack")
-    void PerformCrasher();
-    
-    // === Blocking ===
-    UFUNCTION()
-    void Block(UAnimMontage* BlockMontage) const;
-    
-    UFUNCTION(BlueprintCallable, Category = "Block")
-    void ReleaseBlock(UAnimMontage* BlockMontage) const;
-    
-    // === Soft Lock Targeting ===
-    //UFUNCTION(BlueprintCallable, Category = "SoftLock")
-    //void ValidateWall();
-    
-    // === Launch Character Timeline ===
-    UFUNCTION()
-    void UpdateLaunchCharacterUp(float Alpha);
 
     // === Buffer Attack ===
     UFUNCTION()
@@ -151,17 +83,7 @@ protected:
 private:
     // === Internal State Variables ===
     UPROPERTY()
-    TArray<TScriptInterface<ICombatTargetInterface>> CombatTargets;
-    
-    // === Save Attack Events ===
-    UFUNCTION(BlueprintCallable)
-    void SaveLightAttackEvent();
-    
-    UFUNCTION(BlueprintCallable, Category = "Attack | HeavyAttack", meta = (AllowPrivateAccess = "true"))
-    void SaveHeavyAttackEvent();
-    
-    UFUNCTION(BlueprintCallable, Category = "Attack | SaveAttack", meta = (AllowPrivateAccess = "true"))
-    void ResetAttackSave();
+    TArray<AEntity*> CombatTargets;
     
     // === Timelines ===
     UPROPERTY()
@@ -175,16 +97,11 @@ private:
     FGameplayTagContainer BlockAttackTags;
     
     UPROPERTY()
-    TObjectPtr<UCharacterStateComponent> StateComponent;
-
-    UPROPERTY()
-    TObjectPtr<UAttributeComponent> AttributeComponent;
-
-    UPROPERTY()
     TObjectPtr<ACharacter> OwnerCharacter;
     
     // === Stats Assigned By Data Asset ===
     float BufferAttackDistance;
+    
     UPROPERTY()
     UCurveFloat* BufferCurve;
     UPROPERTY()

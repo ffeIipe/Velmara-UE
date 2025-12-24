@@ -4,20 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "Animation/AnimInstance.h"
-#include "Interfaces/EntityAnimInstanceProvider.h"
 #include "EntityAnimInstance.generated.h"
 
+class UCharacterMovementComponent;
 class AEntity;
-enum class ECharacterWeaponStates : uint8;
-enum class ECharacterModeStates : uint8;
-class ICharacterStateProvider;
-class ICharacterMovementProvider;
-class IOwnerUtilsInterface;
-/**
- * 
- */
+
 UCLASS()
-class TESISUE_API UEntityAnimInstance : public UAnimInstance, public IEntityAnimInstanceProvider
+class TESISUE_API UEntityAnimInstance : public UAnimInstance
 {
 	GENERATED_BODY()
 public:
@@ -28,18 +21,13 @@ public:
 	AEntity* EntityOwner;
 	
 	UPROPERTY(BlueprintReadOnly)
-	TScriptInterface<IOwnerUtilsInterface> OwnerUtils;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Movement")
-	TScriptInterface<ICharacterMovementProvider> CharacterMovementProvider;
-
-	TScriptInterface<ICharacterStateProvider> CharacterStateProvider;
+	UCharacterMovementComponent* CharacterMovementComponent;
 	
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
 	float GroundSpeed;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
-	bool IsFalling;
+	bool bIsFalling;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	bool bHasAcceleration;
@@ -59,14 +47,6 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Combat")
 	bool bIsLocking;
 	
-	UPROPERTY(BlueprintReadOnly, Category = "Movement | Character State")
-	ECharacterWeaponStates CharacterWeaponState;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement | Character Form")
-	ECharacterModeStates CharacterMode;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Movement | Animation States")
 	bool bIsMeleeWeapon;
-	
-	virtual void SetAnimationState(TScriptInterface<IWeaponInterface> WeaponEquipped) override;
 };

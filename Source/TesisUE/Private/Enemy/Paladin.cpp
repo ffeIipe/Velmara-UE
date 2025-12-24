@@ -5,8 +5,6 @@
 #include "DamageTypes/MeleeDamage.h"
 
 #include "GameFramework/CharacterMovementComponent.h"
-#include "Components/AttributeComponent.h"
-#include "Components/CharacterStateComponent.h"
 #include "Components/CapsuleComponent.h"
 
 #include "Kismet/GameplayStatics.h"
@@ -28,8 +26,6 @@ APaladin::APaladin()
 	
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_GameTraceChannel2, ECR_Ignore);
 	GetMesh()->SetCollisionResponseToChannel(ECC_GameTraceChannel2, ECR_Ignore);
-	
-	GetAttributeComponent()->AttachShield(GetMesh(), FName("LeftHandSocket"));
 
 	OnShieldTakeDamage.AddDynamic(this, &APaladin::ShieldHit);
 }
@@ -54,7 +50,7 @@ void APaladin::BeginPlay()
 	if (!WeaponToEquip->GetChildActor())
 	{
 		WeaponToEquip->CreateChildActor();
-		GetCharacterStateComponent_Implementation()->SetWeaponState(ECharacterWeaponStates::ECWS_EquippedWeapon);
+		//GetCharacterStateComponent_Implementation()->SetWeaponState(ECharacterWeaponStates::ECWS_EquippedWeapon);
 	}
 	
 	TArray<AActor*> AttachedActors;
@@ -93,10 +89,7 @@ void APaladin::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 {
 	Super::ActivateEnemy(Location, Rotation);
 
-	if (CharacterStateComponent)
-	{
-		CharacterStateComponent->SetWeaponState(ECharacterWeaponStates::ECWS_EquippedWeapon);
-	}
+	//CharacterStateComponent->SetWeaponState(ECharacterWeaponStates::ECWS_EquippedWeapon);
 
 	SetWeaponCollisionEnabled(ECollisionEnabled::NoCollision);
 }
@@ -106,11 +99,6 @@ void APaladin::DeactivateEnemy()
 	SetWeaponCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	Super::DeactivateEnemy();
-}
-
-bool APaladin::IsLaunchable()
-{
-	return !GetAttributeComponent()->IsShielded(); //returns false if it has shield equipped or not detached yet.
 }
 
 void APaladin::LaunchUp()
@@ -123,7 +111,7 @@ void APaladin::LaunchUp()
 
 	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, GetName() + " was launched.");
 	DisableAI();
-	Execute_PlayAnimMontage(this, MontagesData->Montages.HitReactMontage, 1.f, FName("FromAir"));
+	PlayAnimMontage(MontagesData->Montages.HitReactMontage, 1.f, FName("FromAir"));
 }
 
 void APaladin::Die(UAnimMontage* DeathAnim, const FName Section)
@@ -137,23 +125,23 @@ void APaladin::ShieldHit()
 {
 	if (MontagesData->Montages.HitReactMontage)
 	{
-		Execute_StopAnimMontage(this, GetCurrentMontage());
-		Execute_PlayAnimMontage(this, MontagesData->Montages.HitReactMontage, 1.f, FName("ShieldHit"));
+		StopAnimMontage(GetCurrentMontage());
+		PlayAnimMontage(MontagesData->Montages.HitReactMontage, 1.f, FName("ShieldHit"));
 	}
 }
 
 void APaladin::CrashDown()
 {
 	GetCharacterMovement()->SetMovementMode(MOVE_Falling);
-	Execute_PlayAnimMontage(this, MontagesData->Montages.HitReactMontage, 1.f, FName("KnockDown"));
+	PlayAnimMontage(MontagesData->Montages.HitReactMontage, 1.f, FName("KnockDown"));
 	LaunchCharacter(FVector(0.f, 0.f, -100000.f), true, true);
 }
 
 void APaladin::HitInAir()
 {
 	const float PlayerLocationHeight = UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->GetActorLocation().Z;
-	SetActorLocation(FVector(GetTargetActorLocation().X, GetTargetActorLocation().Y, PlayerLocationHeight));
-	Execute_PlayAnimMontage(this, MontagesData->Montages.HitReactMontage, 1.f, FName("FromAir"));
+	SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, PlayerLocationHeight));
+	PlayAnimMontage(MontagesData->Montages.HitReactMontage, 1.f, FName("FromAir"));
 	DisableAI();
 }
 
@@ -180,11 +168,11 @@ void APaladin::ReactToDamage(const EMeleeDamageTypes DamageType, const FVector& 
 		break;
 
 	case EMeleeDamageTypes::EMDT_Puncture:
-		Execute_PlayAnimMontage(this, MontagesData->Montages.HitReactMontage, 1.f, FName("PunctureReact"));
+		PlayAnimMontage(MontagesData->Montages.HitReactMontage, 1.f, FName("PunctureReact"));
 		break;
 
 	case EMeleeDamageTypes::EMDT_Impact:
-		Execute_PlayAnimMontage(this, MontagesData->Montages.HitReactMontage, 1.f, FName("ImpactReact"));
+		PlayAnimMontage(MontagesData->Montages.HitReactMontage, 1.f, FName("ImpactReact"));
 		break;
 
 	/*case EMainDamageTypes::EMDT_Pistol:*/
@@ -207,10 +195,10 @@ void APaladin::Slash()
 {
 	if (!IsAlive()) return;
 	
-	const FRotator DamageCauserLocation = UKismetMathLibrary::FindLookAtRotation(GetTargetActorLocation(), LastDamageCauser->GetTargetActorLocation());
+	const FRotator DamageCauserLocation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), LastDamageCauser->GetActorLocation());
 
 	SetActorRotation(FRotator(0.f, DamageCauserLocation.Yaw, 0.f));
 
-	Execute_StopAnimMontage(this, GetCurrentMontage());
-	Execute_PlayAnimMontage(this, MontagesData->Montages.HitReactMontage, 1.f, FName("FromFrontBig"));
+	StopAnimMontage(GetCurrentMontage());
+	PlayAnimMontage(MontagesData->Montages.HitReactMontage, 1.f, FName("FromFrontBig"));
 }

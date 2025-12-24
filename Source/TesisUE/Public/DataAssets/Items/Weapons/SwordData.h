@@ -3,8 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "WeaponData.h"
 #include "Engine/DataAsset.h"
-/*#include "Player/CharacterWeaponStates.h"*/
 #include "SwordData.generated.h"
 
 enum class EWeaponCommandType : uint8;
@@ -33,38 +33,14 @@ struct FSwordEffects
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX")
 	ECameraShakePreset CameraShakePreset;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attachment Socket")
-	FName CustomInSocketName;
-};
-
-USTRUCT(BlueprintType)
-struct FSwordProperties
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, Category = "Stats")
-	float BaseDamage = 10.f;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
-	float CriticalChance = 0.15f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
-	float CriticalDamageMultiplier = 2.0f;
 };
 
 UCLASS(BlueprintType)
-class TESISUE_API USwordData : public UDataAsset
+class TESISUE_API USwordData : public UWeaponData
 {
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Attacks")
-	TMap<EWeaponCommandType, TSubclassOf<UCommand>> Commands;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Properties")
-	FSwordProperties Stats;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
 	FSwordEffects Effects;
 };

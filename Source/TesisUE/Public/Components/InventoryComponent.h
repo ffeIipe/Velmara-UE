@@ -4,9 +4,6 @@
 #include "Components/ActorComponent.h"
 #include "InventoryComponent.generated.h"
 
-class IAnimatorProvider;
-class ICharacterStateProvider;
-class IControllerProvider;
 class IWeaponInterface;
 struct FInventoryData;
 class UInventory;
@@ -111,7 +108,4 @@ private:
     
     UPROPERTY()
     AController* OwnerController = nullptr;
-    TScriptInterface<IControllerProvider> ControllerProvider;
-    TScriptInterface<ICharacterStateProvider> CharacterStateProvider;
-    TScriptInterface<IAnimatorProvider> AnimatorProvider;
 };

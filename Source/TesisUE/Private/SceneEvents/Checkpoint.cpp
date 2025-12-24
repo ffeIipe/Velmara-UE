@@ -1,6 +1,5 @@
 #include "SceneEvents/Checkpoint.h"
 #include "Entities/Entity.h"
-#include "Components/PossessionComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "SceneEvents/VelmaraGameInstance.h"
 
@@ -19,12 +18,13 @@ void ACheckpoint::OnSphereBeginOverlap(
         if (OverlappingEntity->GetController() == UGameplayStatics::GetPlayerController(GetWorld(), 0))
         {
             DisableCollision();
-            
-            if (OverlappingEntity->GetPossessionComponent()->IsPossessed())
-            {
-                if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Red, FString("Saving from " + OverlappingEntity->GetName()));
-                OverlappingEntity->GetPossessionComponent()->GetPossessor()->SetActorTransform(OverlappingEntity->GetActorTransform());
-            }
+
+            //TODO:
+            //if (OverlappingEntity->GetPossessionComponent()->IsPossessed())
+            //{
+            //    if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Red, FString("Saving from " + OverlappingEntity->GetName()));
+            //    OverlappingEntity->GetPossessionComponent()->GetPossessor()->SetActorTransform(OverlappingEntity->GetActorTransform());
+            //}
 
             if (UVelmaraGameInstance* VelmaraGameInstance = Cast<UVelmaraGameInstance>(GetWorld()->GetGameInstance()))
             {

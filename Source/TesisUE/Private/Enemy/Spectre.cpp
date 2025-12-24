@@ -1,5 +1,4 @@
 #include "Enemy/Spectre.h"
-#include "Components/AttributeComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "DamageTypes/PistolDamage.h"
 
@@ -16,7 +15,7 @@ void ASpectre::PerformSpectralAttack()
 {
 	if (const int RandomValue = UKismetMathLibrary::RandomIntegerInRange(0, SpectralAttackMontages.Max()); SpectralAttackMontages.IsValidIndex(RandomValue))
 	{
-		Execute_PlayAnimMontage(this, SpectralAttackMontages[RandomValue], 1.f, "Default");
+		PlayAnimMontage(SpectralAttackMontages[RandomValue], 1.f, "Default");
 	}
 }
 
@@ -30,8 +29,6 @@ void ASpectre::HandleEnemyCollision(const bool bEnable)
 
 		GetMesh()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 		GetMesh()->SetCollisionResponseToChannel(ECC_GameTraceChannel2, ECR_Block);
-
-		GetAttributeComponent()->GetShieldMeshComponent()->SetCollisionResponseToChannel(ECC_GameTraceChannel2, ECR_Block);
 	}
 }
 
@@ -42,11 +39,6 @@ float ASpectre::TakeDamage(const float DamageAmount, FDamageEvent const& DamageE
 		Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 	}
 	return DamageAmount;
-}
-
-bool ASpectre::IsLaunchable()
-{
-	return true;
 }
 
 void ASpectre::ApplyPossessionParameters(bool bShouldEnable)

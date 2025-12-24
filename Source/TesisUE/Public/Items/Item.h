@@ -24,9 +24,6 @@ class TESISUE_API AItem : public AInputPromptTrigger, public IPickable, public I
 
 public:	
 	AItem();
-
-	UPROPERTY(VisibleAnywhere, SaveGame)
-	AActor* OwnerOverrider = nullptr;
 	
 	UPROPERTY(BlueprintAssignable)
 	FOnItemUsed OnUsed;

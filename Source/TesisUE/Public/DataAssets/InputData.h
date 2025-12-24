@@ -1,14 +1,8 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
 #include "InputData.generated.h"
-
-/**
- * 
- */
 
 class UInputAction;
 
@@ -18,49 +12,46 @@ struct FInputs
 	GENERATED_BODY()
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input | Movement")
-	UInputAction* InputAction_Move;
+	UInputAction* MoveAction;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input | Movement")
-	UInputAction* InputAction_Look;
+	UInputAction* LookAction;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input | Movement")
 	UInputAction* InputAction_Crouch;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input | Movement")
-	UInputAction* InputAction_Jump;
+	UInputAction* JumpAction;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input | Movement")
-	UInputAction* InputAction_Dodge;
+	UInputAction* DodgeAction;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input | Actions")
-	UInputAction* InputAction_Interact;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input | Actions")
-	UInputAction* InputAction_SwitchForm;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input | Actions")
-	UInputAction* InputAction_Possess;
+	UInputAction* InteractAction;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input | Actions")
 	UInputAction* InputAction_Inventory;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input | Actions")
-	UInputAction* InputAction_Attack;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input | Actions")
-	UInputAction* InputAction_HeavyAttack;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input | Actions")
-	UInputAction* InputAction_Launch;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input | Actions")
-	UInputAction* InputAction_Block;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input | Actions")
-	UInputAction* InputAction_ChangeHardLockTarget;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input | Actions")
 	UInputAction* InputAction_ToggleWeapon;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Input | Actions")
+	UInputAction* PrimaryAttackAction;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input | Actions")
+	UInputAction* SecondaryAttackAction;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input | Actions")
+	UInputAction* InputAction_Skill1;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input | Actions")
+	UInputAction* InputAction_Skill2;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Input | Actions")
+	UInputAction* InputAction_Skill3;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input | Actions")
+	UInputAction* InputAction_Skill4;
 };
 
 UCLASS()

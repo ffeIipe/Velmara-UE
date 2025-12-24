@@ -2,10 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
-#include "CombatTargetInterface.h"
 #include "HitInterface.generated.h"
-
-class ICombatTargetInterface;
 
 UINTERFACE(MinimalAPI)
 class UHitInterface : public UInterface
@@ -18,7 +15,7 @@ class TESISUE_API IHitInterface
 	GENERATED_BODY()
 
 public:
-	virtual void GetHit(TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived) = 0;
+	virtual void GetHit(AActor* DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived) = 0;
 	
 	virtual void GetFinished() = 0;
 

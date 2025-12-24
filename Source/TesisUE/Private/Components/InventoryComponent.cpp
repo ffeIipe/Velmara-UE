@@ -1,6 +1,5 @@
 #include "Components/InventoryComponent.h"
 #include "Blueprint/UserWidget.h"
-#include "Components/CharacterStateComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/World.h"
@@ -8,14 +7,9 @@
 #include "HUD/Inventory.h"
 
 #include "DataAssets/EntityData.h"
-#include "Interfaces/AnimatorProvider.h"
-#include "Interfaces/CharacterStateProvider.h"
 #include "Interfaces/Weapon/WeaponInterface.h"
-#include "Interfaces/ControllerProvider.h"
 #include "Interfaces/Pickable.h"
 #include "Items/Weapons/Weapon.h"
-#include "Player/CharacterWeaponStates.h"
-#include "SpectralMode/Interfaces/Spectral.h"
 
 UInventoryComponent::UInventoryComponent()
 {
@@ -28,9 +22,6 @@ void UInventoryComponent::BeginPlay()
     
     PlayerControllerRef = UGameplayStatics::GetPlayerController(GetWorld(), 0);
     OwnerController = PlayerControllerRef;
-    ControllerProvider = GetOwner();
-    CharacterStateProvider = GetOwner();
-    AnimatorProvider = GetOwner();
 
     InitializeInventoryWidget();
 }
@@ -255,10 +246,10 @@ TScriptInterface<IWeaponInterface> UInventoryComponent::PerformInteract()
         true
     );
 
-    const bool bIsSpectral = CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->IsModeEqualToAny(
+    const bool bCanPickUpItems = true; /*TODO: CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->IsModeEqualToAny(
     {
         ECharacterModeStates::ECMS_Spectral 
-    });
+    });*/
     
     if (bHit)
     {
@@ -266,7 +257,7 @@ TScriptInterface<IWeaponInterface> UInventoryComponent::PerformInteract()
         {
             if (const TScriptInterface<IWeaponInterface> WeaponReached = Pickable.GetObject(); TryAddWeapon(WeaponReached))
             {
-                if (!bIsSpectral)
+                if (!bCanPickUpItems)
                 {
                     ActorsToIgnore.Add(Cast<AActor>(WeaponReached.GetObject()));
                     return WeaponReached;

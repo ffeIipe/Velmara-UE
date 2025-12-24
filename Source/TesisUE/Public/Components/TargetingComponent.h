@@ -2,16 +2,12 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "Interfaces/CombatTargetInterface.h"
 #include "TargetingComponent.generated.h"
 
 class AEntity;
 class IWeaponInterface;
 struct FTargetingData;
 class UTimelineComponent;
-class ICharacterMovementProvider;
-class IControllerProvider;
-class ICameraProvider;
 class UCurveFloat;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHardLockToggled);
@@ -55,13 +51,13 @@ public:
     void PerformSoftLock();
 
     UFUNCTION(BlueprintCallable, Category = "Targeting")
-    TScriptInterface<ICombatTargetInterface> GetCurrentTarget() { return CurrentTarget; }
+    AEntity* GetCurrentTarget() const { return CurrentTarget; }
 
     UFUNCTION()
     void RemoveCombatTarget();
 
     UFUNCTION(BlueprintCallable, Category = "Targeting")
-    TScriptInterface<ICombatTargetInterface> SearchCombatTarget(const FVector& Start, const FVector& End, float SearchRadius) const;
+    AEntity* SearchCombatTarget(const FVector& Start, const FVector& End, float SearchRadius) const;
     
     bool IsLocking() const { return bIsHardLocking; }
     
@@ -76,7 +72,7 @@ private:
     TObjectPtr<AController> OwnerController;
 
     UPROPERTY()
-    TScriptInterface<ICombatTargetInterface> CurrentTarget;
+    AEntity* CurrentTarget;
 
     UPROPERTY()
     UTimelineComponent* SoftLockTimeline;
@@ -89,19 +85,18 @@ private:
     bool bIsHardLocking = false;
     float HardLockRadius = 1500.f;
     int32 CombatTargetIndex = 0;
-    TArray<TScriptInterface<ICombatTargetInterface>> CombatTargets;
+
+    UPROPERTY()
+    TArray<AEntity*> CombatTargets;
     
     UFUNCTION()
     bool PickHardLockTarget();
 
     UFUNCTION()
-    void ValidateCurrentTarget();
+    void RotateTowardsHardLockTarget(const AActor* Target, float DeltaTime) const;
     
     UFUNCTION()
-    void RotateTowardsHardLockTarget(const TScriptInterface<ICombatTargetInterface>& Target, float DeltaTime) const;
-    
-    UFUNCTION()
-    TArray<TScriptInterface<ICombatTargetInterface>> GetCombatTargets(const float Radius) const;
+    TArray<AEntity*> GetCombatTargets(const float Radius) const;
 
     UFUNCTION()
     void UpdateSoftLockOn(float Alpha);

@@ -56,19 +56,15 @@ public:
 	void RequestReturnToPool();
 
 	// === Combat & Damage ===
-	virtual bool IsAlive() override;
-	
 	virtual void Die(UAnimMontage* DeathAnim, FName Section) override;
 
-	virtual void GetHit(TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived) override;
+	virtual void GetHit(AActor* DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived) override;
 	
-	void DropOrbs(const float DamageReceived, const TScriptInterface<ICombatTargetInterface>& DamageCauser);
+	void DropOrbs(const float DamageReceived, AActor* DamageCauser) const;
 
 	void FinishedDamage();
 
-	virtual bool IsLaunchable() override;
-
-	void NotifyDamageTakenToBlackboard(const TScriptInterface<ICombatTargetInterface>& DamageCauser);
+	void NotifyDamageTakenToBlackboard(AActor* DamageCauser);
 
 	// === AI & State ===
 	FORCEINLINE EEnemyType GetEnemyType() const { return EnemyType; }
@@ -86,7 +82,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void EnableAI();
 
-	void NotifyThreat(const TScriptInterface<ICombatTargetInterface>& ThreatActor) const;
+	void NotifyThreat(AActor* ThreatActor) const;
 
 	AAIController* GetAIController() const { return AIController; };
 
@@ -109,8 +105,6 @@ protected:
 
 	UFUNCTION(BlueprintCallable)
 	void PerformDead();
-	
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	// === AI ===
 	UPROPERTY(EditAnywhere)
@@ -122,7 +116,7 @@ protected:
 	UFUNCTION()
 	void NotifyIsNotShieldedToBlackboard();
 
-	TArray<TScriptInterface<ICombatTargetInterface>> GenerateSphereOverlapToDetectOtherEnemies(
+	TArray<AEnemy*> GenerateSphereOverlapToDetectOtherEnemies(
 		const FVector& Origin, float Radius, AActor* HitEnemyToExclude);
 
 	// === Combat & Damage ===

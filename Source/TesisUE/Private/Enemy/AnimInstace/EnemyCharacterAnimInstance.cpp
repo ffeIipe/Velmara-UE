@@ -14,7 +14,7 @@ void UEnemyCharacterAnimInstance::NativeInitializeAnimation()
 		MaxWalkSpeed = OwningMovementComponent->MaxWalkSpeed;
 		if (OwningEnemy->EntityData)
 		{
-			MaxRunSpeed = OwningEnemy->EntityData->MovementData.MaxRunSpeed;
+			//MaxRunSpeed = OwningEnemy->EntityData->MovementData.MaxRunSpeed;
 		}
 		else if (GEngine)
 			GEngine->AddOnScreenDebugMessage(INDEX_NONE,3.f,FColor::Red,"Entity Data not found!");

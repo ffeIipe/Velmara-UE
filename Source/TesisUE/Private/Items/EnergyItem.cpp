@@ -1,8 +1,5 @@
 #include "Items/EnergyItem.h"
-#include "Player/PlayerMain.h"
-#include "Components/AttributeComponent.h"
 #include "Kismet/GameplayStatics.h"
-#include "Tutorial/PromptWidgetComponent.h"
 
 
 void AEnergyItem::Pick(AActor* NewOwner)

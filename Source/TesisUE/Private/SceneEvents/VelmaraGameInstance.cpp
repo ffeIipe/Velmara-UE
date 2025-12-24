@@ -5,6 +5,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/GameUserSettings.h"
 #include "Blueprint/UserWidget.h"
+#include "GAS/VelmaraGameplayTags.h"
 
 class FActorIterator;
 
@@ -15,6 +16,9 @@ UVelmaraGameInstance::UVelmaraGameInstance()
 	CurrentLoadingScreenInstance = nullptr;
 	CurrentSlotName = TEXT("GameSettings");
 	UserIndex = 0;
+    PendingSaveData = nullptr;
+
+    FVelmaraGameplayTags::InitializeGameplayTags(); //initialize basic tags
 }
 
 void UVelmaraGameInstance::Init()

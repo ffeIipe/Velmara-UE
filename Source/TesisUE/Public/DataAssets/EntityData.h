@@ -4,10 +4,9 @@
 #include "Engine/DataAsset.h"
 #include "EntityData.generated.h"
 
-enum class ECharacterModeStates : uint8;
+class UVelmaraGameplayAbility;
 class UInputAction;
 class UNiagaraSystem;
-class UCombatStrategy;
 
 USTRUCT(BlueprintType)
 struct FCombatData
@@ -36,46 +35,34 @@ struct FTargetingData
     UCurveFloat* SoftLockCurve;
 };
 
-USTRUCT(BlueprintType)
-struct FMovementData
-{
-    GENERATED_BODY()
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stats ")
-    float MaxRunSpeed = 800.f;
-    
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stats")
-    float MaxStrafeSpeed = 650.f;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stats")
-    float StunMaxWalkSpeed;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stats")
-    UCurveFloat* DodgeCurve;
-};
+//USTRUCT(BlueprintType)
+//struct FMovementData
+//{
+//    GENERATED_BODY()
+//
+//    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stats ")
+//    float MaxRunSpeed = 800.f;
+//    
+//    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stats")
+//    float MaxStrafeSpeed = 650.f;
+//
+//    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stats")
+//    float StunMaxWalkSpeed;
+//
+//    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stats")
+//    UCurveFloat* DodgeCurve;
+//};
 
 USTRUCT(BlueprintType)
 struct FAttributeData
 {
     GENERATED_BODY()
 
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Health")
-    float MaxHealth = 100.f;
-    
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Energy")
-    float Energy = 100.f;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Energy")
-    float MaxEnergy = 100.f;
-    
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Energy")
     float DrainTickValue = 2.f;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Energy")
     float RegenerateTickValue = .5f;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Shield")
-    float MaxShieldHealth = 100.f;
 };
 
 USTRUCT(BlueprintType)
@@ -91,15 +78,6 @@ struct FInventoryData
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory")
     float InteractTargetRadius;
-};
-
-USTRUCT(BlueprintType)
-struct FPossessionData
-{
-    GENERATED_BODY()
-    
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Possession")
-    float ReleaseAndExecuteEnergyTax = 25.f;
 };
 
 USTRUCT(BlueprintType)
@@ -169,26 +147,36 @@ struct FCharMoveStats
     float FormerBaseVelocityDecayHalfLife = 1.0f;
 };
 
+USTRUCT(BlueprintType)
+struct FCharacterModeConfig
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditDefaultsOnly)
+    int32 TeamID;
+
+    UPROPERTY(EditDefaultsOnly)
+    bool bShowWeapon;
+    
+    UPROPERTY(EditDefaultsOnly)
+    bool bUseControllerRotationYaw;
+};
+
 UCLASS()
 class TESISUE_API UEntityData : public UDataAsset
 {
     GENERATED_BODY()
 
 public:
+
+    UPROPERTY(EditDefaultsOnly, Category = "Abilities")
+    TArray<TSubclassOf<UVelmaraGameplayAbility>> DefaultAbilities;
+    
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EntityData")
     FCombatData CombatData;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EntityData")
-    FMovementData MovementData;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EntityData")
-    FAttributeData AttributeData;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EntityData")
     FInventoryData InventoryData;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EntityData")
-    FPossessionData PossessionData;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EntityData")
     FTargetingData TargetingData;
@@ -198,9 +186,6 @@ public:
     
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EntityData")
     FSpringArmData SpringArmData;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Strategy")
-    TMap<ECharacterModeStates, TSubclassOf<UCombatStrategy>> ModeStrategies;
 
     /**
       This property is optional, so if you are filling these stats and do not

@@ -1,17 +1,17 @@
 #include "Items/Weapons/Sword.h"
 
 #include "AbilitySystemComponent.h"
+#include "AbilitySystemInterface.h"
 #include "Components/BoxComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "Interfaces/HitInterface.h"
 #include "Engine/DamageEvents.h"
-#include "Player/PlayerMain.h"
 #include "NiagaraFunctionLibrary.h"
 
-#include "DamageTypes/MeleeDamage.h" //don't delete pls
 #include "DataAssets/Items/Weapons/SwordData.h"
-#include "Items/Weapons/Commands/ComboCommand.h"
+#include "GAS/VelmaraAbilityInputID.h"
+#include "GAS/VelmaraGameplayAbility.h"
 #include "Subsystems/EffectsManager.h"
 
 ASword::ASword()
@@ -40,20 +40,57 @@ void ASword::BeginPlay()
 	if (!SwordDataAsset)
 	{
 		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "MISSING! Data asset of: " + GetName() + " is nullptr.");
+	}
+}
+
+void ASword::Pick(AActor* NewOwner)
+{
+	Super::Pick(NewOwner);
+
+	IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(NewOwner);
+	if (!ASI)
+	{
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "ASI is nullptr");
 		return;
 	}
-	
-	for (const auto& Pair : SwordDataAsset->Commands)
+
+	UAbilitySystemComponent* ASC = ASI->GetAbilitySystemComponent();
+	if (!ASC)
 	{
-		if (Pair.Value == nullptr) continue;
-		
-		CommandsInstances.Add(Pair.Key, *NewObject<UCommand>(this, Pair.Value));
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "ASC is nullptr");
+		return;
 	}
+		
+	if (SwordDataAsset && SwordDataAsset->WeaponTag.IsValid())
+	{
+		ASC->AddLooseGameplayTag(SwordDataAsset->WeaponTag);
+	}
+
+	if (SwordDataAsset)
+	{
+		for (TSubclassOf AbilityClass : SwordDataAsset->AbilitiesToGrant)
+		{
+			if (AbilityClass)
+			{
+				EVelmaraAbilityInputID InputID = EVelmaraAbilityInputID::None;
+				if (UVelmaraGameplayAbility* VGA = Cast<UVelmaraGameplayAbility>(AbilityClass.GetDefaultObject()))
+				{
+					InputID = VGA->AbilityInputID;
+				}
+
+				FGameplayAbilitySpec Spec(AbilityClass, 1, static_cast<int32>(InputID), this); 
+				FGameplayAbilitySpecHandle Handle = ASC->GiveAbility(Spec);
+				GrantedAbilityHandles.Add(Handle);
+
+				
+			}
+		}
+	}
+	
 }
 
 void ASword::Unequip()
 {
-	EnableWeaponState(false);
 	/*AttachMeshToSocket(AnimatorProvider->GetMeshComponent());*/
 }
 
@@ -67,7 +104,7 @@ void ASword::AttachMeshToSocket(USceneComponent* InParent)
 	Super::AttachMeshToSocket(InParent);
 
 	const FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, true);
-	ItemMesh->AttachToComponent(InParent, TransformRules, SwordDataAsset->Effects.CustomInSocketName);
+	ItemMesh->AttachToComponent(InParent, TransformRules, SwordDataAsset->CustomInSocketName);
 }
 
 void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -108,83 +145,13 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 			
 			if (bIsHittable)
 			{
-				//UGameplayStatics::ApplyDamage(
-				//	Hit.GetActor(),
-				//	CalculateDamage(),
-				//	ControllerProvider->GetEntityController(),
-				//	GetOwner(),
-				//	DamageTypeClass
-				//);
-
-				const IAbilitySystemInterface* TargetASI = Cast<IAbilitySystemInterface>(Hit.GetActor());
-				if (!TargetASI) return;
-
-				UAbilitySystemComponent* TargetASC = TargetASI->GetAbilitySystemComponent();
-				if (!TargetASC) return;
-
-				if (const IAbilitySystemInterface* SourceASI = Cast<IAbilitySystemInterface>(GetOwner()))
-				{
-					const UAbilitySystemComponent* SourceASC = SourceASI->GetAbilitySystemComponent();
-				}
-
-				FGameplayEffectContextHandle Context = TargetASC->MakeEffectContext();
-				Context.AddSourceObject(this);
-				Context.AddInstigator(GetInstigator(), this);
-
-				FGameplayEffectSpecHandle SpecHandle = TargetASC->MakeOutgoingSpec(DamageEffectClass, 1.f, Context);
-				if (SpecHandle.IsValid())
-				{
-					const float FinalDamage =- CalculateDamage();
-					SpecHandle.Data.Get()->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag("Damage"), FinalDamage);
-					TargetASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
-				}
+				OnHit(Hit.GetActor(), CalculateDamage());
 				
 				HitInterface->GetHit(GetOwner(), Hit.ImpactPoint, DamageEvent, SwordDataAsset->Stats.BaseDamage);
 			}
+			
 			ImpactEffects(Hit, bIsHittable);
 		}
-	}
-}
-
-void ASword::UseWeapon_Implementation(const EWeaponCommandType& CommandType)
-{
-	Super::UseWeapon_Implementation(CommandType);
-
-	if (CommandsInstances.Contains(CommandType))
-	{
-		CommandTypeSaved = EWeaponCommandType::EWCT_None; //clean of saved last attack 
-		
-		CommandsInstances[CommandType]->ExecuteCommand(Cast<AEntity>(GetOwner()));
-		if (OnWeaponUsed.IsBound()) OnWeaponUsed.Broadcast();
-	}
-}
-
-void ASword::SaveWeaponAttack_Implementation(const EWeaponCommandType& CommandType)
-{
-	Super::SaveWeaponAttack_Implementation(CommandType);
-
-	CommandTypeSaved = CommandType;
-}
-
-void ASword::SetDamageType_Implementation(const TSubclassOf<UMeleeDamage> DamageType)
-{
-	Super::SetDamageType_Implementation(DamageType);
-
-	if (DamageType == nullptr)
-	{
-		DamageTypeClass = UMeleeDamage::StaticClass();
-	}
-	
-	DamageTypeClass = DamageType;
-}
-
-void ASword::ResetWeapon_Implementation()
-{
-	Super::ResetWeapon_Implementation();
-
-	for (const auto& Pair : CommandsInstances)
-	{
-		Pair.Value->ResetCommand();
 	}
 }
 

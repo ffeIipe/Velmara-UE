@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "WeaponData.h"
 #include "Engine/DataAsset.h"
 #include "PistolData.generated.h"
 
@@ -30,9 +31,6 @@ struct FPistolEffects
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SFX")
     USoundBase* OutOfBlood;
-    
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SocketName")
-    FName CustomInSocketName;
 };
 
 USTRUCT(BlueprintType)
@@ -72,13 +70,13 @@ struct FPistolProperties
 };
 
 UCLASS(BlueprintType)
-class TESISUE_API UPistolData : public UDataAsset
+class TESISUE_API UPistolData : public UWeaponData
 {
     GENERATED_BODY()
 
 public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WeaponProperties")
-    FPistolProperties Stats;
+    FPistolProperties PistolTypeStats;
     
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WeaponProperties")
     FPistolMontages Montages;

@@ -1,10 +1,5 @@
 #include "Components/ExtraMovementComponent.h"
 
-#include "Entities/Entity.h"
-
-#include "Components/CharacterStateComponent.h"
-#include "Interfaces/AnimatorProvider.h"
-
 
 UExtraMovementComponent::UExtraMovementComponent()
 {
@@ -22,40 +17,9 @@ bool UExtraMovementComponent::IsMovingBackwards() const
 void UExtraMovementComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	AnimatorProvider = GetOwner();
-	CharacterStateProvider = GetOwner();
-	CharacterMovementProvider = GetOwner();
 }
 
-void UExtraMovementComponent::PerformDoubleJump(UAnimMontage* DoubleJumpMontage)
-{
-	AnimatorProvider->Execute_PlayAnimMontage(GetOwner(), DoubleJumpMontage, 1.f, "Default");
-	CharacterMovementProvider->Execute_GetCharacter(GetOwner())->LaunchCharacter(FVector(0.f, 0.f, DoubleJumpForce), false, true);
-	CanDoubleJump = false;
-}
-
-void UExtraMovementComponent::PlayDodgeAnim(UAnimMontage* DodgeMontage, const FOnDodgeStarted& OnDodgeStartedEvent) const
-{
-	if (!CharacterMovementProvider->Execute_GetCharacter(GetOwner())->bUseControllerRotationYaw)
-	{
-		if (const FVector MovementInput =CharacterMovementProvider->Execute_GetCharacter(GetOwner())->GetLastMovementInputVector(); !MovementInput.IsNearlyZero())
-		{
-			const FRotator LookRotation = MovementInput.Rotation();
-			GetOwner()->SetActorRotation(FRotator(0.f, LookRotation.Yaw, 0.f));
-		}
-		AnimatorProvider->Execute_PlayAnimMontage(GetOwner(), DodgeMontage, 1.f, "Default");
-	}
-	else
-	{
-		DodgeAnimBasedOnInput(DodgeMontage);	
-	}
-	
-	OnDodgeStarted.ExecuteIfBound();
-	OnDodgeStartedEvent.ExecuteIfBound();
-}
-
-void UExtraMovementComponent::DodgeAnimBasedOnInput(UAnimMontage* DodgeMontage) const
+FName UExtraMovementComponent::DodgeAnimBasedOnInput(UAnimMontage* DodgeMontage) const
 {
 	FName Section("Default");
 
@@ -75,7 +39,7 @@ void UExtraMovementComponent::DodgeAnimBasedOnInput(UAnimMontage* DodgeMontage) 
 		Section = FName("DodgeBack");
 	}
 
-	AnimatorProvider->Execute_PlayAnimMontage(GetOwner(), DodgeMontage, 1.f, Section);
+	return Section;
 }
 
 void UExtraMovementComponent::DodgeSaveEvent()
@@ -89,31 +53,4 @@ void UExtraMovementComponent::DodgeSaveEvent()
 			OnDodgeSaved.Broadcast();
 		}
 	}
-}
-
-void UExtraMovementComponent::PerformMove(const FVector2D& MoveVector, const bool bIsTriggered)
-{
-	CurrentMoveVector = MoveVector;
-	bIsMoving = true;
-	
-	const FRotator ControlRotation = CharacterMovementProvider->Execute_GetCharacter(GetOwner())->GetControlRotation();
-	const FRotator YawRotation(0.f, ControlRotation.Yaw, 0.f);
-
-	const FVector DirectionForward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-	const FVector DirectionSideward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-
-	CharacterMovementProvider->Execute_GetCharacter(GetOwner())->AddMovementInput(DirectionForward, MoveVector.Y);
-	CharacterMovementProvider->Execute_GetCharacter(GetOwner())->AddMovementInput(DirectionSideward, MoveVector.X);
-
-	if (!bIsTriggered)
-	{
-		CurrentMoveVector = FVector2D::ZeroVector;
-		bIsMoving = false;
-	}
-}
-
-void UExtraMovementComponent::PerformLook(const FVector2D& LookingVector) const
-{
-	CharacterMovementProvider->Execute_GetCharacter(GetOwner())->AddControllerPitchInput(LookingVector.Y);
-	CharacterMovementProvider->Execute_GetCharacter(GetOwner())->AddControllerYawInput(LookingVector.X);
 }

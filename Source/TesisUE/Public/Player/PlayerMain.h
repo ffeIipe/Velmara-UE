@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -17,21 +15,14 @@ class TESISUE_API APlayerMain : public AEntity
 public:
 	APlayerMain();
 	
-	virtual float TakeDamage(
-		float DamageAmount,
-		FDamageEvent const& DamageEvent,
-		AController* EventInstigator,
-		AActor* DamageCauser) override;
+	//virtual float TakeDamage(
+	//	float DamageAmount,
+	//	FDamageEvent const& DamageEvent,
+	//	AController* EventInstigator,
+	//	AActor* DamageCauser) override;
 	
-	virtual bool IsPossessed() override { return true; } //true by default, because it wouldn't be marked as a threat if not
+	virtual bool IsPossessed() { return true; } //true by default, because it wouldn't be marked as a threat if not
 	
-	// --- Components ---
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components | Modes")
-	UChangeModeComponent* ChangeModeComponent;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input | Config")
-	TObjectPtr<UInputMappingContext> DefaultInputContext;
-
 	// --- State & Interaction ---
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "State | Damage")
 	bool bCanReceiveDamage = true;
@@ -41,16 +32,12 @@ public:
 	void ResetFollowCamera();
 
 	// --- Forms ---
-	UFUNCTION(BlueprintCallable, Category = "Gameplay | Forms")
-	void ToggleForm();
+	//UFUNCTION(BlueprintCallable, Category = "Gameplay | Forms")
+	//void ToggleForm();
 
 protected:
-	virtual void BeginPlay() override;
-
 	UFUNCTION()
 	void PerformDead();
-
-	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
@@ -63,11 +50,11 @@ private:
 	
 	void LoadLastCheckpoint() const;
 	
-	void ApplyModeConfig(const ECharacterModeStates& Mode);
+	//void ApplyModeConfig(const ECharacterModeStates& Mode);
 
-	UFUNCTION()
-	void ApplyHumanMode();
+	//UFUNCTION()
+	//void ApplyHumanMode();
 
-	UFUNCTION()
-	void ApplySpectralMode();
+	//UFUNCTION()
+	//void ApplySpectralMode();
 };
