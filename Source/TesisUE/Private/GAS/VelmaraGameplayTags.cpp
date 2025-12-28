@@ -14,7 +14,8 @@ void FVelmaraGameplayTags::InitializeGameplayTags()
 	GameplayTags.State_Blocking = Manager.AddNativeGameplayTag(FName("State.Blocking"));
 	GameplayTags.State_Executing = Manager.AddNativeGameplayTag(FName("State.Executing"));
 	GameplayTags.State_Dodging = Manager.AddNativeGameplayTag(FName("State.Dodging"));
-	GameplayTags.State_ComboWindow = Manager.AddNativeGameplayTag(FName("State.ComboWindow"));
+	GameplayTags.State_ComboWindow_First = Manager.AddNativeGameplayTag(FName("State.ComboWindow.First"));
+	GameplayTags.State_ComboWindow_Second = Manager.AddNativeGameplayTag(FName("State.ComboWindow.Second"));
 	
 	GameplayTags.Mode_Primary = Manager.AddNativeGameplayTag(FName("Mode.Primary"));
 	GameplayTags.Mode_Secondary = Manager.AddNativeGameplayTag(FName("Mode.Secondary"));

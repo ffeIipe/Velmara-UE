@@ -5,21 +5,21 @@
 #include "VelmaraComboData.generated.h"
 
 USTRUCT(BlueprintType)
-struct FComboStep
+struct FComboNode
 {
 	GENERATED_BODY()
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	FName SectionName;
+	FName NextNodeOnTapName;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	FName NextSectionOnTap;
+	FName NextNodeOnHoldName;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UAnimMontage* MontageToPlay;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	FName NextSectionOnHold;
-    
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	float DamageMultiplier = 1.0f;
+	//UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	//float DamageMultiplier = 1.0f;
 };
 
 UCLASS(BlueprintType)
@@ -29,8 +29,8 @@ class TESISUE_API UVelmaraComboData : public UDataAsset
 
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combo")
-	TMap<FName, FComboStep> ComboNodes;
+	TMap<FName, FComboNode> ComboNodes;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combo")
-	FName StartSectionName = "Combo01";
+	FName StartingNode;
 };
