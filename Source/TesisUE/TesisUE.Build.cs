@@ -20,7 +20,8 @@ public class TesisUE : ModuleRules
 			"Chaos",
 			"GameplayTags",
 			"GameplayTasks",
-			"GameplayAbilities"
+			"GameplayAbilities",
+			"MotionWarping"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { "AnimGraphRuntime", "AnimGraphRuntime" });

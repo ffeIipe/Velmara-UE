@@ -66,10 +66,6 @@ void UTargetingComponent::HandleTargetDeath(AEntity* DeadEntity)
 
 void UTargetingComponent::HandleWeaponChanged(TScriptInterface<IWeaponInterface> NewWeapon)
 {
-    if (NewWeapon)
-    {
-        NewWeapon->OnWeaponUsed.AddUniqueDynamic(this, &UTargetingComponent::PerformSoftLock);
-    }
 }
 
 void UTargetingComponent::ToggleHardLock()
@@ -105,19 +101,12 @@ void UTargetingComponent::ChangeHardLockTarget()
     CurrentTarget = CombatTargets[CombatTargetIndex];
 }
 
-void UTargetingComponent::PerformSoftLock()
+AActor* UTargetingComponent::PerformSoftLock(const float Distance, const float Radius) const
 {
-    if (bIsHardLocking) return;
-
     const FVector Start = GetOwner()->GetActorLocation();
-    const FVector End = OwnerCharacter->GetLastMovementInputVector() * SoftLockDistance + GetOwner()->GetActorLocation();
+    const FVector End = OwnerCharacter->GetLastMovementInputVector() * Distance + GetOwner()->GetActorLocation();
 
-    CurrentTarget = SearchCombatTarget(Start, End, SoftLockRadius);
-    
-    if (CurrentTarget && CurrentTarget->IsAlive())
-    {
-        SoftLockTimeline->PlayFromStart();
-    }
+    return SearchCombatTarget(Start, End, Radius);
 }
 
 bool UTargetingComponent::PickHardLockTarget()
@@ -213,7 +202,7 @@ void UTargetingComponent::RemoveCombatTarget()
     }
 }
 
-AEntity* UTargetingComponent::SearchCombatTarget(
+AActor* UTargetingComponent::SearchCombatTarget(
     const FVector& Start, const FVector& End, const float SearchRadius) const
 {
     TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
@@ -231,17 +220,14 @@ AEntity* UTargetingComponent::SearchCombatTarget(
         ObjectTypes,
         false,
         ActorsToIgnore,
-        EDrawDebugTrace::None,
+        EDrawDebugTrace::ForDuration,
         ResultHit,
         true
     );
 
     if (bHit)
     {
-        if (AEntity* Entity = Cast<AEntity>(ResultHit.GetActor()); Entity->IsAlive())
-        {
-            return Entity;
-        }
+        return ResultHit.GetActor();
     }
     return nullptr;
 }

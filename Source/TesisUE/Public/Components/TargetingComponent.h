@@ -48,7 +48,7 @@ public:
     void ChangeHardLockTarget();
 
     UFUNCTION(BlueprintCallable, Category = "Targeting")
-    void PerformSoftLock();
+    AActor* PerformSoftLock(float Distance, float Radius) const;
 
     UFUNCTION(BlueprintCallable, Category = "Targeting")
     AEntity* GetCurrentTarget() const { return CurrentTarget; }
@@ -57,7 +57,7 @@ public:
     void RemoveCombatTarget();
 
     UFUNCTION(BlueprintCallable, Category = "Targeting")
-    AEntity* SearchCombatTarget(const FVector& Start, const FVector& End, float SearchRadius) const;
+    AActor* SearchCombatTarget(const FVector& Start, const FVector& End, float SearchRadius) const;
     
     bool IsLocking() const { return bIsHardLocking; }
     
