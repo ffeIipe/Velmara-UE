@@ -8,8 +8,7 @@
 #include "Items/Item.h"
 #include "Sword.generated.h"
 
-class UTest_VelmaraComboData;
-class UVelmaraComboData;
+class UComboChain;
 class USwordData;
 class UCommand;
 class UMeleeDamage;
@@ -34,10 +33,7 @@ public:
     USwordData* SwordDataAsset = Cast<USwordData>(WeaponData);
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
-    UVelmaraComboData* ComboData;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
-    UTest_VelmaraComboData* AnimComboData;
+    UComboChain* ComboData;
 
     UPROPERTY()
     TArray<AActor*> IgnoreActors;
