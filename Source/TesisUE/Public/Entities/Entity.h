@@ -121,10 +121,6 @@ public:
 
 	void HitReactJumpToSection(FName Section);
 
-	//UFUNCTION()
-	//void OnWallCollision();
-	void PerformDoubleJump(UAnimMontage* DoubleJumpMontage);
-
 	// === Delegates ===
 	UPROPERTY(BlueprintAssignable)
 	FOnEntityDead OnDead;
@@ -143,6 +139,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Entity Flag")
 	bool IsStunned() const;
+
+	//TODO: Check
+	virtual void Landed(const FHitResult& Hit) override;
 
 	UFUNCTION(BlueprintCallable, Category = "Entity Flag")
 	bool IsBlocking() const;
@@ -173,10 +172,6 @@ protected:
 	// === Actor Functions ===
 	virtual void BeginPlay() override;
 	virtual void OnConstruction(const FTransform &Transform) override;
-	
-	// === Movement Inherited Functions ===
-	virtual void Landed(const FHitResult& Hit) override;
-	virtual void Jump() override;
 	
 	void InitializeComponentsData() const;
 

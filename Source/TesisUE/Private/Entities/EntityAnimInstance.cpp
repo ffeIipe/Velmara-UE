@@ -37,4 +37,13 @@ void UEntityAnimInstance::NativeUpdateAnimation(const float DeltaTime)
 		
 		Direction = UKismetAnimationLibrary::CalculateDirection(CharacterMovementComponent->Velocity, EntityOwner->GetActorRotation());
 	}
+
+	if (bIsFalling)
+	{
+		if (GEngine) GEngine->AddOnScreenDebugMessage(323, 1.f, FColor::Cyan, "Falling!");
+	}
+	else
+	{
+		if (GEngine) GEngine->AddOnScreenDebugMessage(323, 1.f, FColor::Red, "Not Falling!");
+	}
 }

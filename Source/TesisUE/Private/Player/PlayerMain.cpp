@@ -30,19 +30,6 @@ void APlayerMain::PerformDead()
 	Die(MontagesData->Montages.DeathMontage, NAME_None);
 }
 
-void APlayerMain::PossessedBy(AController* NewController)
-{
-	Super::PossessedBy(NewController);
-
-	if (AbilitySystemComponent)
-	{
-		AbilitySystemComponent->InitAbilityActorInfo(this, this);
-		InitializeAttributeSet();
-
-		GiveDefaultAbilities();
-	}
-}
-
 void APlayerMain::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
@@ -50,8 +37,6 @@ void APlayerMain::OnRep_PlayerState()
 	if (AbilitySystemComponent)
 	{
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
-
-		//bind inputs
 	}
 }
 

@@ -317,6 +317,14 @@ void AEntity::BeginPlay()
 		TargetingComponent->OnHardLockOn.AddDynamic(this, &AEntity::EnableControllerRotationYaw);
 		TargetingComponent->OnHardLockOff.AddDynamic(this, &AEntity::DisableControllerRotationYaw);
 	}
+
+	if (AbilitySystemComponent)
+	{
+		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+		InitializeAttributeSet();
+
+		GiveDefaultAbilities();
+	}
 }
 
 void AEntity::InitializeComponentsData() const
@@ -407,20 +415,6 @@ void AEntity::Landed(const FHitResult& Hit)
 	}
 }
 
-void AEntity::Jump()
-{
-	PlayAnimMontage(MontagesData->Montages.JumpMontage, 1.f, "Default");
-
-	Super::Jump();
-
-	if (GetCharacterMovement()->IsFalling() && CanDoubleJump)
-	{
-		if (!IsAlive() || IsStunned() || IsBlocking()) return;
-
-		PerformDoubleJump(MontagesData->Montages.DoubleJumpMontage);
-	}
-}	
-
 void AEntity::EnableControllerRotationYaw()
 {
 	bUseControllerRotationYaw = true;
@@ -454,11 +448,4 @@ void AEntity::Die(UAnimMontage* DeathAnim, const FName Section)
 		StopAnimMontage(GetCurrentMontage());
 		PlayAnimMontage(DeathAnim, 1.f, Section);
 	}
-}
-
-void AEntity::PerformDoubleJump(UAnimMontage* DoubleJumpMontage)
-{
-	PlayAnimMontage(DoubleJumpMontage, 1.f, "Default");
-	LaunchCharacter(FVector(0.f, 0.f, /*DoubleJumpForce*/800.f), false, true);
-	CanDoubleJump = false;
 }
