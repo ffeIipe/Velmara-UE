@@ -2,6 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Decoders/ADPCMAudioInfo.h"
+#include "Interfaces/Pickable.h"
 #include "InventoryComponent.generated.h"
 
 class IWeaponInterface;
@@ -39,24 +41,6 @@ public:
     TScriptInterface<IWeaponInterface> CurrentWeapon;
 
     void InitializeValues(const FInventoryData& InventoryData);
-    
-protected:
-    virtual void BeginPlay() override;
-    
-    UPROPERTY(EditDefaultsOnly, Category = "Inventory UI")
-    TSubclassOf<UUserWidget> InventoryWidgetClass;
-
-    UPROPERTY(Transient)
-    UInventory* InventoryWidgetInstance = nullptr;
-
-    UPROPERTY(Transient)
-    APlayerController* PlayerControllerRef = nullptr;
-
-    bool bIsInventoryOpen = false;
-
-public:
-    UPROPERTY(EditAnywhere, Category = "Inventory", Transient)
-    TArray<TScriptInterface<IWeaponInterface>> InventorySlots;
 
     UFUNCTION(BlueprintPure, Category = "Inventory")
     TScriptInterface<IWeaponInterface> GetCurrentWeapon() const { return CurrentWeapon; }
@@ -85,26 +69,43 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Inventory")
     void ChangeWeapon(int32 SlotIndex);
 
+    UFUNCTION(BlueprintCallable, Category = "Inventory")
+    void PerformInteract(const FVector& StartTrace, const FVector& EndTrace, float RadiusTrace);
+
     void ToggleInventorySlot();
     
     void UnequipCurrentWeapon();
     
     void UpdateInventoryUI();
 
-    TScriptInterface<IWeaponInterface> PerformInteract();
+    void SaveInventory();
+    void LoadInventory();
+    
+protected:
+    virtual void BeginPlay() override;
+    
+    UPROPERTY(EditDefaultsOnly, Category = "Inventory UI")
+    TSubclassOf<UUserWidget> InventoryWidgetClass;
+
+    UPROPERTY(Transient)
+    UInventory* InventoryWidgetInstance = nullptr;
+
+    UPROPERTY(Transient)
+    APlayerController* PlayerControllerRef = nullptr;
+
+    bool bIsInventoryOpen = false;
+
+public:
+    UPROPERTY(EditAnywhere, Category = "Inventory", Transient)
+    TArray<TScriptInterface<IWeaponInterface>> InventorySlots;
 
     UPROPERTY(SaveGame)
     TArray<FInventoryItemSaveData> SavedInventoryData;
-
-    void SaveInventory();
-    void LoadInventory();
     
 private:
     void InitializeInventoryWidget();
 
     int32 MaxSlots;
-    float InteractTraceLenght;
-    float InteractTargetRadius;
     
     UPROPERTY()
     AController* OwnerController = nullptr;

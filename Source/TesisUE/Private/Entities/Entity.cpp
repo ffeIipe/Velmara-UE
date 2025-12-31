@@ -33,10 +33,6 @@ AEntity::AEntity()
 
 	AttributeSet = CreateDefaultSubobject<UVelmaraAttributeSet>(TEXT("AttributeSet"));
 	
-	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("Combat"));
-
-	ExtraMovementComponent = CreateDefaultSubobject<UExtraMovementComponent>(TEXT("ExtraMovement"));
-
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("Inventory"));
 
 	TargetingComponent = CreateDefaultSubobject<UTargetingComponent>(TEXT("Targeting"));
@@ -138,26 +134,9 @@ void AEntity::GetHit(AActor* DamageCauser, const FVector& ImpactPoint, FDamageEv
 	GetDirectionalReact(ImpactPoint);
 }
 
-void AEntity::GetFinished()
-{
-	
-}
-
 bool AEntity::IsHittable()
 {
 	return !IsShielded() && IsAlive() && !IsBlocking();
-}
-
-void AEntity::AddStunBehavior()
-{
-	//GetCharacterMovement()->MaxWalkSpeed = EntityData->MovementData.StunMaxWalkSpeed;
-	AddGameplayTag(FVelmaraGameplayTags::Get().State_Stunned);
-}
-
-void AEntity::RemoveStunBehavior()
-{
-	//GetCharacterMovement()->MaxWalkSpeed = EntityData->MovementData.MaxRunSpeed;
-	RemoveGameplayTag(FVelmaraGameplayTags::Get().State_Stunned);
 }
 
 TScriptInterface<IWeaponInterface> AEntity::GetCurrentWeapon() const
@@ -306,18 +285,6 @@ void AEntity::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (InventoryComponent)
-	{
-		InventoryComponent->OnWeaponChanged.AddDynamic(CombatComponent, &UCombatComponent::HandleWeaponChanged);
-		InventoryComponent->OnWeaponChanged.AddDynamic(TargetingComponent, &UTargetingComponent::HandleWeaponChanged);
-	}
-
-	if (TargetingComponent)
-	{
-		TargetingComponent->OnHardLockOn.AddDynamic(this, &AEntity::EnableControllerRotationYaw);
-		TargetingComponent->OnHardLockOff.AddDynamic(this, &AEntity::DisableControllerRotationYaw);
-	}
-
 	if (AbilitySystemComponent)
 	{
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
@@ -331,9 +298,7 @@ void AEntity::InitializeComponentsData() const
 {
 	if (EntityData)
 	{
-		CombatComponent->InitializeValues(EntityData->CombatData);
 		InventoryComponent->InitializeValues(EntityData->InventoryData);
-		TargetingComponent->InitializeValues(EntityData->TargetingData);
 		
 		GetSpringArmComponent()->TargetArmLength = EntityData->SpringArmData.SpringArmLength;
 		GetSpringArmComponent()->SocketOffset = EntityData->SpringArmData.SocketOffset;
@@ -402,9 +367,6 @@ void AEntity::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);
 	
-	CombatComponent->bIsLaunched = false;
-	CanDoubleJump = true;
-
 	if (IsAlive())
 	{
 		GetCharacterMovement()->DisableMovement();
@@ -413,23 +375,6 @@ void AEntity::Landed(const FHitResult& Hit)
 
 		Die(MontagesData->Montages.DeathMontage, FName("DeathFromHeight"));
 	}
-}
-
-void AEntity::EnableControllerRotationYaw()
-{
-	bUseControllerRotationYaw = true;
-	GetCharacterMovement()->bOrientRotationToMovement = false;
-}
-
-void AEntity::DisableControllerRotationYaw()
-{
-	bUseControllerRotationYaw = false;
-	GetCharacterMovement()->bOrientRotationToMovement = true;
-}
-
-void AEntity::Interact()
-{
-	GetInventoryComponent()->PerformInteract();
 }
 
 void AEntity::Die(UAnimMontage* DeathAnim, const FName Section)

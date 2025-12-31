@@ -101,9 +101,9 @@ void APaladin::DeactivateEnemy()
 	Super::DeactivateEnemy();
 }
 
-void APaladin::LaunchUp()
+/*void APaladin::LaunchUp()
 {
-	/*if (bIsLaunched) return;*/
+	/*if (bIsLaunched) return;
 	GetCharacterMovement()->SetMovementMode(MOVE_Flying);
 	Super::LaunchUp();
 	
@@ -112,7 +112,7 @@ void APaladin::LaunchUp()
 	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, GetName() + " was launched.");
 	DisableAI();
 	PlayAnimMontage(MontagesData->Montages.HitReactMontage, 1.f, FName("FromAir"));
-}
+}*/
 
 void APaladin::Die(UAnimMontage* DeathAnim, const FName Section)
 {
@@ -178,7 +178,7 @@ void APaladin::ReactToDamage(const EMeleeDamageTypes DamageType, const FVector& 
 	/*case EMainDamageTypes::EMDT_Pistol:*/
 
 	case EMeleeDamageTypes::EMDT_Launch:
-		LaunchUp();
+		//LaunchUp();
 		break;
 		
 	case EMeleeDamageTypes::EMDT_None:

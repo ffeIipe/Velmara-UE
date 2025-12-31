@@ -1,7 +1,6 @@
 #include "Enemy/AnimInstace/EnemyCharacterAnimInstance.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "Components/ExtraMovementComponent.h"
 #include "DataAssets/EntityData.h"
 
 void UEnemyCharacterAnimInstance::NativeInitializeAnimation()

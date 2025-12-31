@@ -1,54 +1,42 @@
 #include "Components/TargetingComponent.h"
-#include "Components/TimelineComponent.h"
 #include "Curves/CurveFloat.h"
-#include "DataAssets/EntityData.h"
 #include "Entities/Entity.h"
 #include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
-#include "Interfaces/Weapon/WeaponInterface.h"
 
 UTargetingComponent::UTargetingComponent()
 {
     PrimaryComponentTick.bCanEverTick = true;
     PrimaryComponentTick.TickInterval = 0.01f;
-    SoftLockTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("SoftLockTimeline"));
-}
 
-void UTargetingComponent::InitializeValues(const FTargetingData& TargetingData)
-{
-    SoftLockCurve = TargetingData.SoftLockCurve;
+    CurrentTarget = nullptr;
+    CombatTargets.Empty();
 }
 
 void UTargetingComponent::BeginPlay()
 {
     Super::BeginPlay();
+    
     PrimaryComponentTick.bStartWithTickEnabled = false;
-    SetComponentTickEnabled(false);
     PrimaryComponentTick.TickInterval = 0.01f;
+    SetComponentTickEnabled(false);
 
     OwnerCharacter = Cast<ACharacter>(GetOwner());
     if (OwnerCharacter)
     {
         OwnerController = Cast<AController>(OwnerCharacter->GetController());
     }
-
-    if (SoftLockCurve)
-    {
-        FOnTimelineFloat ProgressSoftLockFunction;
-        ProgressSoftLockFunction.BindUFunction(this, FName("UpdateSoftLockOn"));
-        SoftLockTimeline->AddInterpFloat(SoftLockCurve, ProgressSoftLockFunction);
-    }
 }
 
-void UTargetingComponent::TickComponent(const float DeltaTime, const ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void UTargetingComponent::TickComponent(float DeltaTime, enum ELevelTick TickType,
+    FActorComponentTickFunction* ThisTickFunction)
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-    if (bIsHardLocking && !CurrentTarget)
-    {
-        RotateTowardsHardLockTarget(CurrentTarget, DeltaTime);
-    }
+    CombatTargets = GetTargets(1500.f);
+    CurrentTarget = SelectNearestTarget(CombatTargets);
+    RotateTowardsTarget(CurrentTarget);
 }
 
 void UTargetingComponent::HandleTargetDeath(AEntity* DeadEntity)
@@ -57,68 +45,46 @@ void UTargetingComponent::HandleTargetDeath(AEntity* DeadEntity)
     {
         DeadEntity->OnDead.RemoveDynamic(this, &UTargetingComponent::HandleTargetDeath);
         
-        if (!PickHardLockTarget())
+        /*if (!SelectNearestTargetInRadius(TODO))
         {
-            ToggleHardLock();
-        }
+            EnableLock();
+        }*/
     }
 }
 
-void UTargetingComponent::HandleWeaponChanged(TScriptInterface<IWeaponInterface> NewWeapon)
+void UTargetingComponent::EnableLock()
 {
+    bIsLocking = true;
+    SetComponentTickEnabled(true);
 }
 
-void UTargetingComponent::ToggleHardLock()
+void UTargetingComponent::DisableLock()
 {
-    bIsHardLocking = !bIsHardLocking;
+    bIsLocking = false;
+    SetComponentTickEnabled(false);
     
-    if (bIsHardLocking)
-    {
-        if (PickHardLockTarget())
-        {
-            SetComponentTickEnabled(true);
-            if (OnHardLockOn.IsBound()) OnHardLockOn.Broadcast();
-        }
-        else
-        {
-            bIsHardLocking = false;
-        }
-    }
-    else
-    {
-        CurrentTarget = nullptr;
-        CombatTargets.Empty();
-        SetComponentTickEnabled(false);
-        if (OnHardLockOff.IsBound()) OnHardLockOff.Broadcast();
-    }
+    CurrentTarget = nullptr;
+    CombatTargets.Empty();
 }
 
 void UTargetingComponent::ChangeHardLockTarget()
 {
-    if (!bIsHardLocking || CombatTargets.Num() == 0) return;
+    if (!bIsLocking || CombatTargets.Num() == 0) return;
     
     CombatTargetIndex = (CombatTargetIndex + 1) % CombatTargets.Num();
     CurrentTarget = CombatTargets[CombatTargetIndex];
 }
 
-AActor* UTargetingComponent::PerformSoftLock(const float Distance, const float Radius) const
+AActor* UTargetingComponent::SelectNearestTarget(TArray<AActor*> Targets)
 {
-    const FVector Start = GetOwner()->GetActorLocation();
-    const FVector End = OwnerCharacter->GetLastMovementInputVector() * Distance + GetOwner()->GetActorLocation();
-
-    return SearchCombatTarget(Start, End, Radius);
-}
-
-bool UTargetingComponent::PickHardLockTarget()
-{
-    CombatTargets = GetCombatTargets(HardLockRadius);
-
-    float MinDistance = TNumericLimits<float>::Max(); 
-    AEntity* ClosestCombatTarget = nullptr;
+    if (Targets.Num() == 0) return nullptr;
     
-    for (const auto CombatTarget : CombatTargets)
+    float MinDistance = TNumericLimits<float>::Max(); 
+    AActor* ClosestCombatTarget = nullptr;
+    
+    for (const auto CombatTarget : Targets)
     {
-        if (CombatTarget && CombatTarget->IsAlive())
+        if (CombatTarget)
         {
             if (const float NewDistance = FVector::Dist(CombatTarget->GetActorLocation(), GetOwner()->GetActorLocation()); NewDistance < MinDistance)
             {
@@ -142,29 +108,38 @@ bool UTargetingComponent::PickHardLockTarget()
             NewTarget->OnDead.AddUniqueDynamic(this, &UTargetingComponent::HandleTargetDeath);
         }
         
-        return true;
+        return ClosestCombatTarget;
     }
-    return false;
+
+    return nullptr;
 }
 
-void UTargetingComponent::RotateTowardsHardLockTarget(const AActor* Target, const float DeltaTime) const
+void UTargetingComponent::RotateTowardsTarget(AActor* Target)
 {
-    if (!OwnerController || !OwnerCharacter || !Target) return;
+    if (!OwnerController || !OwnerCharacter || !Target)
+    {
+        if (bIsLocking)
+        {
+            DisableLock();
+        }
+        
+        return;
+    }
 
     const FVector StartLocation = OwnerCharacter->GetPawnViewLocation();
-    const FVector TargetLocation = Target->GetActorLocation() + FVector(0.f, 0.f, 70.f);
+    const FVector TargetLocation = CurrentTarget->GetActorLocation() + FVector(0.f, 0.f, 70.f);
     
     const FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(StartLocation, TargetLocation);
     const FRotator CurrentControlRotation = OwnerController->GetControlRotation();
     
-    const FRotator NewControlRotation = FMath::RInterpTo(CurrentControlRotation, TargetRotation, DeltaTime, 15.f);
+    const FRotator NewControlRotation = FMath::RInterpTo(CurrentControlRotation, TargetRotation, GetWorld()->DeltaTimeSeconds, 15.f);
     OwnerController->SetControlRotation(NewControlRotation);
 
     const FRotator NewActorRotation = FRotator(0.f, TargetRotation.Yaw, 0.f);
     OwnerCharacter->SetActorRotation(NewActorRotation);
 }
 
-TArray<AEntity*> UTargetingComponent::GetCombatTargets(const float Radius) const
+TArray<AActor*> UTargetingComponent::GetTargets(const float Radius) const
 {
     TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
     ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
@@ -183,20 +158,17 @@ TArray<AEntity*> UTargetingComponent::GetCombatTargets(const float Radius) const
         Hits
     );
 
-    TArray<AEntity*> FinalCombatTargets;
+    TArray<AActor*> Actors;
     for (const auto Target : Hits)
     {
-        if (AEntity* Entity = Cast<AEntity>(Target); Entity->IsAlive())
-        {
-            FinalCombatTargets.Add(Entity);
-        }
+        Actors.Add(Target);
     }
-    return FinalCombatTargets;
+    return Actors;
 }
 
 void UTargetingComponent::RemoveCombatTarget()
 {
-    if (!bIsHardLocking)
+    if (!bIsLocking)
     {
         CurrentTarget = nullptr;
     }
@@ -230,22 +202,4 @@ AActor* UTargetingComponent::SearchCombatTarget(
         return ResultHit.GetActor();
     }
     return nullptr;
-}
-
-void UTargetingComponent::UpdateSoftLockOn(float Alpha)
-{
-    const FVector Start = GetOwner()->GetActorLocation();
-
-    if (!CurrentTarget) return;
-    const FVector End = CurrentTarget->GetActorLocation();
-
-    FRotator NewRotation = FRotator(
-        GetOwner()->GetActorRotation().Pitch,
-        UKismetMathLibrary::FindLookAtRotation(Start, End).Yaw,
-        UKismetMathLibrary::FindLookAtRotation(Start, End).Roll
-    );
-
-    NewRotation = FMath::Lerp(GetOwner()->GetActorRotation(), NewRotation, Alpha);
-
-    GetOwner()->SetActorRotation(NewRotation);
 }

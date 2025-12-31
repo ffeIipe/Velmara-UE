@@ -17,8 +17,6 @@ public:
 	virtual void ActivateEnemy(const FVector& Location, const FRotator& Rotation) override;
 
 	virtual void DeactivateEnemy() override;
-	
-	virtual void LaunchUp() override;
 
 	virtual void ShieldHit_Implementation() {}
 

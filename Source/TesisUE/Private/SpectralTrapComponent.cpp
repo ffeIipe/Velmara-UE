@@ -78,7 +78,7 @@ void USpectralTrapComponent::FinishDamaging()
 {
 	if (OverlappingPlayer)
 	{
-		OverlappingPlayer->RemoveStunBehavior();
+		//Remove stun
 	}
 	//DestroyComponent();
 }

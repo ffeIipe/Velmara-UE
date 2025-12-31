@@ -9,51 +9,6 @@ class UInputAction;
 class UNiagaraSystem;
 
 USTRUCT(BlueprintType)
-struct FCombatData
-{
-    GENERATED_BODY()
-    
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stats")
-    float BufferAttackDistance;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Curves")
-    UCurveFloat* BufferCurve;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Curves")
-    UCurveFloat* LaunchUpCurve;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Curves")
-    UCurveFloat* BufferBackwardsCurve;
-};
-
-USTRUCT(BlueprintType)
-struct FTargetingData
-{
-    GENERATED_BODY()
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Curves")
-    UCurveFloat* SoftLockCurve;
-};
-
-//USTRUCT(BlueprintType)
-//struct FMovementData
-//{
-//    GENERATED_BODY()
-//
-//    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stats ")
-//    float MaxRunSpeed = 800.f;
-//    
-//    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stats")
-//    float MaxStrafeSpeed = 650.f;
-//
-//    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stats")
-//    float StunMaxWalkSpeed;
-//
-//    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stats")
-//    UCurveFloat* DodgeCurve;
-//};
-
-USTRUCT(BlueprintType)
 struct FAttributeData
 {
     GENERATED_BODY()
@@ -72,12 +27,6 @@ struct FInventoryData
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory")
     int32 MaxSlots = 2;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory")
-    float InteractTraceLenght;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory")
-    float InteractTargetRadius;
 };
 
 USTRUCT(BlueprintType)
@@ -173,24 +122,16 @@ public:
     TArray<TSubclassOf<UVelmaraGameplayAbility>> DefaultAbilities;
     
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EntityData")
-    FCombatData CombatData;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EntityData")
     FInventoryData InventoryData;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EntityData")
-    FTargetingData TargetingData;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EntityData")
     FCharMoveStats CharMoveData;
     
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EntityData")
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly,Category = "EntityData")
     FSpringArmData SpringArmData;
 
-    /**
-      This property is optional, so if you are filling these stats and do not
-      want to spawn with a weapon, leave it blank.
-     **/
+    /** This property is optional, so if you are filling these stats and do not
+      want to spawn with a weapon, leave it blank. **/
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "InitialWeapon")
     TSubclassOf<AActor> InitialWeapon;
 };

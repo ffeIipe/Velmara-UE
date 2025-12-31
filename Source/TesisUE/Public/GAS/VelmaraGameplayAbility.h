@@ -7,7 +7,7 @@
 
 enum class EVelmaraAbilityInputID : uint8;
 
-UCLASS()
+UCLASS(BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced)
 class TESISUE_API UVelmaraGameplayAbility : public UGameplayAbility
 {
 	GENERATED_BODY()

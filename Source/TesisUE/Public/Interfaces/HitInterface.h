@@ -17,11 +17,5 @@ class TESISUE_API IHitInterface
 public:
 	virtual void GetHit(AActor* DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived) = 0;
 	
-	virtual void GetFinished() = 0;
-
 	virtual bool IsHittable() = 0;
-	
-	virtual void AddStunBehavior() = 0;
-	
-	virtual void RemoveStunBehavior() = 0;
 };

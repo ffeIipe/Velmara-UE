@@ -36,7 +36,7 @@ void ASpectralTrap::StartDamage()
 	
 	TimeOnTarget = 0.f;
 	
-	HitActor->AddStunBehavior();
+	//Add GameplayTag and stun
 	
 	DealContinuousDamage();
 	
@@ -55,7 +55,7 @@ void ASpectralTrap::FinishDamage()
 	TimeOnTarget = 0.f;
 	InitialDamage = 0.f;
 	
-	HitActor->RemoveStunBehavior();
+	//Remove GameplayTag 
 	GetWorld()->GetTimerManager().ClearTimer(ContinuousDamageTimerHandle);
 
 	HitActor = nullptr;

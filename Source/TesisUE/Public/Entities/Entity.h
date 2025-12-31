@@ -4,8 +4,6 @@
 #include "GameFramework/Character.h"
 
 #include "Camera/CameraComponent.h"
-#include "Components/CombatComponent.h"
-#include "Components/ExtraMovementComponent.h"
 #include "Components/InventoryComponent.h"
 #include "Components/TargetingComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -71,12 +69,6 @@ public:
 	virtual void OnLoadGame_Implementation(const FEntitySaveData& InData) override;
 	
 	UFUNCTION(BlueprintPure, Category = "Components")
-	virtual UCombatComponent* GetCombatComponent() { return CombatComponent; };
-
-	UFUNCTION(BlueprintPure, Category = "Components")
-	virtual UExtraMovementComponent* GetExtraMovementComponent() { return ExtraMovementComponent; }
-
-	UFUNCTION(BlueprintPure, Category = "Components")
 	FORCEINLINE UInventoryComponent* GetInventoryComponent() const { return InventoryComponent; }
 
 	UFUNCTION(BlueprintPure, Category = "Components")
@@ -97,10 +89,8 @@ public:
 	// === Hit Interface ===
 	virtual void GetHit(AActor* DamageCauser, const FVector& ImpactPoint,
 	                    FDamageEvent const& DamageEvent, const float DamageReceived) override;
-	virtual void GetFinished() override;
+
 	virtual bool IsHittable() override;
-	virtual void AddStunBehavior() override;
-	virtual void RemoveStunBehavior() override;
 
 	UFUNCTION(BlueprintPure)
 	TScriptInterface<IWeaponInterface> GetCurrentWeapon() const; 
@@ -113,7 +103,6 @@ public:
 	
 	UFUNCTION(BlueprintCallable)
 	virtual void GetDirectionalReact(const FVector& ImpactPoint); 
-	virtual void LaunchUp() { CombatComponent->StartLaunchingUp(); }
 
 	// === Gameplay Actions ===
 	UFUNCTION(BlueprintCallable, Category = "Combat | Weapon")
@@ -195,19 +184,10 @@ protected:
 	UPROPERTY()
 	TArray<AActor*> IgnoreActors;
 
-	UFUNCTION(BlueprintCallable)
-	void Interact();
-
 	// === Components ===
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Abilities") //fkn god
 	UAbilitySystemComponent* AbilitySystemComponent;
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	UCombatComponent* CombatComponent;
-
-	UPROPERTY(BlueprintReadOnly)
-	UExtraMovementComponent* ExtraMovementComponent;
-
 	UPROPERTY(VisibleAnywhere, BlueprintGetter = GetInventoryComponent)
 	UInventoryComponent* InventoryComponent;
 
@@ -225,16 +205,4 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FName UniqueSaveID;
-	
-private:
-	bool bPrimaryInputHeld;
-
-	UFUNCTION()
-	void EnableControllerRotationYaw();
-
-	UFUNCTION()
-	void DisableControllerRotationYaw();
-
-	bool CanDoubleJump;
-	
 };

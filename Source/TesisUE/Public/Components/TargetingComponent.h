@@ -10,10 +10,6 @@ struct FTargetingData;
 class UTimelineComponent;
 class UCurveFloat;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHardLockToggled);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHardLockOn);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHardLockOff);
-
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class TESISUE_API UTargetingComponent : public UActorComponent
 {
@@ -22,47 +18,40 @@ class TESISUE_API UTargetingComponent : public UActorComponent
 public:
     UTargetingComponent();
 
-    void InitializeValues(const FTargetingData& TargetingData);
-
-    virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-    
-    UPROPERTY(BlueprintAssignable)
-    FOnHardLockToggled OnHardLockToggled;
-
-    UPROPERTY(BlueprintAssignable)
-    FOnHardLockOn OnHardLockOn;
-    
-    UPROPERTY(BlueprintAssignable)
-    FOnHardLockOff OnHardLockOff;
-
     UFUNCTION()
     void HandleTargetDeath(AEntity* DeadEntity);
     
-    UFUNCTION()
-    void HandleWeaponChanged(TScriptInterface<IWeaponInterface> NewWeapon);
-    
     UFUNCTION(BlueprintCallable, Category = "Targeting")
-    void ToggleHardLock();
+    void EnableLock();
 
+    UFUNCTION(BlueprintCallable, Category = "Targeting")
+    void DisableLock();
+    
     UFUNCTION(BlueprintCallable, Category = "Targeting")
     void ChangeHardLockTarget();
 
     UFUNCTION(BlueprintCallable, Category = "Targeting")
-    AActor* PerformSoftLock(float Distance, float Radius) const;
+    AActor* GetCurrentTarget() const { return CurrentTarget; }
 
     UFUNCTION(BlueprintCallable, Category = "Targeting")
-    AEntity* GetCurrentTarget() const { return CurrentTarget; }
-
-    UFUNCTION()
     void RemoveCombatTarget();
 
     UFUNCTION(BlueprintCallable, Category = "Targeting")
     AActor* SearchCombatTarget(const FVector& Start, const FVector& End, float SearchRadius) const;
     
-    bool IsLocking() const { return bIsHardLocking; }
+    UFUNCTION(BlueprintCallable, Category = "Targeting")
+    AActor* SelectNearestTarget(TArray<AActor*> Targets);
+
+    UFUNCTION(BlueprintCallable, Category = "Targeting")
+    void RotateTowardsTarget(AActor* Target);
+    
+    UFUNCTION(BlueprintCallable, Category = "Targeting")
+    TArray<AActor*> GetTargets(const float Radius) const;
     
 protected:
     virtual void BeginPlay() override;
+
+    virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 private:
     UPROPERTY()
@@ -72,32 +61,12 @@ private:
     TObjectPtr<AController> OwnerController;
 
     UPROPERTY()
-    AEntity* CurrentTarget;
+    AActor* CurrentTarget;
 
     UPROPERTY()
-    UTimelineComponent* SoftLockTimeline;
+    TArray<AActor*> CombatTargets;
 
-    UPROPERTY()
-    UCurveFloat* SoftLockCurve;
-    
-    float SoftLockDistance = 250.f;
-    float SoftLockRadius = 100.f;
-    bool bIsHardLocking = false;
-    float HardLockRadius = 1500.f;
     int32 CombatTargetIndex = 0;
-
-    UPROPERTY()
-    TArray<AEntity*> CombatTargets;
     
-    UFUNCTION()
-    bool PickHardLockTarget();
-
-    UFUNCTION()
-    void RotateTowardsHardLockTarget(const AActor* Target, float DeltaTime) const;
-    
-    UFUNCTION()
-    TArray<AEntity*> GetCombatTargets(const float Radius) const;
-
-    UFUNCTION()
-    void UpdateSoftLockOn(float Alpha);
+    bool bIsLocking = false;
 };

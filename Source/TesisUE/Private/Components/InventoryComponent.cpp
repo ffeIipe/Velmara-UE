@@ -29,8 +29,6 @@ void UInventoryComponent::BeginPlay()
 void UInventoryComponent::InitializeValues(const FInventoryData& InventoryData)
 {
     MaxSlots = InventoryData.MaxSlots;
-    InteractTraceLenght = InventoryData.InteractTraceLenght;
-    InteractTargetRadius = InventoryData.InteractTargetRadius;
 
     InventorySlots.Init(nullptr, MaxSlots);
 }
@@ -218,15 +216,15 @@ void UInventoryComponent::UpdateInventoryUI()
     }
 }
 
-TScriptInterface<IWeaponInterface> UInventoryComponent::PerformInteract()
+void UInventoryComponent::PerformInteract(const FVector& StartTrace, const FVector& EndTrace, const float RadiusTrace)
 {
-    if (IsInventoryOpen()) return nullptr;
+    if (IsInventoryOpen()) return;
     
-    FVector TraceStart;
-    FRotator CameraRotation;
-    OwnerController->GetPlayerViewPoint(TraceStart, CameraRotation);
-    const FVector TraceDirection = CameraRotation.Vector();
-    const FVector TraceEnd = TraceStart + (TraceDirection * InteractTraceLenght);
+    //FVector TraceStart;
+    //FRotator CameraRotation;
+    //OwnerController->GetPlayerViewPoint(TraceStart, CameraRotation);
+    //const FVector TraceDirection = CameraRotation.Vector();
+    //const FVector TraceEnd = TraceStart + TraceDirection * InteractTraceLenght;
     
     TArray<AActor*> ActorsToIgnore;
     ActorsToIgnore.Add(GetOwner());
@@ -235,9 +233,9 @@ TScriptInterface<IWeaponInterface> UInventoryComponent::PerformInteract()
     
     const bool bHit = UKismetSystemLibrary::SphereTraceSingle(
         GetWorld(),
-        GetOwner()->GetActorLocation() + FVector(0.f, 100.f, 0.f),
-        TraceEnd,
-        InteractTargetRadius,
+        StartTrace,
+        EndTrace,
+        RadiusTrace,
         UEngineTypes::ConvertToTraceType(ECC_GameTraceChannel5), //item trace
         false,
         ActorsToIgnore,
@@ -246,22 +244,15 @@ TScriptInterface<IWeaponInterface> UInventoryComponent::PerformInteract()
         true
     );
 
-    const bool bCanPickUpItems = true; /*TODO: CharacterStateProvider->Execute_GetCharacterStateComponent(GetOwner())->IsModeEqualToAny(
-    {
-        ECharacterModeStates::ECMS_Spectral 
-    });*/
-    
     if (bHit)
     {
         if (const TScriptInterface<IPickable> Pickable = ResultHit.GetActor())
         {
-            if (const TScriptInterface<IWeaponInterface> WeaponReached = Pickable.GetObject(); TryAddWeapon(WeaponReached))
+            const TScriptInterface<IWeaponInterface> WeaponReached = Pickable.GetObject();
+            
+            if (TryAddWeapon(WeaponReached))
             {
-                if (!bCanPickUpItems)
-                {
-                    ActorsToIgnore.Add(Cast<AActor>(WeaponReached.GetObject()));
-                    return WeaponReached;
-                }
+                ActorsToIgnore.Add(Cast<AActor>(WeaponReached.GetObject()));
             }
             else
             {
@@ -269,7 +260,6 @@ TScriptInterface<IWeaponInterface> UInventoryComponent::PerformInteract()
             }
         }
     }
-    return nullptr;
 }
 
 void UInventoryComponent::SaveInventory()
