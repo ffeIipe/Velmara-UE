@@ -10,7 +10,6 @@ class UInputMappingContext;
 class UInputData;
 class UUserWidget;
 class USoundMix;
-class UWBP_OptionsMenu;
 
 UCLASS()
 class TESISUE_API APlayerHeroController : public APlayerController
@@ -30,6 +29,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "GAS|Possession")
 	void PerformPossession(APawn* NewPawn);
+	
+	UPROPERTY(BlueprintReadOnly)
+	FVector2D InputMovingVector = FVector2D::ZeroVector;
 	
 protected:
 	virtual void BeginPlay() override;

@@ -26,7 +26,7 @@ public:
 	FOnWeaponUsed OnWeaponUsed;
 	
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
-	void SetDamageType(TSubclassOf<UBaseDamageType> DamageType);
+	void SetDamageType(const FGameplayTag& DamageTypeTag, const FGameplayTag& CueTag);
 	
 	virtual void EnableVisuals() = 0;
 	virtual void DisableVisuals() = 0;

@@ -6,7 +6,6 @@
 #include "SunDamage.generated.h"
 
 class ADirectionalLight;
-class IHitInterface;
 
 UCLASS()
 class TESISUE_API ASunDamage : public AActor
@@ -49,9 +48,6 @@ private:
 	UPROPERTY()
 	AActor* PlayerActor = nullptr;
 
-	UPROPERTY()
-	TScriptInterface<IHitInterface> PlayerHittable = nullptr;
-	
 	float TimeOnTarget = 0.f;
 	
 	float Damage = 0.f;

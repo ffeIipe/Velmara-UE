@@ -272,7 +272,7 @@ void UInventoryComponent::SaveInventory()
         {
             if (AActor* WeaponActor = Cast<AActor>(SlotItem.GetObject()))
             {
-                if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, WeaponActor->GetName());
+               // if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, WeaponActor->GetName());
                     
                 FInventoryItemSaveData NewData;
                 NewData.WeaponClass = Cast<AWeapon>(WeaponActor)->GetClass();
@@ -297,14 +297,14 @@ void UInventoryComponent::LoadInventory()
 
     if (SavedInventoryData.IsEmpty())
     {
-        if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Data is empty.");
+        //if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Data is empty.");
     }
     
     for (int32 i = 0; i < SavedInventoryData.Num(); i++)
     {
         const FInventoryItemSaveData& Data = SavedInventoryData[i];
 
-        if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::White, Data.WeaponClass->GetName());
+        //if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::White, Data.WeaponClass->GetName());
         
         if (Data.WeaponClass)
         {

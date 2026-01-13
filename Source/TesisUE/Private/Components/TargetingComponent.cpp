@@ -1,7 +1,10 @@
 #include "Components/TargetingComponent.h"
+
+#include "AbilitySystemComponent.h"
 #include "Curves/CurveFloat.h"
 #include "Entities/Entity.h"
 #include "GameFramework/Character.h"
+#include "GAS/VelmaraGameplayTags.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 
@@ -29,13 +32,10 @@ void UTargetingComponent::BeginPlay()
     }
 }
 
-void UTargetingComponent::TickComponent(float DeltaTime, enum ELevelTick TickType,
-    FActorComponentTickFunction* ThisTickFunction)
+void UTargetingComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-    CombatTargets = GetTargets(1500.f);
-    CurrentTarget = SelectNearestTarget(CombatTargets);
+    
     RotateTowardsTarget(CurrentTarget);
 }
 
@@ -44,18 +44,21 @@ void UTargetingComponent::HandleTargetDeath(AEntity* DeadEntity)
     if (DeadEntity == CurrentTarget)
     {
         DeadEntity->OnDead.RemoveDynamic(this, &UTargetingComponent::HandleTargetDeath);
-        
-        /*if (!SelectNearestTargetInRadius(TODO))
-        {
-            EnableLock();
-        }*/
+
+        ChangeHardLockTarget();
     }
 }
 
 void UTargetingComponent::EnableLock()
 {
-    bIsLocking = true;
-    SetComponentTickEnabled(true);
+    CombatTargets = GetTargets(1500.f);
+    CurrentTarget = SelectNearestTarget(CombatTargets);
+
+    if (CurrentTarget)
+    {
+        bIsLocking = true;
+        SetComponentTickEnabled(true);
+    }
 }
 
 void UTargetingComponent::DisableLock()
@@ -153,7 +156,7 @@ TArray<AActor*> UTargetingComponent::GetTargets(const float Radius) const
         GetOwner()->GetActorLocation(),
         Radius,
         ObjectTypes,
-        nullptr,
+        TSubclassOf<AEntity>(),
         ActorsToIgnore,
         Hits
     );
@@ -161,7 +164,15 @@ TArray<AActor*> UTargetingComponent::GetTargets(const float Radius) const
     TArray<AActor*> Actors;
     for (const auto Target : Hits)
     {
-        Actors.Add(Target);
+        if (AEntity* TargetEntity = Cast<AEntity>(Target))
+        {
+            if (TargetEntity->IsAlive())
+            {
+                Actors.Add(TargetEntity);
+
+                TargetEntity->OnDead.AddUniqueDynamic(this, &UTargetingComponent::HandleTargetDeath);
+            }
+        }
     }
     return Actors;
 }

@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -8,10 +6,6 @@
 #include "UObject/Object.h"
 #include "VelmaraAttributeSet.generated.h"
 
-/**
- * 
- */
-
 #define ATTRIBUTE_ACCESSORS(ClassName, PropertyName) \
 	GAMEPLAYATTRIBUTE_PROPERTY_GETTER(ClassName, PropertyName) \
 	GAMEPLAYATTRIBUTE_VALUE_GETTER(PropertyName) \
@@ -19,7 +13,7 @@
 	GAMEPLAYATTRIBUTE_VALUE_INITTER(PropertyName) \
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAttributeChanged, float, NewValue);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDead);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnZeroHealth);
 
 UCLASS()
 class TESISUE_API UVelmaraAttributeSet : public UAttributeSet
@@ -31,7 +25,7 @@ public:
 
 	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
 
-	virtual void PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data) override;
+	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
 	
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
@@ -59,6 +53,13 @@ public:
 	FGameplayAttributeData MaxEnergy;
 	ATTRIBUTE_ACCESSORS(UVelmaraAttributeSet, MaxEnergy);
 
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing=OnRep_MovementSpeedMultiplier)
+	FGameplayAttributeData MovementSpeedMultiplier;
+	ATTRIBUTE_ACCESSORS(UVelmaraAttributeSet, MovementSpeedMultiplier);
+
+	UPROPERTY(BlueprintAssignable)
+	FOnZeroHealth OnZeroHealth;
+	
 protected:
 	UFUNCTION()
 	virtual void OnRep_Health(const FGameplayAttributeData& OldHealth);
@@ -78,6 +79,6 @@ protected:
 	UFUNCTION()
 	virtual void OnRep_MaxEnergy(const FGameplayAttributeData& OldMaxEnergy);
 
-	UPROPERTY(BlueprintAssignable)
-	FOnDead OnDead;
+	UFUNCTION()
+	virtual void OnRep_MovementSpeedMultiplier(const FGameplayAttributeData& OldMovementSpeed);
 };

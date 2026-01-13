@@ -1,49 +1,24 @@
 #include "Items/Weapons/Weapon.h"
-
-#include "AbilitySystemInterface.h"
 #include "AbilitySystemComponent.h"
-
 #include "GameFramework/Character.h"
-#include "GAS/VelmaraGameplayTags.h"
 
-void AWeapon::SetDamageType_Implementation(const TSubclassOf<UBaseDamageType> DamageType)
+void AWeapon::SetDamageType_Implementation(const FGameplayTag& DamageTag, const FGameplayTag& CueTag)
 {
-	IWeaponInterface::SetDamageType_Implementation(DamageType);
-
-	if (DamageType == nullptr)
+	if (DamageTag == FGameplayTag::EmptyTag)
 	{
-		DamageTypeClass = UBaseDamageType::StaticClass();
+		CurrentDamageTag = FGameplayTag::RequestGameplayTag("Damage.Default");
+		CurrentCueTag = FGameplayTag::RequestGameplayTag("GameplayCue.Damage.Default");
 	}
-	
-	DamageTypeClass = DamageType;
+	else
+	{
+		CurrentCueTag = CueTag;
+		CurrentDamageTag = DamageTag; 	
+	}
 }
 
-void AWeapon::OnHit(AActor* Actor, const float Damage)
+void AWeapon::SetDamageEffectSpec(const FGameplayEffectSpecHandle& InSpecHandle)
 {
-	const IAbilitySystemInterface* TargetASI = Cast<IAbilitySystemInterface>(Actor);
-	if (!TargetASI) return;
-
-	UAbilitySystemComponent* TargetASC = TargetASI->GetAbilitySystemComponent();
-	if (!TargetASC) return;
-
-	if (const IAbilitySystemInterface* SourceASI = Cast<IAbilitySystemInterface>(GetOwner()))
-	{
-		const UAbilitySystemComponent* SourceASC = SourceASI->GetAbilitySystemComponent();
-	}
-
-	FGameplayEffectContextHandle Context = TargetASC->MakeEffectContext();
-	Context.AddSourceObject(this);
-	Context.AddInstigator(GetInstigator(), this);
-
-	FGameplayEffectSpecHandle SpecHandle = TargetASC->MakeOutgoingSpec(DamageEffectClass, 1.f, Context);
-	if (SpecHandle.IsValid())
-	{
-		const float FinalDamage =- Damage;
-
-		const FGameplayTag DamageTag = FVelmaraGameplayTags::Get().Damage;
-		SpecHandle.Data.Get()->SetSetByCallerMagnitude(DamageTag, FinalDamage);
-		TargetASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
-	}
+	DamageEffectSpecHandle = InSpecHandle;
 }
 
 void AWeapon::Pick(AActor* NewOwner)

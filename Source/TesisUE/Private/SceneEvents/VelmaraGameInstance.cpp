@@ -334,7 +334,7 @@ void UVelmaraGameInstance::SaveGame()
 			
 			SaveGameObject->SavedActors.Add(ActorData.UniqueSaveID, ActorData);
 
-			if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Emerald, ActorData.UniqueSaveID.ToString() + " found from: " + Actor->GetName());
+			//if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Emerald, ActorData.UniqueSaveID.ToString() + " found from: " + Actor->GetName());
 		}
 	}
 
@@ -349,7 +349,6 @@ void UVelmaraGameInstance::SaveGame()
 	UGameplayStatics::SaveGameToSlot(SaveGameObject, CurrentSlotName, DefaultUserIndex);
 
 	if (OnSaveDataUpdated.IsBound()) OnSaveDataUpdated.Broadcast();
-	UE_LOG(LogTemp, Log, TEXT("Game saved successfully."));
 }
 
 void UVelmaraGameInstance::LoadGame(const int32 SlotIndex)
@@ -369,13 +368,11 @@ void UVelmaraGameInstance::RestoreLoadedData()
 {
     if (!PendingSaveData) return;
 
-    UE_LOG(LogTemp, Warning, TEXT("RESTORE: Buscando datos para %d actores en el mapa de guardado"), PendingSaveData->SavedActors.Num());
     for (FActorIterator It(GetWorld()); It; ++It)
     {
         if (It->Implements<USaveInterface>())
         {
             FName UniqueID = ISaveInterface::Execute_GetUniqueSaveID(*It);
-            UE_LOG(LogTemp, Log, TEXT("RESTORE: Comparando Actor [%s] con ID [%s]"), *It->GetName(), *UniqueID.ToString());
             
             if (PendingSaveData->SavedActors.Contains(UniqueID))
             {
@@ -384,8 +381,7 @@ void UVelmaraGameInstance::RestoreLoadedData()
                 It->SetActorTransform(ActorData.Transform);
                 ISaveInterface::Execute_OnLoadGame(*It, ActorData);
 
-                UE_LOG(LogTemp, Warning, TEXT("RESTORE: ¡COINCIDENCIA ENCONTRADA para %s!"), *UniqueID.ToString());
-                if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, "Restored: " + It->GetName());
+                //if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, "Restored: " + It->GetName());
             }
         }
     }

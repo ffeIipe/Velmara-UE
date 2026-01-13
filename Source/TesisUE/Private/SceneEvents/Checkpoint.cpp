@@ -29,10 +29,10 @@ void ACheckpoint::OnSphereBeginOverlap(
             if (UVelmaraGameInstance* VelmaraGameInstance = Cast<UVelmaraGameInstance>(GetWorld()->GetGameInstance()))
             {
                 VelmaraGameInstance->SaveGame();
-                if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Emerald, FString("Player progress saved via VelmaraGameMode."));
+                //if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Emerald, FString("Player progress saved via VelmaraGameMode."));
 
             }
-            else if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, FString("Failed to save via VelmaraGameInstance. The current GameInstance is: " + GetGameInstance()->GetName()));
+            //else if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, FString("Failed to save via VelmaraGameInstance. The current GameInstance is: " + GetGameInstance()->GetName()));
 
             Destroy();
         }

@@ -34,8 +34,6 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	UStaticMeshComponent* AuraMeshComponent;
-
-	virtual void GetHit(AActor* DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived) override;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Attacks | Flood")
 	float FloodDamage;
@@ -53,7 +51,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Attacks | Aura")
 	float AuraRadius = 4.f;
 
-	virtual void Die(UAnimMontage* DeathAnim, FName Section) override;
+	virtual void PerformDeath() override;
 
 private:
 	UPROPERTY(EditAnywhere, Category = "Attacks | Spawning")

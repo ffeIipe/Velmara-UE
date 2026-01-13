@@ -1,6 +1,5 @@
 #include "SpectralTrapComponent.h"
 #include "Components/SphereComponent.h"
-#include "DamageTypes/EnvironmentalDamage.h"
 #include "Player/PlayerMain.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/DamageEvents.h"
@@ -64,13 +63,13 @@ void USpectralTrapComponent::DealContinuousDamage()
 	{
 		/*GEngine->AddOnScreenDebugMessage(678, 0.5f, FColor::Purple, FString("Applying continuous damage..."));*/
 
-		UGameplayStatics::ApplyDamage(OverlappingPlayer, Damage, Instigator, GetOwner(), UEnvironmentalDamage::StaticClass());
+		/*UGameplayStatics::ApplyDamage(OverlappingPlayer, Damage, Instigator, GetOwner(), UEnvironmentalDamage::StaticClass());
 
 		if (IHitInterface* PlayerGetHit = Cast<IHitInterface>(OverlappingPlayer))
 		{
 			const FDamageEvent DamageEvent(UDamageType::StaticClass());
 			PlayerGetHit->GetHit(GetOwner(), FVector::ZeroVector, DamageEvent, Damage);
-		}
+		}*/
 	}
 }
 

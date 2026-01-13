@@ -8,11 +8,9 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/TimelineComponent.h"
-#include "DamageTypes/MeleeDamage.h"
-#include "DataAssets/MontagesData.h"
-#include "Engine/DamageEvents.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/DamageType.h"
+#include "GAS/VelmaraGameplayTags.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Misc/Guid.h"
@@ -73,6 +71,8 @@ void AEnemy::ActivateEnemy(const FVector& Location, const FRotator& Rotation)
 	SetActorLocationAndRotation(Location, Rotation);
 	SetActorHiddenInGame(false);
 
+	GetAbilitySystemComponent()->RemoveLooseGameplayTag(FVelmaraGameplayTags::Get().State_Dead);
+	
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	GetMesh()->SetCollisionObjectType(ECC_WorldDynamic);
@@ -154,9 +154,9 @@ void AEnemy::DeactivateEnemy()
 	GetWorldTimerManager().ClearTimer(ReturnToPoolTimerHandle);
 }
 
-void AEnemy::Die(UAnimMontage* DeathAnim, const FName Section)
+void AEnemy::PerformDeath()
 {
-	Super::Die(DeathAnim, Section);
+	Super::PerformDeath();
 
 	DissolveTimeline->PlayFromStart();
 
@@ -169,22 +169,15 @@ void AEnemy::Die(UAnimMontage* DeathAnim, const FName Section)
 	DisableAI();
 	ReturnAttackTokenToTarget();
 	HandleEnemyCollision(false);
-
-	//release possessor
-
-	//GetPossessionComponent()->ReleasePossession();
-
-	if (OnDead.IsBound()) OnDead.Broadcast(Cast<AEntity>(this));
 	
 	GetWorldTimerManager().SetTimer(ReturnToPoolTimerHandle, this, &AEnemy::RequestReturnToPool, 5.0f, false);
 }
 
-void AEnemy::GetHit(AActor* DamageCauser, const FVector& ImpactPoint,
-                    FDamageEvent const& DamageEvent, const float DamageReceived)
+/*void AEnemy::GetHit(AActor* DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived)
 {
 	Super::GetHit(DamageCauser, ImpactPoint, DamageEvent, DamageReceived);
 
-	if (DamageEvent.DamageTypeClass)
+	/*if (DamageEvent.DamageTypeClass)
 	{
 		if (const UMeleeDamage* MainDamageTypeClass = Cast<UMeleeDamage>(DamageEvent.DamageTypeClass->GetDefaultObject()))
 		{
@@ -193,12 +186,12 @@ void AEnemy::GetHit(AActor* DamageCauser, const FVector& ImpactPoint,
 
 			if (bShouldDropOrbs) DropOrbs(DamageReceived, DamageCauser);
 		}
-	}
+	}#1#
 	
 	NotifyDamageTakenToBlackboard(DamageCauser);
 	ReturnAttackTokenToTarget();
 	HitFlash(.1f,.75f);
-}
+}*/
 
 void AEnemy::RequestReturnToPool()
 {
@@ -237,8 +230,6 @@ void AEnemy::BeginPlay()
 
 	HandleEnemyCollision(true);
 	
-	//CharacterStateComponent->SetWeaponState(ECharacterWeaponStates::ECWS_EquippedWeapon);
-	
 	if (DissolveCurve)
 	{
 		FOnTimelineFloat ProgressFunction;
@@ -262,6 +253,8 @@ void AEnemy::BeginPlay()
 		EnemyAIController = Cast<AEnemyAIController>(AIController);
 	}
 
+	//if (!AIController) return;
+
 	if (UBlackboardComponent* BBComponentInstance = Cast<UBlackboardComponent>(AIController->GetBlackboardComponent()))
 	{
 		BBComponent = BBComponentInstance;
@@ -280,11 +273,6 @@ void AEnemy::BeginPlay()
 	}
 	
 	EnableAI();
-}
-
-void AEnemy::PerformDead()
-{
-	Die(MontagesData->Montages.DeathMontage, SelectRandomDieAnim());
 }
 
 void AEnemy::ReturnAttackTokenToTarget()
@@ -409,9 +397,9 @@ void AEnemy::ResetEnemy()
 	EnableAI();
 }
 
-void AEnemy::DropOrbs(const float DamageReceived, AActor* DamageCauser) const
+/*void AEnemy::DropOrbs(const float DamageReceived, AActor* DamageCauser) const
 {
-	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Drops orbs called");
+	//if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Drops orbs called");
 	const float Percentage = DamageReceived / EnergyDivider;
 	const int32 Orbs = FMath::RoundToInt(Percentage) / 5;
 	
@@ -424,7 +412,7 @@ void AEnemy::DropOrbs(const float DamageReceived, AActor* DamageCauser) const
 			OnDamaged.Broadcast(Cast<AEntity>(DamageCauser));
 		}
 	}
-}
+}*/
 
 void AEnemy::FinishedDamage()
 {
@@ -438,7 +426,7 @@ void AEnemy::FinishedDamage()
 			EffectsManager->CameraZoom(ECameraZoomPreset::ECZP_Finisher);
 		}
 		
-		Die(nullptr, NAME_None);
+		//PerformDeath();
 
 		if (PromptWidgetComponent && PromptWidgetComponent->GetWidget()) PromptWidgetComponent->GetWidget()->SetVisibility(ESlateVisibility::Hidden);
 
@@ -482,12 +470,6 @@ void AEnemy::HandleEnemyCollision(bool bEnable)
 	}
 }
 
-void AEnemy::GetExecuted()
-{
-	Die(MontagesData->Montages.DeathMontage, FName("UnpossessDeath"));
-	DropOrbs(30.f, GetLastDamageCauser());
-}	
-
 FName AEnemy::SelectRandomDieAnim()
 {
 	const int32 RandomValue = FMath::RandRange(0, 3);
@@ -517,16 +499,13 @@ EEnemyState AEnemy::SetEnemyState(const EEnemyState NewState)
 
 void AEnemy::DisableAI()
 {
-	//if (!GetPossessionComponent()->IsPossessed())
-	{
-		if (!AIController) AIController = Cast<AAIController>(GetController());
-			AIController->StopMovement();
-			AIController->UnPossess();
-			AIController->RunBehaviorTree(nullptr);
+	if (!AIController) AIController = Cast<AAIController>(GetController());
+	AIController->StopMovement();
+	AIController->UnPossess();
+	AIController->RunBehaviorTree(nullptr);
 
-		if (!EnemyAIController) EnemyAIController = Cast<AEnemyAIController>(AIController);
-			EnemyAIController->DeactivateController();
-	}
+	if (!EnemyAIController) EnemyAIController = Cast<AEnemyAIController>(AIController);
+	EnemyAIController->DeactivateController();
 	
 	ClearBlackboardValues();
 }
@@ -616,22 +595,19 @@ void AEnemy::NotifyDamageTakenToBlackboard(AActor* DamageCauser)
 {
 	if (!DamageCauser) return;
 	
-	//if (DamageCauser->IsPossessed())
+	if (AIController)
 	{
-		if (AIController)
-		{
-			AIController->GetBlackboardComponent()->SetValueAsBool(FName("DamageTakenRecently"), true);
-			AIController->GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), DamageCauser);
-		}
+		AIController->GetBlackboardComponent()->SetValueAsBool(FName("DamageTakenRecently"), true);
+		AIController->GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), DamageCauser);
+	}
 
-		if (EnemyAIController)
-		{
-			EnemyAIController->DamageCauser = DamageCauser;
-		}
+	if (EnemyAIController)
+	{
+		EnemyAIController->DamageCauser = DamageCauser;
+	}
 
-		for (const auto CombatTarget  : GenerateSphereOverlapToDetectOtherEnemies(GetActorLocation(), RadiusToNotifyAllies, this))
-		{
-			Cast<AEnemy>(CombatTarget)->NotifyThreat(DamageCauser);
-		}
+	for (const auto CombatTarget  : GenerateSphereOverlapToDetectOtherEnemies(GetActorLocation(), RadiusToNotifyAllies, this))
+	{
+		Cast<AEnemy>(CombatTarget)->NotifyThreat(DamageCauser);
 	}
 }

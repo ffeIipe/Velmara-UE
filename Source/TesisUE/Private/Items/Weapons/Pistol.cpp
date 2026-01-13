@@ -1,10 +1,8 @@
 #include "Items/Weapons/Pistol.h"
 
 #include "NiagaraFunctionLibrary.h"
-#include "DamageTypes/PistolDamage.h"
 #include "DataAssets/Items/Weapons/PistolData.h"
 #include "Engine/DamageEvents.h"
-#include "Interfaces/HitInterface.h"
 #include "Kismet/GameplayStatics.h"
 #include "Subsystems/EffectsManager.h"
 
@@ -112,21 +110,21 @@ void APistol::Fire()
 		
 		if (!bHit) return;
 		
-		if (const TScriptInterface<IHitInterface> HitInterface = HitResult.GetActor())
+		/*if (const TScriptInterface<IHitInterface> HitInterface = HitResult.GetActor())
 		{
 			UGameplayStatics::ApplyPointDamage(
 			HitResult.GetActor(),
 			PistolData->PistolTypeStats.BaseDamage,
 			TraceDirection,
 			HitResult,
-			/*ControllerProvider->GetEntityController()*/ nullptr,
+			/*ControllerProvider->GetEntityController()#1# nullptr,
 			GetOwner(),
-			UPistolDamage::StaticClass()
+			nullptr
 			);
 
 			const FDamageEvent DamageEvent(UDamageType::StaticClass());
 			HitInterface->GetHit(GetOwner(), HitResult.ImpactPoint, DamageEvent, PistolData->PistolTypeStats.BaseDamage);
-		}
+		}*/
 	}
 	else if (CurrentAmmo <= 0)
 		Reload();

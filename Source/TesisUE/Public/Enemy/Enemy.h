@@ -4,6 +4,7 @@
 #include "Entities/Entity.h"
 #include "Enemy.generated.h"
 
+class UTimelineComponent;
 enum class EMeleeDamageTypes : uint8;
 class UCameraComponent;
 class UInputMappingContext;
@@ -56,11 +57,9 @@ public:
 	void RequestReturnToPool();
 
 	// === Combat & Damage ===
-	virtual void Die(UAnimMontage* DeathAnim, FName Section) override;
+	virtual void PerformDeath() override;
 
-	virtual void GetHit(AActor* DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived) override;
-	
-	void DropOrbs(const float DamageReceived, AActor* DamageCauser) const;
+	//void DropOrbs(const float DamageReceived, AActor* DamageCauser) const;
 
 	void FinishedDamage();
 
@@ -103,10 +102,6 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	UFUNCTION(BlueprintCallable)
-	void PerformDead();
-
-	// === AI ===
 	UPROPERTY(EditAnywhere)
 	float RadiusToNotifyAllies = 1700.f;
 
@@ -125,12 +120,6 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "DamageThreshold");
 	float DamageThreshold = 30.f;
-
-	UPROPERTY();
-	EMeleeDamageTypes LastDamageType;
-
-	UFUNCTION(BlueprintCallable)
-	virtual void ReactToDamage(EMeleeDamageTypes DamageType, const FVector& ImpactPoint) {}
 
 	// === Energy & Orbs ===
 	UPROPERTY(EditAnywhere, Category = "Energy | Energy Drop");
@@ -215,8 +204,4 @@ protected:
 
 	UFUNCTION(BlueprintCallable)
 	virtual void HandleEnemyCollision(bool bEnable);
-
-private:
-	UFUNCTION()
-	void GetExecuted();
 };

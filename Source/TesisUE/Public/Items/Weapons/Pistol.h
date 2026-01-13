@@ -57,5 +57,5 @@ private:
 	FTimerHandle TimerHandle_BetweenShots;
 	
 	UPROPERTY(EditAnywhere, Category = "Weapon Properties")
-	UPistolData* PistolData = Cast<UPistolData>(WeaponData); 
+	UPistolData* PistolData; 
 };

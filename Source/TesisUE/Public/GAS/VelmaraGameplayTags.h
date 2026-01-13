@@ -16,11 +16,9 @@ struct FVelmaraGameplayTags
 	FGameplayTag State_Executing;
 	FGameplayTag State_Dodging;
 	FGameplayTag State_ComboWindow;
+
 	FGameplayTag Mode_Primary;
 	FGameplayTag Mode_Secondary;
-	FGameplayTag Damage;
-
-
 protected:
 	static FVelmaraGameplayTags GameplayTags;
 };

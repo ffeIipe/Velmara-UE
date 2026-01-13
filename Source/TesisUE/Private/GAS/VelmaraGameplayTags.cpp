@@ -18,6 +18,4 @@ void FVelmaraGameplayTags::InitializeGameplayTags()
 	
 	GameplayTags.Mode_Primary = Manager.AddNativeGameplayTag(FName("Mode.Primary"));
 	GameplayTags.Mode_Secondary = Manager.AddNativeGameplayTag(FName("Mode.Secondary"));
-
-	GameplayTags.Damage = Manager.AddNativeGameplayTag(FName("Damage"));
 }

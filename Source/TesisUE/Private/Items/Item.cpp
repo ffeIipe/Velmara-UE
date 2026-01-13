@@ -39,8 +39,6 @@ void AItem::EnableVisuals()
 
 void AItem::DisableVisuals()
 {
-	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Disable visuals");
-	
 	SetActorHiddenInGame(true);
 	SetActorEnableCollision(false);
 }

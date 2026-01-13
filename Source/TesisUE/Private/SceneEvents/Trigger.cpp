@@ -29,7 +29,7 @@ void ATrigger::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AA
 
 	if (Controller == GetWorld()->GetFirstPlayerController())
 	{
-		HitActor = OtherActor;
+		//HitActor = OtherActor;
 		
 		if (OnPlayerControllerBeginOverlap.IsBound())
 			OnPlayerControllerBeginOverlap.Broadcast();

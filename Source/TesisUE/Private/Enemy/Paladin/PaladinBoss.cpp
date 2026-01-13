@@ -65,51 +65,10 @@ void APaladinBoss::ShieldDetach()
 //	return DamageAmount;
 //}
 
-void APaladinBoss::GetHit(AActor* DamageCauser, const FVector& ImpactPoint,
-                          FDamageEvent const& DamageEvent, const float DamageReceived)
+void APaladinBoss::PerformDeath()
 {
-	Super::GetHit(DamageCauser, ImpactPoint, DamageEvent, DamageReceived);
-
-	if (BBComponent)
-	{
-		if (BBComponent->GetValueAsBool(FName("CanReceiveDamage")))
-		{
-			Super::GetHit(DamageCauser, ImpactPoint, DamageEvent, DamageReceived);
-
-			const float DamageAccumulated = BBComponent->GetValueAsFloat(FName("DamageAccumulated"));
-			BBComponent->SetValueAsFloat(FName("DamageAccumulated"), DamageAccumulated + DamageReceived);
-		}
-	}
-	else
-	{
-		if (AIController)
-		{
-			BBComponent = Cast<UBlackboardComponent>(AIController->GetBlackboardComponent());
-		}
-		else
-		{
-			AIController = Cast<AAIController>(GetController());
-			BBComponent = Cast<UBlackboardComponent>(AIController->GetBlackboardComponent());
-		}
-
-		if (BBComponent->GetValueAsBool(FName("CanReceiveDamage")))
-		{
-			Super::GetHit(DamageCauser, ImpactPoint, DamageEvent, DamageReceived);
-
-			const float DamageAccumulated = BBComponent->GetValueAsFloat(FName("DamageAccumulated"));
-			BBComponent->SetValueAsFloat(FName("DamageAccumulated"), DamageAccumulated + DamageReceived);
-		}
-	}
-}
-
-void APaladinBoss::Die(UAnimMontage* DeathAnim, FName Section)
-{
-	Super::Die(DeathAnim, Section);
+	Super::PerformDeath();
 	
-	if (OnDead.IsBound())
-	{
-		OnDead.Broadcast(Cast<AEntity>(LastDamageCauser));
-	}
 }
 
 void APaladinBoss::TryToInvoke()

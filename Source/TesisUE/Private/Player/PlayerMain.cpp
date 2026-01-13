@@ -14,7 +14,6 @@
 
 #include "Kismet/GameplayStatics.h"
 
-#include "DataAssets/MontagesData.h"
 #include "UObject/ConstructorHelpers.h"
 
 APlayerMain::APlayerMain()
@@ -23,11 +22,6 @@ APlayerMain::APlayerMain()
 
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 	AutoPossessAI = EAutoPossessAI::Disabled;
-}
-
-void APlayerMain::PerformDead()
-{
-	Die(MontagesData->Montages.DeathMontage, NAME_None);
 }
 
 void APlayerMain::OnRep_PlayerState()
@@ -40,9 +34,9 @@ void APlayerMain::OnRep_PlayerState()
 	}
 }
 
-void APlayerMain::Die(UAnimMontage* DeathAnim, const FName Section)
+void APlayerMain::PerformDeath()
 {
-	Super::Die(DeathAnim, Section);
+	Super::PerformDeath();
 
 	if (PlayerControllerRef)
 	{

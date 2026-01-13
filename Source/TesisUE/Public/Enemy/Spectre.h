@@ -21,12 +21,6 @@ protected:
 
 	virtual void HandleEnemyCollision(bool bEnable) override;
 
-	virtual float TakeDamage(
-		float DamageAmount,
-		struct FDamageEvent const& DamageEvent,
-		class AController* EventInstigator,
-		AActor* DamageCauser) override;
-
 	virtual void ApplyPossessionParameters(bool bShouldEnable) override;
 
 private:

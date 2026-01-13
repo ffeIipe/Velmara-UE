@@ -18,7 +18,7 @@ struct FInputs
 	UInputAction* LookAction;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input | Movement")
-	UInputAction* InputAction_Crouch;
+	UInputAction* CrouchAction;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input | Movement")
 	UInputAction* JumpAction;
@@ -30,16 +30,13 @@ struct FInputs
 	UInputAction* InteractAction;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input | Actions")
-	UInputAction* InputAction_Inventory;
+	UInputAction* InventoryAction;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input | Actions")
-	UInputAction* InputAction_ToggleWeapon;
+	UInputAction* ToggleWeaponAction;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Input | Actions")
-	UInputAction* PrimaryAttackAction;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input | Actions")
-	UInputAction* SecondaryAttackAction;
+	UInputAction* AttackAction;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input | Actions")
 	UInputAction* InputAction_Skill1;

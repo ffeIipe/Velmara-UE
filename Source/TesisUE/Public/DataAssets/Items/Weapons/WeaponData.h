@@ -7,36 +7,27 @@
 
 class UGameplayAbility;
 
-USTRUCT(BlueprintType)
-struct FWeaponProperties
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, Category = "Stats")
-	float BaseDamage = 10.f;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
-	float CriticalChance = 0.15f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
-	float CriticalDamageMultiplier = 2.0f;
-};
-
 UCLASS()
 class TESISUE_API UWeaponData : public UDataAsset
 {
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GAS")
 	TArray<TSubclassOf<UGameplayAbility>> AbilitiesToGrant;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GAS")
 	FGameplayTag WeaponTag;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stats")
+	float BaseDamage = -10.f;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stats")
+	float CriticalChance = 0.15f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Properties")
-	FWeaponProperties Stats;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stats")
+	float CriticalDamageMultiplier = 1.2f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SocketName")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Mesh")
 	FName CustomInSocketName;
 };

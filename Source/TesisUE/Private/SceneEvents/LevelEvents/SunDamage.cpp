@@ -1,9 +1,6 @@
 #include "SceneEvents/LevelEvents/SunDamage.h"
 
-#include "DamageTypes/EnvironmentalDamage.h"
-#include "Engine/DamageEvents.h"
 #include "Engine/DirectionalLight.h"
-#include "Interfaces/HitInterface.h"
 #include "Kismet/GameplayStatics.h"
 
 
@@ -19,7 +16,6 @@ void ASunDamage::BeginPlay()
 
 	DirectionalLight = Cast<ADirectionalLight>(UGameplayStatics::GetActorOfClass(this, ADirectionalLight::StaticClass()));
 	PlayerActor = GetWorld()->GetFirstPlayerController()->GetPawn();
-	PlayerHittable = PlayerActor;
 	
 	if (!DirectionalLight || !PlayerActor || !DamageCurve)
 	{

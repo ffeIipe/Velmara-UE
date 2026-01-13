@@ -11,7 +11,6 @@
 class UComboChain;
 class USwordData;
 class UCommand;
-class UMeleeDamage;
 class UBoxComponent;
 
 UCLASS()
@@ -29,8 +28,8 @@ public:
     UPROPERTY(BlueprintAssignable, Category = "Collision")
     FOnWallHitSignature OnWallHit;
     
-    UPROPERTY(EditAnywhere)
-    USwordData* SwordDataAsset = Cast<USwordData>(WeaponData);
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
+    USwordData* SwordData;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
     UComboChain* ComboData;
@@ -48,8 +47,6 @@ public:
 
     virtual void AttachMeshToSocket(USceneComponent* InParent) override;
     
-    void ImpactEffects(const FHitResult& Hit, bool bIsHittable) const;
-
 protected:
     UFUNCTION(BlueprintCallable)
     void OnBoxOverlap(
@@ -69,8 +66,6 @@ private:
 
     UPROPERTY(VisibleAnywhere)
     USceneComponent* BoxTraceEnd;
-
-    float CalculateDamage() const;
 
     virtual void ClearIgnoreActors() override;
     virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled) override;

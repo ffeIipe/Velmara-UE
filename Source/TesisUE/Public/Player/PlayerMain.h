@@ -36,14 +36,11 @@ public:
 	//void ToggleForm();
 
 protected:
-	UFUNCTION()
-	void PerformDead();
-
 	virtual void OnRep_PlayerState() override;
 	
 private:
 	// --- Life Cycle ---
-	virtual void Die(UAnimMontage* DeathAnim, FName Section) override;
+	virtual void PerformDeath() override;
 	
 	void Revive();
 	

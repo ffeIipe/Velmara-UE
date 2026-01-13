@@ -1,8 +1,6 @@
 #include "Enemy/Spectre.h"
 #include "Components/CapsuleComponent.h"
-#include "DamageTypes/PistolDamage.h"
 
-#include "Engine/DamageEvents.h"
 #include "GameFramework/DamageType.h"
 #include "Kismet/KismetMathLibrary.h"
 
@@ -30,15 +28,6 @@ void ASpectre::HandleEnemyCollision(const bool bEnable)
 		GetMesh()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 		GetMesh()->SetCollisionResponseToChannel(ECC_GameTraceChannel2, ECR_Block);
 	}
-}
-
-float ASpectre::TakeDamage(const float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
-{
-	if (DamageEvent.DamageTypeClass->IsChildOf(UPistolDamage::StaticClass()))
-	{
-		Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
-	}
-	return DamageAmount;
 }
 
 void ASpectre::ApplyPossessionParameters(bool bShouldEnable)

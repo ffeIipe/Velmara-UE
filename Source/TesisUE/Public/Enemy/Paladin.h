@@ -17,6 +17,7 @@ public:
 	virtual void ActivateEnemy(const FVector& Location, const FRotator& Rotation) override;
 
 	virtual void DeactivateEnemy() override;
+	void LaunchUp();
 
 	virtual void ShieldHit_Implementation() {}
 
@@ -25,7 +26,7 @@ protected:
 
 	virtual void OnConstruction(const FTransform& Transform) override;
 	
-	virtual void Die(UAnimMontage* DeathAnim, FName Section) override;
+	virtual void PerformDeath() override;
 
 	UFUNCTION(BlueprintCallable)
 	void CrashDown();
@@ -33,7 +34,7 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void HitInAir();
 
-	virtual void ReactToDamage(EMeleeDamageTypes DamageType, const FVector& ImpactPoint) override;
+	//virtual void ReactToDamage(EMeleeDamageTypes DamageType, const FVector& ImpactPoint) override;
 
 	void Slash();
 
