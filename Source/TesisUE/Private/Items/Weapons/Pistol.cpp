@@ -2,9 +2,8 @@
 
 #include "NiagaraFunctionLibrary.h"
 #include "DataAssets/Items/Weapons/PistolData.h"
-#include "Engine/DamageEvents.h"
+#include "Features/GlobalEffectsSystem/Interfaces/EffectManagerProvider.h"
 #include "Kismet/GameplayStatics.h"
-#include "Subsystems/EffectsManager.h"
 
 void APistol::AttachMeshToSocket(USceneComponent* InParent)
 {
@@ -65,11 +64,6 @@ void APistol::PlayEffects()
 			1.f
 		);
 	}
-
-	if (UEffectsManager* EffectsManager = GetWorld()->GetSubsystem<UEffectsManager>())
-	{
-		EffectsManager->CameraShake(ECameraShakePreset::ECSP_ShotHit, SocketLocation);
-	}
 }
 
 void APistol::Fire()
@@ -125,6 +119,11 @@ void APistol::Fire()
 			const FDamageEvent DamageEvent(UDamageType::StaticClass());
 			HitInterface->GetHit(GetOwner(), HitResult.ImpactPoint, DamageEvent, PistolData->PistolTypeStats.BaseDamage);
 		}*/
+
+		if (GetGameInstance()->Implements<UEffectManagerProvider>())
+		{
+			IEffectManagerProvider::Execute_PlayGameplayEffect(GetGameInstance(), CurrentDamageTag, HitResult.ImpactPoint);
+		}
 	}
 	else if (CurrentAmmo <= 0)
 		Reload();

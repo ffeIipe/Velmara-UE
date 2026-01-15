@@ -4,15 +4,17 @@
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemInterface.h"
 #include "Components/BoxComponent.h"
+#include "Components/SphereComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
 
 #include "DataAssets/Items/Weapons/SwordData.h"
+#include "Features/GlobalEffectsSystem/Interfaces/EffectManagerProvider.h"
 #include "GAS/VelmaraAbilityInputID.h"
 #include "GAS/VelmaraGameplayAbility.h"
 
 ASword::ASword()
 {
-	BoxCollider->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+	SphereCollider->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 
 	WeaponDamageBox = CreateDefaultSubobject<UBoxComponent>(TEXT("Weapon Box"));
 	WeaponDamageBox->SetupAttachment(GetRootComponent());
@@ -145,8 +147,6 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 					*DamageEffectSpecHandle.Data.Get(),
 					TargetASC
 				);
-
-
 				
 				//VFX call
 				FGameplayCueParameters CueParameters;
@@ -155,6 +155,11 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 				CueParameters.Instigator = GetOwner();
 
 				TargetASC->ExecuteGameplayCue(CurrentCueTag, CueParameters);
+
+				if (GetGameInstance()->Implements<UEffectManagerProvider>())
+				{
+					IEffectManagerProvider::Execute_PlayGameplayEffect(GetGameInstance(), CurrentDamageTag, Hit.ImpactPoint);
+				}
 			}
 		}
 	}

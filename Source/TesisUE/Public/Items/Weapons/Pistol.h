@@ -3,8 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Weapon.h"
 #include "DataAssets/Items/Weapons/PistolData.h"
+#include "Features/InventorySystem/Items/Weapon.h"
 #include "Pistol.generated.h"
 
 class UPistolData;

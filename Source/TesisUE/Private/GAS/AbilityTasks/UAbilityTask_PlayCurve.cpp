@@ -1,4 +1,4 @@
-#include "UAbilityTask_PlayCurve.h"
+#include "GAS/AbilityTasks/UAbilityTask_PlayCurve.h"
 
 UAbilityTask_PlayCurve::UAbilityTask_PlayCurve()
 {
@@ -53,7 +53,7 @@ void UAbilityTask_PlayCurve::TickTask(float DeltaTime)
 		if (CurrentTime >= MaxTime)
 		{
 			OnFinished.Broadcast(1.0f, MaxTime);
-			EndTask(); // Auto-destrucción
+			EndTask();
 		}
 	}
 }

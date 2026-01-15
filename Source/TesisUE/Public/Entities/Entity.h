@@ -3,13 +3,14 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 
-#include "Interfaces/SaveInterface.h"
 #include "AbilitySystemInterface.h"
 #include "GameplayTagAssetInterface.h"
+#include "Features/SaveSystem/Interfaces/SaveInterface.h"
 
 #include "Entity.generated.h"
 
-class IWeaponInterface;
+class UMantleComponent;
+class IPickable;
 class UInventoryComponent;
 class UTargetingComponent;
 class UCameraComponent;
@@ -65,6 +66,9 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Components")
 	FORCEINLINE UMotionWarpingComponent* GetMotionWarpingComponent() const { return MotionWarpingComponent; }
+
+	UFUNCTION(BlueprintPure, Category = "Components")
+	FORCEINLINE UMantleComponent* GetMantleComponent() const { return MantleComponent; }
 	
 	UPROPERTY(BlueprintAssignable)
 	FOnEntityCanBeFinished OnCanBeFinished;
@@ -73,7 +77,7 @@ public:
 	FOnEntityShieldTakeDamage OnShieldTakeDamage;
 	
 	UFUNCTION(BlueprintPure)
-	TScriptInterface<IWeaponInterface> GetCurrentWeapon() const; 
+	TScriptInterface<IPickable> GetCurrentItem() const; 
 
 	UFUNCTION(BlueprintPure)
 	AActor* GetLastDamageCauser() const { return LastDamageCauser; }
@@ -170,25 +174,28 @@ protected:
 	UPROPERTY()
 	TArray<AActor*> IgnoreActors;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly)
 	UAbilitySystemComponent* AbilitySystemComponent;
 	
-	UPROPERTY(VisibleAnywhere, BlueprintGetter = GetInventoryComponent)
+	UPROPERTY(VisibleDefaultsOnly, BlueprintGetter = GetInventoryComponent)
 	UInventoryComponent* InventoryComponent;
 
-	UPROPERTY(BlueprintGetter = GetTargetingComponent)
+	UPROPERTY(VisibleDefaultsOnly,BlueprintGetter = GetTargetingComponent)
 	UTargetingComponent* TargetingComponent;
 	
-	UPROPERTY(BlueprintGetter = GetSpringArmComponent)
+	UPROPERTY(VisibleDefaultsOnly,BlueprintGetter = GetSpringArmComponent)
 	USpringArmComponent* SpringArmComponent;
 
-	UPROPERTY(BlueprintGetter = GetCameraComponent)
+	UPROPERTY(VisibleDefaultsOnly,BlueprintGetter = GetCameraComponent)
 	UCameraComponent* CameraComponent;
 
-	UPROPERTY(BlueprintGetter = GetMotionWarpingComponent)
+	UPROPERTY(VisibleDefaultsOnly,BlueprintGetter = GetMotionWarpingComponent)
 	UMotionWarpingComponent* MotionWarpingComponent;
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintGetter = GetMantleComponent)
+	UMantleComponent* MantleComponent;
 	
-	UPROPERTY()
+	UPROPERTY(VisibleDefaultsOnly)
 	UVelmaraAttributeSet* AttributeSet;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)

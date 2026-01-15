@@ -8,6 +8,8 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/TimelineComponent.h"
+#include "Features/GlobalEffectsSystem/Core/EffectsManager.h"
+#include "Features/GlobalEffectsSystem/Interfaces/EffectManagerProvider.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/DamageType.h"
 #include "GAS/VelmaraGameplayTags.h"
@@ -19,7 +21,7 @@
 #include "Player/PlayerMain.h"
 #include "SceneEvents/VelmaraGameMode.h"
 #include "SceneEvents/VelmaraGameStateBase.h"
-#include "Subsystems/EffectsManager.h"
+
 #include "Subsystems/EnemyPoolManager.h"
 #include "Subsystems/EnemyTokenManager.h"
 #include "Tutorial/PromptWidgetComponent.h"
@@ -420,11 +422,10 @@ void AEnemy::FinishedDamage()
 	
 	if (IsAlive())
 	{
-		if (UEffectsManager* EffectsManager = GetWorld()->GetSubsystem<UEffectsManager>())
+		/*if (GetGameInstance()->Implements<UEffectManagerProvider>())
 		{
-			EffectsManager->TimeWarp(ETimeWarpPreset::ETWP_Finisher);
-			EffectsManager->CameraZoom(ECameraZoomPreset::ECZP_Finisher);
-		}
+			IEffectManagerProvider::Execute_PlayGameplayEffect(GetGameInstance(), CurrentDamageTag, Hit.ImpactPoint);
+		}*/
 		
 		//PerformDeath();
 

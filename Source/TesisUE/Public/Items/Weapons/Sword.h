@@ -3,9 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Weapon.h"
 #include "DataAssets/Items/Weapons/SwordData.h"
-#include "Items/Item.h"
+#include "Features/InventorySystem/Items/Weapon.h"
 #include "Sword.generated.h"
 
 class UComboChain;

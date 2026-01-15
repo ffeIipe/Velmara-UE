@@ -24,7 +24,12 @@ public class TesisUE : ModuleRules
 			"MotionWarping"
 		});
 
-		PrivateDependencyModuleNames.AddRange(new string[] { "AnimGraphRuntime", "AnimGraphRuntime" });
+		PrivateDependencyModuleNames.AddRange(new string[]
+		{
+			"AnimGraphRuntime",
+			"AnimGraphRuntime",
+			"DeveloperSettings"
+		});
 
         bUseUnity = true;
 		

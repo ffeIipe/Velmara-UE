@@ -1,8 +1,11 @@
 #include "SceneEvents/VelmaraGameMode.h"
 
 #include "Enemy/Enemy.h"
+#include "Features/SaveSystem/Subsystems/SaveGameSubsystem.h"
 #include "SceneEvents/VelmaraGameInstance.h"
 
+
+class USaveGameSubsystem;
 
 void AVelmaraGameMode::RegisterEnemy(AEnemy* Enemy)
 {
@@ -18,9 +21,12 @@ void AVelmaraGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (UVelmaraGameInstance* GI = Cast<UVelmaraGameInstance>(GetGameInstance()))
+	if (UGameInstance* GI = GetGameInstance())
 	{
-		GI->RestoreLoadedData();
+		if (USaveGameSubsystem* SaveSystem = GI->GetSubsystem<USaveGameSubsystem>())
+		{
+			SaveSystem->RestoreCurrentLevelState();
+		}
 	}
 }
 

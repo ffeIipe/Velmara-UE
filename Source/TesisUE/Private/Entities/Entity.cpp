@@ -1,20 +1,22 @@
 #include "Entities/Entity.h"
 
+#include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
+#include "MotionWarpingComponent.h"
 #include "Camera/CameraComponent.h"
+#include "Components/BoxComponent.h"
+#include "Components/TargetingComponent.h"
+#include "Features/SaveSystem/Data/SaveTypes.h"
 #include "DataAssets/EntityData.h"
+#include "Features/InventorySystem/Core/InventoryComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "Components/InventoryComponent.h"
-#include "Components/TargetingComponent.h"
-#include "MotionWarpingComponent.h"
 #include "GAS/VelmaraAbilityInputID.h"
-#include "GAS/VelmaraGameplayTags.h"
 #include "GAS/VelmaraAttributeSet.h"
 #include "GAS/VelmaraGameplayAbility.h"
-#include "AbilitySystemBlueprintLibrary.h"
-#include "Components/BoxComponent.h"
-#include "Items/Weapons/Sword.h"
+#include "GAS/VelmaraGameplayTags.h"
+#include "Interfaces/Weapon/WeaponInterface.h"
+#include "Parkour/MantleComponent.h"
 #include "Serialization/ObjectAndNameAsStringProxyArchive.h"
 
 AEntity::AEntity()
@@ -38,6 +40,8 @@ AEntity::AEntity()
 	CameraComponent->SetupAttachment(GetSpringArmComponent());
 
 	MotionWarpingComponent = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarping"));
+
+	MantleComponent = CreateDefaultSubobject<UMantleComponent>(TEXT("Mantle"));
 }
 
 void AEntity::BeginPlay()
@@ -128,20 +132,16 @@ UAbilitySystemComponent* AEntity::GetAbilitySystemComponent() const
 
 void AEntity::OnSaveGame_Implementation(FEntitySaveData& OutData)
 {
-	if (InventoryComponent)
-	{
-		InventoryComponent->SaveInventory();
-	}
-
 	FMemoryWriter MemWriter(OutData.ByteData);
 	FObjectAndNameAsStringProxyArchive Ar(MemWriter, true);
 	Ar.ArIsSaveGame = true;
-
-	this->Serialize(Ar);
-
+    
+	this->Serialize(Ar); 
+    
 	if (InventoryComponent)
 	{
-		InventoryComponent->Serialize(Ar);
+		InventoryComponent->SaveInventory(); 
+		InventoryComponent->Serialize(Ar); 
 	}
 }
 
@@ -151,20 +151,16 @@ void AEntity::OnLoadGame_Implementation(const FEntitySaveData& InData)
 	FObjectAndNameAsStringProxyArchive Ar(MemReader, true);
 	Ar.ArIsSaveGame = true;
 
-	this->Serialize(Ar);
+	this->Serialize(Ar); 
 
 	if (InventoryComponent)
 	{
-		InventoryComponent->Serialize(Ar);
-	}
-
-	if (InventoryComponent)
-	{
+		InventoryComponent->Serialize(Ar); 
 		InventoryComponent->LoadInventory();
 	}
 }
 
-TScriptInterface<IWeaponInterface> AEntity::GetCurrentWeapon() const
+TScriptInterface<IPickable> AEntity::GetCurrentItem() const
 {
 	return GetInventoryComponent()->GetCurrentWeapon();
 }
@@ -254,13 +250,16 @@ bool AEntity::IsLaunchable() const
 
 void AEntity::SetWeaponCollisionEnabled(const ECollisionEnabled::Type CollisionEnabled)
 {
-	if (GetCurrentWeapon())
+	if (GetCurrentItem())
 	{
-		GetCurrentWeapon()->SetWeaponCollisionEnabled(CollisionEnabled);
-			
-		if (CollisionEnabled != ECollisionEnabled::NoCollision)
+		if (const TScriptInterface<IWeaponInterface> Weapon = GetCurrentItem().GetObject())
 		{
-			GetCurrentWeapon()->ClearIgnoreActors();
+			Weapon->SetWeaponCollisionEnabled(CollisionEnabled);
+			
+			if (CollisionEnabled != ECollisionEnabled::NoCollision)
+			{
+				Weapon->ClearIgnoreActors();
+			}
 		}
 	}
 }

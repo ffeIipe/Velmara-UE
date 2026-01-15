@@ -2,8 +2,10 @@
 
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
+#include "Features/GlobalEffectsSystem/Interfaces/EffectManagerProvider.h"
 #include "VelmaraGameInstance.generated.h"
 
+struct FGameplayTag;
 class UPlayerProgressSaveGame;
 class USettingsSaveGame;
 class ACharacter;
@@ -12,7 +14,7 @@ class AEnemy;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSaveDataUpdated);
 
 UCLASS()
-class TESISUE_API UVelmaraGameInstance : public UGameInstance
+class TESISUE_API UVelmaraGameInstance : public UGameInstance, public IEffectManagerProvider
 {
     GENERATED_BODY()
 
@@ -106,8 +108,6 @@ public:
     UFUNCTION(BlueprintCallable, Category = "SaveSystem")
     void LoadGame(int32 SlotIndex);
 
-	void RestoreLoadedData();
-
     UFUNCTION(BlueprintCallable, Category = "SaveSystem")
     UPlayerProgressSaveGame* GetSaveGameInfo(int32 SlotIndex) const;
 
@@ -127,15 +127,14 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "SaveSystem")
 	FOnSaveDataUpdated OnSaveDataUpdated;
+
+	virtual void PlayGameplayEffect_Implementation(FGameplayTag EffectTag, FVector Location) override;
 	
 private:
     const FString SettingsSlotName = TEXT("GameSettings");
 
     void SetDefaultGameSettings();
 
-	UPROPERTY()
-    UPlayerProgressSaveGame* PendingSaveData;
-	
 	UPROPERTY(VisibleAnywhere, Category = "Metadata")
 	FString CurrentSlotName;
 	
