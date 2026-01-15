@@ -3,16 +3,16 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Weapon.h"
-#include "Interfaces/Weapon/RangedWeapon.h"
+#include "DataAssets/Items/Weapons/PistolData.h"
+#include "Features/InventorySystem/Items/Weapon.h"
 #include "Pistol.generated.h"
 
-class UPistolDataAsset;
+class UPistolData;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnFire);
 
 UCLASS()
-class TESISUE_API APistol : public AWeapon, public IRangedWeapon
+class TESISUE_API APistol : public AWeapon
 {
 	GENERATED_BODY()
 public:
@@ -22,9 +22,9 @@ protected:
 	APistol();
 	virtual void BeginPlay() override;
 
-	virtual void PrimaryShoot() override;
+	virtual void PrimaryShoot();
 
-	virtual void SecondaryShoot() override;
+	virtual void SecondaryShoot();
 
 	FOnFire OnFire;
     
@@ -57,5 +57,5 @@ private:
 	FTimerHandle TimerHandle_BetweenShots;
 	
 	UPROPERTY(EditAnywhere, Category = "Weapon Properties")
-	UPistolDataAsset* PistolData;
+	UPistolData* PistolData; 
 };

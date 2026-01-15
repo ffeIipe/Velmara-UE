@@ -64,13 +64,13 @@ void ASpawnPoint::Spawn() const
 				}
 				else
 				{
-					if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3, FColor::Red, TEXT("Failed to async load EnemyClass after request."));
+					//if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3, FColor::Red, TEXT("Failed to async load EnemyClass after request."));
 				}
             });
         }
         else
         {
-            if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3, FColor::Red, TEXT("EnemyClass is not set on Spawn Point."));
+            //if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3, FColor::Red, TEXT("EnemyClass is not set on Spawn Point."));
         }
     }
 }

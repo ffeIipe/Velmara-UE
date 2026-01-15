@@ -1,31 +1,24 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "Entities/EntityAnimInstance.h"
 
 #include "KismetAnimationLibrary.h"
-#include "Components/CharacterStateComponent.h"
 #include "Entities/Entity.h"
-#include "Interfaces/CharacterMovementProvider.h"
-#include "Interfaces/CharacterStateProvider.h"
-#include "Interfaces/OwnerUtilsInterface.h"
-#include "Interfaces/Weapon/MeleeWeapon.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 
 void UEntityAnimInstance::NativeInitializeAnimation()
 {
 	Super::NativeInitializeAnimation();
 
-	SetAnimationState(nullptr);
-	
 	EntityOwner = Cast<AEntity>(TryGetPawnOwner());
-	OwnerUtils = EntityOwner;
-	CharacterMovementProvider = EntityOwner;
-	CharacterStateProvider = EntityOwner;
-	
-	if (CharacterMovementProvider)
+
+	if (EntityOwner)
 	{
-		MaxWalkSpeed = CharacterMovementProvider->Execute_GetCharacterMovementComponent(EntityOwner)->MaxWalkSpeed;
+		CharacterMovementComponent = EntityOwner->GetCharacterMovementComponent();
+	}
+	
+	if (CharacterMovementComponent)
+	{
+		MaxWalkSpeed = CharacterMovementComponent->MaxWalkSpeed;
 	}
 }
 
@@ -33,36 +26,14 @@ void UEntityAnimInstance::NativeUpdateAnimation(const float DeltaTime)
 {
 	Super::NativeUpdateAnimation(DeltaTime);
 
-	if (CharacterMovementProvider)
+	if (CharacterMovementComponent)
 	{
-		GroundSpeed = UKismetMathLibrary::VSizeXY(CharacterMovementProvider->Execute_GetCharacterMovementComponent(EntityOwner)->Velocity);
-		IsFalling = OwnerUtils->IsFalling();
-	
-		bHasAcceleration = CharacterMovementProvider->Execute_GetCharacterMovementComponent(EntityOwner)->GetCurrentAcceleration().SizeSquared2D() > SMALL_NUMBER;
-	
-		CharacterWeaponState = CharacterStateProvider->Execute_GetCharacterStateComponent(EntityOwner)->CurrentStates.WeaponState;
-		CharacterMode = CharacterStateProvider->Execute_GetCharacterStateComponent(EntityOwner)->CurrentStates.Mode;
-		
-		bIsLocking = OwnerUtils->IsLocking();
-		
-		Direction = UKismetAnimationLibrary::CalculateDirection(CharacterMovementProvider->Execute_GetCharacterMovementComponent(EntityOwner)->Velocity,EntityOwner->GetActorRotation());
-	}
-}
+		GroundSpeed = UKismetMathLibrary::VSizeXY(CharacterMovementComponent->Velocity);
 
-void UEntityAnimInstance::SetAnimationState(const TScriptInterface<IWeaponInterface> WeaponEquipped)
-{
-	if (WeaponEquipped)
-	{
-		if (TScriptInterface<IMeleeWeapon> IsMeleeWeapon = WeaponEquipped.GetObject())
-		{
-			/*if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, "Is melee weapon");*/
-			bIsMeleeWeapon = true;
-		}
-		else
-		{
-			/*if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Orange, "Is not a melee weapon");*/
-			bIsMeleeWeapon = false;
-		}
+		bIsFalling = CharacterMovementComponent->IsFalling();
+
+		bHasAcceleration = CharacterMovementComponent->GetCurrentAcceleration().SizeSquared2D() > SMALL_NUMBER;
+		
+		Direction = UKismetAnimationLibrary::CalculateDirection(CharacterMovementComponent->Velocity, EntityOwner->GetActorRotation());
 	}
-	else bIsMeleeWeapon = true;
 }

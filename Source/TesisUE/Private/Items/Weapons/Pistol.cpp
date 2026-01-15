@@ -1,22 +1,16 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #include "Items/Weapons/Pistol.h"
 
 #include "NiagaraFunctionLibrary.h"
-#include "DamageTypes/PistolDamage.h"
-#include "DataAssets/Items/Weapons/PistolDataAsset.h"
-#include "Engine/DamageEvents.h"
-#include "Entities/Entity.h"
-#include "Interfaces/HitInterface.h"
+#include "DataAssets/Items/Weapons/PistolData.h"
+#include "Features/GlobalEffectsSystem/Interfaces/EffectManagerProvider.h"
 #include "Kismet/GameplayStatics.h"
-#include "Subsystems/EffectsManager.h"
 
 void APistol::AttachMeshToSocket(USceneComponent* InParent)
 {
 	Super::AttachMeshToSocket(InParent);
 	
 	FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, true);
-	ItemMesh->AttachToComponent(InParent, TransformRules, PistolData->Effects.CustomInSocketName);
+	ItemMesh->AttachToComponent(InParent, TransformRules, PistolData->CustomInSocketName);
 }
 
 APistol::APistol()
@@ -29,7 +23,7 @@ void APistol::BeginPlay()
 	Super::BeginPlay();
 	if (PistolData)
 	{
-		CurrentAmmo = PistolData->Stats.MaxAmmo;
+		CurrentAmmo = PistolData->PistolTypeStats.MaxAmmo;
 	}
 	else
 	{
@@ -70,32 +64,25 @@ void APistol::PlayEffects()
 			1.f
 		);
 	}
-
-	if (UEffectsManager* EffectsManager = GetWorld()->GetSubsystem<UEffectsManager>())
-	{
-		EffectsManager->CameraShake(ECameraShakePreset::ECSP_ShotHit, SocketLocation);
-	}
 }
 
 void APistol::Fire()
 {
-	if (!AttributeProvider->RequiresEnergy(PistolData->Stats.EnergyToDecrease)) return;
+	//if (!AttributeProvider->RequiresEnergy(PistolData->Stats.EnergyToDecrease)) return;
 
 	if (CurrentAmmo >= 1 && !bIsReloading && bIsFireEnabled)
 	{
-		/*if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, "Shooting");*/
 		bIsFireEnabled = false;
 		CurrentAmmo--;
-		SetTimer(TimerHandle_BetweenShots, PistolData->Stats.FireEnableTime, &APistol::EnableFire);
+		SetTimer(TimerHandle_BetweenShots, PistolData->PistolTypeStats.FireEnableTime, &APistol::EnableFire);
 
 		if (OnFire.IsBound()) OnFire.Broadcast();
 
-		AttributeProvider->IncreaseEnergy(-PistolData->Stats.EnergyToDecrease);
-		AnimatorProvider->Execute_PlayAnimMontage(GetOwner(), PistolData->Montages.PrimaryFireMontage, 1.f, "Default");
+		//AnimatorProvider->Execute_PlayAnimMontage(GetOwner(), PistolData->Montages.PrimaryFireMontage, 1.f, "Default");
 		
 		FVector TraceStart;
 		FRotator CameraRotation;
-		ControllerProvider->GetEntityController()->GetPlayerViewPoint(TraceStart, CameraRotation);
+		//ControllerProvider->GetEntityController()->GetPlayerViewPoint(TraceStart, CameraRotation);
 
 		const FVector TraceDirection = CameraRotation.Vector();
 		const FVector TraceEnd = TraceStart + TraceDirection * 1000000.f;
@@ -117,20 +104,25 @@ void APistol::Fire()
 		
 		if (!bHit) return;
 		
-		if (const TScriptInterface<IHitInterface> HitInterface = HitResult.GetActor())
+		/*if (const TScriptInterface<IHitInterface> HitInterface = HitResult.GetActor())
 		{
 			UGameplayStatics::ApplyPointDamage(
 			HitResult.GetActor(),
-			PistolData->Stats.BaseDamage,
+			PistolData->PistolTypeStats.BaseDamage,
 			TraceDirection,
 			HitResult,
-			ControllerProvider->GetEntityController(),
+			/*ControllerProvider->GetEntityController()#1# nullptr,
 			GetOwner(),
-			UPistolDamage::StaticClass()
+			nullptr
 			);
 
 			const FDamageEvent DamageEvent(UDamageType::StaticClass());
-			HitInterface->GetHit(GetOwner(), HitResult.ImpactPoint, DamageEvent, PistolData->Stats.BaseDamage);
+			HitInterface->GetHit(GetOwner(), HitResult.ImpactPoint, DamageEvent, PistolData->PistolTypeStats.BaseDamage);
+		}*/
+
+		if (GetGameInstance()->Implements<UEffectManagerProvider>())
+		{
+			IEffectManagerProvider::Execute_PlayGameplayEffect(GetGameInstance(), CurrentDamageTag, HitResult.ImpactPoint);
 		}
 	}
 	else if (CurrentAmmo <= 0)
@@ -144,18 +136,17 @@ void APistol::EnableFire()
 
 void APistol::Reload()
 {
-	if (bIsReloading || CurrentAmmo == PistolData->Stats.MaxAmmo) return;
+	if (bIsReloading || CurrentAmmo == PistolData->PistolTypeStats.MaxAmmo) return;
 
-	/*if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, "Reloading");*/
 	bIsReloading = true;
 	
-	AnimatorProvider->Execute_PlayAnimMontage(GetOwner(), PistolData->Montages.ReloadMontage, 1.f, "Default");
+	//AnimatorProvider->Execute_PlayAnimMontage(GetOwner(), PistolData->Montages.ReloadMontage, 1.f, "Default");
 	SetTimer(TimerHandle_Reload, 1.f, &APistol::FinishReload);
 }
 
 void APistol::FinishReload()
 {
-	CurrentAmmo = PistolData->Stats.MaxAmmo;
+	CurrentAmmo = PistolData->PistolTypeStats.MaxAmmo;
 	bIsReloading = false;
 }
 

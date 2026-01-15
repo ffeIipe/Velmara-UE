@@ -1,11 +1,10 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Entities/Entity.h"
 #include "Enemy.generated.h"
 
+class UTimelineComponent;
 enum class EMeleeDamageTypes : uint8;
 class UCameraComponent;
 class UInputMappingContext;
@@ -58,17 +57,13 @@ public:
 	void RequestReturnToPool();
 
 	// === Combat & Damage ===
-	virtual void Die(UAnimMontage* DeathAnim, FName Section) override;
+	virtual void PerformDeath() override;
 
-	virtual void GetHit(TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint, FDamageEvent const& DamageEvent, const float DamageReceived) override;
-	
-	void DropOrbs(const float DamageReceived, const TScriptInterface<ICombatTargetInterface>& DamageCauser);
+	//void DropOrbs(const float DamageReceived, AActor* DamageCauser) const;
 
 	void FinishedDamage();
 
-	virtual bool IsLaunchable() override;
-
-	void NotifyDamageTakenToBlackboard(const TScriptInterface<ICombatTargetInterface>& DamageCauser);
+	void NotifyDamageTakenToBlackboard(AActor* DamageCauser);
 
 	// === AI & State ===
 	FORCEINLINE EEnemyType GetEnemyType() const { return EnemyType; }
@@ -86,7 +81,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void EnableAI();
 
-	void NotifyThreat(const TScriptInterface<ICombatTargetInterface>& ThreatActor) const;
+	void NotifyThreat(AActor* ThreatActor) const;
 
 	AAIController* GetAIController() const { return AIController; };
 
@@ -107,12 +102,6 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	UFUNCTION(BlueprintCallable)
-	void PerformDead();
-	
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
-	// === AI ===
 	UPROPERTY(EditAnywhere)
 	float RadiusToNotifyAllies = 1700.f;
 
@@ -122,7 +111,7 @@ protected:
 	UFUNCTION()
 	void NotifyIsNotShieldedToBlackboard();
 
-	TArray<TScriptInterface<ICombatTargetInterface>> GenerateSphereOverlapToDetectOtherEnemies(
+	TArray<AEnemy*> GenerateSphereOverlapToDetectOtherEnemies(
 		const FVector& Origin, float Radius, AActor* HitEnemyToExclude);
 
 	// === Combat & Damage ===
@@ -131,12 +120,6 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "DamageThreshold");
 	float DamageThreshold = 30.f;
-
-	UPROPERTY();
-	EMeleeDamageTypes LastDamageType;
-
-	UFUNCTION(BlueprintCallable)
-	virtual void ReactToDamage(EMeleeDamageTypes DamageType, const FVector& ImpactPoint) {}
 
 	// === Energy & Orbs ===
 	UPROPERTY(EditAnywhere, Category = "Energy | Energy Drop");
@@ -221,8 +204,4 @@ protected:
 
 	UFUNCTION(BlueprintCallable)
 	virtual void HandleEnemyCollision(bool bEnable);
-
-private:
-	UFUNCTION()
-	void GetExecuted();
 };

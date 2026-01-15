@@ -2,17 +2,13 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "Interfaces/CombatTargetInterface.h"
 #include "TargetingComponent.generated.h"
 
+class AEntity;
+class IWeaponInterface;
 struct FTargetingData;
 class UTimelineComponent;
-class ICharacterMovementProvider;
-class IControllerProvider;
-class ICameraProvider;
 class UCurveFloat;
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHardLockToggled);
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class TESISUE_API UTargetingComponent : public UActorComponent
@@ -22,74 +18,55 @@ class TESISUE_API UTargetingComponent : public UActorComponent
 public:
     UTargetingComponent();
 
-    void InitializeValues(const FTargetingData& TargetingData);
-
-    virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+    UFUNCTION()
+    void HandleTargetDeath(AEntity* DeadEntity);
     
-    UPROPERTY(BlueprintAssignable)
-    FOnHardLockToggled OnHardLockToggled;
+    UFUNCTION(BlueprintCallable, Category = "Targeting")
+    void EnableLock();
 
     UFUNCTION(BlueprintCallable, Category = "Targeting")
-    void ToggleHardLock();
-
+    void DisableLock();
+    
     UFUNCTION(BlueprintCallable, Category = "Targeting")
     void ChangeHardLockTarget();
 
     UFUNCTION(BlueprintCallable, Category = "Targeting")
-    void PerformSoftLock();
+    AActor* GetCurrentTarget() const { return CurrentTarget; }
 
     UFUNCTION(BlueprintCallable, Category = "Targeting")
-    TScriptInterface<ICombatTargetInterface> GetCurrentTarget() { return CurrentTarget; }
-
-    UFUNCTION()
     void RemoveCombatTarget();
 
     UFUNCTION(BlueprintCallable, Category = "Targeting")
-    TScriptInterface<ICombatTargetInterface> SearchCombatTarget(const FVector& Start, const FVector& End, float SearchRadius) const;
+    AActor* SearchCombatTarget(const FVector& Start, const FVector& End, float SearchRadius) const;
     
-    bool IsLocking() const { return bIsHardLocking; }
+    UFUNCTION(BlueprintCallable, Category = "Targeting")
+    AActor* SelectNearestTarget(TArray<AActor*> Targets);
+
+    UFUNCTION(BlueprintCallable, Category = "Targeting")
+    void RotateTowardsTarget(AActor* Target);
+    
+    UFUNCTION(BlueprintCallable, Category = "Targeting")
+    TArray<AActor*> GetTargets(const float Radius) const;
     
 protected:
     virtual void BeginPlay() override;
 
+    virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+
 private:
     UPROPERTY()
-    TScriptInterface<IControllerProvider> ControllerProvider;
+    TObjectPtr<ACharacter> OwnerCharacter;
 
     UPROPERTY()
-    TScriptInterface<ICameraProvider> CameraProvider;
+    TObjectPtr<AController> OwnerController;
 
     UPROPERTY()
-    TScriptInterface<ICharacterMovementProvider> CharacterMovementProvider;
+    AActor* CurrentTarget;
 
     UPROPERTY()
-    TScriptInterface<ICombatTargetInterface> CurrentTarget;
+    TArray<AActor*> CombatTargets;
 
-    UPROPERTY()
-    UTimelineComponent* SoftLockTimeline;
-
-    UPROPERTY()
-    UCurveFloat* SoftLockCurve;
-    
-    float SoftLockDistance = 250.f;
-    float SoftLockRadius = 100.f;
-    bool bIsHardLocking = false;
-    float HardLockRadius = 1500.f;
     int32 CombatTargetIndex = 0;
-    TArray<TScriptInterface<ICombatTargetInterface>> CombatTargets;
-
-    UFUNCTION()
-    bool PickHardLockTarget();
-
-    UFUNCTION()
-    void ValidateCurrentTarget();
     
-    UFUNCTION()
-    void RotateTowardsHardLockTarget(const TScriptInterface<ICombatTargetInterface>& Target, float DeltaTime) const;
-    
-    UFUNCTION()
-    TArray<TScriptInterface<ICombatTargetInterface>> GetCombatTargets(const float Radius) const;
-
-    UFUNCTION()
-    void UpdateSoftLockOn(float Alpha);
+    bool bIsLocking = false;
 };

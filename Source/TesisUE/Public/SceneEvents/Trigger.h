@@ -6,7 +6,6 @@
 #include "GameFramework/Actor.h"
 #include "Trigger.generated.h"
 
-class IHitInterface;
 class APlayerMain;
 class UBoxComponent;
 
@@ -68,6 +67,4 @@ protected:
 
 	UFUNCTION()
 	virtual void DisableCollision();
-	
-	TScriptInterface<IHitInterface> HitActor;
 };

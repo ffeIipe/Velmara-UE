@@ -1,9 +1,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Features/InventorySystem/Items/Item.h"
 #include "GameFramework/Actor.h"
 #include "Interfaces/Spectral.h"
-#include "Items/Item.h"
 #include "SpectralObject.generated.h"
 
 enum class ECharacterModeStates : uint8;

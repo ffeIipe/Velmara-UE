@@ -1,33 +1,20 @@
 #include "Player/PlayerMain.h"
 
-#include "SceneEvents/VelmaraGameModeBase.h"
+#include "AbilitySystemComponent.h"
+#include "SceneEvents/VelmaraGameMode.h"
 #include "SceneEvents/VelmaraGameStateBase.h"
 #include "SceneEvents/VelmaraGameInstance.h"
 
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Components/InputComponent.h"
-#include "Components/AttributeComponent.h"
-#include "Components/ChangeModeComponent.h"
-#include "Components/CharacterStateComponent.h"
-#include "Components/PossessionComponent.h"
 #include "Curves/CurveFloat.h"
 
 #include "Camera/CameraActor.h"
 
-#include "EnhancedInputComponent.h"
-#include "EnhancedInputSubsystems.h"
-#include "GenericTeamAgentInterface.h"
-
 #include "Kismet/GameplayStatics.h"
 
-#include "Engine/DamageEvents.h"
-#include "DamageTypes/SpectralTrapDamageType.h"
-#include "DataAssets/InputData.h"
-#include "DataAssets/MontagesData.h"
-#include "Interfaces/Weapon/WeaponInterface.h"
 #include "UObject/ConstructorHelpers.h"
-#include "EnhancedInput/Public/InputMappingContext.h"
 
 APlayerMain::APlayerMain()
 {
@@ -35,87 +22,21 @@ APlayerMain::APlayerMain()
 
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 	AutoPossessAI = EAutoPossessAI::Disabled;
+}
 
-	ChangeModeComponent = CreateDefaultSubobject<UChangeModeComponent>(TEXT("ChangeModeComponent"));
+void APlayerMain::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
 
-	GetAttributeComponent()->OnEntityDead.AddDynamic(this, &APlayerMain::PerformDead);
-	GetAttributeComponent()->OnOutOfEnergy.AddDynamic(this, &APlayerMain::ApplyHumanMode);
-	
-	GetPossessionComponent()->OnPossessionAttemptSucceed.AddDynamic(GetAttributeComponent(), &UAttributeComponent::StartDecreaseEnergy);
-	GetPossessionComponent()->OnPossessionReleased.AddDynamic(GetAttributeComponent(), &UAttributeComponent::StopDecreaseEnergy);
-
-	ChangeModeComponent->OnHumanEffectApplied.AddDynamic(this, &APlayerMain::ApplyHumanMode);
-	ChangeModeComponent->OnSpectralEffectApplied.AddDynamic(this, &APlayerMain::ApplySpectralMode);
-
-	static ConstructorHelpers::FObjectFinder<UInputMappingContext> IMC(TEXT("/Game/Blueprints/Player/Input/IMC_PlayerMain.IMC_PlayerMain"));
-	if (IMC.Succeeded())
+	if (AbilitySystemComponent)
 	{
-		CharacterContext = IMC.Object.Get();
-	}
-	else if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, "IMC Found!");
+		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 	}
 }
 
-void APlayerMain::BeginPlay()
+void APlayerMain::PerformDeath()
 {
-	Super::BeginPlay();
-
-	ChangeModeComponent->OnHumanEffectApplied.AddDynamic(this, &APlayerMain::ApplyHumanMode);
-	ChangeModeComponent->OnSpectralEffectApplied.AddDynamic(this, &APlayerMain::ApplySpectralMode);
-
-	if (UVelmaraGameInstance* GameInst = GetGameInstance<UVelmaraGameInstance>())
-	{
-		GameInst->SavePlayerProgress(GameInst->ActiveSaveSlotIndex, this);
-	}
-	
-	if (const APlayerController* PlayerController = CastChecked<APlayerController>(GetController()))
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
-			Subsystem->AddMappingContext(CharacterContext, 0);
-}
-
-void APlayerMain::PerformDead()
-{
-	Die(MontagesData->Montages.DeathMontage, NAME_None);
-}
-
-void APlayerMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
-	{
-		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_SwitchForm, ETriggerEvent::Started, this, &APlayerMain::ToggleForm);
-		EnhancedInputComponent->BindAction(InputsData->Inputs.InputAction_Possess, ETriggerEvent::Started, this, &APlayerMain::Input_Ability);
-	}
-}
-
-float APlayerMain::TakeDamage(const float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
-{
-	if (!bCanReceiveDamage) return 0.f;
-
-	if (GetAttributeComponent() && GetAttributeComponent()->IsAlive())
-	{
-		GetAttributeComponent()->ReceiveDamage(DamageAmount);
-	}
-	else
-	{
-		Die(MontagesData->Montages.DeathMontage, NAME_None);
-	}
-	return DamageAmount;
-}
-
-void APlayerMain::ToggleForm()
-{
-	if (CharacterStateComponent->IsActionEqualToAny({ ECharacterActionsStates::ECAS_Nothing, ECharacterActionsStates::ECAS_Stun }))
-	{
-		ChangeModeComponent->ToggleForm();
-	}
-}
-
-void APlayerMain::Die(UAnimMontage* DeathAnim, const FName Section)
-{
-	Super::Die(DeathAnim, Section);
+	Super::PerformDeath();
 
 	if (PlayerControllerRef)
 	{
@@ -128,9 +49,9 @@ void APlayerMain::Die(UAnimMontage* DeathAnim, const FName Section)
 
 void APlayerMain::Revive()
 {
-	if (Execute_GetCharacterStateComponent(this)->CurrentStates.Action == ECharacterActionsStates::ECAS_Dead)
+	if (!IsAlive())
 	{
-		Execute_StopAnimMontage(this, GetCurrentMontage());
+		StopAnimMontage(GetCurrentMontage());
 
 		if (PlayerControllerRef)
 		{
@@ -138,7 +59,7 @@ void APlayerMain::Revive()
 		}
 
 		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
-		Execute_GetCharacterStateComponent(this)->SetAction(ECharacterActionsStates::ECAS_Nothing);
+		//Execute_GetCharacterStateComponent(this)->SetAction(ECharacterActionsStates::ECAS_Nothing);
 	}
 }
 
@@ -146,71 +67,18 @@ void APlayerMain::ResetFollowCamera()
 {
 	if (FollowCamera && PlayerControllerRef)
 	{
-		Execute_GetCharacterStateComponent(this)->SetAction(ECharacterActionsStates::ECAS_Nothing);
+		//Execute_GetCharacterStateComponent(this)->SetAction(ECharacterActionsStates::ECAS_Nothing);
 		FollowCamera->AttachToComponent(GetSpringArmComponent(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName("SpringEndpoint"));
 		PlayerControllerRef->EnableInput(PlayerControllerRef);
 		bCanReceiveDamage = true;
-		Cast<AVelmaraGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()))->SetEnemiesAIEnabled(true);
+		Cast<AVelmaraGameMode>(UGameplayStatics::GetGameMode(GetWorld()))->SetEnemiesAIEnabled(true);
 	}
 }
 
 void APlayerMain::LoadLastCheckpoint() const
 {
-	if (UVelmaraGameInstance* GameInst = GetGameInstance<UVelmaraGameInstance>())
+	if (UVelmaraGameInstance* VelmaraGameInstance = Cast<UVelmaraGameInstance>(GetWorld()->GetGameInstance()))
 	{
-		GameInst->LoadPlayerProgress(GameInst->ActiveSaveSlotIndex);
+		VelmaraGameInstance->LoadGame(VelmaraGameInstance->ActiveSaveSlotIndex);
 	}
-}
-
-void APlayerMain::ApplyHumanMode()
-{
-	if (CharacterStateComponent->IsModeEqualToAny({ECharacterModeStates::ECMS_Human})) return;
-	
-	if (const TScriptInterface<IGenericTeamAgentInterface> TeamAgent = GetController())
-	{
-		TeamAgent->SetGenericTeamId(FGenericTeamId(2));
-	}
-	
-	GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = false;
-
-	if (Execute_GetCurrentWeapon(this))
-	{
-		Execute_GetCurrentWeapon(this)->EnableVisuals();
-		CharacterStateComponent->SetWeaponState(ECharacterWeaponStates::ECWS_EquippedWeapon);
-	}
-
-	if (GetPossessionComponent()->GetPossessedEntity())
-	{
-		GetPossessionComponent()->ReleasePossession();
-	}
-
-	CharacterStateComponent->SetMode(ECharacterModeStates::ECMS_Human);
-
-	SetCombatStrategy(ECharacterModeStates::ECMS_Human);
-
-	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, "HUMAN");
-}
-
-void APlayerMain::ApplySpectralMode()
-{
-	if (CharacterStateComponent->IsModeEqualToAny({ECharacterModeStates::ECMS_Spectral})) return;
-	
-	if (const TScriptInterface<IGenericTeamAgentInterface> TeamAgent = GetController())
-	{
-		TeamAgent->SetGenericTeamId(FGenericTeamId(0));
-	}
-	
-	GetCharacterMovement()->GetPawnOwner()->bUseControllerRotationYaw = true;
-
-	if (Execute_GetCurrentWeapon(this))
-	{
-		Execute_GetCurrentWeapon(this)->DisableVisuals();
-		CharacterStateComponent->SetWeaponState(ECharacterWeaponStates::ECWS_Unequipped);
-	}
-	
-	CharacterStateComponent->SetMode(ECharacterModeStates::ECMS_Spectral);
-
-	SetCombatStrategy(ECharacterModeStates::ECMS_Spectral);
-
-	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "VAMPIRE");
 }

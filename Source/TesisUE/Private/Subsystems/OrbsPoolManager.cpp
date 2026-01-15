@@ -1,6 +1,6 @@
 #include "Subsystems/OrbsPoolManager.h"
-#include "Items/Item.h"
-#include <Interfaces/OrbPoolingInterface.h>
+#include "Interfaces/OrbPoolingInterface.h"
+#include "Features/InventorySystem/Items/Item.h"
 
 void UOrbsPoolManager::Initialize(FSubsystemCollectionBase& Collection)
 {

@@ -1,19 +1,24 @@
 #include "SceneEvents/VelmaraGameInstance.h"
-#include "LoadSystem/SettingsSaveGame.h"
-#include "LoadSystem/PlayerProgressSaveGame.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/GameUserSettings.h"
 #include "Blueprint/UserWidget.h"
-#include <SceneEvents/VelmaraGameStateBase.h>
+#include "Features/GlobalEffectsSystem/Core/EffectsManager.h"
+#include "Features/GlobalEffectsSystem/Core/EffectsTags.h"
+#include "Features/SaveSystem/Core/SettingsSaveGame.h"
+#include "Features/SaveSystem/Subsystems/SaveGameSubsystem.h"
+#include "GAS/VelmaraGameplayTags.h"
+
+class FActorIterator;
 
 UVelmaraGameInstance::UVelmaraGameInstance()
 {
     CurrentSettings = nullptr;
-    ActiveSaveSlotIndex = 0;
-    PendingGameDataToLoad = nullptr;
+	ActiveSaveSlotIndex = 0;
+	CurrentLoadingScreenInstance = nullptr;
+	CurrentSlotName = TEXT("GameSettings");
+	UserIndex = 0;
 
-    CurrentLoadingScreenInstance = nullptr;
-    bIsLoadingPlayerProgress = false;
+    FVelmaraGameplayTags::InitializeGameplayTags(); //initialize basic tags
 }
 
 void UVelmaraGameInstance::Init()
@@ -59,7 +64,7 @@ void UVelmaraGameInstance::SetDefaultGameSettings()
 
 void UVelmaraGameInstance::LoadGameSettings()
 {
-    if (USettingsSaveGame* LoadedSettings = Cast<USettingsSaveGame>(UGameplayStatics::LoadGameFromSlot(SettingsSlotName, DefaultUserIndex)))
+    if (USettingsSaveGame* LoadedSettings = Cast<USettingsSaveGame>(UGameplayStatics::LoadGameFromSlot(SettingsSlotName, 0)))
     {
         CurrentSettings = LoadedSettings;
         UE_LOG(LogTemp, Log, TEXT("NewGameInstance: Game settings loaded successfully."));
@@ -78,7 +83,7 @@ void UVelmaraGameInstance::SaveGameSettings()
 {
     if (CurrentSettings)
     {
-        UGameplayStatics::SaveGameToSlot(CurrentSettings, SettingsSlotName, DefaultUserIndex);
+        UGameplayStatics::SaveGameToSlot(CurrentSettings, SettingsSlotName, 0);
         UE_LOG(LogTemp, Log, TEXT("NewGameInstance: Game settings saved."));
     }
     else
@@ -289,153 +294,115 @@ int32 UVelmaraGameInstance::GetFrameRateLimit() const
     return CurrentSettings ? CurrentSettings->FrameRateLimit : 60;
 }
 
-void UVelmaraGameInstance::CreateNewGame(int32 SlotIndex, FString StartLevelName)
-{
-    ActiveSaveSlotIndex = FMath::Clamp(SlotIndex, 0, 2);
-    PendingGameDataToLoad = nullptr;
-
-    // FString SlotNameToDelete = FString::Printf(TEXT("%s%d"), *ProgressSaveSlotPrefix, ActiveSaveSlotIndex);
-    // if (UGameplayStatics::DoesSaveGameExist(SlotNameToDelete, DefaultUserIndex))
-    // {
-    //     UGameplayStatics::DeleteGameInSlot(SlotNameToDelete, DefaultUserIndex);
-    // }
-
-    UGameplayStatics::OpenLevel(this, FName(*StartLevelName));
-}
-
-bool UVelmaraGameInstance::SavePlayerProgress(const int32 SlotIndex, APawn* Pawn)
-{
-    if (Pawn->GetController() == UGameplayStatics::GetPlayerController(this, 0))
-    {
-        if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Purple, "Proceed to Save Player progress.");
-
-        ActiveSaveSlotIndex = FMath::Clamp(SlotIndex, 0, 2);
-        const FString CurrentSlotName = FString::Printf(TEXT("%s%d"), *ProgressSaveSlotPrefix, ActiveSaveSlotIndex);
-
-        UPlayerProgressSaveGame* CurrentGameProgress = Cast<UPlayerProgressSaveGame>(UGameplayStatics::CreateSaveGameObject(UPlayerProgressSaveGame::StaticClass()));
-        if (!CurrentGameProgress)
-        {
-            if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Failed Cast to UPlayerSaveProgress.");
-            return false;
-        }
-
-        CurrentGameProgress->CurrentLevelName = UGameplayStatics::GetCurrentLevelName(this);
-
-        if (AVelmaraGameStateBase* GameState = GetWorld()->GetGameState<AVelmaraGameStateBase>())
-        {
-            if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, "Game State looking for Memento Entities States...");
-            
-            CurrentGameProgress->EntitiesStates = GameState->SaveAllEntityMementoStates();
-            CurrentGameProgress->ItemsStates = GameState->SaveAllItemMementoStates();
-        }
-
-        CurrentGameProgress->Timestamp = FDateTime::UtcNow();
-        CurrentGameProgress->SaveSlotIndex = ActiveSaveSlotIndex;
-        
-        const bool bSaveSuccess = UGameplayStatics::SaveGameToSlot(CurrentGameProgress, CurrentSlotName, DefaultUserIndex);
-        return bSaveSuccess;
-    }
-
-    if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Failed to Save Data.");
-
-    return false;
-}
-
-bool UVelmaraGameInstance::LoadPlayerProgress(int32 SlotIndex)
-{
-    ActiveSaveSlotIndex = FMath::Clamp(SlotIndex, 0, 2);
-    const FString CurrentSlotName = FString::Printf(TEXT("%s%d"), *ProgressSaveSlotPrefix, ActiveSaveSlotIndex);
-
-    if (!DoesProgressSaveExist(ActiveSaveSlotIndex))
-    {
-        bIsLoadingPlayerProgress = false;
-        return false;
-    }
-
-    PendingGameDataToLoad = Cast<UPlayerProgressSaveGame>(UGameplayStatics::LoadGameFromSlot(CurrentSlotName, DefaultUserIndex));
-
-    if (PendingGameDataToLoad)
-    {
-        bIsLoadingPlayerProgress = true;
-        ShowLoadingScreen();
-
-        UGameplayStatics::OpenLevel(this, FName(*PendingGameDataToLoad->CurrentLevelName));
-        return true;
-    }
-
-    bIsLoadingPlayerProgress = false;
-    return false;
-}
-
-void UVelmaraGameInstance::ApplyPendingLoadedDataToWorld()
-{
-    if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Cyan, "Applying Pending Data to world.");
-    
-    if (!PendingGameDataToLoad)
-    {
-        bIsLoadingPlayerProgress = false;
-        HideLoadingScreen();
-        if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Non-Pending Data to apply to world.");
-        
-        return;
-    }
-
-    const UWorld* World = GetWorld();
-    if (!World)
-    {
-        PendingGameDataToLoad = nullptr;
-        bIsLoadingPlayerProgress = false;
-        HideLoadingScreen();
-        return;
-    }
-
-    if (AVelmaraGameStateBase* GameState = World->GetGameState<AVelmaraGameStateBase>())
-    {
-        GameState->InitializeEntities(PendingGameDataToLoad->EntitiesStates);
-        GameState->InitializeItems(PendingGameDataToLoad->ItemsStates);
-    }
-
-    PendingGameDataToLoad = nullptr;
-    bIsLoadingPlayerProgress = false;
-    HideLoadingScreen();
-}
-
-bool UVelmaraGameInstance::DoesProgressSaveExist(int32 SlotIndex) const
-{
-    FString CurrentSlotName = FString::Printf(TEXT("%s%d"), *ProgressSaveSlotPrefix, FMath::Clamp(SlotIndex, 0, 2));
-    return UGameplayStatics::DoesSaveGameExist(CurrentSlotName, DefaultUserIndex);
-}
-
-UPlayerProgressSaveGame* UVelmaraGameInstance::GetSaveGameInfo(int32 SlotIndex) const
-{
-    FString CurrentSlotName = FString::Printf(TEXT("%s%d"), *ProgressSaveSlotPrefix, FMath::Clamp(SlotIndex, 0, 2));
-    if (DoesProgressSaveExist(SlotIndex))
-    {
-        return Cast<UPlayerProgressSaveGame>(UGameplayStatics::LoadGameFromSlot(CurrentSlotName, DefaultUserIndex));
-    }
-    return nullptr;
-}
-
 void UVelmaraGameInstance::ShowLoadingScreen()
 {
-    if (LoadingScreenWidgetClass && !CurrentLoadingScreenInstance)
-    {
-        if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0))
-        {
-            CurrentLoadingScreenInstance = CreateWidget<UUserWidget>(PC, LoadingScreenWidgetClass);
-            if (CurrentLoadingScreenInstance)
-            {
-                CurrentLoadingScreenInstance->AddToViewport(100);
-            }
-        }
-    }
+	if (LoadingScreenWidgetClass && !CurrentLoadingScreenInstance)
+	{
+		if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0))
+		{
+			CurrentLoadingScreenInstance = CreateWidget<UUserWidget>(PC, LoadingScreenWidgetClass);
+			if (CurrentLoadingScreenInstance)
+			{
+				CurrentLoadingScreenInstance->AddToViewport(100);
+			}
+		}
+	}
 }
 
 void UVelmaraGameInstance::HideLoadingScreen()
 {
-    if (CurrentLoadingScreenInstance)
+	if (CurrentLoadingScreenInstance)
+	{
+		CurrentLoadingScreenInstance->RemoveFromParent();
+		CurrentLoadingScreenInstance = nullptr;
+	}
+}
+
+void UVelmaraGameInstance::PlayGameplayEffect_Implementation(FGameplayTag EffectTag, const FVector Location)
+{
+    IEffectManagerProvider::PlayGameplayEffect_Implementation(EffectTag, Location);
+
+    UEffectsManager* EffectsSys = nullptr;
+
+    if (const UWorld* World = GetWorld())
     {
-        CurrentLoadingScreenInstance->RemoveFromParent();
-        CurrentLoadingScreenInstance = nullptr;
+        EffectsSys = World->GetSubsystem<UEffectsManager>();
     }
+    
+    if (!EffectsSys) return;
+
+    
+    if (EffectTag.MatchesTag(EffectsTags::CameraShake)) 
+    {
+        EffectsSys->CameraShake(EffectTag, Location);
+    }
+    else if (EffectTag.MatchesTag(EffectsTags::CameraZoom))
+    {
+        EffectsSys->CameraZoom(EffectTag);
+    }
+    else if (EffectTag.MatchesTag(EffectsTags::TimeWarp))
+    {
+        EffectsSys->TimeWarp(EffectTag);
+    }
+    else if (EffectTag.MatchesTag(EffectsTags::HitStop))
+    {
+        EffectsSys->HitStop(EffectTag);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("PlayGameplayEffect: Not a recognizable or categorized Tag %s"), *EffectTag.ToString());
+    }
+}
+
+void UVelmaraGameInstance::SaveGame()
+{
+    if (USaveGameSubsystem* SaveSystem = GetSubsystem<USaveGameSubsystem>())
+    {
+        FString SlotName = GetSlotNameByIndex(ActiveSaveSlotIndex);
+        SaveSystem->SaveGame(SlotName);
+    }
+}
+
+void UVelmaraGameInstance::LoadGame(const int32 SlotIndex)
+{
+    ActiveSaveSlotIndex = SlotIndex;
+    
+    if (USaveGameSubsystem* SaveSystem = GetSubsystem<USaveGameSubsystem>())
+    {
+        const FString SlotName = GetSlotNameByIndex(SlotIndex);
+        
+        SaveSystem->LoadGame(SlotName); 
+    }
+}
+
+void UVelmaraGameInstance::CreateNewGame(const int32 SlotIndex, const FString StartLevelName)
+{
+    ActiveSaveSlotIndex = FMath::Clamp(SlotIndex, 0, 2);
+
+    if (const FString SlotName = GetSlotNameByIndex(ActiveSaveSlotIndex);
+        UGameplayStatics::DoesSaveGameExist(SlotName, DefaultUserIndex))
+    {
+        UGameplayStatics::DeleteGameInSlot(SlotName, DefaultUserIndex);
+    }
+
+	UGameplayStatics::OpenLevel(this, FName(*StartLevelName));
+}
+
+bool UVelmaraGameInstance::DoesProgressSaveExist(const int32 SlotIndex) const
+{
+	return UGameplayStatics::DoesSaveGameExist(GetSlotNameByIndex(SlotIndex), DefaultUserIndex);
+}
+
+FString UVelmaraGameInstance::GetSlotNameByIndex(const int32 SlotIndex) const
+{
+	return FString::Printf(TEXT("%s%d"), *ProgressSaveSlotPrefix, FMath::Clamp(SlotIndex, 0, 2));
+}
+
+UPlayerProgressSaveGame* UVelmaraGameInstance::GetSaveGameInfo(const int32 SlotIndex) const
+{
+	if (DoesProgressSaveExist(SlotIndex))
+	{
+		return Cast<UPlayerProgressSaveGame>(UGameplayStatics::LoadGameFromSlot(GetSlotNameByIndex(SlotIndex), DefaultUserIndex));
+	}
+	return nullptr;
 }

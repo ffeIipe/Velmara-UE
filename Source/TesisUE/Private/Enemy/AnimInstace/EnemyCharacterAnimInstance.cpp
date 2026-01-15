@@ -1,7 +1,6 @@
 #include "Enemy/AnimInstace/EnemyCharacterAnimInstance.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "Components/ExtraMovementComponent.h"
 #include "DataAssets/EntityData.h"
 
 void UEnemyCharacterAnimInstance::NativeInitializeAnimation()
@@ -14,7 +13,7 @@ void UEnemyCharacterAnimInstance::NativeInitializeAnimation()
 		MaxWalkSpeed = OwningMovementComponent->MaxWalkSpeed;
 		if (OwningEnemy->EntityData)
 		{
-			MaxRunSpeed = OwningEnemy->EntityData->MovementData.MaxRunSpeed;
+			//MaxRunSpeed = OwningEnemy->EntityData->MovementData.MaxRunSpeed;
 		}
 		else if (GEngine)
 			GEngine->AddOnScreenDebugMessage(INDEX_NONE,3.f,FColor::Red,"Entity Data not found!");

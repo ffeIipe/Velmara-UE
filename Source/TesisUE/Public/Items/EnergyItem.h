@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Items/Item.h"
+#include "Features/InventorySystem/Items/Item.h"
 #include "EnergyItem.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnChestUsedSpawnEnergy);

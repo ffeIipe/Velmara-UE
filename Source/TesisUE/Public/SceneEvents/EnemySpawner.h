@@ -25,6 +25,9 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+	UPROPERTY(EditAnywhere)
+	bool bIsNumericalSpawn = false;
+	
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
 	TArray<ASpawnPoint*> SpawnPoints;
 	

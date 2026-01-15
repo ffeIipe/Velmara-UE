@@ -2,14 +2,12 @@
 #include <AI/EnemyAIController.h>
 #include "BehaviorTree/BlackboardComponent.h"
 
-#include "Components/AttributeComponent.h"
 #include "Components/SphereComponent.h"
 #include "Curves/CurveFloat.h"
 #include "SpectralTrapComponent.h"
 
 #include "Player/PlayerMain.h"
 #include <Kismet/GameplayStatics.h>
-#include <Player/PlayerHeroController.h>
 
 #include "Subsystems/EnemyPoolManager.h"
 
@@ -32,7 +30,7 @@ void APaladinBoss::BeginPlay()
 
 	UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("SpawnPoint"), SpawnPoints);
 
-	GetAttributeComponent()->OnDettachShield.AddDynamic(this, &APaladinBoss::ShieldDetach);
+	//GetAttributeComponent()->OnDetachShield.AddDynamic(this, &APaladinBoss::ShieldDetach);
 	
 	if (!BBComponent)
 	{
@@ -55,63 +53,22 @@ void APaladinBoss::ShieldDetach()
 	AuraMeshComponent->DestroyComponent();
 }
 
-float APaladinBoss::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+//float APaladinBoss::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+//{
+//	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+//	
+//	if (PlayerControllerRef)
+//	{
+//		Cast<APlayerHeroController>(PlayerControllerRef)->HandleBossHealth(GetAttributeComponent()->GetHealthPercent(), GetAttributeComponent()->GetShieldHealthPercent());
+//	}
+//
+//	return DamageAmount;
+//}
+
+void APaladinBoss::PerformDeath()
 {
-	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+	Super::PerformDeath();
 	
-	if (PlayerControllerRef)
-	{
-		Cast<APlayerHeroController>(PlayerControllerRef)->HandleBossHealth(GetAttributeComponent()->GetHealthPercent(), GetAttributeComponent()->GetShieldHealthPercent());
-	}
-
-	return DamageAmount;
-}
-
-void APaladinBoss::GetHit(TScriptInterface<ICombatTargetInterface> DamageCauser, const FVector& ImpactPoint,
-	FDamageEvent const& DamageEvent, const float DamageReceived)
-{
-	Super::GetHit(DamageCauser, ImpactPoint, DamageEvent, DamageReceived);
-
-	if (BBComponent)
-	{
-		if (BBComponent->GetValueAsBool(FName("CanReceiveDamage")))
-		{
-			Super::GetHit(DamageCauser, ImpactPoint, DamageEvent, DamageReceived);
-
-			const float DamageAccumulated = BBComponent->GetValueAsFloat(FName("DamageAccumulated"));
-			BBComponent->SetValueAsFloat(FName("DamageAccumulated"), DamageAccumulated + DamageReceived);
-		}
-	}
-	else
-	{
-		if (AIController)
-		{
-			BBComponent = Cast<UBlackboardComponent>(AIController->GetBlackboardComponent());
-		}
-		else
-		{
-			AIController = Cast<AAIController>(GetController());
-			BBComponent = Cast<UBlackboardComponent>(AIController->GetBlackboardComponent());
-		}
-
-		if (BBComponent->GetValueAsBool(FName("CanReceiveDamage")))
-		{
-			Super::GetHit(DamageCauser, ImpactPoint, DamageEvent, DamageReceived);
-
-			const float DamageAccumulated = BBComponent->GetValueAsFloat(FName("DamageAccumulated"));
-			BBComponent->SetValueAsFloat(FName("DamageAccumulated"), DamageAccumulated + DamageReceived);
-		}
-	}
-}
-
-void APaladinBoss::Die(UAnimMontage* DeathAnim, FName Section)
-{
-	Super::Die(DeathAnim, Section);
-	
-	if (OnDead.IsBound())
-	{
-		OnDead.Broadcast(Cast<AEntity>(LastDamageCauser.GetObject()));
-	}
 }
 
 void APaladinBoss::TryToInvoke()
@@ -156,8 +113,8 @@ void APaladinBoss::FloodAttack()
 {
 	if (FloodToRaise)
 	{
-		Execute_StopAnimMontage(this, GetCurrentMontage());
-		Execute_PlayAnimMontage(this, InvokeMontage, 1.f, "Default");
+		StopAnimMontage(GetCurrentMontage());
+		PlayAnimMontage(InvokeMontage, 1.f, "Default");
 
 		RaiseFlood();
 	}

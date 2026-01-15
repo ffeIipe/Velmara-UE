@@ -4,7 +4,6 @@
 #include "Entities/EntityAnimInstance.h"
 #include "PlayerMainAnimInstance.generated.h"
 
-class UCombatComponent;
 class APlayerMain;
 class UCharacterMovementComponent;
 class UChangeModeComponent;

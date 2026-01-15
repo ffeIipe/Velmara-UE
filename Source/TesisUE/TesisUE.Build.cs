@@ -8,9 +8,28 @@ public class TesisUE : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "Niagara", "MediaAssets", "AdpcmAudioDecoder", "FieldSystemEngine", "Chaos" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core",
+			"CoreUObject",
+			"Engine",
+			"InputCore",
+			"EnhancedInput",
+			"Niagara",
+			"MediaAssets",
+			"AdpcmAudioDecoder",
+			"FieldSystemEngine",
+			"Chaos",
+			"GameplayTags",
+			"GameplayTasks",
+			"GameplayAbilities",
+			"MotionWarping"
+		});
 
-		PrivateDependencyModuleNames.AddRange(new string[] { "AnimGraphRuntime", "AnimGraphRuntime" });
+		PrivateDependencyModuleNames.AddRange(new string[]
+		{
+			"AnimGraphRuntime",
+			"AnimGraphRuntime",
+			"DeveloperSettings"
+		});
 
         bUseUnity = true;
 		

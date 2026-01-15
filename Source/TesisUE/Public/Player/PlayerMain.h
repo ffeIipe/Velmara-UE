@@ -1,26 +1,11 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Entities/Entity.h"
 #include "PlayerMain.generated.h"
 
-class UInputAction;
-struct FInputActionValue;
-class AEnemy;
-class AItem;
-class UAttributeComponent;
-class UMementoComponent;
-class UCombatComponent;
-class UInventoryComponent;
-class UCharacterStateComponent;
+
 class UChangeModeComponent;
-class UCameraComponent;
-class USpringArmComponent;
-class ACameraActor;
-class UDamageType;
-class USoundBase;
 
 UCLASS()
 class TESISUE_API APlayerMain : public AEntity
@@ -30,24 +15,14 @@ class TESISUE_API APlayerMain : public AEntity
 public:
 	APlayerMain();
 	
-	virtual float TakeDamage(
-		float DamageAmount,
-		FDamageEvent const& DamageEvent,
-		AController* EventInstigator,
-		AActor* DamageCauser) override;
+	//virtual float TakeDamage(
+	//	float DamageAmount,
+	//	FDamageEvent const& DamageEvent,
+	//	AController* EventInstigator,
+	//	AActor* DamageCauser) override;
 	
-	virtual bool IsPossessed() override { return true; } //true by default, because it wouldn't be marked as a threat if not
+	virtual bool IsPossessed() { return true; } //true by default, because it wouldn't be marked as a threat if not
 	
-	// --- Components ---
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components | Modes")
-	UChangeModeComponent* ChangeModeComponent;
-
-	UPROPERTY(EditAnywhere, Category = "Gameplay | SpectralMode | SpectralAttack | Targeting")
-	AEnemy* SpectralTarget;
-
-	UFUNCTION(BlueprintPure, Category = "Gameplay | SpectralMode | SpectralAttack")
-	FORCEINLINE AEnemy* GetSpectralTarget() const { return SpectralTarget; }
-
 	// --- State & Interaction ---
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "State | Damage")
 	bool bCanReceiveDamage = true;
@@ -57,26 +32,25 @@ public:
 	void ResetFollowCamera();
 
 	// --- Forms ---
-	UFUNCTION(BlueprintCallable, Category = "Gameplay | Forms")
-	void ToggleForm();
+	//UFUNCTION(BlueprintCallable, Category = "Gameplay | Forms")
+	//void ToggleForm();
 
 protected:
-	virtual void BeginPlay() override;
-
-	UFUNCTION()
-	void PerformDead();
-
-	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
-
+	virtual void OnRep_PlayerState() override;
+	
 private:
 	// --- Life Cycle ---
-	void Die(UAnimMontage* DeathAnim, FName Section) override;
+	virtual void PerformDeath() override;
+	
 	void Revive();
+	
 	void LoadLastCheckpoint() const;
+	
+	//void ApplyModeConfig(const ECharacterModeStates& Mode);
 
-	UFUNCTION()
-	void ApplyHumanMode();
+	//UFUNCTION()
+	//void ApplyHumanMode();
 
-	UFUNCTION()
-	void ApplySpectralMode();
+	//UFUNCTION()
+	//void ApplySpectralMode();
 };

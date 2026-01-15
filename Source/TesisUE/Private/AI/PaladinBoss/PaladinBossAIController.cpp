@@ -1,9 +1,4 @@
 #include "AI/PaladinBoss/PaladinBossAIController.h"
-#include "AI/EnemyAIController.h"
-#include "Perception/AISenseConfig_Sight.h"
-#include "BehaviorTree/BlackboardComponent.h"
-#include "Components/CharacterStateComponent.h"
-#include "Enemy/Enemy.h"
 
 // void APaladinBossAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 // {

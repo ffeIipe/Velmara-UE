@@ -29,9 +29,17 @@ void AEnemySpawner::SpawnEnemyFromSpawnPoint()
 	if (EnemiesSpawned < SpawnPoints.Num())
 	{
 		EnemiesSpawned++;
-		const int32 RandomIndex = FMath::RandRange(0, SpawnPoints.Num() - 1);
-
-		if (SpawnPoints.IsValidIndex(RandomIndex))
+		
+		if (bIsNumericalSpawn)
+		{
+			if (EnemiesSpawned >= MaxEnemiesSpawn)
+			{
+				EndSpawning();
+				EnemiesSpawned = 0;
+			}
+		}
+		
+		if (const int32 RandomIndex = FMath::RandRange(0, SpawnPoints.Num() - 1); SpawnPoints.IsValidIndex(RandomIndex))
 		{
 			SpawnPoints[RandomIndex]->Spawn();
 		}
@@ -63,7 +71,10 @@ void AEnemySpawner::BeginPlay()
 
 void AEnemySpawner::DecreaseEnemiesSpawned()
 {
-	EnemiesSpawned--;
+	if (!bIsNumericalSpawn)
+	{
+		EnemiesSpawned--;
+	}
 }
 
 
