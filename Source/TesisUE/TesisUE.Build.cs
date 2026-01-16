@@ -21,12 +21,15 @@ public class TesisUE : ModuleRules
 			"GameplayTags",
 			"GameplayTasks",
 			"GameplayAbilities",
-			"MotionWarping"
+			"MotionWarping",
+			"MotionTrajectory",
+			"PoseSearch",
+			"NetCore",
+			"AnimGraphRuntime"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[]
 		{
-			"AnimGraphRuntime",
 			"AnimGraphRuntime",
 			"DeveloperSettings"
 		});
