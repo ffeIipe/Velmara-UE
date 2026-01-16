@@ -282,17 +282,18 @@ void AEntity::InitializeAttributeSet()
 
 void AEntity::GiveDefaultAbilities()
 {
-	if (AbilitySystemComponent && HasAuthority())
+	if (!AbilitySystemComponent || !HasAuthority()) return;
+
+	if (!EntityData) return;
+	
+	for (const auto Ability : EntityData->DefaultAbilities)
 	{
-		for (const auto Ability : EntityData->DefaultAbilities)
+		if (Ability)
 		{
-			if (Ability)
-			{
-				EVelmaraAbilityInputID InputID = Ability->AbilityInputID;
-				FGameplayAbilitySpec Spec(Ability->GetClass(), 1, static_cast<int32>(InputID), this);
+			EVelmaraAbilityInputID InputID = Ability->AbilityInputID;
+			FGameplayAbilitySpec Spec(Ability->GetClass(), 1, static_cast<int32>(InputID), this);
                 
-				AbilitySystemComponent->GiveAbility(Spec);
-			}
+			AbilitySystemComponent->GiveAbility(Spec);
 		}
 	}
 }
