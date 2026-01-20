@@ -64,10 +64,14 @@ void AEntity::BeginPlay()
 	
 	GetSpringArmComponent()->bUsePawnControlRotation = true;
 
-	AttributeSet->OnZeroHealth.AddDynamic(this, &AEntity::PerformDeath);
+	if (AttributeSet)
+	{
+		AttributeSet->OnZeroHealth.AddDynamic(this, &AEntity::PerformDeath);
+	}
 
 	//this only happens in case the entity has extra mesh's children collision boxes
-	if (GetMesh()->GetAttachChildren().Num() > 0)
+
+	/*if (GetMesh()->GetAttachChildren().Num() > 0)
 	{
 		TArray<USceneComponent*> BoxComponents;
 		GetMesh()->GetChildrenComponents(false, BoxComponents);
@@ -83,7 +87,7 @@ void AEntity::BeginPlay()
 				}
 			}
 		}
-	}
+	}*/
 }
 
 void AEntity::InitializeComponentsData() const
@@ -340,14 +344,14 @@ void AEntity::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);
 	
-	if (!IsAlive())
-	{
-		GetCharacterMovement()->DisableMovement();
-		GetCharacterMovement()->StopMovementImmediately();
-		GetCharacterMovement()->SetMovementMode(MOVE_None);
-
-		//PerformDeath(); TODO: Fix by sending a payload with the Instigator Tag of 'Death.Fall'
-	}
+	//if (!IsAlive())
+	//{
+	//	GetCharacterMovement()->DisableMovement();
+	//	GetCharacterMovement()->StopMovementImmediately();
+	//	GetCharacterMovement()->SetMovementMode(MOVE_None);
+	//
+	//	//PerformDeath(); TODO: Fix by sending a payload with the Instigator Tag of 'Death.Fall'
+	//}
 }
 
 void AEntity::PerformDeath()
