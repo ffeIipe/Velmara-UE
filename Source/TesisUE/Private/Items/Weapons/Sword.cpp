@@ -145,6 +145,7 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 				//Also sending the hit result
 				FGameplayEffectContextHandle Context = GetOwner()->FindComponentByClass<UAbilitySystemComponent>()->MakeEffectContext();
 				Context.AddHitResult(Hit);
+
 				DamageEffectSpecHandle.Data->SetContext(Context);
 				
 				//Applying the gameplay effect to the hit actor
@@ -154,17 +155,17 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 				);
 				
 				//VFX call
-				/*FGameplayCueParameters CueParameters;
+				FGameplayCueParameters CueParameters;
 				CueParameters.Location = Hit.ImpactPoint;
 				CueParameters.Normal = Hit.ImpactNormal;
-				CueParameters.Instigator = GetOwner();*/
+				CueParameters.Instigator = GetOwner();
 
-				//TargetASC->ExecuteGameplayCue(CurrentCueTag, CueParameters);
+				TargetASC->ExecuteGameplayCue(CurrentCueTag, CueParameters);
 
-				/*if (GetGameInstance()->Implements<UEffectManagerProvider>())
+				if (GetGameInstance()->Implements<UEffectManagerProvider>())
 				{
 					IEffectManagerProvider::Execute_PlayGameplayEffect(GetGameInstance(), CurrentDamageTag, Hit.ImpactPoint);
-				}*/
+				}
 			}
 		}
 	}
