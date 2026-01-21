@@ -39,7 +39,7 @@ protected:
 	UPROPERTY(BlueprintReadWrite)
 	FGameplayTag CurrentCueTag = FGameplayTag::RequestGameplayTag("GameplayCue.Damage.Default");
 	
-	FGameplayEffectSpecHandle DamageEffectSpecHandle;
+	FGameplayEffectSpecHandle DamageEffectSpecHandle = nullptr;
 
 	UFUNCTION(BlueprintCallable)
 	virtual void AttachMeshToSocket(USceneComponent* InParent) {}

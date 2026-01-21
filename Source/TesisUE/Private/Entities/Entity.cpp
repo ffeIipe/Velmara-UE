@@ -4,7 +4,6 @@
 #include "AbilitySystemComponent.h"
 #include "MotionWarpingComponent.h"
 #include "Camera/CameraComponent.h"
-#include "Components/BoxComponent.h"
 #include "Components/TargetingComponent.h"
 #include "Features/SaveSystem/Data/SaveTypes.h"
 #include "DataAssets/EntityData.h"
@@ -16,7 +15,6 @@
 #include "GAS/VelmaraGameplayAbility.h"
 #include "GAS/VelmaraGameplayTags.h"
 #include "Interfaces/Weapon/WeaponInterface.h"
-#include "Parkour/MantleComponent.h"
 #include "Serialization/ObjectAndNameAsStringProxyArchive.h"
 
 AEntity::AEntity()
@@ -40,8 +38,6 @@ AEntity::AEntity()
 	CameraComponent->SetupAttachment(GetSpringArmComponent());
 
 	MotionWarpingComponent = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarping"));
-
-	MantleComponent = CreateDefaultSubobject<UMantleComponent>(TEXT("Mantle"));
 }
 
 void AEntity::BeginPlay()
@@ -169,7 +165,7 @@ TScriptInterface<IPickable> AEntity::GetCurrentItem() const
 	return GetInventoryComponent()->GetCurrentWeapon();
 }
 
-FName AEntity::GetDirectionalReact(const FVector& ImpactPoint)
+FGameplayTag AEntity::GetDirectionalReact(const FVector& ImpactPoint)
 {
 	const FVector Forward = GetActorForwardVector();
 	const FVector ToHit = (ImpactPoint - GetActorLocation()).GetSafeNormal();
@@ -185,24 +181,24 @@ FName AEntity::GetDirectionalReact(const FVector& ImpactPoint)
 		Angle *= -1.f;
 	}
 
-	FName Section("FromBack");
+	FName Section("Damage.Default.FromBack");
 
 	if (Angle >= -45.f && Angle < 45.f)
 	{
-		Section = FName("FromFront");
+		Section = FName("Damage.Default.FromFront");
 	}
 
 	else if (Angle >= -135.f && Angle < -45.f)
 	{
-		Section = FName("FromLeft");
+		Section = FName("Damage.Default.FromLeft");
 	}
 
 	else if (Angle >= 45.f && Angle < 135.f)
 	{
-		Section = FName("FromRight");
+		Section = FName("Damage.Default.FromRight");
 	}
 
-	return Section;
+	return FGameplayTag::RequestGameplayTag(Section);
 }
 
 bool AEntity::IsEquipped() const
@@ -296,7 +292,12 @@ void AEntity::GiveDefaultAbilities()
 		{
 			EVelmaraAbilityInputID InputID = Ability->AbilityInputID;
 			FGameplayAbilitySpec Spec(Ability->GetClass(), 1, static_cast<int32>(InputID), this);
-                
+
+			if (GEngine)
+			{
+				GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, Ability->GetName() + " Ability Given!");
+			}
+			
 			AbilitySystemComponent->GiveAbility(Spec);
 		}
 	}
@@ -306,10 +307,10 @@ bool AEntity::IsAlive() const
 {
 	if (!AbilitySystemComponent) return false;
 
-	const bool bHasHealth = AttributeSet && AttributeSet->GetHealth() > 0.0f;
-	const bool bIsNotMarkedDead = !AbilitySystemComponent->HasMatchingGameplayTag(FVelmaraGameplayTags::Get().State_Dead);
+	//const bool bHasHealth = AttributeSet && AttributeSet->GetHealth() > 0.0f;
+	const bool bIsNotMarkedDead = !AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("State.Dead"));
 
-	return bHasHealth && bIsNotMarkedDead; 
+	return /*bHasHealth*/ /*&&*/ bIsNotMarkedDead; 
 }
 
 bool AEntity::IsShielded() const
@@ -373,7 +374,7 @@ void AEntity::PerformDeath()
 	if (OnDead.IsBound()) OnDead.Broadcast(this);
 }
 
-bool AEntity::GetHitSectionForTag(const FGameplayTag IncomingTag, FHitReactDefinition& OutDefinition) const
+/*bool AEntity::GetHitSectionForTag(const FGameplayTag IncomingTag, FHitReactDefinition& OutDefinition) const
 {
 	if (!EntityData) return false;
 
@@ -402,7 +403,7 @@ FName AEntity::GetDeathSectionForTag(const FGameplayTag IncomingTag) const
 	}
 
 	return FName("Default");
-}
+}*/
 
 void AEntity::OnBodyPartOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -424,7 +425,7 @@ void AEntity::OnBodyPartOverlap(UPrimitiveComponent* OverlappedComponent, AActor
 	UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor);
 	if (!TargetASC) return;
 		
-	if (EntityData && EntityData->DamageEffectSpecClass)
+	if (EntityData && EntityData->UnarmedDamageEffectSpecClass)
 	{
 		//Context
 		FGameplayEffectContextHandle Context = GetAbilitySystemComponent()->MakeEffectContext();
@@ -432,7 +433,7 @@ void AEntity::OnBodyPartOverlap(UPrimitiveComponent* OverlappedComponent, AActor
 
 		//Spec + Context
 		FGameplayEffectSpecHandle DamageEffectSpecHandle = GetAbilitySystemComponent()->MakeOutgoingSpec(
-		EntityData->DamageEffectSpecClass, 
+		EntityData->UnarmedDamageEffectSpecClass, 
 		1.0f, 
 		Context
 		);
@@ -460,7 +461,7 @@ void AEntity::OnBodyPartOverlap(UPrimitiveComponent* OverlappedComponent, AActor
 		CueParameters.Normal = SweepResult.ImpactNormal;
 		CueParameters.Instigator = this;
 
-		TargetASC->ExecuteGameplayCue(EntityData->DefaultUnarmedGameplayCueTag, CueParameters);
+		TargetASC->ExecuteGameplayCue(EntityData->UnarmedGameplayCueTag, CueParameters);
 	}
 }
 

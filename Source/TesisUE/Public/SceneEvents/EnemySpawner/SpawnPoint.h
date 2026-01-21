@@ -7,6 +7,7 @@
 #include "SpawnPoint.generated.h"
 
 class AEnemy;
+class AEntity;
 
 DECLARE_DYNAMIC_DELEGATE(FOnEnemyDeactivation);
 
@@ -24,7 +25,7 @@ public:
 	
 protected:
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
-	TSoftClassPtr<AEnemy> EnemyClass;
+	UClass* EntityClass;
 
 private:
 	UFUNCTION()

@@ -38,26 +38,33 @@ void ASpawnPoint::Spawn() const
 		}
 	}*/
 	
-	if (UEnemyPoolManager* EnemyPoolManager = GetWorld()->GetSubsystem<UEnemyPoolManager>())
+	//if (UEnemyPoolManager* EnemyPoolManager = GetWorld()->GetSubsystem<UEnemyPoolManager>())
     {
-        if (EnemyClass.IsValid())
+        if (EntityClass)
         {
-            AEnemy* TempEnemy = EnemyPoolManager->SpawnEnemyFromPool(EnemyClass.Get(), GetActorLocation(), GetActorRotation());
+
+        	FActorSpawnParameters SpawnParams;
+        	SpawnParams.Owner = Owner;
+        	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+        	
+        	GetWorld()->SpawnActor<AEntity>(EntityClass, GetActorLocation(), GetActorRotation(), SpawnParams);
+        	
+            /*AEnemy* TempEnemy = EnemyPoolManager->SpawnEnemyFromPool(EntityClass.Get(), GetActorLocation(), GetActorRotation());
             if (TempEnemy)
             {
                 TempEnemy->OnDeactivated.AddDynamic(this, &ASpawnPoint::DecreaseEnemiesSpawned);
-            }
+            }*/
         }
-        else if (!EnemyClass.IsNull())
+        /*else if (!EntityClass.IsNull())
         {
             UAssetManager& AssetManager = UAssetManager::Get();
             FStreamableManager& StreamableManager = AssetManager.GetStreamableManager();
 
-            StreamableManager.RequestAsyncLoad(EnemyClass.ToSoftObjectPath(), [this, EnemyPoolManager]()
+            StreamableManager.RequestAsyncLoad(EntityClass.ToSoftObjectPath(), [this, EnemyPoolManager]()
             {
-            	if (EnemyClass.IsValid())
+            	if (EntityClass.IsValid())
             	{
-		            if (AEnemy* TempEnemy = EnemyPoolManager->SpawnEnemyFromPool(EnemyClass.Get(), GetActorLocation(), GetActorRotation()))
+		            if (AEnemy* TempEnemy = EnemyPoolManager->SpawnEnemyFromPool(EntityClass.Get(), GetActorLocation(), GetActorRotation()))
 					{
 						TempEnemy->OnDeactivated.AddDynamic(this, &ASpawnPoint::DecreaseEnemiesSpawned);
 					}
@@ -71,7 +78,7 @@ void ASpawnPoint::Spawn() const
         else
         {
             //if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3, FColor::Red, TEXT("EnemyClass is not set on Spawn Point."));
-        }
+        }*/
     }
 }
 

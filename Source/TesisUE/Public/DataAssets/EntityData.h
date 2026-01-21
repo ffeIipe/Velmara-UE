@@ -10,17 +10,6 @@ class UGameplayEffect;
 class UInputAction;
 class UNiagaraSystem;
 
-UENUM(BlueprintType)
-enum EReactionType : uint8
-{
-    None,
-    Directional,
-    PushOff,
-    Launch,
-    StayInAir,
-    Crasher
-};
-
 USTRUCT(BlueprintType)
 struct FInventoryData
 {
@@ -114,9 +103,6 @@ struct FDeathAnimDefinition
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
     FGameplayTag DeathTag;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-    FName DeathAnimSection = NAME_Default;
     
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
     bool bUseRagdoll = false;
@@ -129,12 +115,6 @@ struct FHitReactDefinition
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
     FGameplayTag DamageTag;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-    FName HitReactAnimSection = NAME_Default;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-    TEnumAsByte<EReactionType> ReactionType = None;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
     float MagnitudeReaction = 0.f;
@@ -158,26 +138,14 @@ public:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly,Category = "Entity|SpringArm")
     FSpringArmData SpringArmData;
 
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Entity|Animations|HitReact")
-    TArray<FHitReactDefinition> HitReactsDefinitions;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Entity|Animations|HitReact")
-    UAnimMontage* HitReactMontage;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Entity|Animations|Death")
-    TArray<FDeathAnimDefinition> DeathDefinitions;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Entity|Animations|Death")
-    UAnimMontage* DeathMontage;
-
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Entity|Unarmed")
     FGameplayTag UnarmedDamageTag;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Entity|Unarmed")
-    TSubclassOf<UGameplayEffect> DamageEffectSpecClass;
+    TSubclassOf<UGameplayEffect> UnarmedDamageEffectSpecClass;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Entity|Unarmed")
-    FGameplayTag DefaultUnarmedGameplayCueTag;
+    FGameplayTag UnarmedGameplayCueTag;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Entity|Unarmed")
     float UnarmedDamage;

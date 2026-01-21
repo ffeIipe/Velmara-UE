@@ -72,7 +72,7 @@ void AEnemyAIController::BeginPlay()
 
 void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
-    if (!CachedPlayerController) return;
+    /*if (!CachedPlayerController) return;
     
     if (EntityOwner && !EntityOwner->IsAlive()) return;
 
@@ -83,7 +83,7 @@ void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Sti
     {
         if (GetTeamAttitudeTowards(*Actor) == ETeamAttitude::Hostile || !bHasToCheckPlayerForm) SetHasAttackToken(TokenManager, Cast<AEntity>(Actor)); 
         
-        if (/*IsDamageCauserValid*/(DamageCauser)) SetHasAttackToken(TokenManager, Cast<AEntity>(DamageCauser));
+        if (/*IsDamageCauserValid#1#(DamageCauser)) SetHasAttackToken(TokenManager, Cast<AEntity>(DamageCauser));
     }
     else
     {
@@ -95,7 +95,7 @@ void AEnemyAIController::OnEnemyPerceptionUpdated(AActor* Actor, FAIStimulus Sti
             TokenManager->ReturnAttackToken();
             BlackboardComponent->SetValueAsBool(FName("HasAttackToken"), false);
         }
-    }
+    }*/
 }
 
 //bool AEnemyAIController::IsDamageCauserValid(const TScriptInterface<ICombatTargetInterface>& EntityToCheck) const

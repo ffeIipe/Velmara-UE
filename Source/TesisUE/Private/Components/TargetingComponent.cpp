@@ -172,6 +172,10 @@ TArray<AActor*> UTargetingComponent::GetTargets(const float Radius) const
 
                 TargetEntity->OnDead.AddUniqueDynamic(this, &UTargetingComponent::HandleTargetDeath);
             }
+            else if (GEngine)
+            {
+                GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, TargetEntity->GetName() + " is dead!");
+            }
         }
     }
     return Actors;

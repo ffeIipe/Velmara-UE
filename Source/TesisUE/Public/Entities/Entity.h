@@ -9,7 +9,6 @@
 
 #include "Entity.generated.h"
 
-class UMantleComponent;
 class IPickable;
 class UInventoryComponent;
 class UTargetingComponent;
@@ -31,7 +30,6 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEntityShieldTakeDamage);
 UCLASS()
 class TESISUE_API AEntity : public ACharacter, public ISaveInterface, public IGameplayTagAssetInterface, public IAbilitySystemInterface
 {
-	
 	GENERATED_BODY()
 
 public:
@@ -68,9 +66,6 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Components")
 	FORCEINLINE UMotionWarpingComponent* GetMotionWarpingComponent() const { return MotionWarpingComponent; }
 
-	UFUNCTION(BlueprintPure, Category = "Components")
-	FORCEINLINE UMantleComponent* GetMantleComponent() const { return MantleComponent; }
-	
 	UPROPERTY(BlueprintAssignable)
 	FOnEntityCanBeFinished OnCanBeFinished;
 
@@ -87,7 +82,7 @@ public:
 	virtual UCharacterMovementComponent* GetCharacterMovementComponent() { return GetCharacterMovement(); }
 	
 	UFUNCTION(BlueprintCallable)
-	virtual FName GetDirectionalReact(const FVector& ImpactPoint); 
+	virtual FGameplayTag GetDirectionalReact(const FVector& ImpactPoint); 
 
 	UFUNCTION(BlueprintCallable, Category = "Combat | Weapon")
 	virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
@@ -131,11 +126,11 @@ public:
 	UFUNCTION(BlueprintCallable)
 	virtual void PerformDeath();
 
-	UFUNCTION(BlueprintCallable)
+	/*UFUNCTION(BlueprintCallable)
 	bool GetHitSectionForTag(FGameplayTag IncomingTag, FHitReactDefinition& OutDefinition) const;
 
 	UFUNCTION(BlueprintCallable)
-	FName GetDeathSectionForTag(FGameplayTag IncomingTag) const;
+	FName GetDeathSectionForTag(FGameplayTag IncomingTag) const;*/
 
 	UFUNCTION()
 	void OnBodyPartOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
@@ -147,6 +142,7 @@ public:
 	void DeactivateBodyHitbox(FName ComponentTag) const;
 	
 protected:
+	UFUNCTION(BlueprintCallable)
 	virtual void InitializeAttributeSet();
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Abilities")
@@ -158,6 +154,7 @@ protected:
 	
 	void InitializeComponentsData() const;
 
+	UFUNCTION(BlueprintCallable)
 	void GiveDefaultAbilities();
 	
 	UPROPERTY()
@@ -193,9 +190,6 @@ protected:
 	UPROPERTY(VisibleDefaultsOnly,BlueprintGetter = GetMotionWarpingComponent)
 	UMotionWarpingComponent* MotionWarpingComponent;
 
-	UPROPERTY(VisibleDefaultsOnly, BlueprintGetter = GetMantleComponent)
-	UMantleComponent* MantleComponent;
-	
 	UPROPERTY(VisibleDefaultsOnly)
 	UVelmaraAttributeSet* AttributeSet;
 	
