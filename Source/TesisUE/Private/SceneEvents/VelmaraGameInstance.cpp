@@ -330,7 +330,6 @@ void UVelmaraGameInstance::PlayGameplayEffect_Implementation(FGameplayTag Effect
     }
     
     if (!EffectsSys) return;
-
     
     if (EffectTag.MatchesTag(EffectsTags::CameraShake)) 
     {
