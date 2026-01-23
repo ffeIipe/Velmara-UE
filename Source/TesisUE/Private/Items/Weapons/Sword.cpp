@@ -122,7 +122,7 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 		UEngineTypes::ConvertToTraceType(ECC_GameTraceChannel3),
 		false,
 		IgnoreActors,
-		EDrawDebugTrace::None,
+		EDrawDebugTrace::ForDuration,
 		HitResults,
 		true
 	);
@@ -159,6 +159,7 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 				CueParameters.Location = Hit.ImpactPoint;
 				CueParameters.Normal = Hit.ImpactNormal;
 				CueParameters.Instigator = GetOwner();
+				CueParameters.TargetAttachComponent = OverlappedComponent;
 
 				TargetASC->ExecuteGameplayCue(CurrentCueTag, CueParameters);
 
