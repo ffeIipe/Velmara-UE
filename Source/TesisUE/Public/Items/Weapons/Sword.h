@@ -24,23 +24,16 @@ public:
     
     DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWallHitSignature, const FHitResult&, HitResult);
 
-    UPROPERTY(BlueprintAssignable, Category = "Collision")
-    FOnWallHitSignature OnWallHit;
-    
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
     USwordData* SwordData;
 
     UPROPERTY()
     TArray<AActor*> IgnoreActors;
 
-    UBoxComponent* GetWeaponDamageBox() const { return WeaponDamageBox; }
-    
-    virtual void Pick(AActor* NewOwner) override;
-    
-    virtual void Unequip() override;
-    
-    virtual UPrimitiveComponent* GetCollisionComponent() override;
+    virtual void Equip() override;
 
+    virtual void Holster() override;
+    
     virtual void AttachMeshToSocket(USceneComponent* InParent, FName InSocketName = NAME_None) override;
     
 protected:

@@ -23,7 +23,7 @@ public:
 	void ClearDoorTimer();
 	
 protected:
-	virtual void Pick(AActor* NewOwner) override;
+	virtual void OnEnteredInventory_Implementation(AActor* NewOwner) override;
 
 	virtual void BeginPlay() override;
 

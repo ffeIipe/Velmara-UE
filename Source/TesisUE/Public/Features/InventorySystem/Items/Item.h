@@ -43,20 +43,16 @@ public:
 
 	virtual void BeginPlay() override;
 	
-	virtual void Pick(AActor* NewOwner) override;
+	virtual void OnEnteredInventory_Implementation(AActor* NewOwner) override;
+
+	virtual void OnRemovedFromInventory_Implementation() override;
 
 	virtual void EnableVisuals();
 
 	virtual void DisableVisuals();
 
-	virtual void OnEquip(AActor* User) override;
-	
-	virtual void OnUnequip(AActor* User) override;
-
 	virtual bool ShouldConsumeOnUse() const override { return false; }
 	
-	virtual UPrimitiveComponent* GetCollisionComponent();
-
 	virtual void OnSaveGame_Implementation(FEntitySaveData& OutData) override;
 	
 	virtual void OnLoadGame_Implementation(const FEntitySaveData& InData) override;

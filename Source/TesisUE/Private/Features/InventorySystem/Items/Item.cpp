@@ -25,11 +25,18 @@ void AItem::BeginPlay()
 	Super::BeginPlay();
 }
 
-void AItem::Pick(AActor* NewOwner)
+void AItem::OnEnteredInventory_Implementation(AActor* NewOwner)
 {
 	SetOwner(NewOwner);
 	SetInstigator(Cast<APawn>(NewOwner));
 	bWasUsed = true;
+
+	DisableCollision();
+}
+
+void AItem::OnRemovedFromInventory_Implementation()
+{
+	bWasUsed = false;
 }
 
 void AItem::EnableVisuals()
@@ -42,24 +49,6 @@ void AItem::DisableVisuals()
 {
 	SetActorHiddenInGame(true);
 	SetActorEnableCollision(false);
-}
-
-void AItem::OnEquip(AActor* User)
-{
-	EnableVisuals();
-}
-
-void AItem::OnUnequip(AActor* User)
-{
-	DisableVisuals();
-	
-	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "AItem::OnUnequip, " + GetName());
-	
-}
-
-UPrimitiveComponent* AItem::GetCollisionComponent()
-{
-	return nullptr;
 }
 
 void AItem::OnSaveGame_Implementation(FEntitySaveData& OutData)

@@ -143,10 +143,6 @@ protected:
 
 	static FName SelectRandomDieAnim();
 
-	// === Dissolve Effect ===
-	UPROPERTY(EditAnywhere, Category = "Effects | Dissolve")
-	TArray<UMaterialInstanceDynamic*> DissolveMaterials;
-
 	UPROPERTY()
 	UTimelineComponent* DissolveTimeline;
 

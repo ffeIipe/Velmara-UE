@@ -32,25 +32,12 @@ void UInventoryComponent::InitializeValues(const FInventoryData& InventoryData)
     InventorySlots.Init(nullptr, MaxSlots);
 }
 
-void UInventoryComponent::ChangeWeapon(const int32 SlotIndex)
-{
-    if (InventorySlots.IsValidIndex(SlotIndex))
-    {
-        EquipItemFromSlot(SlotIndex);
-    }
-
-    if (OnItemEquipped.IsBound()) 
-    {
-        OnItemEquipped.Broadcast(CurrentItem);
-    }
-}
-
 void UInventoryComponent::ToggleInventorySlot()
 {
     EquippedSlotIndex++;
     if (EquippedSlotIndex >= MaxSlots) EquippedSlotIndex = 0;
     
-    ChangeWeapon(EquippedSlotIndex);
+     EquipItemFromSlot(EquippedSlotIndex);
 }
 
 void UInventoryComponent::InitializeInventoryWidget()
@@ -75,9 +62,7 @@ bool UInventoryComponent::TryAddWeapon(const TScriptInterface<IPickable> Pickabl
         if (InventorySlots[i] == nullptr)
         {
             InventorySlots[i] = PickableToAdd;
-
-            ChangeWeapon(i);
-
+            EquipItemFromSlot(  i);
             UpdateInventoryUI();
             return true;
         }
@@ -89,21 +74,24 @@ bool UInventoryComponent::TryAddWeapon(const TScriptInterface<IPickable> Pickabl
 void UInventoryComponent::EquipItemFromSlot(const int32 SlotIndex)
 {
     if (!InventorySlots.IsValidIndex(SlotIndex) || InventorySlots[SlotIndex] == nullptr) return;
+
+    if (CurrentItem == InventorySlots[SlotIndex]) return;
     
     //UnequipCurrentWeapon();
     
     if (CurrentItem)
     {
-        CurrentItem->OnUnequip(GetOwner());
+        CurrentItem->Execute_OnRemovedFromInventory(CurrentItem.GetObject());
     }
     
-    if (const TScriptInterface<IPickable> Pickable = InventorySlots[SlotIndex].GetObject()) Pickable->Pick(GetOwner());
+    if (const TScriptInterface<IPickable> Pickable = InventorySlots[SlotIndex].GetObject())
+        Pickable->Execute_OnEnteredInventory(Pickable.GetObject(), GetOwner());
 
     if (InventorySlots.IsValidIndex(SlotIndex))
     {
         CurrentItem = InventorySlots[SlotIndex];
         EquippedSlotIndex = SlotIndex;
-        CurrentItem->OnEquip(GetOwner());
+        CurrentItem->Execute_OnEnteredInventory(CurrentItem.GetObject(), GetOwner());
     }
     
     //UpdateInventoryUI();
@@ -145,7 +133,7 @@ void UInventoryComponent::UnequipCurrentWeapon()
 {
     if (CurrentItem)
     {
-        CurrentItem->OnEquip(GetOwner());
+        CurrentItem->Execute_OnRemovedFromInventory(CurrentItem.GetObject());
         CurrentItem = nullptr;
         EquippedSlotIndex = -1;
 
@@ -224,11 +212,8 @@ void UInventoryComponent::SaveInventory()
         {
             if (AActor* WeaponActor = Cast<AActor>(SlotItem.GetObject()))
             {
-               // if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, WeaponActor->GetName());
-                    
                 FInventoryItemSaveData NewData;
                 NewData.ActorClass = Cast<AActor>(WeaponActor)->GetClass();
-                
                 // NewData.AmmoCount = SlotItem->GetCurrentAmmo();
 
                 SavedInventoryData.Add(NewData);
@@ -270,17 +255,7 @@ void UInventoryComponent::LoadInventory()
                     {
                         const TScriptInterface<IPickable> Pickable = NewActor;
                         
-                        Pickable->Pick(GetOwner());
-
-                        if (i == EquippedSlotIndex)
-                        {
-                            CurrentItem = NewActor;
-                            Pickable->OnEquip(GetOwner());
-                        }
-                        else
-                        {
-                            Pickable->OnUnequip(GetOwner());
-                        }
+                        Pickable->Execute_OnEnteredInventory(Pickable.GetObject(), GetOwner());
                     }
                 }
             }
@@ -322,7 +297,7 @@ void UInventoryComponent::PerformInteract(const FVector& StartTrace, const FVect
             }
             else
             {
-                Pickable->Pick(GetOwner());
+                Pickable->Execute_OnEnteredInventory(Pickable.GetObject(), GetOwner());
             }
         }
     }

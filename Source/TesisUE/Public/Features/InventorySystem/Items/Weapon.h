@@ -14,12 +14,17 @@ class TESISUE_API AWeapon : public AItem, public IWeaponInterface
 {
 	GENERATED_BODY()
 
-public:
+    DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWeaponEquippeddSignature, AWeapon*, WeaponEquipped);
+    DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWeaponHolsteredSignature, AWeapon*, WeaponHolstered);
 	
-	virtual void Pick(AActor* NewOwner) override;
+public:
+	virtual void OnEnteredInventory_Implementation(AActor* NewOwner) override;
 
-	UFUNCTION(BlueprintCallable)
-	virtual void Unequip() {}
+	virtual void OnRemovedFromInventory_Implementation() override; //TODO:
+
+	virtual void Equip(); 
+
+	virtual void Holster();
 
 	virtual void EnableVisuals() override { Super::EnableVisuals(); }
 	virtual void DisableVisuals() override { Super::DisableVisuals(); }
@@ -31,6 +36,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GAS")
 	void SetDamageEffectSpec(const FGameplayEffectSpecHandle& InSpecHandle);
 
+	UPROPERTY(BlueprintAssignable)
+	FOnWeaponHolsteredSignature OnWeaponEquipped;
+	
+	UPROPERTY(BlueprintAssignable)
+	FOnWeaponHolsteredSignature OnWeaponHolstered;
+	
 protected:
 	UPROPERTY()
 	TArray<FGameplayAbilitySpecHandle> GrantedAbilityHandles;

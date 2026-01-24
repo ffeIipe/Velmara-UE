@@ -42,23 +42,15 @@ void ASword::BeginPlay()
 	}
 }
 
-void ASword::Pick(AActor* NewOwner)
+void ASword::Equip()
 {
-	Super::Pick(NewOwner);
+	Super::Equip();
 
-	IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(NewOwner);
-	if (!ASI)
-	{
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "ASI is nullptr");
-		return;
-	}
+	IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(GetOwner());
+	if (!ASI) return;
 
 	UAbilitySystemComponent* ASC = ASI->GetAbilitySystemComponent();
-	if (!ASC)
-	{
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "ASC is nullptr");
-		return;
-	}
+	if (!ASC) return;
 		
 	if (SwordData && SwordData->WeaponTag.IsValid())
 	{
@@ -93,39 +85,52 @@ void ASword::Pick(AActor* NewOwner)
 			}
 		}
 	}
-	
+
+	if (OnWeaponEquipped.IsBound())
+	{
+		OnWeaponEquipped.Broadcast(this);
+	}
 }
 
-void ASword::Unequip()
+void ASword::Holster()
 {
-	Super::Unequip();
+	Super::Holster();
 
 	IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(GetOwner());
 	if (!ASI) return;
 	
 	UAbilitySystemComponent* ASC = ASI->GetAbilitySystemComponent();
 	if (!ASC) return;
-		
-	if (SwordData && SwordData->WeaponTag.IsValid())
+	
+	for (const FGameplayAbilitySpecHandle& Handle : GrantedAbilityHandles)
 	{
-		ASC->RemoveLooseGameplayTag(SwordData->WeaponTag);
-
-		if (IsValid(SwordData->AnimLayer))
+		if (Handle.IsValid())
 		{
-			if (const ACharacter* CharacterOwner = Cast<ACharacter>(GetOwner()))
-			{
-				CharacterOwner->GetMesh()->GetAnimInstance()->UnlinkAnimClassLayers(SwordData->AnimLayer);
-			}
+			ASC->ClearAbility(Handle);
 		}
 	}
-	
-	/*USkeletalMeshComponent* Mesh = Cast<ACharacter>(GetOwner())->GetMesh();
-	AttachMeshToSocket(Mesh, FName("clavicle_out_rSocket"));*/
-}
 
-UPrimitiveComponent* ASword::GetCollisionComponent()
-{
-	return WeaponDamageBox;
+	GrantedAbilityHandles.Empty();
+	
+	ASC->RemoveLooseGameplayTag(SwordData->WeaponTag);
+
+	if (!ASC->HasMatchingGameplayTag(SwordData->HolsterTag))
+	{
+		ASC->AddLooseGameplayTag(SwordData->HolsterTag);
+	}
+
+	if (IsValid(SwordData->AnimLayer))
+	{
+		if (const ACharacter* CharacterOwner = Cast<ACharacter>(GetOwner()))
+		{
+			CharacterOwner->GetMesh()->GetAnimInstance()->UnlinkAnimClassLayers(SwordData->AnimLayer);
+		}
+	}
+
+	if (OnWeaponHolstered.IsBound())
+	{
+		OnWeaponHolstered.Broadcast(this);
+	}
 }
 
 void ASword::AttachMeshToSocket(USceneComponent* InParent, const FName InSocketName)

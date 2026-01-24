@@ -2,9 +2,9 @@
 #include "Kismet/GameplayStatics.h"
 
 
-void AEnergyItem::Pick(AActor* NewOwner)
+void AEnergyItem::OnEnteredInventory_Implementation(AActor* NewOwner)
 {
-	Super::Pick(NewOwner);
+	Super::OnEnteredInventory_Implementation(NewOwner);
 
 	if (bWasUsed) return;
 
