@@ -140,6 +140,17 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Entity|Unarmed")
 	void DeactivateBodyHitbox(FName ComponentTag) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Entity|Effects")
+	void HitFlash(float Duration, float Amount);
+
+	void DeactivateHitFlash();
+
+	UPROPERTY()
+	FTimerHandle HitFlashTimerHandle;
+	
+	UPROPERTY()
+	TArray<UMaterialInstanceDynamic*>  DissolveMaterials;
 	
 protected:
 	UFUNCTION(BlueprintCallable)

@@ -9,6 +9,7 @@
 
 #include "DataAssets/Items/Weapons/SwordData.h"
 #include "Features/GlobalEffectsSystem/Interfaces/EffectManagerProvider.h"
+#include "GameFramework/Character.h"
 #include "GAS/VelmaraAbilityInputID.h"
 #include "GAS/VelmaraGameplayAbility.h"
 
@@ -61,6 +62,8 @@ void ASword::Pick(AActor* NewOwner)
 		
 	if (SwordData && SwordData->WeaponTag.IsValid())
 	{
+		if (ASC->HasMatchingGameplayTag(SwordData->WeaponTag)) return;
+		
 		ASC->AddLooseGameplayTag(SwordData->WeaponTag);
 	}
 
@@ -81,13 +84,43 @@ void ASword::Pick(AActor* NewOwner)
 				GrantedAbilityHandles.Add(Handle);
 			}
 		}
+
+		if (IsValid(SwordData->AnimLayer))
+		{
+			if (const ACharacter* CharacterOwner = Cast<ACharacter>(GetOwner()))
+			{
+				CharacterOwner->GetMesh()->GetAnimInstance()->LinkAnimClassLayers(SwordData->AnimLayer);
+			}
+		}
 	}
 	
 }
 
 void ASword::Unequip()
 {
-	/*AttachMeshToSocket(AnimatorProvider->GetMeshComponent());*/
+	Super::Unequip();
+
+	IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(GetOwner());
+	if (!ASI) return;
+	
+	UAbilitySystemComponent* ASC = ASI->GetAbilitySystemComponent();
+	if (!ASC) return;
+		
+	if (SwordData && SwordData->WeaponTag.IsValid())
+	{
+		ASC->RemoveLooseGameplayTag(SwordData->WeaponTag);
+
+		if (IsValid(SwordData->AnimLayer))
+		{
+			if (const ACharacter* CharacterOwner = Cast<ACharacter>(GetOwner()))
+			{
+				CharacterOwner->GetMesh()->GetAnimInstance()->UnlinkAnimClassLayers(SwordData->AnimLayer);
+			}
+		}
+	}
+	
+	/*USkeletalMeshComponent* Mesh = Cast<ACharacter>(GetOwner())->GetMesh();
+	AttachMeshToSocket(Mesh, FName("clavicle_out_rSocket"));*/
 }
 
 UPrimitiveComponent* ASword::GetCollisionComponent()
@@ -95,12 +128,20 @@ UPrimitiveComponent* ASword::GetCollisionComponent()
 	return WeaponDamageBox;
 }
 
-void ASword::AttachMeshToSocket(USceneComponent* InParent)
+void ASword::AttachMeshToSocket(USceneComponent* InParent, const FName InSocketName)
 {
-	Super::AttachMeshToSocket(InParent);
+	Super::AttachMeshToSocket(InParent, InSocketName);
 
 	const FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, true);
-	ItemMesh->AttachToComponent(InParent, TransformRules, SwordData->CustomInSocketName);
+
+	if (InSocketName == NAME_None)
+	{
+		ItemMesh->AttachToComponent(InParent, TransformRules, SwordData->CustomInSocketName);
+	}
+	else
+	{
+		ItemMesh->AttachToComponent(InParent, TransformRules, InSocketName);
+	}
 }
 
 void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -122,7 +163,7 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 		UEngineTypes::ConvertToTraceType(ECC_GameTraceChannel3),
 		false,
 		IgnoreActors,
-		EDrawDebugTrace::ForDuration,
+		EDrawDebugTrace::None,
 		HitResults,
 		true
 	);

@@ -30,9 +30,6 @@ public:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
     USwordData* SwordData;
 
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
-    UComboChain* ComboData;
-
     UPROPERTY()
     TArray<AActor*> IgnoreActors;
 
@@ -44,7 +41,7 @@ public:
     
     virtual UPrimitiveComponent* GetCollisionComponent() override;
 
-    virtual void AttachMeshToSocket(USceneComponent* InParent) override;
+    virtual void AttachMeshToSocket(USceneComponent* InParent, FName InSocketName = NAME_None) override;
     
 protected:
     UFUNCTION(BlueprintCallable)

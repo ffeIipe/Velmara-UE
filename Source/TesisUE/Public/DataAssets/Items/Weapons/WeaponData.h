@@ -30,4 +30,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Mesh")
 	FName CustomInSocketName;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Mesh")
+	TSubclassOf<UAnimInstance> AnimLayer = nullptr;
 };

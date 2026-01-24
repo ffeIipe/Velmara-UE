@@ -17,6 +17,8 @@ class TESISUE_API AWeapon : public AItem, public IWeaponInterface
 public:
 	
 	virtual void Pick(AActor* NewOwner) override;
+
+	UFUNCTION(BlueprintCallable)
 	virtual void Unequip() {}
 
 	virtual void EnableVisuals() override { Super::EnableVisuals(); }
@@ -42,5 +44,5 @@ protected:
 	FGameplayEffectSpecHandle DamageEffectSpecHandle = nullptr;
 
 	UFUNCTION(BlueprintCallable)
-	virtual void AttachMeshToSocket(USceneComponent* InParent) {}
+	virtual void AttachMeshToSocket(USceneComponent* InParent, FName SocketInName = NAME_None) {}
 };

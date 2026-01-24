@@ -6,6 +6,7 @@
 #include "Animation/AnimInstance.h"
 #include "EntityAnimInstance.generated.h"
 
+class UAbilitySystemComponent;
 class UCharacterMovementComponent;
 class AEntity;
 
@@ -19,11 +20,26 @@ public:
 
 	UPROPERTY(BlueprintReadOnly)
 	AEntity* EntityOwner;
-	
+
 	UPROPERTY(BlueprintReadOnly)
-	UCharacterMovementComponent* CharacterMovementComponent;
+	UAbilitySystemComponent* AbilitySystemComponent;
+
+	UPROPERTY(BlueprintReadOnly)
+	bool bIsEquipped = false;
+
+	UPROPERTY(BlueprintReadOnly)
+	bool bIsAttacking = false;
+
+	UPROPERTY(BlueprintReadOnly)
+	bool bIsLocking = false;
+
+	UPROPERTY(BlueprintReadOnly)
+	bool bIsDodging = false;
 	
-	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	/*UPROPERTY(BlueprintReadOnly)
+	UCharacterMovementComponent* CharacterMovementComponent;*/
+	
+	/*UPROPERTY(BlueprintReadOnly, Category = "Movement")
 	float GroundSpeed;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
@@ -48,5 +64,5 @@ public:
 	bool bIsLocking;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Movement | Animation States")
-	bool bIsMeleeWeapon;
+	bool bIsMeleeWeapon;*/
 };
