@@ -174,7 +174,7 @@ TArray<AActor*> UTargetingComponent::GetTargets(const float Radius) const
             }
             else if (GEngine)
             {
-                GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, TargetEntity->GetName() + " is dead!");
+                //GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, TargetEntity->GetName() + " is dead!");
             }
         }
     }

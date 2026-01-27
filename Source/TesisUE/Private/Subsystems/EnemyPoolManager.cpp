@@ -51,7 +51,7 @@ AEnemy* UEnemyPoolManager::SpawnEnemyFromPool(const TSubclassOf<AEnemy> EnemyCla
 {
     if (!EnemyClass)
     {
-        if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3, FColor::Red, "Invalid Enemy class.");
+        //if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3, FColor::Red, "Invalid Enemy class.");
         return nullptr;
     }
 

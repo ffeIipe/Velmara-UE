@@ -15,8 +15,8 @@ void UEnemyCharacterAnimInstance::NativeInitializeAnimation()
 		{
 			//MaxRunSpeed = OwningEnemy->EntityData->MovementData.MaxRunSpeed;
 		}
-		else if (GEngine)
-			GEngine->AddOnScreenDebugMessage(INDEX_NONE,3.f,FColor::Red,"Entity Data not found!");
+		/*else if (GEngine)
+			GEngine->AddOnScreenDebugMessage(INDEX_NONE,3.f,FColor::Red,"Entity Data not found!");*/
 	}
 }
 

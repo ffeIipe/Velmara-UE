@@ -53,7 +53,7 @@ void UEffectsManager::OnWorldBeginPlay(UWorld& InWorld)
 
 void UEffectsManager::Tick(const float DeltaTime)
 {
-	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, -1.f, FColor::Red, "Effects Manager is ticking");
+	//if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, -1.f, FColor::Red, "Effects Manager is ticking");
 	
 	if (ZoomEffectParams.bIsActive && CameraComponent)
 	{
