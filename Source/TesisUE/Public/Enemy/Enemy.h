@@ -143,10 +143,6 @@ protected:
 
 	static FName SelectRandomDieAnim();
 
-	// === Dissolve Effect ===
-	UPROPERTY(EditAnywhere, Category = "Effects | Dissolve")
-	TArray<UMaterialInstanceDynamic*> DissolveMaterials;
-
 	UPROPERTY()
 	UTimelineComponent* DissolveTimeline;
 
@@ -163,9 +159,6 @@ protected:
 	void HitFlash(float Duration, float Amount);
 
 	void DeactivateHitFlash();
-
-	UPROPERTY()
-	FTimerHandle HitFlashTimerHandle;
 	
 	// === Enemy Properties ===
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "EnemyType")

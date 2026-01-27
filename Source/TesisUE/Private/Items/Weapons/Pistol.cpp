@@ -5,7 +5,7 @@
 #include "Features/GlobalEffectsSystem/Interfaces/EffectManagerProvider.h"
 #include "Kismet/GameplayStatics.h"
 
-void APistol::AttachMeshToSocket(USceneComponent* InParent)
+void APistol::AttachMeshToSocket(USceneComponent* InParent, FName SocketInName)
 {
 	Super::AttachMeshToSocket(InParent);
 	

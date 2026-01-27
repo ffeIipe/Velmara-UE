@@ -262,7 +262,7 @@ void AEnemy::BeginPlay()
 		BBComponent = BBComponentInstance;
 	}
 
-	if (GetMesh())
+	/*if (GetMesh())
 	{
 		const TArray<UMaterialInterface*> TempArray = GetMesh()->GetMaterials();
 
@@ -272,7 +272,7 @@ void AEnemy::BeginPlay()
 			DissolveMaterials.Add(UMaterialInstanceDynamic::Create(CurrentMaterial, this));
 			GetMesh()->SetMaterial(MatIndex, DissolveMaterials[MatIndex]);
 		}
-	}
+	}*/
 	
 	EnableAI();
 }
@@ -366,29 +366,6 @@ void AEnemy::UpdateDissolveEffect(float Value)
 	if (IsValid(DissolveParticleComponent))
 	{
 		DissolveParticleComponent->SetVariableFloat(FName("User_Animation"), ClampedValue);
-	}
-}
-
-void AEnemy::HitFlash(const float Duration, const float Amount)
-{
-	for (UMaterialInstanceDynamic* DissolveMaterial : DissolveMaterials)
-	{
-		if (DissolveMaterial)
-		{
-			DissolveMaterial->SetScalarParameterValue(FName("HitFlashAmount"), Amount);
-			GetWorldTimerManager().SetTimer(HitFlashTimerHandle, this,&AEnemy::DeactivateHitFlash, Duration, false);
-		}
-	}
-}
-
-void AEnemy::DeactivateHitFlash()
-{
-	for (UMaterialInstanceDynamic* DissolveMaterial : DissolveMaterials)
-	{
-		if (DissolveMaterial)
-		{
-			DissolveMaterial->SetScalarParameterValue(FName("HitFlashAmount"), 0);
-		}
 	}
 }
 

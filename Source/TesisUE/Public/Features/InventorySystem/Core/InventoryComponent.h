@@ -69,9 +69,6 @@ public:
     const TArray<TScriptInterface<IPickable>>& GetInventoryItems() const { return InventorySlots; }
 
     UFUNCTION(BlueprintCallable, Category = "Inventory")
-    void ChangeWeapon(int32 SlotIndex);
-
-    UFUNCTION(BlueprintCallable, Category = "Inventory")
     void PerformInteract(const FVector& StartTrace, const FVector& EndTrace, float RadiusTrace);
 
     void ToggleInventorySlot();

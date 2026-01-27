@@ -3,9 +3,9 @@
 #include "Kismet/GameplayStatics.h"
 #include "SceneEvents/LevelEvents/Door.h"
 
-void ALever::Pick(AActor* NewOwner)
+void ALever::OnEnteredInventory_Implementation(AActor* NewOwner)
 {
-	Super::Pick(NewOwner);
+	Super::OnEnteredInventory_Implementation(NewOwner);
 	
 	bLeverWasActivated = true;
 	

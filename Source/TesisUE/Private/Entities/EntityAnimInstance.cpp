@@ -1,5 +1,6 @@
 #include "Entities/EntityAnimInstance.h"
 
+#include "AbilitySystemComponent.h"
 #include "KismetAnimationLibrary.h"
 #include "Entities/Entity.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -13,20 +14,22 @@ void UEntityAnimInstance::NativeInitializeAnimation()
 
 	if (EntityOwner)
 	{
-		CharacterMovementComponent = EntityOwner->GetCharacterMovementComponent();
+		AbilitySystemComponent = EntityOwner->GetAbilitySystemComponent();
+		
+		//CharacterMovementComponent = EntityOwner->GetCharacterMovementComponent();
 	}
 	
-	if (CharacterMovementComponent)
+	/*if (CharacterMovementComponent)
 	{
 		MaxWalkSpeed = CharacterMovementComponent->MaxWalkSpeed;
-	}
+	}*/
 }
 
 void UEntityAnimInstance::NativeUpdateAnimation(const float DeltaTime)
 {
 	Super::NativeUpdateAnimation(DeltaTime);
 
-	if (CharacterMovementComponent)
+	/*if (CharacterMovementComponent)
 	{
 		GroundSpeed = UKismetMathLibrary::VSizeXY(CharacterMovementComponent->Velocity);
 
@@ -35,5 +38,13 @@ void UEntityAnimInstance::NativeUpdateAnimation(const float DeltaTime)
 		bHasAcceleration = CharacterMovementComponent->GetCurrentAcceleration().SizeSquared2D() > SMALL_NUMBER;
 		
 		Direction = UKismetAnimationLibrary::CalculateDirection(CharacterMovementComponent->Velocity, EntityOwner->GetActorRotation());
+	}*/
+
+	if (AbilitySystemComponent)
+	{
+		bIsEquipped = AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("Weapon")));
+		bIsAttacking = AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Attacking")));
+		bIsLocking = AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Locking")));
+		bIsDodging = AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Dodging")));
 	}
 }

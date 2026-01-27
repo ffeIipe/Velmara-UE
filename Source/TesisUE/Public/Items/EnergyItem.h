@@ -13,7 +13,7 @@ class TESISUE_API AEnergyItem : public AItem
 	GENERATED_BODY()
 	
 public:
-	virtual void Pick(AActor* NewOwner) override;
+	virtual void OnEnteredInventory_Implementation(AActor* NewOwner) override;
 
 	UPROPERTY(BlueprintAssignable)
 	FOnChestUsedSpawnEnergy OnUsedSpawnEnergy;

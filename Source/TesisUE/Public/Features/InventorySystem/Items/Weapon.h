@@ -14,10 +14,17 @@ class TESISUE_API AWeapon : public AItem, public IWeaponInterface
 {
 	GENERATED_BODY()
 
-public:
+    DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWeaponEquippeddSignature, AWeapon*, WeaponEquipped);
+    DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWeaponHolsteredSignature, AWeapon*, WeaponHolstered);
 	
-	virtual void Pick(AActor* NewOwner) override;
-	virtual void Unequip() {}
+public:
+	virtual void OnEnteredInventory_Implementation(AActor* NewOwner) override;
+
+	virtual void OnRemovedFromInventory_Implementation() override; //TODO:
+
+	virtual void Equip(); 
+
+	virtual void Holster();
 
 	virtual void EnableVisuals() override { Super::EnableVisuals(); }
 	virtual void DisableVisuals() override { Super::DisableVisuals(); }
@@ -29,6 +36,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GAS")
 	void SetDamageEffectSpec(const FGameplayEffectSpecHandle& InSpecHandle);
 
+	UPROPERTY(BlueprintAssignable)
+	FOnWeaponHolsteredSignature OnWeaponEquipped;
+	
+	UPROPERTY(BlueprintAssignable)
+	FOnWeaponHolsteredSignature OnWeaponHolstered;
+	
 protected:
 	UPROPERTY()
 	TArray<FGameplayAbilitySpecHandle> GrantedAbilityHandles;
@@ -42,5 +55,5 @@ protected:
 	FGameplayEffectSpecHandle DamageEffectSpecHandle = nullptr;
 
 	UFUNCTION(BlueprintCallable)
-	virtual void AttachMeshToSocket(USceneComponent* InParent) {}
+	virtual void AttachMeshToSocket(USceneComponent* InParent, FName SocketInName = NAME_None) {}
 };

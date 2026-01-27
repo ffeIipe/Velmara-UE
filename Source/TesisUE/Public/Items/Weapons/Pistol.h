@@ -16,7 +16,7 @@ class TESISUE_API APistol : public AWeapon
 {
 	GENERATED_BODY()
 public:
-	virtual void AttachMeshToSocket(USceneComponent* InParent) override;
+	virtual void AttachMeshToSocket(USceneComponent* InParent, FName SocketInName) override;
 	
 protected:
 	APistol();

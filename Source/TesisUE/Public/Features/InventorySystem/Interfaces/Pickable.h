@@ -15,11 +15,13 @@ class TESISUE_API IPickable
 	GENERATED_BODY()
 
 public:
-	virtual void Pick(AActor* NewOwner) = 0;
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void OnEnteredInventory(AActor* NewOwner);
 
-	virtual void OnEquip(AActor* User) = 0;
-	
-	virtual void OnUnequip(AActor* User) = 0;
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void OnRemovedFromInventory();
 
 	virtual bool ShouldConsumeOnUse() const { return false; }
+
+	//virtual FItemData GetItemData() const = 0;
 };

@@ -21,22 +21,32 @@ void AWeapon::SetDamageEffectSpec(const FGameplayEffectSpecHandle& InSpecHandle)
 	DamageEffectSpecHandle = InSpecHandle;
 }
 
-void AWeapon::Pick(AActor* NewOwner)
+void AWeapon::OnEnteredInventory_Implementation(AActor* NewOwner)
 {
-	USkeletalMeshComponent* Mesh = Cast<ACharacter>(NewOwner)->GetMesh();
-	APawn* NewInstigator = Cast<APawn>(NewOwner);
+	Super::OnEnteredInventory_Implementation(NewOwner);
 
-	Super::Pick(NewOwner);
+	Equip();
+}
 
-	if (Mesh)
+void AWeapon::OnRemovedFromInventory_Implementation()
+{
+	Super::OnRemovedFromInventory_Implementation();
+
+	Holster();
+}
+
+void AWeapon::Equip()
+{
+	if (USkeletalMeshComponent* SkeletalMesh = Cast<ACharacter>(GetOwner())->GetMesh())
 	{
-		AttachMeshToSocket(Mesh);
+		AttachMeshToSocket(SkeletalMesh, FName("RightHandSword"));
 	}
-	
-	if (NewInstigator)
+}
+
+void AWeapon::Holster()
+{
+	if (USkeletalMeshComponent* SkeletalMesh = Cast<ACharacter>(GetOwner())->GetMesh())
 	{
-		SetInstigator(NewInstigator);
+		AttachMeshToSocket(SkeletalMesh, FName("RightClavicleSocket"));
 	}
-	
-	DisableCollision();
 }

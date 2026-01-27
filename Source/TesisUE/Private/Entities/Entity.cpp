@@ -65,6 +65,18 @@ void AEntity::BeginPlay()
 		AttributeSet->OnZeroHealth.AddDynamic(this, &AEntity::PerformDeath);
 	}
 
+	if (GetMesh())
+	{
+		const TArray<UMaterialInterface*> TempArray = GetMesh()->GetMaterials();
+
+		for (int32 MatIndex = 0; MatIndex < TempArray.Num(); MatIndex++)
+		{
+			UMaterialInterface* CurrentMaterial = GetMesh()->GetMaterial(MatIndex);
+			DissolveMaterials.Add(UMaterialInstanceDynamic::Create(CurrentMaterial, this));
+			GetMesh()->SetMaterial(MatIndex, DissolveMaterials[MatIndex]);
+		}
+	}
+	
 	//this only happens in case the entity has extra mesh's children collision boxes
 
 	/*if (GetMesh()->GetAttachChildren().Num() > 0)
@@ -205,7 +217,7 @@ bool AEntity::IsEquipped() const
 {
 	if (!AbilitySystemComponent) return false;
 
-	const bool bIsEquipped = IsValid(InventoryComponent->GetCurrentWeapon().GetObject()); //TODO: check
+	const bool bIsEquipped = AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("Weapon")));
 
 	return bIsEquipped;
 }
@@ -492,6 +504,29 @@ void AEntity::DeactivateBodyHitbox(const FName ComponentTag) const
 			{
 				Prim->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 			}
+		}
+	}
+}
+
+void AEntity::HitFlash(const float Duration, const float Amount)
+{
+	for (UMaterialInstanceDynamic* DissolveMaterial : DissolveMaterials)
+	{
+		if (DissolveMaterial)
+		{
+			DissolveMaterial->SetScalarParameterValue(FName("HitFlashAmount"), Amount);
+			GetWorldTimerManager().SetTimer(HitFlashTimerHandle, this,&AEntity::DeactivateHitFlash, Duration, false);
+		}
+	}
+}
+
+void AEntity::DeactivateHitFlash()
+{
+	for (UMaterialInstanceDynamic* DissolveMaterial : DissolveMaterials)
+	{
+		if (DissolveMaterial)
+		{
+			DissolveMaterial->SetScalarParameterValue(FName("HitFlashAmount"), 0);
 		}
 	}
 }

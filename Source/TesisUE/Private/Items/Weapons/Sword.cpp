@@ -9,6 +9,7 @@
 
 #include "DataAssets/Items/Weapons/SwordData.h"
 #include "Features/GlobalEffectsSystem/Interfaces/EffectManagerProvider.h"
+#include "GameFramework/Character.h"
 #include "GAS/VelmaraAbilityInputID.h"
 #include "GAS/VelmaraGameplayAbility.h"
 
@@ -41,26 +42,20 @@ void ASword::BeginPlay()
 	}
 }
 
-void ASword::Pick(AActor* NewOwner)
+void ASword::Equip()
 {
-	Super::Pick(NewOwner);
+	Super::Equip();
 
-	IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(NewOwner);
-	if (!ASI)
-	{
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "ASI is nullptr");
-		return;
-	}
+	IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(GetOwner());
+	if (!ASI) return;
 
 	UAbilitySystemComponent* ASC = ASI->GetAbilitySystemComponent();
-	if (!ASC)
-	{
-		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "ASC is nullptr");
-		return;
-	}
+	if (!ASC) return;
 		
 	if (SwordData && SwordData->WeaponTag.IsValid())
 	{
+		if (ASC->HasMatchingGameplayTag(SwordData->WeaponTag)) return;
+		
 		ASC->AddLooseGameplayTag(SwordData->WeaponTag);
 	}
 
@@ -81,26 +76,77 @@ void ASword::Pick(AActor* NewOwner)
 				GrantedAbilityHandles.Add(Handle);
 			}
 		}
+
+		if (IsValid(SwordData->AnimLayer))
+		{
+			if (const ACharacter* CharacterOwner = Cast<ACharacter>(GetOwner()))
+			{
+				CharacterOwner->GetMesh()->GetAnimInstance()->LinkAnimClassLayers(SwordData->AnimLayer);
+			}
+		}
 	}
+
+	if (OnWeaponEquipped.IsBound())
+	{
+		OnWeaponEquipped.Broadcast(this);
+	}
+}
+
+void ASword::Holster()
+{
+	Super::Holster();
+
+	IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(GetOwner());
+	if (!ASI) return;
 	
+	UAbilitySystemComponent* ASC = ASI->GetAbilitySystemComponent();
+	if (!ASC) return;
+	
+	for (const FGameplayAbilitySpecHandle& Handle : GrantedAbilityHandles)
+	{
+		if (Handle.IsValid())
+		{
+			ASC->ClearAbility(Handle);
+		}
+	}
+
+	GrantedAbilityHandles.Empty();
+	
+	ASC->RemoveLooseGameplayTag(SwordData->WeaponTag);
+
+	if (!ASC->HasMatchingGameplayTag(SwordData->HolsterTag))
+	{
+		ASC->AddLooseGameplayTag(SwordData->HolsterTag);
+	}
+
+	if (IsValid(SwordData->AnimLayer))
+	{
+		if (const ACharacter* CharacterOwner = Cast<ACharacter>(GetOwner()))
+		{
+			CharacterOwner->GetMesh()->GetAnimInstance()->UnlinkAnimClassLayers(SwordData->AnimLayer);
+		}
+	}
+
+	if (OnWeaponHolstered.IsBound())
+	{
+		OnWeaponHolstered.Broadcast(this);
+	}
 }
 
-void ASword::Unequip()
+void ASword::AttachMeshToSocket(USceneComponent* InParent, const FName InSocketName)
 {
-	/*AttachMeshToSocket(AnimatorProvider->GetMeshComponent());*/
-}
-
-UPrimitiveComponent* ASword::GetCollisionComponent()
-{
-	return WeaponDamageBox;
-}
-
-void ASword::AttachMeshToSocket(USceneComponent* InParent)
-{
-	Super::AttachMeshToSocket(InParent);
+	Super::AttachMeshToSocket(InParent, InSocketName);
 
 	const FAttachmentTransformRules TransformRules(EAttachmentRule::SnapToTarget, true);
-	ItemMesh->AttachToComponent(InParent, TransformRules, SwordData->CustomInSocketName);
+
+	if (InSocketName == NAME_None)
+	{
+		ItemMesh->AttachToComponent(InParent, TransformRules, SwordData->CustomInSocketName);
+	}
+	else
+	{
+		ItemMesh->AttachToComponent(InParent, TransformRules, InSocketName);
+	}
 }
 
 void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -122,7 +168,7 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 		UEngineTypes::ConvertToTraceType(ECC_GameTraceChannel3),
 		false,
 		IgnoreActors,
-		EDrawDebugTrace::ForDuration,
+		EDrawDebugTrace::None,
 		HitResults,
 		true
 	);
