@@ -5,7 +5,6 @@
 #include "VelmaraGameMode.generated.h"
 
 class UPlayerProgressSaveGame;
-class AEnemy;
 
 UCLASS()
 class TESISUE_API AVelmaraGameMode : public AGameModeBase
@@ -14,13 +13,4 @@ class TESISUE_API AVelmaraGameMode : public AGameModeBase
 
 public:
 	virtual void BeginPlay() override;
-	
-	void SetEnemiesAIEnabled(bool bEnabled);
-	
-	void RegisterEnemy(AEnemy* Enemy);
-	void UnregisterEnemy(AEnemy* Enemy);
-	
-private:
-	UPROPERTY()
-	TArray<AEnemy*> RegisteredEnemies;
 };

@@ -6,7 +6,6 @@
 #include "GameFramework/Actor.h"
 #include "SpawnPoint.generated.h"
 
-class AEnemy;
 class AEntity;
 
 DECLARE_DYNAMIC_DELEGATE(FOnEnemyDeactivation);
@@ -26,8 +25,4 @@ public:
 protected:
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
 	UClass* EntityClass;
-
-private:
-	UFUNCTION()
-	void DecreaseEnemiesSpawned(AEnemy* DeactivatedEnemy);
 };

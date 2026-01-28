@@ -25,7 +25,8 @@ public class TesisUE : ModuleRules
 			"MotionTrajectory",
 			"PoseSearch",
 			"NetCore",
-			"AnimGraphRuntime"
+			"AnimGraphRuntime", 
+			"AIModule"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[]
