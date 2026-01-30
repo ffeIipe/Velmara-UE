@@ -22,8 +22,10 @@ class TESISUE_API UCombatDirectorSubsystem : public UWorldSubsystem
 	GENERATED_BODY()
 
 public:
+	UFUNCTION(BlueprintCallable)
 	void RegisterEnemy(AActor* Enemy, AActor* TargetActor);
     
+    UFUNCTION(BlueprintCallable)
 	void UnregisterEnemy(AActor* Enemy, AActor* TargetActor);
 
 	UFUNCTION(BlueprintPure, Category = "AI|Combat")

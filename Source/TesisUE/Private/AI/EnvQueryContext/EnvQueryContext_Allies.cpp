@@ -29,7 +29,7 @@ void UEnvQueryContext_Allies::ProvideContext(FEnvQueryInstance& QueryInstance, F
 
 	TArray<AActor*> Allies = CombatDirector->GetAlliesForTarget(TargetActor);
 
-	Allies.Remove(QueryOwner);
+	Allies.Remove(Cast<AActor>(QueryInstance.Owner.Get()));
 
 	UEnvQueryItemType_Actor::SetContextHelper(ContextData, Allies);
 }

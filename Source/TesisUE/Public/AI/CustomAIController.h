@@ -1,11 +1,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "AIController.h"
+#include "DetourCrowdAIController.h"
 #include "CustomAIController.generated.h"
 
 UCLASS()
-class TESISUE_API ACustomAIController : public AAIController
+class TESISUE_API ACustomAIController : public ADetourCrowdAIController
 {
 	GENERATED_BODY()
 

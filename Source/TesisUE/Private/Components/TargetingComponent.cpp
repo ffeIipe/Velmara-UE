@@ -74,8 +74,36 @@ void UTargetingComponent::ChangeHardLockTarget()
 {
     if (!bIsLocking || CombatTargets.Num() == 0) return;
     
-    CombatTargetIndex = (CombatTargetIndex + 1) % CombatTargets.Num();
-    CurrentTarget = CombatTargets[CombatTargetIndex];
+    int32 Attempts = 0;
+    AActor* NewCandidate = nullptr;
+
+    while (Attempts < CombatTargets.Num())
+    {
+        CombatTargetIndex = (CombatTargetIndex + 1) % CombatTargets.Num();
+        AActor* Candidate = CombatTargets[CombatTargetIndex];
+
+        if (Candidate && Candidate != CurrentTarget) // Verificar validez
+        {
+            NewCandidate = Candidate;
+            break;
+        }
+        Attempts++;
+    }
+
+    if (NewCandidate)
+    {
+        if (AEntity* OldTarget = Cast<AEntity>(CurrentTarget))
+        {
+            OldTarget->OnDead.RemoveDynamic(this, &UTargetingComponent::HandleTargetDeath);
+        }
+
+        CurrentTarget = NewCandidate;
+
+        if (AEntity* NewTarget = Cast<AEntity>(CurrentTarget))
+        {
+            NewTarget->OnDead.AddUniqueDynamic(this, &UTargetingComponent::HandleTargetDeath);
+        }
+    }
 }
 
 AActor* UTargetingComponent::SelectNearestTarget(TArray<AActor*> Targets)
@@ -85,13 +113,15 @@ AActor* UTargetingComponent::SelectNearestTarget(TArray<AActor*> Targets)
     float MinDistance = TNumericLimits<float>::Max(); 
     AActor* ClosestCombatTarget = nullptr;
     
+    const FVector OwnerLocation = GetOwner()->GetActorLocation();
+
     for (const auto CombatTarget : Targets)
     {
         if (CombatTarget)
         {
-            if (const float NewDistance = FVector::Dist(CombatTarget->GetActorLocation(), GetOwner()->GetActorLocation()); NewDistance < MinDistance)
+            if (const float DistSq = FVector::DistSquared(CombatTarget->GetActorLocation(), OwnerLocation); DistSq < MinDistance)
             {
-                MinDistance = NewDistance;
+                MinDistance = DistSq;
                 ClosestCombatTarget = CombatTarget;
             }
         }
@@ -138,8 +168,8 @@ void UTargetingComponent::RotateTowardsTarget(AActor* Target)
     const FRotator NewControlRotation = FMath::RInterpTo(CurrentControlRotation, TargetRotation, GetWorld()->DeltaTimeSeconds, 15.f);
     OwnerController->SetControlRotation(NewControlRotation);
 
-    const FRotator NewActorRotation = FRotator(0.f, TargetRotation.Yaw, 0.f);
-    OwnerCharacter->SetActorRotation(NewActorRotation);
+    /*const FRotator NewActorRotation = FRotator(0.f, TargetRotation.Yaw, 0.f);
+    OwnerCharacter->SetActorRotation(NewActorRotation);*/
 }
 
 TArray<AActor*> UTargetingComponent::GetTargets(const float Radius) const
@@ -161,24 +191,26 @@ TArray<AActor*> UTargetingComponent::GetTargets(const float Radius) const
         Hits
     );
 
-    TArray<AActor*> Actors;
-    for (const auto Target : Hits)
+    TArray<AActor*> ValidTargets;
+    
+    const AEntity* OwnerEntity = Cast<AEntity>(GetOwner());
+    if (!OwnerEntity) 
     {
-        if (AEntity* TargetEntity = Cast<AEntity>(Target))
-        {
-            if (TargetEntity->IsAlive())
-            {
-                Actors.Add(TargetEntity);
+        return ValidTargets; 
+    }
 
-                TargetEntity->OnDead.AddUniqueDynamic(this, &UTargetingComponent::HandleTargetDeath);
-            }
-            else if (GEngine)
+    for (const auto HitActor : Hits)
+    {
+        if (AEntity* TargetEntity = Cast<AEntity>(HitActor))
+        {
+            if (const bool bIsHostile = OwnerEntity->IsHostile(TargetEntity); TargetEntity->IsAlive() && bIsHostile)
             {
-                //GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, TargetEntity->GetName() + " is dead!");
+                ValidTargets.Add(TargetEntity);
             }
         }
     }
-    return Actors;
+    
+    return ValidTargets;
 }
 
 void UTargetingComponent::RemoveCombatTarget()

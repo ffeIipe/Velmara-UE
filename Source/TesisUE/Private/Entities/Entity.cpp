@@ -2,6 +2,7 @@
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
+#include "GenericTeamAgentInterface.h"
 #include "MotionWarpingComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/TargetingComponent.h"
@@ -76,7 +77,15 @@ void AEntity::BeginPlay()
 			GetMesh()->SetMaterial(MatIndex, DissolveMaterials[MatIndex]);
 		}
 	}
-	
+
+	if (GetController())
+	{
+		if (const TScriptInterface<IGenericTeamAgentInterface> TeamAgentInterface = GetController())
+		{
+			TeamId = TeamAgentInterface->GetGenericTeamId();
+		}
+	}
+
 	//this only happens in case the entity has extra mesh's children collision boxes
 
 	/*if (GetMesh()->GetAttachChildren().Num() > 0)
@@ -274,6 +283,12 @@ void AEntity::SetWeaponCollisionEnabled(const ECollisionEnabled::Type CollisionE
 			}
 		}
 	}
+}
+
+bool AEntity::IsHostile(const AEntity* OtherEntity) const
+{
+	if (!OtherEntity) return false;
+	return TeamId != OtherEntity->TeamId;
 }
 
 void AEntity::InitializeAttributeSet()
