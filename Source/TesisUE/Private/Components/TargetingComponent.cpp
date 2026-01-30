@@ -160,7 +160,7 @@ void UTargetingComponent::RotateTowardsTarget(AActor* Target)
     }
 
     const FVector StartLocation = OwnerCharacter->GetPawnViewLocation();
-    const FVector TargetLocation = CurrentTarget->GetActorLocation() + FVector(0.f, 0.f, 70.f);
+    const FVector TargetLocation = Target->GetActorLocation() + FVector(0.f, 0.f, 70.f);
     
     const FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(StartLocation, TargetLocation);
     const FRotator CurrentControlRotation = OwnerController->GetControlRotation();
@@ -168,6 +168,8 @@ void UTargetingComponent::RotateTowardsTarget(AActor* Target)
     const FRotator NewControlRotation = FMath::RInterpTo(CurrentControlRotation, TargetRotation, GetWorld()->DeltaTimeSeconds, 15.f);
     OwnerController->SetControlRotation(NewControlRotation);
 
+    if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, -1.f, FColor::Purple, "Targeting " + FString(Target->GetName()));
+    
     /*const FRotator NewActorRotation = FRotator(0.f, TargetRotation.Yaw, 0.f);
     OwnerCharacter->SetActorRotation(NewActorRotation);*/
 }
