@@ -5,6 +5,7 @@
 
 #include "AbilitySystemInterface.h"
 #include "GameplayTagAssetInterface.h"
+#include "GenericTeamAgentInterface.h"
 #include "Features/SaveSystem/Interfaces/SaveInterface.h"
 
 #include "Entity.generated.h"
@@ -151,7 +152,12 @@ public:
 	
 	UPROPERTY()
 	TArray<UMaterialInstanceDynamic*>  DissolveMaterials;
-	
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Team")
+	FGenericTeamId TeamId; 
+    
+	bool IsHostile(const AEntity* OtherEntity) const;
+
 protected:
 	UFUNCTION(BlueprintCallable)
 	virtual void InitializeAttributeSet();

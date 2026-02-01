@@ -45,14 +45,14 @@ void AEnemySpawner::SpawnEnemyFromSpawnPoint()
 		}
 		else if (GEngine)
 		{
-			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Invalid Random Index!");	
+			//GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Invalid Random Index!");	
 		}
 	}
 }
 
 void AEnemySpawner::EndSpawning()
 {
-	GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "End of spawning!");
+	//GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "End of spawning!");
 	
 	GetWorld()->GetTimerManager().ClearTimer(SpawnTimerHandle);
 }

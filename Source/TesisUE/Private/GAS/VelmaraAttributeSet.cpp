@@ -33,7 +33,7 @@ void UVelmaraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCal
 {
 	Super::PostGameplayEffectExecute(Data);
 
-	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, GetOwningActor()->GetName());
+	//if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, GetOwningActor()->GetName());
 	
 	if (Data.EvaluatedData.Attribute == GetHealthAttribute())
 	{
@@ -71,13 +71,13 @@ void UVelmaraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCal
 			DeathPayload
 			);
 
-			if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, "Death Entity...");
+			//if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, "Death Entity...");
 			
 			if (OnZeroHealth.IsBound()) OnZeroHealth.Broadcast();
 		}
 		else
 		{
-			if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, "Damage received...");
+			//if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, "Damage received...");
 			
 			FGameplayEventData DamagePayload;
 			DamagePayload.EventTag = FGameplayTag::RequestGameplayTag(FName("Event.Hit"));

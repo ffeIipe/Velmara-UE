@@ -2,6 +2,7 @@
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
+#include "GenericTeamAgentInterface.h"
 #include "MotionWarpingComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/TargetingComponent.h"
@@ -76,7 +77,15 @@ void AEntity::BeginPlay()
 			GetMesh()->SetMaterial(MatIndex, DissolveMaterials[MatIndex]);
 		}
 	}
-	
+
+	if (GetController())
+	{
+		if (const TScriptInterface<IGenericTeamAgentInterface> TeamAgentInterface = GetController())
+		{
+			TeamId = TeamAgentInterface->GetGenericTeamId();
+		}
+	}
+
 	//this only happens in case the entity has extra mesh's children collision boxes
 
 	/*if (GetMesh()->GetAttachChildren().Num() > 0)
@@ -276,6 +285,12 @@ void AEntity::SetWeaponCollisionEnabled(const ECollisionEnabled::Type CollisionE
 	}
 }
 
+bool AEntity::IsHostile(const AEntity* OtherEntity) const
+{
+	if (!OtherEntity) return false;
+	return TeamId != OtherEntity->TeamId;
+}
+
 void AEntity::InitializeAttributeSet()
 {
 	if (AbilitySystemComponent && DefaultAttributeEffect)
@@ -305,10 +320,10 @@ void AEntity::GiveDefaultAbilities()
 			EVelmaraAbilityInputID InputID = Ability->AbilityInputID;
 			FGameplayAbilitySpec Spec(Ability->GetClass(), 1, static_cast<int32>(InputID), this);
 
-			if (GEngine)
+			/*if (GEngine)
 			{
 				GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, Ability->GetName() + " Ability Given!");
-			}
+			}*/
 			
 			AbilitySystemComponent->GiveAbility(Spec);
 		}
@@ -373,7 +388,7 @@ void AEntity::PerformDeath()
 	
 	//GetAbilitySystemComponent()->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Dead")));
 	
-	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Purple, GetName() + " performing death...");
+	//if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Purple, GetName() + " performing death...");
 
 	//StopAnimMontage(GetCurrentMontage());
 
@@ -432,7 +447,7 @@ void AEntity::OnBodyPartOverlap(UPrimitiveComponent* OverlappedComponent, AActor
 		if (!TargetEntity->IsAlive()) return;
 	}
 	
-	if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Dealing body damage");
+	//if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Dealing body damage");
 	
 	UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor);
 	if (!TargetASC) return;
@@ -485,7 +500,7 @@ void AEntity::ActivateBodyHitbox(const FName ComponentTag, FGameplayTag DamageTy
 		{
 			if (UPrimitiveComponent* Prim = Cast<UPrimitiveComponent>(Comp))
 			{
-				if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Emerald, "Collision Enabled...");
+				//if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Emerald, "Collision Enabled...");
 				
 				Prim->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 				Prim->IgnoreActorWhenMoving(this, true);

@@ -1,14 +1,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "AI/EnemyAIController.h"
+#include "AI/CustomAIController.h"
 #include "WizardAIController.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class TESISUE_API AWizardAIController : public AEnemyAIController
+class TESISUE_API AWizardAIController : public ACustomAIController
 {
 	GENERATED_BODY()
 
