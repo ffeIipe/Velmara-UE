@@ -1,10 +1,8 @@
 #include "Components/TargetingComponent.h"
 
-#include "AbilitySystemComponent.h"
 #include "Curves/CurveFloat.h"
 #include "Entities/Entity.h"
 #include "GameFramework/Character.h"
-#include "GAS/VelmaraGameplayTags.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 
@@ -159,6 +157,8 @@ void UTargetingComponent::RotateTowardsTarget(AActor* Target)
         return;
     }
 
+    OwnerController = OwnerCharacter->GetController();
+    
     const FVector StartLocation = OwnerCharacter->GetPawnViewLocation();
     const FVector TargetLocation = Target->GetActorLocation() + FVector(0.f, 0.f, 70.f);
     

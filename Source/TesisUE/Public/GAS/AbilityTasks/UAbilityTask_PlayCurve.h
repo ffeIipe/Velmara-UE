@@ -22,8 +22,9 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FPlayCurveDelegate OnFinished;
 
+	// Agregamos el parametro bReverse al final, por defecto en false
 	UFUNCTION(BlueprintCallable, Category = "Ability|Tasks", meta = (HidePin = "OwningAbility", DefaultToSelf = "OwningAbility", BlueprintInternalUseOnly = "TRUE"))
-	static UAbilityTask_PlayCurve* PlayCurve(UGameplayAbility* OwningAbility, UCurveFloat* CurveAsset, float DurationMultiplier = 1.0f);
+	static UAbilityTask_PlayCurve* PlayCurve(UGameplayAbility* OwningAbility, UCurveFloat* CurveAsset, float DurationMultiplier = 1.0f, bool bReverse = false);
 
 protected:
 	virtual void Activate() override;
@@ -37,4 +38,5 @@ private:
 	float CurrentTime;
 	float DurationMultiplier;
 	float MaxTime;
+	bool bReverse; // Nueva variable para guardar el estado
 };

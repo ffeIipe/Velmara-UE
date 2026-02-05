@@ -18,7 +18,11 @@ class TESISUE_API USpectralObjectsSubsystem : public UWorldSubsystem
 
 public:
 	void AddSpectralObject(const TScriptInterface<ISpectral>& SpectralObject);
+
+	UFUNCTION(BlueprintCallable)
 	void ActivateSpectralObjects();
+
+	UFUNCTION(BlueprintCallable)
 	void DeactivateSpectralObjects();
 
 private:

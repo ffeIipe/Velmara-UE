@@ -49,10 +49,17 @@ void ACustomPlayerController::PerformPossession(APawn* NewPawn)
     }
 }
 
+bool ACustomPlayerController::IsPossessing() const
+{
+    return OriginalBody != GetPawn();
+}
+
 void ACustomPlayerController::BeginPlay()
 {
     Super::BeginPlay();
 
+    OriginalBody = GetPawn();
+    
     PlayerMainHUD = Cast<APlayerMainHUD>(GetHUD());
 
     if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))

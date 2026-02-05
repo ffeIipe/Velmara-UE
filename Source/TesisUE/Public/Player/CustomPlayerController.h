@@ -30,6 +30,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "GAS|Possession")
 	void PerformPossession(APawn* NewPawn);
+
+	UFUNCTION(BlueprintCallable, Category = "GAS|Possession")
+	bool IsPossessing() const;
 	
 	UPROPERTY(BlueprintReadOnly)
 	FVector2D InputMovingVector = FVector2D::ZeroVector;
@@ -52,7 +55,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputData> InputData;
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly, Category = "GAS|Possession")
 	APawn* OriginalBody;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI | Team")

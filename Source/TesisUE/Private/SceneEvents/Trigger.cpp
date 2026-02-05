@@ -1,6 +1,5 @@
 #include "SceneEvents/Trigger.h"
 #include "Components/BoxComponent.h"
-#include "Player/PlayerMain.h"
 
 ATrigger::ATrigger()
 {
@@ -35,11 +34,11 @@ void ATrigger::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AA
 			OnPlayerControllerBeginOverlap.Broadcast();
 	}
 
-	if (Cast<APlayerMain>(OtherActor))
+	/*if (Cast<APlayerMain>(OtherActor))
 	{
 		if (OnPlayerBeginOverlap.IsBound())
 			OnPlayerBeginOverlap.Broadcast();
-	}
+	}*/
 		
 	if (Controller)
 	{
@@ -66,11 +65,11 @@ void ATrigger::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AAct
 			OnPlayerControllerEndOverlap.Broadcast();
 	}
 
-	if (Cast<APlayerMain>(OtherActor))
+	/*if (Cast<APlayerMain>(OtherActor))
 	{
 		if (OnPlayerEndOverlap.IsBound())
 			OnPlayerEndOverlap.Broadcast();
-	}
+	}*/
 	
 	if (Controller)
 	{

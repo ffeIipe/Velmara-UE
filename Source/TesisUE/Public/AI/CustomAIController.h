@@ -13,4 +13,10 @@ public:
 	ACustomAIController(const FObjectInitializer& ObjectInitializer);
 
 	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
+
+	UFUNCTION(BlueprintCallable, Category = "Team")
+	virtual FGenericTeamId GetGenericTeamId() const override;
+
+	UFUNCTION(BlueprintCallable, Category = "Team")
+	virtual void SetGenericTeamId(const FGenericTeamId& TeamId) override;
 };
