@@ -10,6 +10,7 @@
 
 #include "Entity.generated.h"
 
+struct FGameplayAbilitySpecHandle;
 class IPickable;
 class UInventoryComponent;
 class UTargetingComponent;
@@ -127,12 +128,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	virtual void PerformDeath();
 
-	/*UFUNCTION(BlueprintCallable)
-	bool GetHitSectionForTag(FGameplayTag IncomingTag, FHitReactDefinition& OutDefinition) const;
-
-	UFUNCTION(BlueprintCallable)
-	FName GetDeathSectionForTag(FGameplayTag IncomingTag) const;*/
-
 	UFUNCTION()
 	void OnBodyPartOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
@@ -151,19 +146,29 @@ public:
 	FTimerHandle HitFlashTimerHandle;
 	
 	UPROPERTY()
-	TArray<UMaterialInstanceDynamic*>  DissolveMaterials;
+	TArray<UMaterialInstanceDynamic*> DissolveMaterials;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Team")
 	FGenericTeamId TeamId; 
-    
+
+	UFUNCTION(BlueprintCallable, Category = "Team")
 	bool IsHostile(const AEntity* OtherEntity) const;
 
+	UFUNCTION(BlueprintCallable, Category = "Team")
+	void SetTeam(ETeamAttitude::Type NewTeam);
+
+	UFUNCTION(BlueprintCallable, Category = "Team")
+	FGenericTeamId GetTeamId() const {return TeamId;}
+	
 protected:
 	UFUNCTION(BlueprintCallable)
 	virtual void InitializeAttributeSet();
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Abilities")
 	TSubclassOf<UGameplayEffect> DefaultAttributeEffect;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Abilities")
+	TArray<FGameplayAbilitySpecHandle> GrantedAbilityHandles;
 	
 	virtual void BeginPlay() override;
 	

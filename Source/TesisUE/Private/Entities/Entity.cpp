@@ -291,6 +291,19 @@ bool AEntity::IsHostile(const AEntity* OtherEntity) const
 	return TeamId != OtherEntity->TeamId;
 }
 
+void AEntity::SetTeam(const ETeamAttitude::Type NewTeam)
+{
+	TeamId = NewTeam;
+	
+	if (const TScriptInterface<IGenericTeamAgentInterface> TeamAgent = GetController())
+	{
+		if (TeamAgent)
+		{
+			TeamAgent->SetGenericTeamId(NewTeam);
+		}
+	}
+}
+
 void AEntity::InitializeAttributeSet()
 {
 	if (AbilitySystemComponent && DefaultAttributeEffect)
@@ -317,15 +330,11 @@ void AEntity::GiveDefaultAbilities()
 	{
 		if (Ability)
 		{
-			EVelmaraAbilityInputID InputID = Ability->AbilityInputID;
-			FGameplayAbilitySpec Spec(Ability->GetClass(), 1, static_cast<int32>(InputID), this);
+			EVelmaraAbilityInputID InputID = Ability.GetDefaultObject()->AbilityInputID;
+			FGameplayAbilitySpec Spec(Ability, 1, static_cast<int32>(InputID), this);
+			FGameplayAbilitySpecHandle Handle = AbilitySystemComponent->GiveAbility(Spec);
 
-			/*if (GEngine)
-			{
-				GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, Ability->GetName() + " Ability Given!");
-			}*/
-			
-			AbilitySystemComponent->GiveAbility(Spec);
+			GrantedAbilityHandles.Add(Handle);
 		}
 	}
 }

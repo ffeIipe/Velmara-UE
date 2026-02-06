@@ -62,7 +62,7 @@ bool UInventoryComponent::TryAddWeapon(const TScriptInterface<IPickable> Pickabl
         if (InventorySlots[i] == nullptr)
         {
             InventorySlots[i] = PickableToAdd;
-            EquipItemFromSlot(  i);
+            EquipItemFromSlot(i);
             UpdateInventoryUI();
             return true;
         }

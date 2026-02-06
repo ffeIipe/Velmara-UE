@@ -126,8 +126,8 @@ class TESISUE_API UEntityData : public UDataAsset
     GENERATED_BODY()
 
 public:
-    UPROPERTY(EditDefaultsOnly, Instanced, Category = "Entity|Abilities")
-    TArray<UVelmaraGameplayAbility*> DefaultAbilities;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Entity|Abilities")
+    TArray<TSubclassOf<UVelmaraGameplayAbility>> DefaultAbilities;
     
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Entity|Inventory")
     FInventoryData InventoryData;

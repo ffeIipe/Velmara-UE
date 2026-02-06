@@ -3,22 +3,22 @@
 UAbilityTask_PlayCurve::UAbilityTask_PlayCurve()
 {
 	bTickingTask = true;
+	bReverse = false;
 }
 
-UAbilityTask_PlayCurve* UAbilityTask_PlayCurve::PlayCurve(UGameplayAbility* OwningAbility, UCurveFloat* CurveAsset, float DurationMultiplier)
+UAbilityTask_PlayCurve* UAbilityTask_PlayCurve::PlayCurve(UGameplayAbility* OwningAbility, UCurveFloat* CurveAsset, float DurationMultiplier, bool bReverse)
 {
 	UAbilityTask_PlayCurve* MyTask = NewAbilityTask<UAbilityTask_PlayCurve>(OwningAbility);
 	MyTask->CurveFloat = CurveAsset;
 	MyTask->DurationMultiplier = DurationMultiplier;
+	MyTask->bReverse = bReverse;
 	return MyTask;
 }
 
 void UAbilityTask_PlayCurve::Activate()
 {
 	Super::Activate();
-
-	CurrentTime = 0.0f;
-    
+	
 	if (CurveFloat)
 	{
 		float MinTime;
@@ -28,6 +28,15 @@ void UAbilityTask_PlayCurve::Activate()
 	{
 		MaxTime = 1.0f;
 	}
+	
+	if (bReverse)
+	{
+		CurrentTime = MaxTime;
+	}
+	else
+	{
+		CurrentTime = 0.0f;
+	}
 }
 
 void UAbilityTask_PlayCurve::TickTask(float DeltaTime)
@@ -36,7 +45,16 @@ void UAbilityTask_PlayCurve::TickTask(float DeltaTime)
 
 	if (ShouldBroadcastAbilityTaskDelegates())
 	{
-		CurrentTime += DeltaTime * DurationMultiplier;
+		float TimeStep = DeltaTime * DurationMultiplier;
+
+		if (bReverse)
+		{
+			CurrentTime -= TimeStep;
+		}
+		else
+		{
+			CurrentTime += TimeStep;
+		}
 
 		float CurrentValue = 0.0f;
 		if (CurveFloat)
@@ -50,9 +68,28 @@ void UAbilityTask_PlayCurve::TickTask(float DeltaTime)
 
 		OnUpdate.Broadcast(CurrentValue, CurrentTime);
 
-		if (CurrentTime >= MaxTime)
+		bool bShouldFinish = false;
+
+		if (bReverse)
 		{
-			OnFinished.Broadcast(1.0f, MaxTime);
+			if (CurrentTime <= 0.0f)
+			{
+				bShouldFinish = true;
+				CurrentTime = 0.0f; 
+				if(CurveFloat) CurrentValue = CurveFloat->GetFloatValue(0.0f);
+			}
+		}
+		else
+		{
+			if (CurrentTime >= MaxTime)
+			{
+				bShouldFinish = true;
+			}
+		}
+
+		if (bShouldFinish)
+		{
+			OnFinished.Broadcast(CurrentValue, CurrentTime);
 			EndTask();
 		}
 	}

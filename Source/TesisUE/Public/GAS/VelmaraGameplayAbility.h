@@ -15,7 +15,7 @@ class TESISUE_API UVelmaraGameplayAbility : public UGameplayAbility
 public:
 	UVelmaraGameplayAbility();
 
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	EVelmaraAbilityInputID AbilityInputID = EVelmaraAbilityInputID::None;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")

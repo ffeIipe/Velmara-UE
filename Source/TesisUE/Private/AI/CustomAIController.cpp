@@ -20,3 +20,13 @@ ETeamAttitude::Type ACustomAIController::GetTeamAttitudeTowards(const AActor& Ot
     }
     return ETeamAttitude::Neutral;
 }
+
+FGenericTeamId ACustomAIController::GetGenericTeamId() const
+{
+    return Super::GetGenericTeamId();
+}
+
+void ACustomAIController::SetGenericTeamId(const FGenericTeamId& TeamId)
+{
+    Super::SetGenericTeamId(TeamId);
+}
