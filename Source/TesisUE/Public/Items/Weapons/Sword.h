@@ -22,8 +22,6 @@ public:
     
     virtual void BeginPlay() override;
     
-    DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWallHitSignature, const FHitResult&, HitResult);
-
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
     USwordData* SwordData;
 

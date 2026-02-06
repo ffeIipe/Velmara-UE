@@ -113,19 +113,6 @@ void UInventoryComponent::DropWeaponFromSlot(const int32 SlotIndex)
 
     InventorySlots[SlotIndex] = nullptr;
 
-    // if (GetOwner() && GetWorld() && ItemToDrop)
-    // {
-    //     ItemToDrop->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-    //
-    //     ItemToDrop->EnableVisuals(true);
-    //
-    //     FVector DropLocation = GetOwner()->GetActorLocation() + GetOwner()->GetActorForwardVector() * 150.0f + FVector(0, 0, 50.0f);
-    //     FRotator DropRotation = GetOwner()->GetActorRotation();
-    //
-    //     ItemToDrop->TeleportTo(DropLocation, DropRotation, false, true);
-    //     // ItemToDrop->ItemState = EItemState::EIS_Hovering;
-    // }
-
     UpdateInventoryUI();
 }
 
