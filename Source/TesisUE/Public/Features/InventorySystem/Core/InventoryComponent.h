@@ -55,26 +55,29 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "Inventory")
     void DropWeaponFromSlot(int32 SlotIndex);
+
+    UFUNCTION(BlueprintCallable, Category = "Inventory")
+    void UnequipCurrentWeapon();
+
+    UFUNCTION(BlueprintCallable, Category = "Inventory")
+    void ToggleInventorySlot();
     
-    UFUNCTION(BlueprintCallable, Category = "Inventory")
-    void ShowInventory();
-
-    UFUNCTION(BlueprintCallable, Category = "Inventory")
-    void HideInventory();
-
-    UFUNCTION(BlueprintPure, Category = "Inventory")
-    bool IsInventoryOpen() const { return bIsInventoryOpen; }
-
     UFUNCTION(BlueprintPure, Category = "Inventory")
     const TArray<TScriptInterface<IPickable>>& GetInventoryItems() const { return InventorySlots; }
 
     UFUNCTION(BlueprintCallable, Category = "Inventory")
     void PerformInteract(const FVector& StartTrace, const FVector& EndTrace, float RadiusTrace);
+    
+    UFUNCTION(BlueprintCallable, Category = "Inventory|Widget")
+    void ShowInventory();
 
-    void ToggleInventorySlot();
+    UFUNCTION(BlueprintCallable, Category = "Inventory|Widget")
+    void HideInventory();
+
+    UFUNCTION(BlueprintPure, Category = "Inventory|Widget")
+    bool IsInventoryOpen() const { return bIsInventoryOpen; }
     
-    void UnequipCurrentWeapon();
-    
+   UFUNCTION(BlueprintCallable, Category = "Inventory|Widget") 
     void UpdateInventoryUI();
 
     UFUNCTION(BlueprintCallable, Category = "Inventory|SaveGame")
@@ -86,7 +89,7 @@ public:
 protected:
     virtual void BeginPlay() override;
     
-    UPROPERTY(EditDefaultsOnly, Category = "Inventory UI")
+    UPROPERTY(EditDefaultsOnly, Category = "Inventory|Widget")
     TSubclassOf<UUserWidget> InventoryWidgetClass;
 
     UPROPERTY(Transient)
