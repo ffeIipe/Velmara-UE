@@ -23,5 +23,8 @@ public:
 	void OnLoadGame(const FEntitySaveData& InData);
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "SaveGameData|SaveInterface")
+	void OnPostGameLoaded();
+	
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "SaveGameData|SaveInterface")
 	FName GetUniqueSaveID();
 };

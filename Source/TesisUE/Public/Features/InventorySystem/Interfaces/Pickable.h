@@ -21,7 +21,6 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void OnRemovedFromInventory();
 
-	virtual bool ShouldConsumeOnUse() const { return false; }
-
-	//virtual FItemData GetItemData() const = 0;
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	bool ShouldConsumeOnUse();
 };

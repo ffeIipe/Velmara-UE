@@ -57,6 +57,8 @@ bool UInventoryComponent::TryAddWeapon(const TScriptInterface<IPickable> Pickabl
 {
     if (!PickableToAdd) return false;
 
+    if (PickableToAdd->Execute_ShouldConsumeOnUse(PickableToAdd.GetObject())) return false;
+    
     for (int32 i = 0; i < InventorySlots.Num(); ++i)
     {
         if (InventorySlots[i] == nullptr)
@@ -68,7 +70,7 @@ bool UInventoryComponent::TryAddWeapon(const TScriptInterface<IPickable> Pickabl
         }
     }
 
-    return false; // Inventario lleno
+    return false;
 }
 
 void UInventoryComponent::EquipItemFromSlot(const int32 SlotIndex)

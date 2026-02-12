@@ -3,10 +3,9 @@
 #include "CoreMinimal.h"
 #include "Features/InventorySystem/Interfaces/Pickable.h"
 #include "Features/SaveSystem/Interfaces/SaveInterface.h"
-#include "Tutorial/InputPromptTrigger.h"
-
 #include "Item.generated.h"
 
+class USphereComponent;
 class UBoxComponent;
 class UPromptWidgetComponent;
 
@@ -47,15 +46,17 @@ public:
 
 	virtual void OnRemovedFromInventory_Implementation() override;
 
+	virtual bool ShouldConsumeOnUse_Implementation() override;
+
 	virtual void EnableVisuals();
 
 	virtual void DisableVisuals();
-
-	virtual bool ShouldConsumeOnUse() const override { return false; }
 	
 	virtual void OnSaveGame_Implementation(FEntitySaveData& OutData) override;
 	
 	virtual void OnLoadGame_Implementation(const FEntitySaveData& InData) override;
+
+	virtual void OnPostGameLoaded_Implementation() override;
 
 	virtual FName GetUniqueSaveID_Implementation() override { return UniqueSaveID; };
 	
