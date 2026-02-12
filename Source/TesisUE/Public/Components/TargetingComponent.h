@@ -22,7 +22,7 @@ public:
     void HandleTargetDeath(AEntity* DeadEntity);
     
     UFUNCTION(BlueprintCallable, Category = "Targeting")
-    void EnableLock();
+    void EnableLock(float LockRange);
 
     UFUNCTION(BlueprintCallable, Category = "Targeting")
     void DisableLock();
@@ -47,6 +47,9 @@ public:
     
     UFUNCTION(BlueprintCallable, Category = "Targeting")
     TArray<AActor*> GetTargets(const float Radius) const;
+
+    UPROPERTY(BlueprintReadWrite, Category = "Targeting")
+    float TargetingLostRadius = 2000.f;
     
 protected:
     virtual void BeginPlay() override;

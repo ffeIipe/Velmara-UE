@@ -1,15 +1,13 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "Subsystems/SpectralObjectsSubsystem.h"
-
 #include "SpectralMode/Interfaces/Spectral.h"
 
-void USpectralObjectsSubsystem::AddSpectralObject(const TScriptInterface<ISpectral>& SpectralObject)
+
+void USpectralObjectsSubsystem::AddSpectralObject(AActor* Actor)
 {
-	if (SpectralObject)
+	if (Actor->GetClass()->ImplementsInterface(USpectral::StaticClass()))
 	{
-		SpectralObjects.AddUnique(SpectralObject);
+		const TScriptInterface<ISpectral> SpectralInterface = Actor;
+		SpectralObjects.AddUnique(SpectralInterface);
 	}
 }
 
@@ -17,7 +15,7 @@ void USpectralObjectsSubsystem::ActivateSpectralObjects()
 {
 	for (const TScriptInterface SpectralObject : SpectralObjects)
 	{
-		SpectralObject->ActivateVisiblity();
+		SpectralObject->Execute_ActivateVisibility(SpectralObject.GetObject());
 	}
 }
 
@@ -25,7 +23,7 @@ void USpectralObjectsSubsystem::DeactivateSpectralObjects()
 {
 	for (const TScriptInterface SpectralObject : SpectralObjects)
 	{
-		SpectralObject->DeactivateVisibility();
+		SpectralObject->Execute_DeactivateVisibility(SpectralObject.GetObject());
 	}
 }
 

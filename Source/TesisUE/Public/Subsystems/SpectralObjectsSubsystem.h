@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -7,9 +5,7 @@
 #include "SpectralObjectsSubsystem.generated.h"
 
 class ISpectral;
-/**
- * 
- */
+
 UCLASS()
 class TESISUE_API USpectralObjectsSubsystem : public UWorldSubsystem
 {
@@ -17,7 +13,8 @@ class TESISUE_API USpectralObjectsSubsystem : public UWorldSubsystem
 
 
 public:
-	void AddSpectralObject(const TScriptInterface<ISpectral>& SpectralObject);
+	UFUNCTION(BlueprintCallable)
+	void AddSpectralObject(AActor* Actor);
 
 	UFUNCTION(BlueprintCallable)
 	void ActivateSpectralObjects();
