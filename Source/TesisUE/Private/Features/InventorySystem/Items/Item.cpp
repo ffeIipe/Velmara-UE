@@ -39,6 +39,11 @@ void AItem::OnRemovedFromInventory_Implementation()
 	bWasUsed = false;
 }
 
+bool AItem::ShouldConsumeOnUse_Implementation()
+{
+	return false;	
+}
+
 void AItem::EnableVisuals()
 {
 	SetActorHiddenInGame(false);
@@ -68,8 +73,13 @@ void AItem::OnLoadGame_Implementation(const FEntitySaveData& InData)
 
 	if (bWasUsed && GetOwner() == nullptr)
 	{
-		Destroy();
+		OnPostGameLoaded_Implementation();
 	}
+}
+
+void AItem::OnPostGameLoaded_Implementation()
+{
+	Destroy();
 }
 
 void AItem::DisableCollision()

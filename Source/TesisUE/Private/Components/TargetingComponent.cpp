@@ -33,8 +33,25 @@ void UTargetingComponent::BeginPlay()
 void UTargetingComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+    Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
     
-    RotateTowardsTarget(CurrentTarget);
+    if (!CurrentTarget || !OwnerCharacter)
+    {
+        DisableLock();
+        return;
+    }
+
+    const float DistSq = FVector::DistSquared(GetOwner()->GetActorLocation(), CurrentTarget->GetActorLocation());
+    
+    if (DistSq > FMath::Square(TargetingLostRadius))
+    {
+        DisableLock();
+    }
+    else
+    {
+        RotateTowardsTarget(CurrentTarget);
+    }
 }
 
 void UTargetingComponent::HandleTargetDeath(AEntity* DeadEntity)
@@ -47,9 +64,9 @@ void UTargetingComponent::HandleTargetDeath(AEntity* DeadEntity)
     }
 }
 
-void UTargetingComponent::EnableLock()
+void UTargetingComponent::EnableLock(const float LockRange)
 {
-    CombatTargets = GetTargets(1500.f);
+    CombatTargets = GetTargets(LockRange);
     CurrentTarget = SelectNearestTarget(CombatTargets);
 
     if (CurrentTarget)
@@ -78,9 +95,8 @@ void UTargetingComponent::ChangeHardLockTarget()
     while (Attempts < CombatTargets.Num())
     {
         CombatTargetIndex = (CombatTargetIndex + 1) % CombatTargets.Num();
-        AActor* Candidate = CombatTargets[CombatTargetIndex];
 
-        if (Candidate && Candidate != CurrentTarget) // Verificar validez
+        if (AActor* Candidate = CombatTargets[CombatTargetIndex]; Candidate && Candidate != CurrentTarget)
         {
             NewCandidate = Candidate;
             break;
@@ -165,13 +181,8 @@ void UTargetingComponent::RotateTowardsTarget(AActor* Target)
     const FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(StartLocation, TargetLocation);
     const FRotator CurrentControlRotation = OwnerController->GetControlRotation();
     
-    const FRotator NewControlRotation = FMath::RInterpTo(CurrentControlRotation, TargetRotation, GetWorld()->DeltaTimeSeconds, 15.f);
+    const FRotator NewControlRotation = FMath::RInterpTo(CurrentControlRotation, TargetRotation, GetWorld()->GetDeltaSeconds(), 15.f);
     OwnerController->SetControlRotation(NewControlRotation);
-
-    if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, -1.f, FColor::Purple, "Targeting " + FString(Target->GetName()));
-    
-    /*const FRotator NewActorRotation = FRotator(0.f, TargetRotation.Yaw, 0.f);
-    OwnerCharacter->SetActorRotation(NewActorRotation);*/
 }
 
 TArray<AActor*> UTargetingComponent::GetTargets(const float Radius) const

@@ -13,7 +13,7 @@ struct FCombatTargetData
 
 	TArray<TWeakObjectPtr<AActor>> RegisteredEnemies;
 
-	int32 MaxConcurrentAttackers = 2;
+	int32 MaxConcurrentAttackers = 3;
 };
 
 UCLASS()

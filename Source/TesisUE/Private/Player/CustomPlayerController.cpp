@@ -93,8 +93,8 @@ void ACustomPlayerController::SetupInputComponent()
 
         if (InputData->Inputs.CrouchAction)
         {
-            EnhancedInputComponent->BindAction(InputData->Inputs.CrouchAction, ETriggerEvent::Started, this, &ACustomPlayerController::AbilityInputTagPressed, EVelmaraAbilityInputID::Dodge);
-            EnhancedInputComponent->BindAction(InputData->Inputs.CrouchAction, ETriggerEvent::Completed, this, &ACustomPlayerController::AbilityInputTagReleased, EVelmaraAbilityInputID::Dodge);
+            EnhancedInputComponent->BindAction(InputData->Inputs.CrouchAction, ETriggerEvent::Started, this, &ACustomPlayerController::AbilityInputTagPressed, EVelmaraAbilityInputID::Crouch);
+            EnhancedInputComponent->BindAction(InputData->Inputs.CrouchAction, ETriggerEvent::Completed, this, &ACustomPlayerController::AbilityInputTagReleased, EVelmaraAbilityInputID::Crouch);
         }
         
         if (InputData->Inputs.JumpAction)
