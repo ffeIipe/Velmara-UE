@@ -1,6 +1,7 @@
 #include "InteractionSystem/Core/LogicGate.h"
 #include "Serialization/ObjectAndNameAsStringProxyArchive.h"
 #include "DrawDebugHelpers.h"
+#include "InteractionSystem/Interfaces/Interactable.h"
 #include "Kismet/KismetSystemLibrary.h"
 
 ALogicGate::ALogicGate()
@@ -32,6 +33,23 @@ void ALogicGate::Tick(float DeltaTime)
 	}
 }
 
+void ALogicGate::ResetSources()
+{
+	TArray<AActor*> SourcesToReset = ActiveSources.Array();
+
+	ActiveSources.Empty();
+
+	for (AActor* Source : SourcesToReset)
+	{
+		if (Source && Source->Implements<UInteractable>())
+		{
+			IInteractable::Execute_ExecuteInteraction(Source, this);
+		}
+	}
+
+	UpdateLogicState();
+}
+
 void ALogicGate::BeginPlay()
 {
 	Super::BeginPlay();
@@ -49,6 +67,11 @@ void ALogicGate::ReceiveSignal_Implementation(const bool bActive, AActor* Activa
 {
 	if (!Activator) return;
 
+	if (bIsByTimerDeactivation)
+	{
+		GetWorld()->GetTimerManager().SetTimer(DeactivationTimerHandle, this, &ALogicGate::ResetSources, DeactivationTime, false);
+	}
+	
 	if (bActive)
 	{
 		ActiveSources.Add(Activator);
@@ -56,6 +79,7 @@ void ALogicGate::ReceiveSignal_Implementation(const bool bActive, AActor* Activa
 	else
 	{
 		ActiveSources.Remove(Activator);
+		GetWorld()->GetTimerManager().ClearTimer(DeactivationTimerHandle);
 	}
 
 	UpdateLogicState();
@@ -81,7 +105,9 @@ void ALogicGate::OnLoadGame_Implementation(const FEntitySaveData& InData)
 
 void ALogicGate::UpdateLogicState()
 {
-	if (const bool bShouldBeActive = ActiveSources.Num() >= RequiredActivations; bOutputState != bShouldBeActive)
+	const bool bShouldBeActive = ActiveSources.Num() >= RequiredActivations;
+
+	if (bOutputState != bShouldBeActive)
 	{
 		bOutputState = bShouldBeActive;
 		BroadcastToTargets(bOutputState);
@@ -99,6 +125,8 @@ void ALogicGate::BroadcastToTargets(const bool bActive)
 			Execute_ReceiveSignal(Target, bActive, this);
 		}
 	}
-    
+
+	GetWorld()->GetTimerManager().ClearTimer(DeactivationTimerHandle);
+	
 	if (bActive) DrawDebugString(GetWorld(), GetActorLocation(), "GATE OPEN", nullptr, FColor::Green, 2.0f);
 }

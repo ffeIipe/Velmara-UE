@@ -18,7 +18,9 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Debug")
 	bool bDebugConnections = true;
-	
+
+	void ResetSources();
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -28,6 +30,14 @@ protected:
 	UPROPERTY(EditInstanceOnly, Category = "Properties")
 	TArray<AActor*> LinkedTargets;
 
+	UPROPERTY(EditAnywhere, Category = "Properties")
+	bool bIsByTimerDeactivation = true;
+
+	UPROPERTY(EditAnywhere, Category = "Properties", meta = (EditCondition = "bIsByTimerDeactivation", EditConditionHides))
+	float DeactivationTime = 3.0f;
+
+	FTimerHandle DeactivationTimerHandle;
+	
 	UPROPERTY(SaveGame)
 	TSet<AActor*> ActiveSources;
 
