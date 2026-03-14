@@ -60,7 +60,7 @@ void UVelmaraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCal
 			}
 				
 			FGameplayEventData DeathPayload;
-			DeathPayload.EventTag = FGameplayTag::RequestGameplayTag(FName("Death"));
+			DeathPayload.EventTag = FGameplayTag::RequestGameplayTag(FName("Event.Death"));
 			DeathPayload.Instigator = Data.EffectSpec.GetContext().GetInstigator();
 			DeathPayload.Target = GetOwningActor();
 			DeathPayload.InstigatorTags.AddTag(DeathReason);
