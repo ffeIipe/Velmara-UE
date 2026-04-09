@@ -11,10 +11,15 @@ UVelmaraAttributeSet::UVelmaraAttributeSet() { }
 void UVelmaraAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
 {
 	Super::PreAttributeChange(Attribute, NewValue);
+}
+
+void UVelmaraAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue)
+{
+	Super::PostAttributeChange(Attribute, OldValue, NewValue);
 
 	if (Attribute == GetHealthAttribute())
 	{
-		Health = FMath::Clamp(NewValue, 0.0f, GetMaxHealth());
+		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxHealth());
 	}
 
 	if (Attribute == GetMovementSpeedMultiplierAttribute())
@@ -32,12 +37,10 @@ void UVelmaraAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribut
 void UVelmaraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
 {
 	Super::PostGameplayEffectExecute(Data);
-
-	//if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, GetOwningActor()->GetName());
 	
 	if (Data.EvaluatedData.Attribute == GetHealthAttribute())
 	{
-		if (GetHealth() <= 0.0f)
+		if (GetHealth() <= 0.f)
 		{
 			FGameplayTagContainer DeathTagContainer;
 			Data.EffectSpec.GetAllAssetTags(DeathTagContainer);
@@ -52,7 +55,7 @@ void UVelmaraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCal
 					break;
 				}
                     
-				if (Tag.MatchesTag(FGameplayTag::RequestGameplayTag(FName("Damage"))) && 
+				if (Tag.MatchesTag(FGameplayTag::RequestGameplayTag(FName("Damage"))) &&
 					DeathReason == FGameplayTag::RequestGameplayTag(FName("Death.Default")))
 				{
 					DeathReason = Tag;
@@ -70,15 +73,9 @@ void UVelmaraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCal
 			DeathPayload.EventTag,
 			DeathPayload
 			);
-
-			//if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, "Death Entity...");
-			
-			if (OnZeroHealth.IsBound()) OnZeroHealth.Broadcast();
 		}
 		else
 		{
-			//if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Red, "Damage received...");
-			
 			FGameplayEventData DamagePayload;
 			DamagePayload.EventTag = FGameplayTag::RequestGameplayTag(FName("Event.Hit"));
 			DamagePayload.Instigator = Data.EffectSpec.GetContext().GetInstigator();

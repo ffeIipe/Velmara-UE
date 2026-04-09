@@ -48,9 +48,9 @@ void AEntity::BeginPlay()
 	if (AbilitySystemComponent)
 	{
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
-		InitializeAttributeSet();
 
 		GiveDefaultAbilities();
+		InitializeAttributeSet();
 	}
 
 	bUseControllerRotationPitch = false;
@@ -60,11 +60,6 @@ void AEntity::BeginPlay()
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	
 	GetSpringArmComponent()->bUsePawnControlRotation = true;
-
-	if (AttributeSet)
-	{
-		AttributeSet->OnZeroHealth.AddDynamic(this, &AEntity::PerformDeath);
-	}
 
 	if (GetMesh())
 	{
@@ -313,11 +308,14 @@ void AEntity::InitializeAttributeSet()
 
 		const FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(DefaultAttributeEffect, 1.f, ContextHandle);
 
+		if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Default Attributes Set");
+		
 		if (SpecHandle.IsValid())
 		{
 			AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), AbilitySystemComponent);
 		}
 	}
+	
 }
 
 void AEntity::GiveDefaultAbilities()
@@ -376,70 +374,6 @@ bool AEntity::IsStunned() const
 
 	return bIsStunned;
 }
-
-void AEntity::Landed(const FHitResult& Hit)
-{
-	Super::Landed(Hit);
-	
-	//if (!IsAlive())
-	//{
-	//	GetCharacterMovement()->DisableMovement();
-	//	GetCharacterMovement()->StopMovementImmediately();
-	//	GetCharacterMovement()->SetMovementMode(MOVE_None);
-	//
-	//	//PerformDeath(); TODO: Fix by sending a payload with the Instigator Tag of 'Death.Fall'
-	//}
-}
-
-void AEntity::PerformDeath()
-{
-	//if (GetAbilitySystemComponent()->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Dead")))) return;
-	
-	//GetAbilitySystemComponent()->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Dead")));
-	
-	//if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Purple, GetName() + " performing death...");
-
-	//StopAnimMontage(GetCurrentMontage());
-
-	if (IsInAir())
-	{
-		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
-		LaunchCharacter(FVector(0.f, 0.f, -300.f), true, true);
-	}
-
-	if (OnDead.IsBound()) OnDead.Broadcast(this);
-}
-
-/*bool AEntity::GetHitSectionForTag(const FGameplayTag IncomingTag, FHitReactDefinition& OutDefinition) const
-{
-	if (!EntityData) return false;
-
-	for (const FHitReactDefinition& Def : EntityData->HitReactsDefinitions)
-	{
-		if (IncomingTag.MatchesTag(Def.DamageTag))
-		{
-			OutDefinition = Def;
-			return true;
-		}
-	}
-
-	return false;
-}
-
-FName AEntity::GetDeathSectionForTag(const FGameplayTag IncomingTag) const
-{
-	if (!EntityData) return FName("Default");
-	
-	for (const FDeathAnimDefinition& Def : EntityData->DeathDefinitions)
-	{
-		if (IncomingTag.MatchesTag(Def.DeathTag))
-		{
-			return Def.DeathAnimSection;
-		}
-	}
-
-	return FName("Default");
-}*/
 
 void AEntity::OnBodyPartOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -539,7 +473,7 @@ void AEntity::HitFlash(const float Duration, const float Amount)
 		if (DissolveMaterial)
 		{
 			DissolveMaterial->SetScalarParameterValue(FName("HitFlashAmount"), Amount);
-			GetWorldTimerManager().SetTimer(HitFlashTimerHandle, this,&AEntity::DeactivateHitFlash, Duration, false);
+			GetWorldTimerManager().SetTimer(HitFlashTimerHandle, this, &AEntity::DeactivateHitFlash, Duration, false);
 		}
 	}
 }

@@ -92,9 +92,6 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnEntityDead OnDead;
 
-	/*UPROPERTY(BlueprintAssignable)
-	FOnEntityDamaged OnDamaged;*/
-
 	UFUNCTION(BlueprintCallable, Category = "Entity Flag")
 	bool IsAlive() const;
 
@@ -106,9 +103,6 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Entity Flag")
 	bool IsStunned() const;
-
-	//TODO: Check
-	virtual void Landed(const FHitResult& Hit) override;
 
 	UFUNCTION(BlueprintCallable, Category = "Entity Flag")
 	bool IsBlocking() const;
@@ -124,9 +118,6 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Entity Flag")
 	bool IsInAir();
-
-	UFUNCTION(BlueprintCallable)
-	virtual void PerformDeath();
 
 	UFUNCTION()
 	void OnBodyPartOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);

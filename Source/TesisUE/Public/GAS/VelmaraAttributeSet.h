@@ -13,7 +13,6 @@
 	GAMEPLAYATTRIBUTE_VALUE_INITTER(PropertyName) \
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAttributeChanged, float, NewValue);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnZeroHealth);
 
 UCLASS()
 class TESISUE_API UVelmaraAttributeSet : public UAttributeSet
@@ -24,6 +23,8 @@ public:
 	UVelmaraAttributeSet();
 
 	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
+
+	virtual void PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue) override;
 
 	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
 	
@@ -57,9 +58,6 @@ public:
 	FGameplayAttributeData MovementSpeedMultiplier;
 	ATTRIBUTE_ACCESSORS(UVelmaraAttributeSet, MovementSpeedMultiplier);
 
-	UPROPERTY(BlueprintAssignable)
-	FOnZeroHealth OnZeroHealth;
-	
 protected:
 	UFUNCTION()
 	virtual void OnRep_Health(const FGameplayAttributeData& OldHealth);
