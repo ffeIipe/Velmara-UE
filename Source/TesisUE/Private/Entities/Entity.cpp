@@ -176,6 +176,16 @@ void AEntity::OnLoadGame_Implementation(const FEntitySaveData& InData)
 	}
 }
 
+void AEntity::ReceiveDamage_Implementation(FGameplayEventData DamagePayload)
+{
+	IDamageable::ReceiveDamage_Implementation(DamagePayload);
+}
+
+void AEntity::MortalDamage_Implementation(FGameplayEventData DeathPayload)
+{
+	IDamageable::MortalDamage_Implementation(DeathPayload);
+}
+
 TScriptInterface<IPickable> AEntity::GetCurrentItem() const
 {
 	return GetInventoryComponent()->GetCurrentWeapon();

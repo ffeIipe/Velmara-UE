@@ -15,13 +15,13 @@ struct FUIItemProperties
 	GENERATED_BODY()
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Properties")
-	FText ItemDisplayName;
+	FText ItemDisplayName = FText();
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (MultiLine = true))
-	FText ItemDescription;
+	FText ItemDescription = FText();
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Properties")
-	UTexture2D* ItemIcon;
+	UTexture2D* ItemIcon = nullptr;
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnItemUsed, ACharacter*, UserCharacter);

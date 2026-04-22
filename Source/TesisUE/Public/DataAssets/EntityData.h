@@ -87,13 +87,13 @@ struct FCharacterModeConfig
     GENERATED_BODY()
 
     UPROPERTY(EditDefaultsOnly)
-    int32 TeamID;
+    int32 TeamID = 0;
 
     UPROPERTY(EditDefaultsOnly)
-    bool bShowWeapon;
+    bool bShowWeapon = false;
     
     UPROPERTY(EditDefaultsOnly)
-    bool bUseControllerRotationYaw;
+    bool bUseControllerRotationYaw = false;
 };
 
 USTRUCT(BlueprintType)

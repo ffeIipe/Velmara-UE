@@ -54,9 +54,9 @@ public:
 	FGameplayAttributeData MaxEnergy;
 	ATTRIBUTE_ACCESSORS(UVelmaraAttributeSet, MaxEnergy);
 
-	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing=OnRep_MovementSpeedMultiplier)
-	FGameplayAttributeData MovementSpeedMultiplier;
-	ATTRIBUTE_ACCESSORS(UVelmaraAttributeSet, MovementSpeedMultiplier);
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing=OnRep_MovementSpeed)
+	FGameplayAttributeData MovementSpeed;
+	ATTRIBUTE_ACCESSORS(UVelmaraAttributeSet, MovementSpeed);
 
 protected:
 	UFUNCTION()
@@ -78,5 +78,5 @@ protected:
 	virtual void OnRep_MaxEnergy(const FGameplayAttributeData& OldMaxEnergy);
 
 	UFUNCTION()
-	virtual void OnRep_MovementSpeedMultiplier(const FGameplayAttributeData& OldMovementSpeed);
+	virtual void OnRep_MovementSpeed(const FGameplayAttributeData& OldMovementSpeed);
 };

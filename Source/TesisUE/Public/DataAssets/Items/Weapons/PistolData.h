@@ -21,16 +21,16 @@ struct FPistolEffects
     GENERATED_BODY()
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VFX")
-    UNiagaraSystem* MuzzleFlash;
+    UNiagaraSystem* MuzzleFlash = nullptr;
     
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VFX")
-    UNiagaraSystem* SparksEffect;
+    UNiagaraSystem* SparksEffect = nullptr;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SFX")
-    USoundBase* ShootSound;
+    USoundBase* ShootSound = nullptr;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SFX")
-    USoundBase* OutOfBlood;
+    USoundBase* OutOfBlood = nullptr;
 };
 
 USTRUCT(BlueprintType)
@@ -39,13 +39,13 @@ struct FPistolMontages
     GENERATED_BODY()
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Montages")
-    UAnimMontage* PrimaryFireMontage;
+    UAnimMontage* PrimaryFireMontage = nullptr;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Montages")
-    UAnimMontage* SecondaryFireMontage;
+    UAnimMontage* SecondaryFireMontage = nullptr;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Montages")
-    UAnimMontage* ReloadMontage;
+    UAnimMontage* ReloadMontage = nullptr;
 };
 
 USTRUCT(BlueprintType)
@@ -54,16 +54,16 @@ struct FPistolProperties
     GENERATED_BODY()
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
-    float BaseDamage;
+    float BaseDamage = 0;
     
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
-    int32 MaxAmmo;
+    int32 MaxAmmo = 0;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
-    float FireEnableTime;
+    float FireEnableTime = 0;
     
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
-    float ReloadTime;
+    float ReloadTime = 0;
     
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
     float EnergyToDecrease = 10.f;
