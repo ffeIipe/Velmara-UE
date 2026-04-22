@@ -7,6 +7,7 @@
 #include "GameplayTagAssetInterface.h"
 #include "GenericTeamAgentInterface.h"
 #include "Features/SaveSystem/Interfaces/SaveInterface.h"
+#include "Interfaces/Damageable.h"
 
 #include "Entity.generated.h"
 
@@ -30,7 +31,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEntityCanBeFinished);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEntityShieldTakeDamage);
 
 UCLASS()
-class TESISUE_API AEntity : public ACharacter, public ISaveInterface, public IGameplayTagAssetInterface, public IAbilitySystemInterface
+class TESISUE_API AEntity : public ACharacter, public ISaveInterface, public IGameplayTagAssetInterface,
+                            public IAbilitySystemInterface, public IDamageable
 {
 	GENERATED_BODY()
 
@@ -52,6 +54,10 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "SaveGame")
 	virtual void OnLoadGame_Implementation(const FEntitySaveData& InData) override;
+	
+	virtual void ReceiveDamage_Implementation(FGameplayEventData DamagePayload) override;
+
+	virtual void MortalDamage_Implementation(FGameplayEventData DeathPayload) override;
 	
 	UFUNCTION(BlueprintPure, Category = "Components")
 	FORCEINLINE UInventoryComponent* GetInventoryComponent() const { return InventoryComponent; }

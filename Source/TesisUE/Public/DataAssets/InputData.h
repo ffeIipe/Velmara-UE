@@ -12,43 +12,43 @@ struct FInputs
 	GENERATED_BODY()
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input | Movement")
-	UInputAction* MoveAction;
+	UInputAction* MoveAction = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input | Movement")
-	UInputAction* LookAction;
+	UInputAction* LookAction = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input | Movement")
-	UInputAction* CrouchAction;
+	UInputAction* CrouchAction = nullptr;	
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input | Movement")
-	UInputAction* JumpAction;
+	UInputAction* JumpAction = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input | Movement")
-	UInputAction* DodgeAction;
+	UInputAction* DodgeAction = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input | Actions")
-	UInputAction* InteractAction;
+	UInputAction* InteractAction = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input | Actions")
-	UInputAction* InventoryAction;
+	UInputAction* InventoryAction = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input | Actions")
-	UInputAction* ToggleWeaponAction;
+	UInputAction* ToggleWeaponAction = nullptr;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Input | Actions")
-	UInputAction* AttackAction;
+	UInputAction* AttackAction = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input | Actions")
-	UInputAction* InputAction_Skill1;
+	UInputAction* InputAction_Skill1 = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input | Actions")
-	UInputAction* InputAction_Skill2;
+	UInputAction* InputAction_Skill2 = nullptr;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Input | Actions")
-	UInputAction* InputAction_Skill3;
+	UInputAction* InputAction_Skill3 = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input | Actions")
-	UInputAction* InputAction_Skill4;
+	UInputAction* InputAction_Skill4 = nullptr;
 };
 
 UCLASS()

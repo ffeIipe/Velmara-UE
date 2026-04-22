@@ -5,6 +5,7 @@
 #include "GameplayEffectExtension.h"
 #include "Entities/Entity.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Interfaces/Damageable.h"
 
 UVelmaraAttributeSet::UVelmaraAttributeSet() { }
 
@@ -22,7 +23,7 @@ void UVelmaraAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribu
 		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxHealth());
 	}
 
-	if (Attribute == GetMovementSpeedMultiplierAttribute())
+	if (Attribute == GetMovementSpeedAttribute())
 	{
 		if (const ACharacter* TargetCharacter = Cast<ACharacter>(GetOwningActor()))
 		{
@@ -68,11 +69,13 @@ void UVelmaraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCal
 			DeathPayload.Target = GetOwningActor();
 			DeathPayload.InstigatorTags.AddTag(DeathReason);
 		
-			UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
-			GetOwningActor(),
-			DeathPayload.EventTag,
-			DeathPayload
-			);
+			if (GetOwningActor() != nullptr)
+			{
+				if (const TScriptInterface<IDamageable> Damageable = GetOwningActor())
+				{
+					Damageable->Execute_MortalDamage(GetOwningActor(), DeathPayload);
+				}
+			}
 		}
 		else
 		{
@@ -89,11 +92,13 @@ void UVelmaraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCal
 				DamagePayload.TargetData = UAbilitySystemBlueprintLibrary::AbilityTargetDataFromHitResult(*HitResult);
 			}
 
-			UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
-				GetOwningActor(), 
-				DamagePayload.EventTag, 
-				DamagePayload
-			);
+			if (GetOwningActor() != nullptr)
+			{
+				if (const TScriptInterface<IDamageable> Damageable = GetOwningActor())
+				{
+					Damageable->Execute_ReceiveDamage(GetOwningActor(),DamagePayload);
+				}
+			}
 		}
 	}
 }
@@ -108,7 +113,7 @@ void UVelmaraAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 	DOREPLIFETIME_CONDITION_NOTIFY(UVelmaraAttributeSet, MaxShield, COND_None, REPNOTIFY_Always)
 	DOREPLIFETIME_CONDITION_NOTIFY(UVelmaraAttributeSet, Energy, COND_None, REPNOTIFY_Always)
 	DOREPLIFETIME_CONDITION_NOTIFY(UVelmaraAttributeSet, MaxEnergy, COND_None, REPNOTIFY_Always)
-	DOREPLIFETIME_CONDITION_NOTIFY(UVelmaraAttributeSet, MovementSpeedMultiplier, COND_None, REPNOTIFY_Always)
+	DOREPLIFETIME_CONDITION_NOTIFY(UVelmaraAttributeSet, MovementSpeed, COND_None, REPNOTIFY_Always)
 }
 
 void UVelmaraAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth)
@@ -141,9 +146,9 @@ void UVelmaraAttributeSet::OnRep_MaxEnergy(const FGameplayAttributeData& OldMaxE
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UVelmaraAttributeSet, MaxEnergy, OldMaxEnergy)
 }
 
-void UVelmaraAttributeSet::OnRep_MovementSpeedMultiplier(const FGameplayAttributeData& OldMovementSpeed)
+void UVelmaraAttributeSet::OnRep_MovementSpeed(const FGameplayAttributeData& OldMovementSpeed)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UVelmaraAttributeSet, MovementSpeedMultiplier, OldMovementSpeed)
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UVelmaraAttributeSet, MovementSpeed, OldMovementSpeed)
 }
 
 
