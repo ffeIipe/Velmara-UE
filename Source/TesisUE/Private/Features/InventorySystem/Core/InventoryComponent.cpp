@@ -120,6 +120,8 @@ void UInventoryComponent::DropWeaponFromSlot(const int32 SlotIndex)
 
 void UInventoryComponent::UnequipCurrentWeapon()
 {
+    if (!CurrentItem) return;
+
     if (CurrentItem)
     {
         CurrentItem->Execute_OnRemovedFromInventory(CurrentItem.GetObject());

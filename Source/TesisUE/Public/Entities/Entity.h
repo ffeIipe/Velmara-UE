@@ -95,7 +95,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Combat | Weapon")
 	virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
 
-	UPROPERTY(BlueprintAssignable)
+	UPROPERTY(BlueprintAssignable, BlueprintCallable)
 	FOnEntityDead OnDead;
 
 	UFUNCTION(BlueprintCallable, Category = "Entity Flag")

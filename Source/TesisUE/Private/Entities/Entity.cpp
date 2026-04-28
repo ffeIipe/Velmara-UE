@@ -174,6 +174,8 @@ void AEntity::OnLoadGame_Implementation(const FEntitySaveData& InData)
 		InventoryComponent->Serialize(Ar); 
 		InventoryComponent->LoadInventory();
 	}
+
+	StopAnimMontage();
 }
 
 void AEntity::ReceiveDamage_Implementation(FGameplayEventData DamagePayload)
