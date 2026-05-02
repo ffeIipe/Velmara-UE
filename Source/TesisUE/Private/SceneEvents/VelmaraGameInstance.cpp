@@ -320,7 +320,7 @@ void UVelmaraGameInstance::HideLoadingScreen()
 
 void UVelmaraGameInstance::PlayGameplayEffect_Implementation(FGameplayTag EffectTag, const FVector Location)
 {
-    IEffectManagerProvider::PlayGameplayEffect_Implementation(EffectTag, Location);
+    //UVelmaraGameInstance::PlayGameplayEffect_Implementation(EffectTag, Location);
 
     UEffectsManager* EffectsSys = nullptr;
 

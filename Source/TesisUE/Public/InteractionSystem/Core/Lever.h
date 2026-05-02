@@ -21,7 +21,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UStaticMeshComponent* MeshComp;
 
-	UPROPERTY(EditInstanceOnly, Category = "Properties")
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Properties")
 	TArray<AActor*> LinkedTargets;
 
 	UPROPERTY(EditAnywhere, SaveGame, Category = "Properties")

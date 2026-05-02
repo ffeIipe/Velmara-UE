@@ -6,17 +6,20 @@
 #include "Features/GlobalEffectsSystem/Data/Types.h"
 #include "Subsystems/WorldSubsystem.h"
 #include "Tickable.h"
+#include "Features/GlobalEffectsSystem/Interfaces/EffectManagerProvider.h"
 #include "EffectsManager.generated.h"
 
 class UCameraShakeBase;
 class UCameraComponent;
 
 UCLASS()
-class TESISUE_API UEffectsManager : public UWorldSubsystem, public FTickableGameObject
+class TESISUE_API UEffectsManager : public UWorldSubsystem, public FTickableGameObject, public IEffectManagerProvider
 {
 	GENERATED_BODY()
 
 public:
+	virtual void PlayGameplayEffect_Implementation(FGameplayTag EffectTag, FVector Location) override;
+	
 	UFUNCTION(BlueprintCallable)
 	void CameraShake(FGameplayTag EffectTag, const FVector& Epicenter) const;
 

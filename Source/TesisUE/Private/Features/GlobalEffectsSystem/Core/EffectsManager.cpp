@@ -3,6 +3,7 @@
 #include "EngineUtils.h"
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
+#include "Features/GlobalEffectsSystem/Core/EffectsTags.h"
 #include "Features/GlobalEffectsSystem/Data/EffectsManagerData.h"
 #include "Features/GlobalEffectsSystem/Settings/EffectsManagerSettings.h"
 #include "Kismet/GameplayStatics.h"
@@ -99,6 +100,41 @@ TStatId UEffectsManager::GetStatId() const
 bool UEffectsManager::IsTickable() const
 {
 	return GetWorld() != nullptr && !GetWorld()->IsPaused() && bHasActiveTickableEffects;
+}
+
+void UEffectsManager::PlayGameplayEffect_Implementation(FGameplayTag EffectTag, FVector Location)
+{
+	IEffectManagerProvider::PlayGameplayEffect_Implementation(EffectTag, Location);
+
+	UEffectsManager* EffectsSys = nullptr;
+	
+	if (const UWorld* World = GetWorld())
+	{
+		EffectsSys = World->GetSubsystem<UEffectsManager>();
+	}
+    
+	if (!EffectsSys) return;
+    
+	if (EffectTag.MatchesTag(EffectsTags::CameraShake)) 
+	{
+		EffectsSys->CameraShake(EffectTag, Location);
+	}
+	else if (EffectTag.MatchesTag(EffectsTags::CameraZoom))
+	{
+		EffectsSys->CameraZoom(EffectTag);
+	}
+	else if (EffectTag.MatchesTag(EffectsTags::TimeWarp))
+	{
+		EffectsSys->TimeWarp(EffectTag);
+	}
+	else if (EffectTag.MatchesTag(EffectsTags::HitStop))
+	{
+		EffectsSys->HitStop(EffectTag);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PlayGameplayEffect: Not a recognizable or categorized Tag %s"), *EffectTag.ToString());
+	}
 }
 
 void UEffectsManager::CameraShake(const FGameplayTag EffectTag, const FVector& Epicenter) const

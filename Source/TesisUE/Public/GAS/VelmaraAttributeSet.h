@@ -58,6 +58,10 @@ public:
 	FGameplayAttributeData MovementSpeed;
 	ATTRIBUTE_ACCESSORS(UVelmaraAttributeSet, MovementSpeed);
 
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
+	FGameplayAttributeData DamageIncoming;
+	ATTRIBUTE_ACCESSORS(UVelmaraAttributeSet, DamageIncoming);
+
 protected:
 	UFUNCTION()
 	virtual void OnRep_Health(const FGameplayAttributeData& OldHealth);

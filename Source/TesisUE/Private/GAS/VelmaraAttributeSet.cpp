@@ -37,70 +37,75 @@ void UVelmaraAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribu
 
 void UVelmaraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
 {
-	Super::PostGameplayEffectExecute(Data);
-	
-	if (Data.EvaluatedData.Attribute == GetHealthAttribute())
-	{
-		if (GetHealth() <= 0.f)
-		{
-			FGameplayTagContainer DeathTagContainer;
-			Data.EffectSpec.GetAllAssetTags(DeathTagContainer);
+    Super::PostGameplayEffectExecute(Data);
+    
+    if (Data.EvaluatedData.Attribute == GetDamageIncomingAttribute())
+    {
+        const float LocalDamageDone = GetDamageIncoming();
+        
+        SetDamageIncoming(0.0f);
 
-			FGameplayTag DeathReason = FGameplayTag::RequestGameplayTag(FName("Death.Default"));
+        if (LocalDamageDone > 0.0f)
+        {
+            const float CurrentShield = GetShield();
+            const float DamageToShield = FMath::Min(CurrentShield, LocalDamageDone);
 
-			for (const FGameplayTag& Tag : DeathTagContainer)
-			{
-				if (Tag.MatchesTag(FGameplayTag::RequestGameplayTag(FName("Death"))))
-				{
-					DeathReason = Tag;
-					break;
-				}
-                    
-				if (Tag.MatchesTag(FGameplayTag::RequestGameplayTag(FName("Damage"))) &&
-					DeathReason == FGameplayTag::RequestGameplayTag(FName("Death.Default")))
-				{
-					DeathReason = Tag;
-				}
-			}
-				
-			FGameplayEventData DeathPayload;
-			DeathPayload.EventTag = FGameplayTag::RequestGameplayTag(FName("Event.Death"));
-			DeathPayload.Instigator = Data.EffectSpec.GetContext().GetInstigator();
-			DeathPayload.Target = GetOwningActor();
-			DeathPayload.InstigatorTags.AddTag(DeathReason);
-		
-			if (GetOwningActor() != nullptr)
-			{
-				if (const TScriptInterface<IDamageable> Damageable = GetOwningActor())
-				{
-					Damageable->Execute_MortalDamage(GetOwningActor(), DeathPayload);
-				}
-			}
-		}
-		else
-		{
-			FGameplayEventData DamagePayload;
-			DamagePayload.EventTag = FGameplayTag::RequestGameplayTag(FName("Event.Hit"));
-			DamagePayload.Instigator = Data.EffectSpec.GetContext().GetInstigator();
-			DamagePayload.EventMagnitude = -Data.EvaluatedData.Magnitude;
-			DamagePayload.Target = GetOwningActor();
+            if (DamageToShield > 0.0f)
+            {
+                SetShield(CurrentShield - DamageToShield);
+            }
 
-			Data.EffectSpec.GetAllAssetTags(DamagePayload.InstigatorTags);
-			
-			if (const FHitResult* HitResult = Data.EffectSpec.GetContext().GetHitResult())
-			{
-				DamagePayload.TargetData = UAbilitySystemBlueprintLibrary::AbilityTargetDataFromHitResult(*HitResult);
-			}
+            const float DamageToHealth = LocalDamageDone - DamageToShield;
+            if (DamageToHealth > 0.0f)
+            {
+                const float CurrentHealth = GetHealth();
+                SetHealth(FMath::Clamp(CurrentHealth - DamageToHealth, 0.0f, GetMaxHealth()));
+            }
 
-			if (GetOwningActor() != nullptr)
-			{
-				if (const TScriptInterface<IDamageable> Damageable = GetOwningActor())
-				{
-					Damageable->Execute_ReceiveDamage(GetOwningActor(),DamagePayload);
-				}
-			}
-		}
-	}
+            if (GetHealth() <= 0.0f)
+            {
+                FGameplayTagContainer DeathTagContainer;
+                Data.EffectSpec.GetAllAssetTags(DeathTagContainer);
+
+                FGameplayTag DeathReason = FGameplayTag::RequestGameplayTag(FName("Death.Default"));
+
+                FGameplayEventData DeathPayload;
+                DeathPayload.EventTag = FGameplayTag::RequestGameplayTag(FName("Event.Death"));
+                DeathPayload.Instigator = Data.EffectSpec.GetContext().GetInstigator();
+                DeathPayload.Target = GetOwningActor();
+                DeathPayload.InstigatorTags.AddTag(DeathReason);
+           
+                if (const TScriptInterface<IDamageable> Damageable = GetOwningActor())
+                {
+                    Damageable->Execute_MortalDamage(GetOwningActor(), DeathPayload);
+                }
+            }
+            else
+            {
+                FGameplayEventData DamagePayload;
+                DamagePayload.EventTag = FGameplayTag::RequestGameplayTag(FName("Event.Hit"));
+                DamagePayload.Instigator = Data.EffectSpec.GetContext().GetInstigator();
+                DamagePayload.EventMagnitude = LocalDamageDone; 
+                DamagePayload.Target = GetOwningActor();
+
+                Data.EffectSpec.GetAllAssetTags(DamagePayload.InstigatorTags);
+              
+                if (const FHitResult* HitResult = Data.EffectSpec.GetContext().GetHitResult())
+                {
+                    DamagePayload.TargetData = UAbilitySystemBlueprintLibrary::AbilityTargetDataFromHitResult(*HitResult);
+                }
+
+                if (const TScriptInterface<IDamageable> Damageable = GetOwningActor())
+                {
+                    Damageable->Execute_ReceiveDamage(GetOwningActor(), DamagePayload);
+                }
+            }
+        }
+    }
+    else if (Data.EvaluatedData.Attribute == GetHealthAttribute())
+    {
+        SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth()));
+    }
 }
 
 void UVelmaraAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -150,7 +155,3 @@ void UVelmaraAttributeSet::OnRep_MovementSpeed(const FGameplayAttributeData& Old
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UVelmaraAttributeSet, MovementSpeed, OldMovementSpeed)
 }
-
-
-
-
