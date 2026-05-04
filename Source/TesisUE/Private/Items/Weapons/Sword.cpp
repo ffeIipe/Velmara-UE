@@ -85,11 +85,6 @@ void ASword::Equip()
 			}
 		}
 	}
-
-	if (OnWeaponEquipped.IsBound())
-	{
-		OnWeaponEquipped.Broadcast(this);
-	}
 }
 
 void ASword::Holster()
@@ -125,11 +120,6 @@ void ASword::Holster()
 		{
 			CharacterOwner->GetMesh()->GetAnimInstance()->UnlinkAnimClassLayers(SwordData->AnimLayer);
 		}
-	}
-
-	if (OnWeaponHolstered.IsBound())
-	{
-		OnWeaponHolstered.Broadcast(this);
 	}
 }
 
@@ -215,6 +205,8 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 				}
 			}
 		}
+
+		OnActorsWeaponHit(HitResults);
 	}
 }
 

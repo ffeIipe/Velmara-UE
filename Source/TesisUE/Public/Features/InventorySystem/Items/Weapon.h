@@ -14,9 +14,6 @@ class TESISUE_API AWeapon : public AItem, public IWeaponInterface
 {
 	GENERATED_BODY()
 
-    DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWeaponEquippeddSignature, AWeapon*, WeaponEquipped);
-    DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWeaponHolsteredSignature, AWeapon*, WeaponHolstered);
-	
 public:
 	virtual void OnEnteredInventory_Implementation(AActor* NewOwner) override;
 
@@ -36,11 +33,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GAS")
 	void SetDamageEffectSpec(const FGameplayEffectSpecHandle& InSpecHandle);
 
-	UPROPERTY(BlueprintAssignable)
-	FOnWeaponHolsteredSignature OnWeaponEquipped;
 	
-	UPROPERTY(BlueprintAssignable)
-	FOnWeaponHolsteredSignature OnWeaponHolstered;
 	
 protected:
 	UPROPERTY()
@@ -56,4 +49,13 @@ protected:
 
 	UFUNCTION(BlueprintCallable)
 	virtual void AttachMeshToSocket(USceneComponent* InParent, FName SocketInName = NAME_None) {}
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnWeaponEquipped();
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnWeaponHolstered();
+	
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnActorsWeaponHit(const TArray<FHitResult>& HitResults);
 };

@@ -1,20 +1,27 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Abilities/Tasks/AbilityTask.h"
+#include "UObject/ObjectMacros.h"
+#include "Curves/CurveFloat.h"
 #include "UAbilityTask_PlayCurve.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FPlayCurveDelegate, float, CurrentValue, float, CurrentTime);
 
 UCLASS()
-class TESISUE_API UAbilityTask_PlayCurve : public UAbilityTask
+class UAbilityTask_PlayCurve : public UAbilityTask
 {
 	GENERATED_BODY()
 
 public:
 	UAbilityTask_PlayCurve();
+
+	UFUNCTION(BlueprintCallable, Category="Ability|Tasks", meta = (HidePin = "OwningAbility", DefaultToSelf = "OwningAbility", BlueprintInternalUseOnly = "TRUE"))
+	static UAbilityTask_PlayCurve* PlayCurve(UGameplayAbility* OwningAbility, UCurveFloat* CurveAsset, float DurationMultiplier = 1.0f, float UpdateInterval = 1.0f, bool bReverse = false);
+
+	virtual void Activate() override;
+	virtual void TickTask(float DeltaTime) override;
+	virtual void OnDestroy(bool bInOwnerFinished) override;
 
 	UPROPERTY(BlueprintAssignable)
 	FPlayCurveDelegate OnUpdate;
@@ -22,21 +29,15 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FPlayCurveDelegate OnFinished;
 
-	// Agregamos el parametro bReverse al final, por defecto en false
-	UFUNCTION(BlueprintCallable, Category = "Ability|Tasks", meta = (HidePin = "OwningAbility", DefaultToSelf = "OwningAbility", BlueprintInternalUseOnly = "TRUE"))
-	static UAbilityTask_PlayCurve* PlayCurve(UGameplayAbility* OwningAbility, UCurveFloat* CurveAsset, float DurationMultiplier = 1.0f, bool bReverse = false);
-
 protected:
-	virtual void Activate() override;
-	virtual void TickTask(float DeltaTime) override;
-	virtual void OnDestroy(bool bInOwnerFinished) override;
-
-private:
 	UPROPERTY()
 	UCurveFloat* CurveFloat;
 
-	float CurrentTime;
 	float DurationMultiplier;
+	float UpdateInterval;
+	bool bReverse;
+
 	float MaxTime;
-	bool bReverse; // Nueva variable para guardar el estado
+	float CurrentTime;
+	float TimeSinceLastUpdate;
 };

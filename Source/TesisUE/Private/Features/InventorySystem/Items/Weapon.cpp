@@ -40,6 +40,7 @@ void AWeapon::Equip()
 	if (USkeletalMeshComponent* SkeletalMesh = Cast<ACharacter>(GetOwner())->GetMesh())
 	{
 		AttachMeshToSocket(SkeletalMesh, FName("RightHandSword"));
+		OnWeaponEquipped();
 	}
 }
 
@@ -48,5 +49,6 @@ void AWeapon::Holster()
 	if (USkeletalMeshComponent* SkeletalMesh = Cast<ACharacter>(GetOwner())->GetMesh())
 	{
 		AttachMeshToSocket(SkeletalMesh, FName("RightClavicleSocket"));
+		OnWeaponHolstered();
 	}
 }
