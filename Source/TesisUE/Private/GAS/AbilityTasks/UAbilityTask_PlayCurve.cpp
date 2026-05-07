@@ -43,7 +43,6 @@ void UAbilityTask_PlayCurve::Activate()
        CurrentTime = 0.0f;
     }
 
-    // Forzamos que el primer tick emita el evento OnUpdate inmediatamente
     TimeSinceLastUpdate = UpdateInterval;
 }
 
@@ -64,7 +63,6 @@ void UAbilityTask_PlayCurve::TickTask(float DeltaTime)
           CurrentTime += TimeStep;
        }
 
-       // Acumulamos el tiempo real de este frame
        TimeSinceLastUpdate += DeltaTime;
 
        bool bShouldFinish = false;
@@ -82,11 +80,10 @@ void UAbilityTask_PlayCurve::TickTask(float DeltaTime)
           if (CurrentTime >= MaxTime)
           {
              bShouldFinish = true;
-             CurrentTime = MaxTime; // Clampeamos al final de la curva por seguridad
+             CurrentTime = MaxTime;
           }
        }
 
-       // Condición clave: ¿Pasó el intervalo de tiempo O terminó la curva?
        if (TimeSinceLastUpdate >= UpdateInterval || bShouldFinish)
        {
            float CurrentValue = 0.0f;
@@ -101,13 +98,11 @@ void UAbilityTask_PlayCurve::TickTask(float DeltaTime)
 
            OnUpdate.Broadcast(CurrentValue, CurrentTime);
            
-           // Reseteamos el acumulador conservando el remanente (evita desincronizaciones)
            TimeSinceLastUpdate = FMath::Fmod(TimeSinceLastUpdate, UpdateInterval); 
        }
 
        if (bShouldFinish)
        {
-          // Evaluamos el valor final justo antes de terminar para OnFinished
           float FinalValue = 0.0f;
           if (CurveFloat)
           {
