@@ -163,6 +163,8 @@ void AEntity::OnSaveGame_Implementation(FEntitySaveData& OutData)
 
 void AEntity::OnLoadGame_Implementation(const FEntitySaveData& InData)
 {
+	RestoredSaveID = InData.UniqueSaveID;
+	
 	FMemoryReader MemReader(InData.ByteData);
 	FObjectAndNameAsStringProxyArchive Ar(MemReader, true);
 	Ar.ArIsSaveGame = true;
@@ -176,6 +178,25 @@ void AEntity::OnLoadGame_Implementation(const FEntitySaveData& InData)
 	}
 
 	StopAnimMontage();
+}
+
+FName AEntity::GetUniqueSaveID_Implementation()
+{
+	// 1. EL SALVAVIDAS: Si el diseñador le puso un ID fijo a mano (Ideal para el Player)
+	if (StaticSaveID != NAME_None)
+	{
+		return StaticSaveID;
+	}
+
+	// 2. Si fuimos spawneados dinámicamente por el SaveSystem y tenemos nuestro ID restaurado
+	if (RestoredSaveID != NAME_None)
+	{
+		return RestoredSaveID;
+	}
+	
+	// 3. Comportamiento por defecto (GUID aleatorio del motor)
+	FGuid NativeGuid = GetActorGuid();
+	return FName(*NativeGuid.ToString());
 }
 
 void AEntity::ReceiveDamage_Implementation(FGameplayEventData DamagePayload)

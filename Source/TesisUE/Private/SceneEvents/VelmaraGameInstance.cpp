@@ -353,8 +353,10 @@ void UVelmaraGameInstance::PlayGameplayEffect_Implementation(FGameplayTag Effect
     }
 }
 
-void UVelmaraGameInstance::SaveGame()
+void UVelmaraGameInstance::SaveGame(const int32 SlotIndex)
 {
+    ActiveSaveSlotIndex = FMath::Clamp(SlotIndex, 0, 2); 
+
     if (USaveGameSubsystem* SaveSystem = GetSubsystem<USaveGameSubsystem>())
     {
         FString SlotName = GetSlotNameByIndex(ActiveSaveSlotIndex);

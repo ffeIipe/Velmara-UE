@@ -8,12 +8,15 @@ struct FEntitySaveData
 {
 	GENERATED_BODY()
 
-	UPROPERTY()
+	UPROPERTY(SaveGame)
 	FName UniqueSaveID;
 
-	UPROPERTY()
+	UPROPERTY(SaveGame)
 	FTransform Transform;
 
-	UPROPERTY()
+	UPROPERTY(SaveGame)
+	UClass* ActorClass;
+	
+	UPROPERTY(SaveGame)
 	TArray<uint8> ByteData;
 };

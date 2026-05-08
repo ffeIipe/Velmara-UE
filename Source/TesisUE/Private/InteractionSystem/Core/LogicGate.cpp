@@ -103,6 +103,17 @@ void ALogicGate::OnLoadGame_Implementation(const FEntitySaveData& InData)
 	this->Serialize(Ar); 
 }
 
+FName ALogicGate::GetUniqueSaveID_Implementation()
+{
+	if (RestoredSaveID != NAME_None)
+	{
+		return RestoredSaveID;
+	}
+    
+	FGuid NativeGuid = GetActorGuid();
+	return FName(*NativeGuid.ToString());
+}
+
 void ALogicGate::UpdateLogicState()
 {
 	const bool bShouldBeActive = ActiveSources.Num() >= RequiredActivations;

@@ -27,9 +27,6 @@ protected:
 	UPROPERTY(EditAnywhere, SaveGame, Category = "Properties")
 	bool bIsActive = false;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "SaveGame")
-	FName UniqueSaveID;
-	
 	UPROPERTY(EditAnywhere, Category = "Properties|Debug")
 	bool bDebugConnections = true;
 
@@ -39,8 +36,6 @@ protected:
 	
 public:
 	virtual bool ExecuteInteraction_Implementation(AActor* Interactor) override;
-	
-	virtual FName GetUniqueSaveID_Implementation() override { return UniqueSaveID; }
 
 	virtual void OnSaveGame_Implementation(FEntitySaveData& OutData) override;
 

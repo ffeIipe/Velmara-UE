@@ -103,7 +103,7 @@ public:
     bool DoesProgressSaveExist(int32 SlotIndex) const;
 	
     UFUNCTION(BlueprintCallable, Category = "SaveSystem")
-    void SaveGame();
+    void SaveGame(int32 SlotIndex);
 
     UFUNCTION(BlueprintCallable, Category = "SaveSystem")
     void LoadGame(int32 SlotIndex);

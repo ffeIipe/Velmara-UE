@@ -32,8 +32,6 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "GAS")
 	void SetDamageEffectSpec(const FGameplayEffectSpecHandle& InSpecHandle);
-
-	
 	
 protected:
 	UPROPERTY()

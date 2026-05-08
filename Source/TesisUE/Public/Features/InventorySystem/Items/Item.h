@@ -40,6 +40,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, SaveGame)
 	bool bWasUsed = false;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	FName RestoredSaveID;
+
 	virtual void BeginPlay() override;
 	
 	virtual void OnEnteredInventory_Implementation(AActor* NewOwner) override;
@@ -58,11 +61,8 @@ public:
 
 	virtual void OnPostGameLoaded_Implementation() override;
 
-	virtual FName GetUniqueSaveID_Implementation() override { return UniqueSaveID; };
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FName UniqueSaveID;
-	
+	virtual FName GetUniqueSaveID_Implementation() override;
+
 protected:
 	virtual void DisableCollision();
 

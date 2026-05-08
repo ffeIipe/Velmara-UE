@@ -12,7 +12,7 @@ void USaveGameSubsystem::SaveGame(FString SlotName)
 
     UPlayerProgressSaveGame* SaveObject = Cast<UPlayerProgressSaveGame>(UGameplayStatics::CreateSaveGameObject(UPlayerProgressSaveGame::StaticClass()));
     
-    SaveObject->CurrentLevelName = GetWorld()->GetMapName();
+    SaveObject->CurrentLevelName = UGameplayStatics::GetCurrentLevelName(GetWorld(), true);
     SaveObject->SaveSlotUserLabel = SlotName;
     SaveObject->Timestamp = FDateTime::Now();
 
@@ -20,7 +20,10 @@ void USaveGameSubsystem::SaveGame(FString SlotName)
 
     const bool bSaved = UGameplayStatics::SaveGameToSlot(SaveObject, SlotName, 0);
     
-    if(bSaved) UE_LOG(LogTemp, Log, TEXT("Game saved in slot: %s"), *SlotName);
+    if(bSaved) 
+    {
+        UE_LOG(LogTemp, Log, TEXT("Game saved in slot: %s"), *SlotName);
+    }
     OnGameSaved.Broadcast(bSaved);
 }
 
@@ -30,23 +33,20 @@ void USaveGameSubsystem::LoadGame(const FString SlotName)
 
     CurrentSaveGame = Cast<UPlayerProgressSaveGame>(UGameplayStatics::LoadGameFromSlot(SlotName, 0));
     
-    if (CurrentSaveGame)
-    {
-        const FString LevelName = CurrentSaveGame->CurrentLevelName;
-        FString CurrentMap = GetWorld()->GetMapName();
-        CurrentMap.RemoveFromStart(GetWorld()->StreamingLevelsPrefix); 
+    if (!CurrentSaveGame) return;
 
-        if (CurrentMap.Contains(LevelName) || LevelName.IsEmpty())
-        {
-             LoadLevelActors(CurrentSaveGame);
-        }
-        else
-        {
-            UGameplayStatics::OpenLevel(this, FName(*LevelName));
-        }
+    const FString SavedLevelName = CurrentSaveGame->CurrentLevelName;
+    const FString CurrentLevelName = UGameplayStatics::GetCurrentLevelName(GetWorld(), true);
+
+    if (CurrentLevelName.Equals(SavedLevelName) || SavedLevelName.IsEmpty())
+    {
+        RestoreCurrentLevelState();
+        OnGameLoaded.Broadcast(true);
     }
-    
-    OnGameLoaded.Broadcast(true);
+    else
+    {
+        UGameplayStatics::OpenLevel(this, FName(*SavedLevelName));
+    }
 }
 
 void USaveGameSubsystem::RestoreCurrentLevelState() const
@@ -71,9 +71,11 @@ void USaveGameSubsystem::SaveLevelActors(UPlayerProgressSaveGame* SaveObject) co
         {
             FEntitySaveData ActorData;
             
+            // Le preguntamos al actor su ID. Él sabrá si darnos el restaurado o el nativo.
             ActorData.UniqueSaveID = ISaveInterface::Execute_GetUniqueSaveID(Actor);
             
             ActorData.Transform = Actor->GetActorTransform();
+            ActorData.ActorClass = Actor->GetClass();
 
             ISaveInterface::Execute_OnSaveGame(Actor, ActorData);
 
@@ -84,18 +86,56 @@ void USaveGameSubsystem::SaveLevelActors(UPlayerProgressSaveGame* SaveObject) co
 
 void USaveGameSubsystem::LoadLevelActors(UPlayerProgressSaveGame* SaveObject) const
 {
+    if (!SaveObject)
+    {
+        UE_LOG(LogTemp, Error, TEXT("LoadLevelActors: SaveObject es nulo."));
+        return;
+    }
+
+    TArray<FName> ProcessedIDs;
+
     TArray<AActor*> FoundActors;
     UGameplayStatics::GetAllActorsWithInterface(GetWorld(), USaveInterface::StaticClass(), FoundActors);
 
     for (AActor* Actor : FoundActors)
     {
-        if (FName ActorID = ISaveInterface::Execute_GetUniqueSaveID(Actor); SaveObject->SavedActors.Contains(ActorID))
+        FName ActorID = ISaveInterface::Execute_GetUniqueSaveID(Actor);
+
+        if (SaveObject->SavedActors.Contains(ActorID))
         {
             const FEntitySaveData& Data = SaveObject->SavedActors[ActorID];
             
-            Actor->SetActorTransform(Data.Transform);
-
+            Actor->SetActorTransform(Data.Transform, false, nullptr, ETeleportType::TeleportPhysics);
             ISaveInterface::Execute_OnLoadGame(Actor, Data);
+
+            ProcessedIDs.Add(ActorID); 
+        }
+    }
+
+    for (const auto& Pair : SaveObject->SavedActors)
+    {
+        FName SavedID = Pair.Key;
+
+        if (!ProcessedIDs.Contains(SavedID))
+        {
+            const FEntitySaveData& Data = Pair.Value;
+
+            if (Data.ActorClass)
+            {
+                FActorSpawnParameters SpawnParams;
+                SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+                AActor* NewActor = GetWorld()->SpawnActor<AActor>(Data.ActorClass, Data.Transform, SpawnParams);
+
+                if (NewActor && NewActor->Implements<USaveInterface>())
+                {
+                    ISaveInterface::Execute_OnLoadGame(NewActor, Data);
+                }
+            }
+            else
+            {
+                UE_LOG(LogTemp, Warning, TEXT("LoadLevelActors: Intento de spawnear ID %s pero ActorClass es NULO."), *SavedID.ToString());
+            }
         }
     }
 }

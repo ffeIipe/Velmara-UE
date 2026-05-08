@@ -14,8 +14,7 @@ class TESISUE_API USaveGameSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
-	// --- API Pública ---
-    
+	// --- Public API ---
 	UFUNCTION(BlueprintCallable, Category = "Save System")
 	void SaveGame(FString SlotName);
 
@@ -32,7 +31,6 @@ public:
 	FOnGameLoaded OnGameLoaded;
 
 protected:
-	// Nombre del slot actual cargado
 	UPROPERTY()
 	FString CurrentSlotName;
 
