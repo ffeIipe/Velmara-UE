@@ -24,7 +24,7 @@ protected:
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Properties")
 	TArray<AActor*> LinkedTargets;
 
-	UPROPERTY(EditAnywhere, SaveGame, Category = "Properties")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, SaveGame, Category = "Properties")
 	bool bIsActive = false;
 
 	UPROPERTY(EditAnywhere, Category = "Properties|Debug")
