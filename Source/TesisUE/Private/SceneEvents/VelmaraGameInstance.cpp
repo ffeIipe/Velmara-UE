@@ -18,12 +18,13 @@ UVelmaraGameInstance::UVelmaraGameInstance()
 	CurrentSlotName = TEXT("GameSettings");
 	UserIndex = 0;
 
-    FVelmaraGameplayTags::InitializeGameplayTags(); //initialize basic tags
+    //FVelmaraGameplayTags::InitializeGameplayTags(); //initialize basic tags
 }
 
 void UVelmaraGameInstance::Init()
 {
     Super::Init();
+    FVelmaraGameplayTags::InitializeGameplayTags();
     LoadGameSettings();
 }
 

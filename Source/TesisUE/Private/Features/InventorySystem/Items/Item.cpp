@@ -92,8 +92,8 @@ FName AItem::GetUniqueSaveID_Implementation()
 			return RestoredSaveID;
 		}
 	
-		FGuid NativeGuid = GetActorGuid();
-		return FName(*NativeGuid.ToString());
+		//FGuid NativeGuid = GetActorGuid();
+		return FName(NAME_None);
 }
 
 void AItem::DisableCollision()

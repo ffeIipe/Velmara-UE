@@ -145,6 +145,7 @@ void UEffectsManager::CameraShake(const FGameplayTag EffectTag, const FVector& E
 	{
 		if (FoundConfig->ShakeClass)
 		{
+			if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::White, "CameraShake executed...");
 			UGameplayStatics::PlayWorldCameraShake(this, FoundConfig->ShakeClass, Epicenter, FoundConfig->InnerRadius, FoundConfig->OuterRadius, FoundConfig->Falloff);
 		}
 	}
