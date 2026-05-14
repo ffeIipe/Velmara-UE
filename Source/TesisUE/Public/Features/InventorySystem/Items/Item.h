@@ -61,8 +61,6 @@ public:
 
 	virtual void OnPostGameLoaded_Implementation() override;
 
-	virtual FName GetUniqueSaveID_Implementation() override;
-
 protected:
 	virtual void DisableCollision();
 

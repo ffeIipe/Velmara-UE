@@ -16,15 +16,12 @@ class TESISUE_API ISaveInterface
 	GENERATED_BODY()
 
 public:
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "SaveGameData|SaveInterface")
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "SaveInterface")
 	void OnSaveGame(FEntitySaveData& OutData);
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "SaveGameData|SaveInterface")
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "SaveInterface")
 	void OnLoadGame(const FEntitySaveData& InData);
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "SaveGameData|SaveInterface")
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "SaveInterface")
 	void OnPostGameLoaded();
-	
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "SaveGameData|SaveInterface")
-	FName GetUniqueSaveID();
 };

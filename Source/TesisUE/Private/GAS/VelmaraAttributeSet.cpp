@@ -104,7 +104,27 @@ void UVelmaraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCal
     }
     else if (Data.EvaluatedData.Attribute == GetHealthAttribute())
     {
-        SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth()));
+    	float CurrentMax = GetMaxHealth();
+    	if (CurrentMax > 0.0f)
+    	{
+    		SetHealth(FMath::Clamp(GetHealth(), 0.0f, CurrentMax));
+    	}
+    }
+    else if (Data.EvaluatedData.Attribute == GetShieldAttribute())
+    {
+    	float CurrentMax = GetMaxShield();
+    	if (CurrentMax > 0.0f)
+    	{
+    		SetShield(FMath::Clamp(GetShield(), 0.0f, CurrentMax));
+    	}
+    }
+    else if (Data.EvaluatedData.Attribute == GetEnergyAttribute())
+    {
+    	float CurrentMax = GetMaxEnergy();
+    	if (CurrentMax > 0.0f)
+    	{
+    		SetEnergy(FMath::Clamp(GetEnergy(), 0.0f, CurrentMax));
+    	}
     }
 }
 

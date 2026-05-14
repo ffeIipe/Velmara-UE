@@ -6,6 +6,4 @@ UPlayerProgressSaveGame::UPlayerProgressSaveGame()
     Timestamp = FDateTime(0); 
     SaveSlotIndex = -1;
     SaveSlotUserLabel = TEXT("Nueva Partida");
-
-    /*EquippedSlotIndexInSave = -1;*/
 }

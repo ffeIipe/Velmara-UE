@@ -42,12 +42,6 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
 	TObjectPtr<UEntityData> EntityData;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FName RestoredSaveID;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SaveGame")
-	FName StaticSaveID;
-
 	virtual void GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const override;
 
 	UFUNCTION(BlueprintCallable)
@@ -59,8 +53,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "SaveGame")
 	virtual void OnLoadGame_Implementation(const FEntitySaveData& InData) override;
 
-	virtual FName GetUniqueSaveID_Implementation() override;
-	
 	virtual void ReceiveDamage_Implementation(FGameplayEventData DamagePayload) override;
 
 	virtual void MortalDamage_Implementation(FGameplayEventData DeathPayload) override;

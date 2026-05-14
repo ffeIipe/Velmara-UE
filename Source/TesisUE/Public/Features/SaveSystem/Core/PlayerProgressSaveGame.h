@@ -28,6 +28,6 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SaveGameData|Metadata")
     FString SaveSlotUserLabel;
 
-    UPROPERTY()
-    TMap<FName, FEntitySaveData> SavedActors;
+    UPROPERTY(VisibleAnywhere, Category = "Save Data")
+    TMap<FGuid, FEntitySaveData> SavedActors;
 };

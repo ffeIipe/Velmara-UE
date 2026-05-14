@@ -14,16 +14,24 @@ class TESISUE_API USaveGameSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
-	// --- Public API ---
 	UFUNCTION(BlueprintCallable, Category = "Save System")
-	void SaveGame(FString SlotName);
+	void SaveGame(int32 SlotIndex);
 
 	UFUNCTION(BlueprintCallable, Category = "Save System")
-	void LoadGame(FString SlotName);
+	void LoadGame(int32 SlotIndex);
+
+	UFUNCTION(BlueprintCallable, Category = "Save System")
+	void CreateNewGame(int32 SlotIndex, const FString MapName);
+
+	UFUNCTION(BlueprintPure, Category = "Save System")
+	bool DoesSaveGameExist(int32 SlotIndex) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Save System")
+	bool GetSaveSlotInfo(int32 SlotIndex, FString& OutLevelName, FDateTime& OutTimestamp, FString& OutSlotLabel) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Save System")
 	void RestoreCurrentLevelState() const;
-
+	
 	UPROPERTY(BlueprintAssignable)
 	FOnGameSaved OnGameSaved;
 
@@ -32,12 +40,14 @@ public:
 
 protected:
 	UPROPERTY()
-	FString CurrentSlotName;
+	int32 CurrentSlotIndex = -1;
 
 	UPROPERTY()
 	UPlayerProgressSaveGame* CurrentSaveGame;
 
 private:
+	FString GetSlotNameFromIndex(int32 SlotIndex) const;
+
 	void SaveLevelActors(UPlayerProgressSaveGame* SaveObject) const;
 	void LoadLevelActors(UPlayerProgressSaveGame* SaveObject) const;
 };

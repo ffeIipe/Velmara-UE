@@ -3,37 +3,48 @@
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
 #include "Features/SaveSystem/Interfaces/SaveInterface.h"
+#include "EngineUtils.h"
+#include "Features/SaveSystem/Core/SaveComponent.h"
 #include "GameFramework/Actor.h"
 
-void USaveGameSubsystem::SaveGame(FString SlotName)
+void USaveGameSubsystem::SaveGame(int32 SlotIndex)
 {
-    if (SlotName.IsEmpty()) SlotName = "Slot_01";
-    CurrentSlotName = SlotName;
+    CurrentSlotIndex = SlotIndex;
+    FString TargetSlotName = GetSlotNameFromIndex(SlotIndex);
 
     UPlayerProgressSaveGame* SaveObject = Cast<UPlayerProgressSaveGame>(UGameplayStatics::CreateSaveGameObject(UPlayerProgressSaveGame::StaticClass()));
     
     SaveObject->CurrentLevelName = UGameplayStatics::GetCurrentLevelName(GetWorld(), true);
-    SaveObject->SaveSlotUserLabel = SlotName;
+    SaveObject->SaveSlotUserLabel = TargetSlotName;
     SaveObject->Timestamp = FDateTime::Now();
 
     SaveLevelActors(SaveObject);
 
-    const bool bSaved = UGameplayStatics::SaveGameToSlot(SaveObject, SlotName, 0);
+    const bool bSaved = UGameplayStatics::SaveGameToSlot(SaveObject, TargetSlotName, 0);
     
     if(bSaved) 
     {
-        UE_LOG(LogTemp, Log, TEXT("Game saved in slot: %s"), *SlotName);
+        if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("SUCCESS: Partida GUARDADA en slot: %s"), *TargetSlotName));
+        //OnSaveDataUpdated.Broadcast();
     }
     OnGameSaved.Broadcast(bSaved);
 }
 
-void USaveGameSubsystem::LoadGame(const FString SlotName)
+void USaveGameSubsystem::LoadGame(int32 SlotIndex)
 {
-    if (!UGameplayStatics::DoesSaveGameExist(SlotName, 0)) return;
+    FString TargetSlotName = GetSlotNameFromIndex(SlotIndex);
 
-    CurrentSaveGame = Cast<UPlayerProgressSaveGame>(UGameplayStatics::LoadGameFromSlot(SlotName, 0));
+    if (!UGameplayStatics::DoesSaveGameExist(TargetSlotName, 0))
+    {
+        if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 8.f, FColor::Red, FString::Printf(TEXT("LOAD ABORTED: No existe %s.sav"), *TargetSlotName));
+        return;
+    }
+
+    CurrentSaveGame = Cast<UPlayerProgressSaveGame>(UGameplayStatics::LoadGameFromSlot(TargetSlotName, 0));
     
     if (!CurrentSaveGame) return;
+
+    CurrentSlotIndex = SlotIndex;
 
     const FString SavedLevelName = CurrentSaveGame->CurrentLevelName;
     const FString CurrentLevelName = UGameplayStatics::GetCurrentLevelName(GetWorld(), true);
@@ -49,6 +60,60 @@ void USaveGameSubsystem::LoadGame(const FString SlotName)
     }
 }
 
+void USaveGameSubsystem::CreateNewGame(int32 SlotIndex, const FString MapName)
+{
+    if (MapName.IsEmpty())
+    {
+        return;
+    }
+
+    CurrentSlotIndex = SlotIndex;
+    FString TargetSlotName = GetSlotNameFromIndex(SlotIndex);
+
+    CurrentSaveGame = Cast<UPlayerProgressSaveGame>(UGameplayStatics::CreateSaveGameObject(UPlayerProgressSaveGame::StaticClass()));
+	
+    if (CurrentSaveGame)
+    {
+        CurrentSaveGame->SaveSlotUserLabel = TargetSlotName;
+        CurrentSaveGame->Timestamp = FDateTime::Now();
+		
+        CurrentSaveGame->CurrentLevelName = MapName;
+
+        const bool bSaved = UGameplayStatics::SaveGameToSlot(CurrentSaveGame, TargetSlotName, 0);
+		
+        if (bSaved)
+        {
+            if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, FString::Printf(TEXT("Nueva Partida en Slot %d. Cargando: %s"), SlotIndex, *MapName));
+            //OnSaveDataUpdated.Broadcast();
+        }
+
+        UGameplayStatics::OpenLevel(GetWorld(), FName(*MapName));
+    }
+}
+
+bool USaveGameSubsystem::DoesSaveGameExist(int32 SlotIndex) const
+{
+    FString TargetSlotName = GetSlotNameFromIndex(SlotIndex);
+    return UGameplayStatics::DoesSaveGameExist(TargetSlotName, 0);
+}
+
+bool USaveGameSubsystem::GetSaveSlotInfo(int32 SlotIndex, FString& OutLevelName, FDateTime& OutTimestamp, FString& OutSlotLabel) const
+{
+    FString TargetSlotName = GetSlotNameFromIndex(SlotIndex);
+
+    if (!UGameplayStatics::DoesSaveGameExist(TargetSlotName, 0)) return false;
+
+    USaveGame* LoadedSave = UGameplayStatics::LoadGameFromSlot(TargetSlotName, 0);
+    if (UPlayerProgressSaveGame* ProgressSave = Cast<UPlayerProgressSaveGame>(LoadedSave))
+    {
+        OutLevelName = ProgressSave->CurrentLevelName;
+        OutTimestamp = ProgressSave->Timestamp;
+        OutSlotLabel = ProgressSave->SaveSlotUserLabel;
+        return true;
+    }
+    return false;
+}
+
 void USaveGameSubsystem::RestoreCurrentLevelState() const
 {
     if (CurrentSaveGame)
@@ -60,61 +125,80 @@ void USaveGameSubsystem::RestoreCurrentLevelState() const
     }
 }
 
+FString USaveGameSubsystem::GetSlotNameFromIndex(int32 SlotIndex) const
+{
+    return FString::Printf(TEXT("SaveSlot_%d"), SlotIndex);
+}
+
 void USaveGameSubsystem::SaveLevelActors(UPlayerProgressSaveGame* SaveObject) const
 {
-    TArray<AActor*> FoundActors;
-    UGameplayStatics::GetAllActorsWithInterface(GetWorld(), USaveInterface::StaticClass(), FoundActors);
-
-    for (AActor* Actor : FoundActors)
+    int32 SavedCount = 0;
+    for (TActorIterator<AActor> It(GetWorld()); It; ++It)
     {
-        if (Actor->Implements<USaveInterface>())
+        AActor* Actor = *It;
+        
+        if (USaveComponent* SaveComp = Actor->FindComponentByClass<USaveComponent>())
         {
+            if (!SaveComp->UniqueSaveID.IsValid()) continue;
+
             FEntitySaveData ActorData;
-            
-            // Le preguntamos al actor su ID. Él sabrá si darnos el restaurado o el nativo.
-            ActorData.UniqueSaveID = ISaveInterface::Execute_GetUniqueSaveID(Actor);
-            
+            ActorData.UniqueSaveID = SaveComp->UniqueSaveID;
             ActorData.Transform = Actor->GetActorTransform();
             ActorData.ActorClass = Actor->GetClass();
 
-            ISaveInterface::Execute_OnSaveGame(Actor, ActorData);
+            if (Actor->Implements<USaveInterface>())
+            {
+                FEntitySaveData InterfaceData; 
+                ISaveInterface::Execute_OnSaveGame(Actor, InterfaceData);
+
+                ActorData.ByteData = InterfaceData.ByteData;
+                ActorData.SavedStats = InterfaceData.SavedStats;
+            }
 
             SaveObject->SavedActors.Add(ActorData.UniqueSaveID, ActorData);
+            SavedCount++;
         }
     }
+    
+    if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, FString::Printf(TEXT("DATA: Se guardaron %d actores válidos."), SavedCount));
 }
 
 void USaveGameSubsystem::LoadLevelActors(UPlayerProgressSaveGame* SaveObject) const
 {
-    if (!SaveObject)
+    if (!SaveObject) return;
+
+    int32 RestoredStaticCount = 0;
+    int32 RestoredDynamicCount = 0;
+
+    TArray<FGuid> ProcessedIDs;
+
+    for (TActorIterator<AActor> It(GetWorld()); It; ++It)
     {
-        UE_LOG(LogTemp, Error, TEXT("LoadLevelActors: SaveObject es nulo."));
-        return;
-    }
+        AActor* Actor = *It;
 
-    TArray<FName> ProcessedIDs;
-
-    TArray<AActor*> FoundActors;
-    UGameplayStatics::GetAllActorsWithInterface(GetWorld(), USaveInterface::StaticClass(), FoundActors);
-
-    for (AActor* Actor : FoundActors)
-    {
-        FName ActorID = ISaveInterface::Execute_GetUniqueSaveID(Actor);
-
-        if (SaveObject->SavedActors.Contains(ActorID))
+        if (USaveComponent* SaveComp = Actor->FindComponentByClass<USaveComponent>())
         {
-            const FEntitySaveData& Data = SaveObject->SavedActors[ActorID];
-            
-            Actor->SetActorTransform(Data.Transform, false, nullptr, ETeleportType::TeleportPhysics);
-            ISaveInterface::Execute_OnLoadGame(Actor, Data);
+            FGuid ActorID = SaveComp->UniqueSaveID;
 
-            ProcessedIDs.Add(ActorID); 
+            if (SaveObject->SavedActors.Contains(ActorID))
+            {
+                const FEntitySaveData& Data = SaveObject->SavedActors[ActorID];
+                Actor->SetActorTransform(Data.Transform, false, nullptr, ETeleportType::TeleportPhysics);
+                
+                if (Actor->Implements<USaveInterface>())
+                {
+                    ISaveInterface::Execute_OnLoadGame(Actor, Data);
+                }
+
+                ProcessedIDs.Add(ActorID);
+                RestoredStaticCount++;
+            }
         }
     }
 
     for (const auto& Pair : SaveObject->SavedActors)
     {
-        FName SavedID = Pair.Key;
+        FGuid SavedID = Pair.Key;
 
         if (!ProcessedIDs.Contains(SavedID))
         {
@@ -127,15 +211,22 @@ void USaveGameSubsystem::LoadLevelActors(UPlayerProgressSaveGame* SaveObject) co
 
                 AActor* NewActor = GetWorld()->SpawnActor<AActor>(Data.ActorClass, Data.Transform, SpawnParams);
 
-                if (NewActor && NewActor->Implements<USaveInterface>())
+                if (NewActor)
                 {
-                    ISaveInterface::Execute_OnLoadGame(NewActor, Data);
+                    if (USaveComponent* SaveComp = NewActor->FindComponentByClass<USaveComponent>())
+                    {
+                        SaveComp->UniqueSaveID = SavedID;
+                    }
+
+                    if (NewActor->Implements<USaveInterface>())
+                    {
+                        ISaveInterface::Execute_OnLoadGame(NewActor, Data);
+                    }
+                    RestoredDynamicCount++;
                 }
-            }
-            else
-            {
-                UE_LOG(LogTemp, Warning, TEXT("LoadLevelActors: Intento de spawnear ID %s pero ActorClass es NULO."), *SavedID.ToString());
             }
         }
     }
+
+    if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Emerald, FString::Printf(TEXT("SUCCESS: Se restauraron %d Estáticos y %d Dinámicos!"), RestoredStaticCount, RestoredDynamicCount));
 }

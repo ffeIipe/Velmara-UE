@@ -361,7 +361,7 @@ void UVelmaraGameInstance::SaveGame(const int32 SlotIndex)
     if (USaveGameSubsystem* SaveSystem = GetSubsystem<USaveGameSubsystem>())
     {
         FString SlotName = GetSlotNameByIndex(ActiveSaveSlotIndex);
-        SaveSystem->SaveGame(SlotName);
+        SaveSystem->SaveGame(SlotIndex);
     }
 }
 
@@ -373,7 +373,7 @@ void UVelmaraGameInstance::LoadGame(const int32 SlotIndex)
     {
         const FString SlotName = GetSlotNameByIndex(SlotIndex);
         
-        SaveSystem->LoadGame(SlotName); 
+        SaveSystem->LoadGame(SlotIndex); 
     }
 }
 

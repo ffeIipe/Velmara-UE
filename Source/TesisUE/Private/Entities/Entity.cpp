@@ -163,8 +163,6 @@ void AEntity::OnSaveGame_Implementation(FEntitySaveData& OutData)
 
 void AEntity::OnLoadGame_Implementation(const FEntitySaveData& InData)
 {
-	RestoredSaveID = InData.UniqueSaveID;
-	
 	FMemoryReader MemReader(InData.ByteData);
 	FObjectAndNameAsStringProxyArchive Ar(MemReader, true);
 	Ar.ArIsSaveGame = true;
@@ -178,22 +176,6 @@ void AEntity::OnLoadGame_Implementation(const FEntitySaveData& InData)
 	}
 
 	StopAnimMontage();
-}
-
-FName AEntity::GetUniqueSaveID_Implementation()
-{
-	if (StaticSaveID != NAME_None)
-	{
-		return StaticSaveID;
-	}
-
-	if (RestoredSaveID != NAME_None)
-	{
-		return RestoredSaveID;
-	}
-	
-	//FGuid NativeGuid = GetActorGuid();
-	return FName(NAME_None);
 }
 
 void AEntity::ReceiveDamage_Implementation(FGameplayEventData DamagePayload)

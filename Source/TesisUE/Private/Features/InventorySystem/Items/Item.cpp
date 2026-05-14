@@ -66,8 +66,6 @@ void AItem::OnSaveGame_Implementation(FEntitySaveData& OutData)
 
 void AItem::OnLoadGame_Implementation(const FEntitySaveData& InData)
 {
-	RestoredSaveID = InData.UniqueSaveID;
-	
 	FMemoryReader MemReader(InData.ByteData);
 	FObjectAndNameAsStringProxyArchive Ar(MemReader, true);
 	Ar.ArIsSaveGame = true;
@@ -83,17 +81,6 @@ void AItem::OnLoadGame_Implementation(const FEntitySaveData& InData)
 void AItem::OnPostGameLoaded_Implementation()
 {
 	Destroy();
-}
-
-FName AItem::GetUniqueSaveID_Implementation()
-{
-		if (RestoredSaveID != NAME_None)
-		{
-			return RestoredSaveID;
-		}
-	
-		//FGuid NativeGuid = GetActorGuid();
-		return FName(NAME_None);
 }
 
 void AItem::DisableCollision()

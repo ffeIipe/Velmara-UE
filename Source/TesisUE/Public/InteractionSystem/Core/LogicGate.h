@@ -57,8 +57,6 @@ public:
 	virtual void OnSaveGame_Implementation(FEntitySaveData& OutData) override; 
 	virtual void OnLoadGame_Implementation(const FEntitySaveData& InData) override;
 
-	virtual FName GetUniqueSaveID_Implementation() override;
-
 private:
 	void UpdateLogicState();
 	void BroadcastToTargets(bool bActive);
