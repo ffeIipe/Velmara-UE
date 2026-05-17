@@ -34,7 +34,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GAS|Possession")
 	bool IsPossessing() const;
 	
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadWrite)
 	FVector2D InputMovingVector = FVector2D::ZeroVector;
 	
 protected:
