@@ -82,14 +82,14 @@ void ACustomPlayerController::SetupInputComponent()
 
     if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
     {
-        if (InputData->Inputs.MoveAction)
+        /*if (InputData->Inputs.MoveAction)
         {
             EnhancedInputComponent->BindAction(InputData->Inputs.MoveAction, ETriggerEvent::Triggered, this, &ACustomPlayerController::Input_Move);
             EnhancedInputComponent->BindAction(InputData->Inputs.MoveAction, ETriggerEvent::Completed, this, &ACustomPlayerController::Input_Move);
         }
 		
         if (InputData->Inputs.LookAction)
-            EnhancedInputComponent->BindAction(InputData->Inputs.LookAction, ETriggerEvent::Triggered, this, &ACustomPlayerController::Input_Look);
+            EnhancedInputComponent->BindAction(InputData->Inputs.LookAction, ETriggerEvent::Triggered, this, &ACustomPlayerController::Input_Look);*/
 
         if (InputData->Inputs.CrouchAction)
         {
@@ -219,7 +219,7 @@ void ACustomPlayerController::AbilityInputTagReleased(EVelmaraAbilityInputID Inp
     }
 }
 
-void ACustomPlayerController::Input_Move(const FInputActionValue& Value)
+/*void ACustomPlayerController::Input_Move(const FInputActionValue& Value)
 {
     if (APawn* ControlledPawn = GetPawn())
     {
@@ -256,7 +256,7 @@ void ACustomPlayerController::Input_Look(const FInputActionValue& Value)
 	
     AddYawInput(LookAxisVector.X);
     AddPitchInput(LookAxisVector.Y);
-}
+}*/
 
 void ACustomPlayerController::TogglePauseMenu()
 {
