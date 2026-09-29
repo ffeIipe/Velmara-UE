@@ -13,6 +13,9 @@ class TESISUE_API USwordData : public UWeaponData
 	GENERATED_BODY()
 
 public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
+	float SwordTraceSize = 20.f;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Instanced, Category = "Ground Combo")
 	UComboNode* FirstGroundAction;
 

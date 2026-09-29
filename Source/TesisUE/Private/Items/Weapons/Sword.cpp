@@ -158,7 +158,7 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 		this,
 		Start,
 		End,
-		FVector(20.f, 20.f, 20.f),
+		FVector(SwordData->SwordTraceSize, SwordData->SwordTraceSize, SwordData->SwordTraceSize),
 		BoxTraceStart->GetComponentRotation(),
 		UEngineTypes::ConvertToTraceType(ECC_GameTraceChannel3),
 		false,
