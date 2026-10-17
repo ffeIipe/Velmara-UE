@@ -6,10 +6,13 @@
 #include "Components/BoxComponent.h"
 #include "Components/SphereComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "UObject/UObjectHash.h"
 
 #include "DataAssets/Items/Weapons/SwordData.h"
 #include "Features/GlobalEffectsSystem/Interfaces/EffectManagerProvider.h"
+#include "Features/WeaponUpgradeSystem/Core/WeaponUpgradeComponent.h"
 #include "GameFramework/Character.h"
+#include "GAS/ComboNode.h"
 #include "GAS/VelmaraAbilityInputID.h"
 #include "GAS/VelmaraGameplayAbility.h"
 
@@ -45,6 +48,9 @@ void ASword::BeginPlay()
 void ASword::Equip()
 {
 	Super::Equip();
+
+	// Antes de dar las habilidades, para que el combo arranque con los desbloqueos del dueño.
+	RefreshComboUnlocks();
 
 	IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(GetOwner());
 	if (!ASI) return;
@@ -223,6 +229,87 @@ void ASword::ClearIgnoreActors()
 void ASword::SetWeaponCollisionEnabled(const ECollisionEnabled::Type CollisionEnabled)
 {
 	Super::SetWeaponCollisionEnabled(CollisionEnabled);
-	
+
 	WeaponDamageBox->SetCollisionEnabled(CollisionEnabled);
+}
+
+void ASword::RefreshComboUnlocks()
+{
+	if (!BaseSwordData)
+	{
+		BaseSwordData = SwordData;
+	}
+	if (!BaseSwordData) return;
+
+	UWeaponUpgradeComponent* Upgrades = GetOwner() ? GetOwner()->FindComponentByClass<UWeaponUpgradeComponent>() : nullptr;
+
+	if (Upgrades != BoundUpgradeComponent.Get())
+	{
+		if (UWeaponUpgradeComponent* PreviousUpgrades = BoundUpgradeComponent.Get())
+		{
+			PreviousUpgrades->OnCombosChanged.RemoveDynamic(this, &ASword::HandleCombosChanged);
+		}
+		if (Upgrades)
+		{
+			Upgrades->OnCombosChanged.AddUniqueDynamic(this, &ASword::HandleCombosChanged);
+		}
+		BoundUpgradeComponent = Upgrades;
+	}
+
+	// Sin sistema de mejoras (ej. enemigos) se usan todos los combos del Data Asset.
+	if (!Upgrades)
+	{
+		SwordData = BaseSwordData;
+		return;
+	}
+
+	// Nunca se modifica el Data Asset: se trabaja sobre una copia propia de esta espada.
+	USwordData* FilteredData = DuplicateObject<USwordData>(BaseSwordData, this);
+
+	// La copia hereda los flags de asset (Standalone/Public): sin limpiarlos no se liberaría y retendría a la espada.
+	auto MakeRuntimeOnly = [](UObject* Object)
+	{
+		Object->ClearFlags(RF_Standalone | RF_Public);
+		Object->SetFlags(RF_Transient);
+	};
+	MakeRuntimeOnly(FilteredData);
+	ForEachObjectWithOuter(FilteredData, MakeRuntimeOnly, true);
+
+	TSet<UComboNode*> Visited;
+	FilteredData->FirstGroundAction = PruneLockedBranches(FilteredData->FirstGroundAction, *Upgrades, *FilteredData, Visited);
+	FilteredData->FirstAirAction = PruneLockedBranches(FilteredData->FirstAirAction, *Upgrades, *FilteredData, Visited);
+	FilteredData->LaunchAction = PruneLockedBranches(FilteredData->LaunchAction, *Upgrades, *FilteredData, Visited);
+	FilteredData->SkillAction = PruneLockedBranches(FilteredData->SkillAction, *Upgrades, *FilteredData, Visited);
+
+	SwordData = FilteredData;
+}
+
+UComboNode* ASword::PruneLockedBranches(UComboNode* Node, const UWeaponUpgradeComponent& Upgrades, const USwordData& FilteredData, TSet<UComboNode*>& Visited) const
+{
+	if (!Node) return nullptr;
+	if (!Upgrades.IsComboNodeUnlocked(Node)) return nullptr;
+
+	if (!Visited.Contains(Node))
+	{
+		Visited.Add(Node);
+
+		// Solo se tocan nodos de la copia; uno que viva fuera del Data Asset se deja intacto.
+		if (Node->IsIn(&FilteredData))
+		{
+			Node->NextActionInputTap = PruneLockedBranches(Node->NextActionInputTap, Upgrades, FilteredData, Visited);
+			Node->NextActionInputHold = PruneLockedBranches(Node->NextActionInputHold, Upgrades, FilteredData, Visited);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Sword: el nodo de combo %s no pertenece a %s, no se filtran sus ramas."),
+			       *GetNameSafe(Node), *GetNameSafe(GetBaseSwordData()));
+		}
+	}
+
+	return Node;
+}
+
+void ASword::HandleCombosChanged()
+{
+	RefreshComboUnlocks();
 }

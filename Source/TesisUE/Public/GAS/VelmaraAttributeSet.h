@@ -58,11 +58,32 @@ public:
 	FGameplayAttributeData MovementSpeed;
 	ATTRIBUTE_ACCESSORS(UVelmaraAttributeSet, MovementSpeed);
 
+	// Reduce el daño recibido con rendimiento decreciente: Armor / (Armor + ArmorMitigationConstant).
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing=OnRep_Armor)
+	FGameplayAttributeData Armor;
+	ATTRIBUTE_ACCESSORS(UVelmaraAttributeSet, Armor);
+
+	// Daño plano que se suma a cada golpe que este personaje inflige (vía GE de daño sobre DamageIncoming).
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing=OnRep_BaseDamage)
+	FGameplayAttributeData BaseDamage;
+	ATTRIBUTE_ACCESSORS(UVelmaraAttributeSet, BaseDamage);
+
+	// Multiplicador de velocidad de ataque (1 = normal). Usar como Rate de los montajes de ataque.
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing=OnRep_AttackSpeed)
+	FGameplayAttributeData AttackSpeed;
+	ATTRIBUTE_ACCESSORS(UVelmaraAttributeSet, AttackSpeed);
+
 	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
 	FGameplayAttributeData DamageIncoming;
 	ATTRIBUTE_ACCESSORS(UVelmaraAttributeSet, DamageIncoming);
 
+	// Con esta cantidad de armadura se reduce el 50% del daño.
+	static constexpr float ArmorMitigationConstant = 100.f;
+
 protected:
+	// Aplica el daño base del atacante y la armadura propia al daño entrante.
+	float CalculateFinalDamage(float RawDamage, const FGameplayEffectSpec& EffectSpec) const;
+
 	UFUNCTION()
 	virtual void OnRep_Health(const FGameplayAttributeData& OldHealth);
 
@@ -83,4 +104,13 @@ protected:
 
 	UFUNCTION()
 	virtual void OnRep_MovementSpeed(const FGameplayAttributeData& OldMovementSpeed);
+
+	UFUNCTION()
+	virtual void OnRep_Armor(const FGameplayAttributeData& OldArmor);
+
+	UFUNCTION()
+	virtual void OnRep_BaseDamage(const FGameplayAttributeData& OldBaseDamage);
+
+	UFUNCTION()
+	virtual void OnRep_AttackSpeed(const FGameplayAttributeData& OldAttackSpeed);
 };

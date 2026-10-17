@@ -5,7 +5,10 @@
 #include "Features/SaveSystem/Interfaces/SaveInterface.h"
 #include "EngineUtils.h"
 #include "Features/SaveSystem/Core/SaveComponent.h"
+#include "Features/AttributeTreeSystem/Core/AttributeTreeComponent.h"
+#include "Features/WeaponUpgradeSystem/Core/WeaponUpgradeComponent.h"
 #include "GameFramework/Actor.h"
+#include "GameFramework/Pawn.h"
 #include "Serialization/ObjectAndNameAsStringProxyArchive.h"
 
 void USaveGameSubsystem::SerializeProperties(UObject* Object, TArray<uint8>& OutBytes)
@@ -65,6 +68,7 @@ void USaveGameSubsystem::SaveGame(int32 SlotIndex)
     SaveObject->Timestamp = FDateTime::Now();
 
     SaveLevelActors(SaveObject);
+    SavePlayerProgression(SaveObject);
 
     const bool bSaved = UGameplayStatics::SaveGameToSlot(SaveObject, TargetSlotName, 0);
     
@@ -168,6 +172,7 @@ void USaveGameSubsystem::RestoreCurrentLevelState() const
         CurrentMap.RemoveFromStart(GetWorld()->StreamingLevelsPrefix);
 
         LoadLevelActors(CurrentSaveGame);
+        LoadPlayerProgression(CurrentSaveGame);
     }
 }
 
@@ -276,4 +281,66 @@ void USaveGameSubsystem::LoadLevelActors(UPlayerProgressSaveGame* SaveObject) co
     }
 
     if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Emerald, FString::Printf(TEXT("SUCCESS: Se restauraron %d Estáticos y %d Dinámicos!"), RestoredStaticCount, RestoredDynamicCount));
+}
+
+void USaveGameSubsystem::SavePlayerProgression(UPlayerProgressSaveGame* SaveObject) const
+{
+    if (!SaveObject) return;
+
+    if (const UAttributeTreeComponent* AttributeTree = FindPlayerComponent<UAttributeTreeComponent>())
+    {
+        SaveObject->AttributeTreeLevels = AttributeTree->GetUpgradeLevels();
+    }
+    else if (CurrentSaveGame)
+    {
+        // Sin árbol en el mundo no hay niveles nuevos: conservamos los de la partida cargada.
+        SaveObject->AttributeTreeLevels = CurrentSaveGame->AttributeTreeLevels;
+    }
+
+    if (const UWeaponUpgradeComponent* WeaponUpgrades = FindPlayerComponent<UWeaponUpgradeComponent>())
+    {
+        SaveObject->UnlockedWeaponCombos = WeaponUpgrades->GetUnlockedCombos();
+    }
+    else if (CurrentSaveGame)
+    {
+        SaveObject->UnlockedWeaponCombos = CurrentSaveGame->UnlockedWeaponCombos;
+    }
+}
+
+void USaveGameSubsystem::LoadPlayerProgression(const UPlayerProgressSaveGame* SaveObject) const
+{
+    if (!SaveObject) return;
+
+    if (UAttributeTreeComponent* AttributeTree = FindPlayerComponent<UAttributeTreeComponent>())
+    {
+        AttributeTree->RestoreUpgradeLevels(SaveObject->AttributeTreeLevels);
+    }
+
+    if (UWeaponUpgradeComponent* WeaponUpgrades = FindPlayerComponent<UWeaponUpgradeComponent>())
+    {
+        WeaponUpgrades->RestoreUnlockedCombos(SaveObject->UnlockedWeaponCombos);
+    }
+}
+
+template <typename TComponent>
+TComponent* USaveGameSubsystem::FindPlayerComponent() const
+{
+    if (const APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0))
+    {
+        if (TComponent* Component = PlayerPawn->FindComponentByClass<TComponent>())
+        {
+            return Component;
+        }
+    }
+
+    // El jugador puede estar poseyendo otra entidad: buscamos el componente en el personaje jugable.
+    for (TActorIterator<APawn> It(GetWorld()); It; ++It)
+    {
+        if (TComponent* Component = It->FindComponentByClass<TComponent>())
+        {
+            return Component;
+        }
+    }
+
+    return nullptr;
 }

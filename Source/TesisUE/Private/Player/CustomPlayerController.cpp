@@ -7,6 +7,7 @@
 #include "GenericTeamAgentInterface.h"
 #include "Blueprint/UserWidget.h"
 #include "DataAssets/InputData.h"
+#include "Features/TotemSystem/Core/TotemChargeComponent.h"
 #include "GAS/VelmaraAbilityInputID.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundMix.h"
@@ -27,9 +28,11 @@ ACustomPlayerController::ACustomPlayerController()
     TeamId = FGenericTeamId(2);
 }
 
-void ACustomPlayerController::PerformPossession(APawn* NewPawn)
+bool ACustomPlayerController::PerformPossession(APawn* NewPawn)
     {
-    if (!NewPawn || NewPawn == GetPawn()) return;
+    if (!NewPawn || NewPawn == GetPawn()) return false;
+
+    if (!UTotemChargeComponent::CanActorBePossessed(NewPawn)) return false;
 
     if (!OriginalBody)
     {
@@ -47,6 +50,8 @@ void ACustomPlayerController::PerformPossession(APawn* NewPawn)
             NewASC->InitAbilityActorInfo(this, NewPawn);
         }
     }
+
+    return true;
 }
 
 bool ACustomPlayerController::IsPossessing() const

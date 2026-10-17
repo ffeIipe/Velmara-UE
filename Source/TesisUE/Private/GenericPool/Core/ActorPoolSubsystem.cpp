@@ -1,9 +1,47 @@
 #include "GenericPool/Core/ActorPoolSubsystem.h"
 
+#include "Engine/World.h"
+#include "GameFramework/Actor.h"
+#include "GameFramework/MovementComponent.h"
+
+namespace ActorPool
+{
+	// Sin colisión, un Character con el movimiento activo cae por el piso hasta el KillZ y se destruye estando en el pool.
+	void SetMovementActive(const AActor* Actor, const bool bActive)
+	{
+		TInlineComponentArray<UMovementComponent*> MovementComponents(Actor);
+		for (UMovementComponent* Movement : MovementComponents)
+		{
+			if (bActive)
+			{
+				if (Movement->bAutoActivate)
+				{
+					Movement->Activate(true);
+				}
+			}
+			else
+			{
+				Movement->StopMovementImmediately();
+				Movement->Deactivate();
+			}
+		}
+	}
+}
+
+void UActorPoolSubsystem::Deinitialize()
+{
+	InactivePools.Empty();
+	Super::Deinitialize();
+}
 
 void UActorPoolSubsystem::ReturnToPool(AActor* ActorToReturn)
 {
 	if (!IsValid(ActorToReturn)) return;
+
+	FActorPoolBucket& Bucket = InactivePools.FindOrAdd(ActorToReturn->GetClass());
+
+	// Devolver dos veces el mismo actor haría que dos pedidos posteriores reciban la misma instancia.
+	if (Bucket.Actors.Contains(ActorToReturn)) return;
 
 	if (ActorToReturn->Implements<UPoolableActor>())
 	{
@@ -13,67 +51,47 @@ void UActorPoolSubsystem::ReturnToPool(AActor* ActorToReturn)
 	ActorToReturn->SetActorHiddenInGame(true);
 	ActorToReturn->SetActorEnableCollision(false);
 	ActorToReturn->SetActorTickEnabled(false);
+	ActorPool::SetMovementActive(ActorToReturn, false);
 
-	InactivePools.FindOrAdd(ActorToReturn->GetClass()).Push(ActorToReturn);
+	Bucket.Actors.Push(ActorToReturn);
 }
 
 AActor* UActorPoolSubsystem::GetActorFromPool(const TSubclassOf<AActor>& ClassToSpawn, const FTransform& SpawnTransform)
 {
 	if (!ClassToSpawn) return nullptr;
 
-	AActor* ResultActor = nullptr;
-	
-	if (TArray<AActor*>* PoolArray = InactivePools.Find(ClassToSpawn))
+	if (AActor* Recycled = RetrieveActor(ClassToSpawn))
 	{
-		while (PoolArray->Num() > 0)
-		{
-			if (AActor* Candidate = PoolArray->Pop(); IsValid(Candidate))
-			{
-				ResultActor = Candidate;
-				break;
-			}
-		}
+		ActivatePooledActor(Recycled, SpawnTransform);
+		return Recycled;
 	}
 
-	if (!ResultActor)
-	{
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		ResultActor = GetWorld()->SpawnActor<AActor>(ClassToSpawn, SpawnTransform, SpawnParams);
-	}
-
-	if (ResultActor)
-	{
-		ResultActor->SetActorTransform(SpawnTransform, false, nullptr, ETeleportType::TeleportPhysics);
-		
-		ResultActor->SetActorHiddenInGame(false);
-		ResultActor->SetActorEnableCollision(true);
-		ResultActor->SetActorTickEnabled(true);
-
-		if (ResultActor->Implements<UPoolableActor>())
-		{
-			IPoolableActor::Execute_OnPoolActivate(ResultActor);
-		}
-	}
-
-	return ResultActor;
-}
-
-void UActorPoolSubsystem::InitializePool(const TSubclassOf<AActor> ClassToSpawn, const int32 Quantity)
-{
-	if (!ClassToSpawn || Quantity <= 0)
-	{
-		return;
-	}
-
-	TArray<AActor*>& Pool = InactivePools.FindOrAdd(ClassToSpawn);
-	Pool.Reserve(Pool.Num() + Quantity);
+	UWorld* World = GetWorld();
+	if (!World) return nullptr;
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
+	AActor* NewActor = World->SpawnActor<AActor>(ClassToSpawn, SpawnTransform, SpawnParams);
+	if (NewActor && NewActor->Implements<UPoolableActor>())
+	{
+		IPoolableActor::Execute_OnPoolActivate(NewActor);
+	}
+
+	return NewActor;
+}
+
+void UActorPoolSubsystem::InitializePool(const TSubclassOf<AActor> ClassToSpawn, const int32 Quantity)
+{
+	if (!ClassToSpawn || Quantity <= 0) return;
+
 	UWorld* World = GetWorld();
 	if (!World) return;
+
+	InactivePools.FindOrAdd(ClassToSpawn).Actors.Reserve(GetInactiveCount(ClassToSpawn) + Quantity);
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	for (int32 i = 0; i < Quantity; ++i)
 	{
@@ -84,21 +102,48 @@ void UActorPoolSubsystem::InitializePool(const TSubclassOf<AActor> ClassToSpawn,
 	}
 }
 
+int32 UActorPoolSubsystem::GetInactiveCount(const TSubclassOf<AActor> ActorClass) const
+{
+	const FActorPoolBucket* Bucket = InactivePools.Find(ActorClass.Get());
+	return Bucket ? Bucket->Actors.Num() : 0;
+}
+
+bool UActorPoolSubsystem::IsActorInPool(const AActor* Actor) const
+{
+	if (!Actor) return false;
+
+	const FActorPoolBucket* Bucket = InactivePools.Find(Actor->GetClass());
+	return Bucket && Bucket->Actors.Contains(Actor);
+}
+
 AActor* UActorPoolSubsystem::RetrieveActor(const UClass* ClassType)
 {
-	if (TArray<AActor*>* PoolArray = InactivePools.Find(ClassType))
+	FActorPoolBucket* Bucket = InactivePools.Find(ClassType);
+	if (!Bucket) return nullptr;
+
+	while (Bucket->Actors.Num() > 0)
 	{
-		while (PoolArray->Num() > 0)
+		// Los actores destruidos por fuera del pool (ej. streaming) quedan inválidos y se descartan.
+		if (AActor* Candidate = Bucket->Actors.Pop(EAllowShrinking::No); IsValid(Candidate))
 		{
-			if (AActor* Candidate = PoolArray->Pop(); IsValid(Candidate))
-			{
-				Candidate->SetActorHiddenInGame(false);
-				Candidate->SetActorEnableCollision(true);
-				Candidate->SetActorTickEnabled(true);
-				return Candidate;
-			}
+			return Candidate;
 		}
 	}
-	
+
 	return nullptr;
+}
+
+void UActorPoolSubsystem::ActivatePooledActor(AActor* Actor, const FTransform& SpawnTransform)
+{
+	Actor->SetActorTransform(SpawnTransform, false, nullptr, ETeleportType::TeleportPhysics);
+
+	Actor->SetActorHiddenInGame(false);
+	Actor->SetActorEnableCollision(true);
+	Actor->SetActorTickEnabled(true);
+	ActorPool::SetMovementActive(Actor, true);
+
+	if (Actor->Implements<UPoolableActor>())
+	{
+		IPoolableActor::Execute_OnPoolActivate(Actor);
+	}
 }

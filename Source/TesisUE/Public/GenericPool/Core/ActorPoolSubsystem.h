@@ -6,6 +6,16 @@
 #include "Subsystems/WorldSubsystem.h"
 #include "ActorPoolSubsystem.generated.h"
 
+// Actores inactivos de una misma clase. Es un USTRUCT para que el GC vea las referencias.
+USTRUCT()
+struct FActorPoolBucket
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	TArray<TObjectPtr<AActor>> Actors;
+};
+
 UCLASS()
 class TESISUE_API UActorPoolSubsystem : public UWorldSubsystem
 {
@@ -14,36 +24,12 @@ class TESISUE_API UActorPoolSubsystem : public UWorldSubsystem
 	template <typename T>
 	T* SpawnOrRetrieveFromPool(TSubclassOf<T> ClassToSpawn, const FTransform& SpawnTransform)
 	{
-		if (!ClassToSpawn) return nullptr;
-
-		AActor* RecycledActor = RetrieveActor(ClassToSpawn);
-
-		if (RecycledActor)
-		{
-			RecycledActor->SetActorTransform(SpawnTransform, false, nullptr, ETeleportType::TeleportPhysics);
-			
-			if (RecycledActor->Implements<UPoolableActor>())
-			{
-				IPoolableActor::Execute_OnPoolActivate(RecycledActor);
-			}
-			
-			return Cast<T>(RecycledActor);
-		}
-
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		
-		T* NewActor = GetWorld()->SpawnActor<T>(ClassToSpawn, SpawnTransform, SpawnParams);
-		
-		if (NewActor && NewActor->Implements<UPoolableActor>())
-		{
-			IPoolableActor::Execute_OnPoolActivate(NewActor);
-		}
-
-		return NewActor;
+		return Cast<T>(GetActorFromPool(ClassToSpawn, SpawnTransform));
 	}
 
 public:
+	virtual void Deinitialize() override;
+
 	UFUNCTION(BlueprintCallable, Category = "Pooling")
 	void ReturnToPool(AActor* ActorToReturn);
 
@@ -53,12 +39,23 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pooling")
 	void InitializePool(TSubclassOf<AActor> ClassToSpawn, int32 Quantity);
 
+	// Cantidad de actores de esa clase esperando en el pool.
+	UFUNCTION(BlueprintPure, Category = "Pooling")
+	int32 GetInactiveCount(TSubclassOf<AActor> ActorClass) const;
+
+	// True si el actor está guardado en el pool (inactivo).
+	UFUNCTION(BlueprintPure, Category = "Pooling")
+	bool IsActorInPool(const AActor* Actor) const;
+
 protected:
 	AActor* RetrieveActor(const UClass* ClassType);
 
 private:
+	static void ActivatePooledActor(AActor* Actor, const FTransform& SpawnTransform);
+
 	UPROPERTY()
 	TMap<UClass*, FGameplayTagContainer> PoolStats;
-	
-	TMap<UClass*, TArray<AActor*>> InactivePools;
+
+	UPROPERTY()
+	TMap<UClass*, FActorPoolBucket> InactivePools;
 };

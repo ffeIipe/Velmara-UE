@@ -11,6 +11,8 @@ class UComboChain;
 class USwordData;
 class UCommand;
 class UBoxComponent;
+class UComboNode;
+class UWeaponUpgradeComponent;
 
 UCLASS()
 class TESISUE_API ASword : public AWeapon
@@ -22,8 +24,17 @@ public:
     
     virtual void BeginPlay() override;
     
+    // En runtime, si el dueño tiene UWeaponUpgradeComponent, apunta a una copia sin las ramas de combo bloqueadas.
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
     USwordData* SwordData;
+
+    // Data Asset original (sin filtrar por los combos desbloqueados).
+    UFUNCTION(BlueprintPure, Category = "Combat")
+    USwordData* GetBaseSwordData() const { return BaseSwordData ? BaseSwordData.Get() : SwordData; }
+
+    // Regenera SwordData a partir del original quitando las ramas que el dueño todavía no desbloqueó.
+    UFUNCTION(BlueprintCallable, Category = "Combat")
+    void RefreshComboUnlocks();
 
     UPROPERTY()
     TArray<AActor*> IgnoreActors;
@@ -56,4 +67,15 @@ private:
 
     virtual void ClearIgnoreActors() override;
     virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled) override;
+
+    UFUNCTION()
+    void HandleCombosChanged();
+
+    UComboNode* PruneLockedBranches(UComboNode* Node, const UWeaponUpgradeComponent& Upgrades, const USwordData& FilteredData, TSet<UComboNode*>& Visited) const;
+
+    UPROPERTY(Transient)
+    TObjectPtr<USwordData> BaseSwordData;
+
+    UPROPERTY(Transient)
+    TWeakObjectPtr<UWeaponUpgradeComponent> BoundUpgradeComponent;
 };

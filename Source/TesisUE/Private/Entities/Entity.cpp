@@ -9,6 +9,7 @@
 #include "Features/SaveSystem/Data/SaveTypes.h"
 #include "DataAssets/EntityData.h"
 #include "Features/InventorySystem/Core/InventoryComponent.h"
+#include "Features/TotemSystem/Subsystems/TotemSubsystem.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GAS/VelmaraAbilityInputID.h"
@@ -51,6 +52,9 @@ void AEntity::BeginPlay()
 
 		GiveDefaultAbilities();
 		InitializeAttributeSet();
+
+		AbilitySystemComponent->RegisterGameplayTagEvent(FVelmaraGameplayTags::Get().State_Dead, EGameplayTagEventType::NewOrRemoved)
+			.AddUObject(this, &AEntity::HandleDeadTagChanged);
 	}
 
 	bUseControllerRotationPitch = false;
@@ -186,6 +190,17 @@ void AEntity::ReceiveDamage_Implementation(FGameplayEventData DamagePayload)
 void AEntity::MortalDamage_Implementation(FGameplayEventData DeathPayload)
 {
 	IDamageable::MortalDamage_Implementation(DeathPayload);
+}
+
+void AEntity::HandleDeadTagChanged(const FGameplayTag Tag, const int32 NewCount)
+{
+	// Solo al pasar de vivo a muerto; las entidades del pool vuelven a disparar esto en cada muerte.
+	if (NewCount <= 0) return;
+
+	if (UTotemSubsystem* TotemSubsystem = GetWorld()->GetSubsystem<UTotemSubsystem>())
+	{
+		TotemSubsystem->NotifyEntityDied(this);
+	}
 }
 
 TScriptInterface<IPickable> AEntity::GetCurrentItem() const
@@ -333,7 +348,6 @@ void AEntity::InitializeAttributeSet()
 			AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), AbilitySystemComponent);
 		}
 	}
-	
 }
 
 void AEntity::GiveDefaultAbilities()

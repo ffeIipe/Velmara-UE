@@ -7,11 +7,49 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Interfaces/Damageable.h"
 
-UVelmaraAttributeSet::UVelmaraAttributeSet() { }
+UVelmaraAttributeSet::UVelmaraAttributeSet()
+{
+	// Valores neutros para que las entidades que no los configuran (enemigos) no se vean afectadas.
+	InitArmor(0.f);
+	InitBaseDamage(0.f);
+	InitAttackSpeed(1.f);
+}
 
 void UVelmaraAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
 {
 	Super::PreAttributeChange(Attribute, NewValue);
+
+	if (Attribute == GetArmorAttribute())
+	{
+		NewValue = FMath::Max(NewValue, 0.f);
+	}
+	else if (Attribute == GetAttackSpeedAttribute())
+	{
+		NewValue = FMath::Max(NewValue, 0.1f);
+	}
+}
+
+float UVelmaraAttributeSet::CalculateFinalDamage(const float RawDamage, const FGameplayEffectSpec& EffectSpec) const
+{
+	if (RawDamage <= 0.f) return RawDamage;
+
+	float FinalDamage = RawDamage;
+
+	// Daño base del atacante (no se aplica al daño auto-infligido, ej. el sol).
+	if (const UAbilitySystemComponent* SourceASC = EffectSpec.GetContext().GetInstigatorAbilitySystemComponent())
+	{
+		const UVelmaraAttributeSet* SourceSet = SourceASC->GetSet<UVelmaraAttributeSet>();
+		if (SourceSet && SourceSet != this)
+		{
+			FinalDamage += FMath::Max(SourceSet->GetBaseDamage(), 0.f);
+		}
+	}
+
+	// Armadura del objetivo.
+	const float CurrentArmor = FMath::Max(GetArmor(), 0.f);
+	FinalDamage *= ArmorMitigationConstant / (ArmorMitigationConstant + CurrentArmor);
+
+	return FinalDamage;
 }
 
 void UVelmaraAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue)
@@ -30,8 +68,8 @@ void UVelmaraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCal
     
     if (Data.EvaluatedData.Attribute == GetDamageIncomingAttribute())
     {
-        const float LocalDamageDone = GetDamageIncoming();
-        
+        const float LocalDamageDone = CalculateFinalDamage(GetDamageIncoming(), Data.EffectSpec);
+
         SetDamageIncoming(0.0f);
 
         if (LocalDamageDone > 0.0f)
@@ -132,6 +170,9 @@ void UVelmaraAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 	DOREPLIFETIME_CONDITION_NOTIFY(UVelmaraAttributeSet, Energy, COND_None, REPNOTIFY_Always)
 	DOREPLIFETIME_CONDITION_NOTIFY(UVelmaraAttributeSet, MaxEnergy, COND_None, REPNOTIFY_Always)
 	DOREPLIFETIME_CONDITION_NOTIFY(UVelmaraAttributeSet, MovementSpeed, COND_None, REPNOTIFY_Always)
+	DOREPLIFETIME_CONDITION_NOTIFY(UVelmaraAttributeSet, Armor, COND_None, REPNOTIFY_Always)
+	DOREPLIFETIME_CONDITION_NOTIFY(UVelmaraAttributeSet, BaseDamage, COND_None, REPNOTIFY_Always)
+	DOREPLIFETIME_CONDITION_NOTIFY(UVelmaraAttributeSet, AttackSpeed, COND_None, REPNOTIFY_Always)
 }
 
 void UVelmaraAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth)
@@ -167,4 +208,19 @@ void UVelmaraAttributeSet::OnRep_MaxEnergy(const FGameplayAttributeData& OldMaxE
 void UVelmaraAttributeSet::OnRep_MovementSpeed(const FGameplayAttributeData& OldMovementSpeed)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UVelmaraAttributeSet, MovementSpeed, OldMovementSpeed)
+}
+
+void UVelmaraAttributeSet::OnRep_Armor(const FGameplayAttributeData& OldArmor)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UVelmaraAttributeSet, Armor, OldArmor)
+}
+
+void UVelmaraAttributeSet::OnRep_BaseDamage(const FGameplayAttributeData& OldBaseDamage)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UVelmaraAttributeSet, BaseDamage, OldBaseDamage)
+}
+
+void UVelmaraAttributeSet::OnRep_AttackSpeed(const FGameplayAttributeData& OldAttackSpeed)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UVelmaraAttributeSet, AttackSpeed, OldAttackSpeed)
 }

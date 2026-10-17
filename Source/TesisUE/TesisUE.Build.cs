@@ -27,7 +27,8 @@ public class TesisUE : ModuleRules
 			"NetCore",
 			"AnimGraphRuntime", 
 			"AIModule",
-			"NavigationSystem"
+			"NavigationSystem",
+			"UMG"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[]

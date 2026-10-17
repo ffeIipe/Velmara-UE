@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "GameplayTagContainer.h"
+#include "Features/CurrencySystem/Interfaces/CurrencyProvider.h"
 #include "ProgressionComponent.generated.h"
 
 // Delegados para notificar a la UI y al personaje (GAS)
@@ -11,7 +12,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnComboUnlockedSignature, FGameplay
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnStatUpgradedSignature, FGameplayTag, StatTag, int32, NewLevel);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class TESISUE_API UProgressionComponent : public UActorComponent
+class TESISUE_API UProgressionComponent : public UActorComponent, public ICurrencyProvider
 {
 	GENERATED_BODY()
 
@@ -75,4 +76,17 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Progression | Queries")
 	int32 GetAvailableCurrency() const { return AvailableCurrency; }
+
+	/* ICurrencyProvider (lo usan, por ejemplo, el árbol de atributos y el altar de sangre) */
+
+	virtual bool ProvidesCurrency_Implementation(FGameplayTag CurrencyType) const override;
+
+	virtual int32 GetCurrencyAmount_Implementation(FGameplayTag CurrencyType) const override;
+
+	virtual bool TrySpendCurrency_Implementation(FGameplayTag CurrencyType, int32 Amount) override;
+
+protected:
+	// Tipo de moneda que representa AvailableCurrency (por defecto, Sangre).
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Progression | Config", meta = (Categories = "Currency"))
+	FGameplayTag ProvidedCurrencyType;
 };

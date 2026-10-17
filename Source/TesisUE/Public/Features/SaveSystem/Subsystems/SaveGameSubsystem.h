@@ -5,6 +5,7 @@
 #include "Features/SaveSystem/Core/PlayerProgressSaveGame.h"
 #include "SaveGameSubsystem.generated.h"
 
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGameSaved, bool, bSuccess);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGameLoaded, bool, bSuccess);
 
@@ -57,4 +58,11 @@ private:
 
 	void SaveLevelActors(UPlayerProgressSaveGame* SaveObject) const;
 	void LoadLevelActors(UPlayerProgressSaveGame* SaveObject) const;
+
+	void SavePlayerProgression(UPlayerProgressSaveGame* SaveObject) const;
+	void LoadPlayerProgression(const UPlayerProgressSaveGame* SaveObject) const;
+
+	// Busca el componente en el pawn del jugador o, si está poseyendo otra entidad, en el personaje jugable.
+	template <typename TComponent>
+	TComponent* FindPlayerComponent() const;
 };

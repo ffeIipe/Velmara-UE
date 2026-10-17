@@ -176,7 +176,10 @@ protected:
 
 	UFUNCTION(BlueprintCallable)
 	void GiveDefaultAbilities();
-	
+
+	// Avisa a los tótems cercanos cuando la entidad recibe el tag State.Dead.
+	void HandleDeadTagChanged(const FGameplayTag Tag, int32 NewCount);
+
 	UPROPERTY()
 	AActor* LastDamageCauser;
 

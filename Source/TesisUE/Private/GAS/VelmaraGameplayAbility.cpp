@@ -1,6 +1,7 @@
 #include "GAS/VelmaraGameplayAbility.h"
 #include "AbilitySystemComponent.h"
 #include "GameplayTagsManager.h"
+#include "GAS/VelmaraAttributeSet.h"
 
 UVelmaraGameplayAbility::UVelmaraGameplayAbility()
 {
@@ -16,6 +17,18 @@ void UVelmaraGameplayAbility::OnAvatarSet(const FGameplayAbilityActorInfo* Actor
 	{
 		ActorInfo->AbilitySystemComponent->TryActivateAbility(Spec.Handle);
 	}
+}
+
+float UVelmaraGameplayAbility::GetAttackSpeedMultiplier() const
+{
+	if (const UAbilitySystemComponent* AbilitySystem = GetAbilitySystemComponentFromActorInfo())
+	{
+		bool bFound = false;
+		const float AttackSpeed = AbilitySystem->GetGameplayAttributeValue(UVelmaraAttributeSet::GetAttackSpeedAttribute(), bFound);
+
+		if (bFound && AttackSpeed > 0.f) return AttackSpeed;
+	}
+	return 1.f;
 }
 
 #if WITH_EDITOR

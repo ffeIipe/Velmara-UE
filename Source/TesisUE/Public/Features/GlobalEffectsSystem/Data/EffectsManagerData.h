@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
+#include "GameplayTagContainer.h"
 #include "Features/GlobalEffectsSystem/Data/Types.h"
 #include "EffectsManagerData.generated.h"
 

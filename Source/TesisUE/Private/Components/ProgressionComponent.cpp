@@ -1,11 +1,14 @@
 #include "Components/ProgressionComponent.h"
 
+#include "Features/CurrencySystem/Data/CurrencyTags.h"
+
 UProgressionComponent::UProgressionComponent()
 {
 	// Desactivamos el Tick, este componente es puramente reactivo.
 	PrimaryComponentTick.bCanEverTick = false;
-	
+
 	AvailableCurrency = 0;
+	ProvidedCurrencyType = CurrencyTags::Blood;
 }
 
 void UProgressionComponent::BeginPlay()
@@ -74,6 +77,29 @@ void UProgressionComponent::AddCurrency(int32 Amount)
 	}
 
 	OnCurrencyChanged.Broadcast(AvailableCurrency);
+}
+
+bool UProgressionComponent::ProvidesCurrency_Implementation(const FGameplayTag CurrencyType) const
+{
+	return CurrencyType.IsValid() && CurrencyType == ProvidedCurrencyType;
+}
+
+int32 UProgressionComponent::GetCurrencyAmount_Implementation(const FGameplayTag CurrencyType) const
+{
+	return ProvidesCurrency_Implementation(CurrencyType) ? AvailableCurrency : 0;
+}
+
+bool UProgressionComponent::TrySpendCurrency_Implementation(const FGameplayTag CurrencyType, const int32 Amount)
+{
+	if (!ProvidesCurrency_Implementation(CurrencyType) || Amount < 0 || AvailableCurrency < Amount)
+	{
+		return false;
+	}
+
+	AvailableCurrency -= Amount;
+	OnCurrencyChanged.Broadcast(AvailableCurrency);
+
+	return true;
 }
 
 bool UProgressionComponent::HasComboUnlocked(FGameplayTag ComboTag) const
