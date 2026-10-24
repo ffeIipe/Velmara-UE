@@ -8,13 +8,14 @@
 #include "Dataflow/DataflowSelection.h"
 #include "FractureEngineFracturing.h"
 #include "GeometryCollection/GeometryCollection.h"
+#include "GeometryCollection/GeometryCollectionClusteringUtility.h"
 #include "GeometryCollection/GeometryCollectionEngineConversion.h"
 #include "GeometryCollection/GeometryCollectionUtility.h"
 #include "UObject/Package.h"
 #endif
 
 UGeometryCollection* UBossEditorLibrary::FractureMeshToGeometryCollection(UStaticMesh* SourceMesh, const FString& AssetPath, const int32 NumPieces,
-	const int32 RandomSeed, const float DensityKgPerM3)
+	const int32 RandomSeed)
 {
 #if WITH_EDITOR
 	if (!SourceMesh || AssetPath.IsEmpty() || NumPieces < 2) return nullptr;
@@ -51,11 +52,10 @@ UGeometryCollection* UBossEditorLibrary::FractureMeshToGeometryCollection(UStati
 	FFractureEngineFracturing::VoronoiFracture(GeometryCollection, Selection, Sites, FTransform::Identity, RandomSeed,
 		1.f, false, 0.f, 0.f, 0.1f, 0.5f, 2.f, 4, 10.f, false, 50.f);
 
-	// Muy pesada: los pedazos no se mueven con empujones.
-	Collection->bMassAsDensity = true;
-	Collection->Mass = DensityKgPerM3;
-
+	// Lo que Fracture Mode hace al terminar el corte. Sin convex hulls ni volúmenes, Chaos no tiene nada que simular.
+	FGeometryCollectionClusteringUtility::UpdateHierarchyLevelOfChildren(&GeometryCollection, -1);
 	::GeometryCollection::GenerateTemporaryGuids(&GeometryCollection, 0, true);
+	Collection->UpdateGeometryDependentProperties();
 	Collection->InvalidateCollection();
 	Collection->RebuildRenderData();
 	Collection->CreateSimulationData();

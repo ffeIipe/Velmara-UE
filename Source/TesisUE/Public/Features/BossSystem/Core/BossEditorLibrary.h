@@ -17,5 +17,5 @@ public:
 	// Solo editor (devuelve nullptr en el juego). Guardá el asset después (EditorAssetLibrary.save_asset).
 	UFUNCTION(BlueprintCallable, Category = "Boss|Editor")
 	static UGeometryCollection* FractureMeshToGeometryCollection(UStaticMesh* SourceMesh, const FString& AssetPath, int32 NumPieces = 5,
-		int32 RandomSeed = 7, float DensityKgPerM3 = 20000.f);
+		int32 RandomSeed = 7);
 };

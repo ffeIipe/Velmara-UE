@@ -42,7 +42,7 @@ ABossCeilingBreakPoint::ABossCeilingBreakPoint()
 	Rock->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
 
 	// Roca fracturada por defecto (5 pedazos). Se puede reemplazar en el Blueprint.
-	static ConstructorHelpers::FObjectFinder<UGeometryCollection> RockFinder(TEXT("/Game/Blueprints/Entities/Enemies/Boss/GC_BossCeilingRock.GC_BossCeilingRock"));
+	static ConstructorHelpers::FObjectFinder<UGeometryCollection> RockFinder(TEXT("/Game/Blueprints/Entities/Enemies/Boss/GC_BossCeilingSlab.GC_BossCeilingSlab"));
 	if (RockFinder.Succeeded())
 	{
 		Rock->RestCollection = RockFinder.Object;
@@ -52,12 +52,6 @@ ABossCeilingBreakPoint::ABossCeilingBreakPoint()
 void ABossCeilingBreakPoint::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// shortcut: BP_BossCeilingRock nació con Rock como StaticMesh y su CDO guardó el puntero en null; recrear el BP elimina esto.
-	if (!Rock)
-	{
-		Rock = FindComponentByClass<UGeometryCollectionComponent>();
-	}
 
 	// El GC no pasa de estático a dinámico con SetSimulatePhysics en runtime: se ancla y Break quita los anclajes.
 	if (Rock && Rock->GetRestCollection())
@@ -81,7 +75,6 @@ void ABossCeilingBreakPoint::Break()
 		}
 	}
 
-	// Rock es null en instancias guardadas antes de que la roca fuera un Geometry Collection.
 	if (Rock && Rock->GetRestCollection())
 	{
 		Rock->OnChaosPhysicsCollision.AddUniqueDynamic(this, &ABossCeilingBreakPoint::HandleRockCollision);
