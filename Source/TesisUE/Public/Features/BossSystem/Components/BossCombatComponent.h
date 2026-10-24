@@ -92,9 +92,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Projectile", meta = (ClampMin = "0.1"))
 	float ProjectileLifetime = 3.f;
 
-	// Apunta en horizontal (onda a ras del piso). Desactivalo si el jugador puede estar en otra altura.
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Projectile")
-	bool bFlattenProjectileAim = true;
+	// Motion Warping: distancia al objetivo donde termina el acercamiento del ataque.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Warping", meta = (ClampMin = "0"))
+	float WarpStopDistance = 150.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Projectile", meta = (ClampMin = "0"))
 	int32 ProjectilePoolPrewarm = 6;
@@ -196,6 +196,8 @@ private:
 		bool bUseNotifyWindows = false;
 		float TrackingEndTime = 0.f;
 		float TrackingSpeed = 0.f;
+		bool bWarping = false;
+		bool bWarpTranslation = false;
 		float RecoveryAfter = 0.f;
 		FSimpleDelegate OnEvent;
 		FBossActionFinished OnFinished;
@@ -213,6 +215,7 @@ private:
 	void ProcessActiveWindows(float DeltaTime);
 	void TryHitTarget(FActiveHitWindow& Window, AActor* Target, const FHitResult& Hit);
 	void FireProjectiles(const FBossHitWindow& Window);
+	void UpdateWarpTarget(const AActor* Target) const;
 
 	bool GetWeaponSegment(FVector& OutStart, FVector& OutEnd) const;
 	void BuildWeaponSamples(TArray<FVector>& OutSamples) const;

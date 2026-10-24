@@ -45,6 +45,8 @@ ABossLightShaft::ABossLightShaft()
 	Light->SetCastShadows(true);
 	// Con Exponential Height Fog + Volumetric Fog en el nivel se ve la columna de luz sin necesidad de mesh.
 	Light->VolumetricScatteringIntensity = 4.f;
+	// El hueco no ilumina: de la luz se encarga la Directional Light del nivel. Activalo en un Blueprint hijo si hace falta.
+	Light->SetVisibility(false);
 
 	BeamMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BeamMesh"));
 	BeamMesh->SetupAttachment(Root);

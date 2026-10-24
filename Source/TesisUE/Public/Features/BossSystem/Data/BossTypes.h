@@ -167,7 +167,8 @@ struct FBossAttackDefinition
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage")
 	TArray<FBossHitWindow> HitWindows;
 
-	// Hasta este tiempo normalizado el boss sigue girando hacia el objetivo. Después queda comprometido: ahí se esquiva.
+	// Hasta este tiempo normalizado el boss se acomoda hacia el objetivo con Motion Warping (giro y, si no dispara proyectiles,
+	// acercamiento). Después queda comprometido: ahí se esquiva. 0 = sin warping (ataques que ya giran solos).
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dodge", meta = (ClampMin = "0", ClampMax = "1"))
 	float TrackingEndTime = 0.25f;
 
@@ -190,14 +191,6 @@ struct FBossAttackDefinition
 	// Pausa después del ataque antes de la próxima decisión (se reduce con cada etapa).
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recovery", meta = (ClampMin = "0"))
 	float RecoveryTime = 0.8f;
-
-	// Escala el root motion para que el desplazamiento llegue hasta el objetivo (útil en ataques que acortan distancia).
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Root Motion")
-	bool bScaleRootMotionToTarget = false;
-
-	// Distancia que recorre el root motion del montaje a escala 1.
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Root Motion", meta = (EditCondition = "bScaleRootMotionToTarget", ClampMin = "1"))
-	float RootMotionNominalDistance = 500.f;
 };
 
 USTRUCT(BlueprintType)

@@ -34,8 +34,16 @@ public class TesisUE : ModuleRules
 		PrivateDependencyModuleNames.AddRange(new string[]
 		{
 			"AnimGraphRuntime",
-			"DeveloperSettings"
+			"DeveloperSettings",
+			"GeometryCollectionEngine",
+			"ChaosSolverEngine"
 		});
+
+		// Fractura de rocas del boss (UBossEditorLibrary): solo en el editor.
+		if (Target.bBuildEditor)
+		{
+			PrivateDependencyModuleNames.AddRange(new string[] { "FractureEngine", "DataflowCore", "AssetRegistry" });
+		}
 
         bUseUnity = true;
 		

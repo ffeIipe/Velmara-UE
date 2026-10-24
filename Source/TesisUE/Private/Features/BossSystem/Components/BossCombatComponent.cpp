@@ -17,6 +17,8 @@
 #include "GameFramework/Character.h"
 #include "GenericPool/Core/ActorPoolSubsystem.h"
 #include "Kismet/GameplayStatics.h"
+#include "MotionWarpingComponent.h"
+#include "RootMotionModifier_SkewWarp.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogBossCombat, Log, All);
 
@@ -29,8 +31,7 @@ namespace BossCombat
 	// Duración de una acción cuyo montaje no se pudo reproducir (para que igual ocurra su evento).
 	constexpr float NoMontageDuration = 0.6f;
 
-	// El root motion escalado se queda corto por esta distancia para no meterse dentro del objetivo.
-	constexpr float RootMotionStopShort = 120.f;
+	const FName WarpTargetName(TEXT("BossAttackTarget"));
 }
 
 UBossCombatComponent::UBossCombatComponent()
@@ -150,10 +151,22 @@ bool UBossCombatComponent::StartAttack(const int32 AttackIndex, AActor* Target)
 	CurrentAction.RecoveryAfter = Attack.RecoveryTime * FMath::Max(0.1f, 1.f - RecoveryReductionPerStage * CurrentStage);
 	CurrentAction.TimedWindowStates.Init(BossCombat::WindowPending, Attack.HitWindows.Num());
 
-	if (Attack.bScaleRootMotionToTarget && Target && OwnerCharacter)
+	// Motion Warping en la ventana de seguimiento: el boss se orienta (y se acerca) de forma suave en vez de girar a mano.
+	UMotionWarpingComponent* Warping = OwnerCharacter ? OwnerCharacter->FindComponentByClass<UMotionWarpingComponent>() : nullptr;
+	if (Warping && Target && Attack.TrackingEndTime > 0.f)
 	{
-		const float Distance = FVector::Dist2D(OwnerCharacter->GetActorLocation(), Target->GetActorLocation()) - BossCombat::RootMotionStopShort;
-		OwnerCharacter->SetAnimRootMotionTranslationScale(FMath::Clamp(Distance / Attack.RootMotionNominalDistance, 0.25f, 2.5f));
+		CurrentAction.bWarping = true;
+		// Los ataques a distancia solo giran: acercarse arruinaría la distancia del disparo.
+		CurrentAction.bWarpTranslation = !Attack.HitWindows.ContainsByPredicate([](const FBossHitWindow& Window)
+		{
+			return Window.Shape == EBossHitShape::Projectile;
+		});
+
+		UpdateWarpTarget(Target);
+		// Ventana en segundos del montaje; SkewWarp sigue al target cada tick mientras lo actualizamos.
+		URootMotionModifier_SkewWarp::AddRootMotionModifierSkewWarp(Warping, Attack.Montage, 0.f,
+			Attack.TrackingEndTime * Attack.Montage->GetPlayLength(), BossCombat::WarpTargetName, EWarpPointAnimProvider::None,
+			FTransform::Identity, NAME_None, CurrentAction.bWarpTranslation, true, true);
 	}
 
 	float FirstHitProgress = 1.f;
@@ -293,9 +306,9 @@ void UBossCombatComponent::FinishAction(const bool bInterrupted)
 	bHasPrevWeaponSamples = false;
 	SetComponentTickEnabled(false);
 
-	if (OwnerCharacter)
+	if (UMotionWarpingComponent* Warping = OwnerCharacter ? OwnerCharacter->FindComponentByClass<UMotionWarpingComponent>() : nullptr)
 	{
-		OwnerCharacter->SetAnimRootMotionTranslationScale(1.f);
+		Warping->RemoveWarpTarget(BossCombat::WarpTargetName);
 	}
 
 	if (IsValid(ActiveTelegraphDecal))
@@ -341,9 +354,16 @@ void UBossCombatComponent::TickComponent(const float DeltaTime, const ELevelTick
 	const int32 ActionId = CurrentAction.Id;
 	const float Progress = GetActionProgress();
 
-	if (const AActor* Target = CurrentAction.Target.Get(); Target && CurrentAction.TrackingSpeed > 0.f && Progress <= CurrentAction.TrackingEndTime)
+	if (const AActor* Target = CurrentAction.Target.Get(); Target && Progress <= CurrentAction.TrackingEndTime)
 	{
-		RotateOwnerTowards(Target->GetActorLocation(), DeltaTime, CurrentAction.TrackingSpeed);
+		if (CurrentAction.bWarping)
+		{
+			UpdateWarpTarget(Target);
+		}
+		else if (CurrentAction.TrackingSpeed > 0.f)
+		{
+			RotateOwnerTowards(Target->GetActorLocation(), DeltaTime, CurrentAction.TrackingSpeed);
+		}
 	}
 
 	if (CurrentAction.EventTime >= 0.f && !CurrentAction.bUseNotifyEvent && Progress >= CurrentAction.EventTime)
@@ -626,11 +646,8 @@ void UBossCombatComponent::FireProjectiles(const FBossHitWindow& Window)
 	FVector AimDirection = Owner->GetActorForwardVector();
 	if (const AActor* Target = CurrentAction.Target.Get())
 	{
+		// Apunta al centro del objetivo en 3D: sube o baja si está a otra altura.
 		AimDirection = Target->GetActorLocation() - SpawnLocation;
-	}
-	if (bFlattenProjectileAim)
-	{
-		AimDirection.Z = 0.f;
 	}
 	AimDirection = AimDirection.GetSafeNormal();
 	if (AimDirection.IsNearlyZero())
@@ -739,6 +756,21 @@ float UBossCombatComponent::GetMaxAttackDistance() const
 		}
 	}
 	return MaxDistance;
+}
+
+void UBossCombatComponent::UpdateWarpTarget(const AActor* Target) const
+{
+	UMotionWarpingComponent* Warping = OwnerCharacter ? OwnerCharacter->FindComponentByClass<UMotionWarpingComponent>() : nullptr;
+	if (!Warping) return;
+
+	const FVector Origin = OwnerCharacter->GetActorLocation();
+	const FVector ToTarget = Target->GetActorLocation() - Origin;
+	const FVector Direction = ToTarget.GetSafeNormal2D();
+	if (Direction.IsNearlyZero()) return;
+
+	// Termina el acercamiento a WarpStopDistance del objetivo (nunca retrocede). Z se ignora en el warp.
+	const float Approach = FMath::Max(static_cast<float>(ToTarget.Size2D()) - WarpStopDistance, 0.f);
+	Warping->AddOrUpdateWarpTargetFromLocationAndRotation(BossCombat::WarpTargetName, Origin + Direction * Approach, Direction.Rotation());
 }
 
 void UBossCombatComponent::RotateOwnerTowards(const FVector& Location, const float DeltaTime, const float DegreesPerSecond) const

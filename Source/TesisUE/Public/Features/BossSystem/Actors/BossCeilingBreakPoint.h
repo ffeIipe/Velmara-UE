@@ -1,14 +1,17 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Chaos/ChaosNotifyHandlerInterface.h"
 #include "GameFramework/Actor.h"
 #include "BossCeilingBreakPoint.generated.h"
 
 class UArrowComponent;
+class UGeometryCollectionComponent;
 
 /*
- * Punto del techo que el boss puede romper. Colocalo pegado al techo (la flecha apunta hacia donde cae la luz).
+ * Punto del techo que el boss puede romper. Colocalo pegado al techo (la flecha apunta hacia donde cae el derrumbe).
  * Si el boss no tiene suficientes puntos para una etapa, completa con huecos aleatorios dentro de la arena.
+ * La roca es un Geometry Collection fracturado: cae con física, se parte contra el suelo y a los pocos segundos queda estática.
  */
 UCLASS()
 class TESISUE_API ABossCeilingBreakPoint : public AActor
@@ -27,13 +30,17 @@ public:
 	float ShaftRadiusOverride = 0.f;
 
 	// Piezas del techo que desaparecen al romperse (ej. un tile del techo encima de este punto).
-	// Para destrucción con Chaos (Geometry Collection) usá el evento OnCeilingBroken.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Ceiling")
 	TArray<TObjectPtr<AActor>> CeilingPiecesToHide;
+
+	// Segundos desde que la roca se parte contra el suelo hasta que sus pedazos quedan estáticos (sin física).
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Ceiling", meta = (ClampMin = "0.1"))
+	float SettleTime = 4.f;
 
 	UFUNCTION(BlueprintCallable, Category = "Boss|Ceiling")
 	void Break();
 
+	// Vuelve a mostrar las piezas ocultas del techo. La roca ya caída queda donde está.
 	UFUNCTION(BlueprintCallable, Category = "Boss|Ceiling")
 	void ResetPoint();
 
@@ -44,6 +51,8 @@ public:
 	bool CanBreakAtStage(int32 Stage) const { return !bBroken && (StageIndex < 0 || StageIndex == Stage); }
 
 protected:
+	virtual void BeginPlay() override;
+
 	UFUNCTION(BlueprintImplementableEvent, Category = "Boss|Ceiling")
 	void OnCeilingBroken();
 
@@ -53,6 +62,18 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	TObjectPtr<UArrowComponent> Arrow;
 
+	// Roca fracturada (asigná el Geometry Collection en el Blueprint hijo). Sin asset no hace nada.
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UGeometryCollectionComponent> Rock;
+
 private:
+	UFUNCTION()
+	void HandleRockCollision(const FChaosPhysicsCollisionInfo& CollisionInfo);
+
+	void Shatter();
+	void Settle();
+
 	bool bBroken = false;
+	bool bShattered = false;
+	FTimerHandle SettleTimer;
 };

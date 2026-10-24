@@ -104,6 +104,8 @@ ABossEnemy::ABossEnemy()
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
 	GetCapsuleComponent()->InitCapsuleSize(48.f, 96.f);
+	// Las armas del jugador (ASword) detectan golpes con el canal EnemyTrace, igual que en CBP_Enemy.
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_GameTraceChannel3, ECR_Block);
 	GetMesh()->SetRelativeLocationAndRotation(FVector(0.f, 0.f, -96.f), FRotator(0.f, -90.f, 0.f));
 
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
@@ -306,8 +308,6 @@ void ABossEnemy::SetupDefaultAssets()
 		Definition.bShowGroundTelegraph = true;
 		Definition.TelegraphRadius = 330.f;
 		Definition.TelegraphOffset = FVector(150.f, 0.f, 0.f);
-		Definition.bScaleRootMotionToTarget = true;
-		Definition.RootMotionNominalDistance = 600.f;
 		Definition.RecoveryTime = 1.2f;
 		Attacks.Add(Definition);
 	}

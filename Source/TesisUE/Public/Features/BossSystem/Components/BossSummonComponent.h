@@ -40,7 +40,7 @@ public:
 	int32 MinionsPerSummon = 3;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Summon", meta = (ClampMin = "1"))
-	int32 MaxAliveMinions = 6;
+	int32 MaxAliveMinions = 5;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Summon", meta = (ClampMin = "0"))
 	float SummonCooldown = 22.f;
