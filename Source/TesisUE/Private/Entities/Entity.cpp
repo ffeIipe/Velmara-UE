@@ -10,6 +10,7 @@
 #include "DataAssets/EntityData.h"
 #include "Features/InventorySystem/Core/InventoryComponent.h"
 #include "Features/TotemSystem/Subsystems/TotemSubsystem.h"
+#include "Features/ReanimationSystem/GraveSubsystem.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GAS/VelmaraAbilityInputID.h"
@@ -194,6 +195,11 @@ void AEntity::NotifyDeathToWorld()
 	if (UTotemSubsystem* TotemSubsystem = GetWorld()->GetSubsystem<UTotemSubsystem>())
 	{
 		TotemSubsystem->NotifyEntityDied(this);
+	}
+
+	if (UGraveSubsystem* GraveSubsystem = GetWorld()->GetSubsystem<UGraveSubsystem>())
+	{
+		GraveSubsystem->RecordDeath(this);
 	}
 }
 
