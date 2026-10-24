@@ -96,6 +96,9 @@ public:
 	UPROPERTY(BlueprintAssignable, BlueprintCallable)
 	FOnEntityDead OnDead;
 
+	// Avisa a los sistemas del mundo (tótems) que la entidad acaba de morir. Lo llama el AttributeSet una vez por muerte.
+	void NotifyDeathToWorld();
+
 	UFUNCTION(BlueprintCallable, Category = "Entity Flag")
 	bool IsAlive() const;
 
@@ -176,9 +179,6 @@ protected:
 
 	UFUNCTION(BlueprintCallable)
 	void GiveDefaultAbilities();
-
-	// Avisa a los tótems cercanos cuando la entidad recibe el tag State.Dead.
-	void HandleDeadTagChanged(const FGameplayTag Tag, int32 NewCount);
 
 	UPROPERTY()
 	AActor* LastDamageCauser;

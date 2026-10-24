@@ -74,6 +74,8 @@ void UVelmaraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCal
 
         if (LocalDamageDone > 0.0f)
         {
+            const bool bWasAlive = GetHealth() > 0.0f;
+
             const float CurrentShield = GetShield();
             const float DamageToShield = FMath::Min(CurrentShield, LocalDamageDone);
 
@@ -101,7 +103,16 @@ void UVelmaraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCal
                 DeathPayload.Instigator = Data.EffectSpec.GetContext().GetInstigator();
                 DeathPayload.Target = GetOwningActor();
                 DeathPayload.InstigatorTags.AddTag(DeathReason);
-           
+
+                // Solo en el golpe que la mata: los golpes posteriores también llegan acá con la vida en 0.
+                if (bWasAlive)
+                {
+                    if (AEntity* OwnerEntity = Cast<AEntity>(GetOwningActor()))
+                    {
+                        OwnerEntity->NotifyDeathToWorld();
+                    }
+                }
+
                 if (const TScriptInterface<IDamageable> Damageable = GetOwningActor())
                 {
                     Damageable->Execute_MortalDamage(GetOwningActor(), DeathPayload);

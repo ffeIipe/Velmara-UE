@@ -20,7 +20,7 @@ public:
 
 	void UnregisterTotem(UTotemChargeComponent* Totem);
 
-	// AEntity lo llama automáticamente al recibir el tag State.Dead. Llamalo desde Blueprint solo para actores que no son AEntity.
+	// AEntity lo llama automáticamente cuando su vida llega a 0. Llamalo desde Blueprint solo para actores que no son AEntity.
 	UFUNCTION(BlueprintCallable, Category = "Totem")
 	void NotifyEntityDied(AActor* DeadActor);
 

@@ -19,7 +19,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTotemChargeStateSignature);
  * Tótem recargable -> con este componente y bRequiresCharge activo.
  *
  * Mientras está descargado, el tótem ignora el canal de traza de posesión, así GA_Possess no lo detecta ni lo resalta.
- * Las muertes llegan a través de UTotemSubsystem, que AEntity notifica cuando recibe el tag State.Dead.
+ * Las muertes llegan a través de UTotemSubsystem, que AEntity notifica cuando su vida llega a 0.
  */
 UCLASS(ClassGroup=(Totem), meta=(BlueprintSpawnableComponent))
 class TESISUE_API UTotemChargeComponent : public UActorComponent

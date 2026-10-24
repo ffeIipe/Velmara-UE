@@ -26,7 +26,7 @@ public:
 	virtual FText GetInteractionText() const override { return InteractionText; }
 
 protected:
-	// Bloquea el canal Visibility para que lo detecte el trace de GA_Interact.
+	// Bloquea el canal "Item" (el que traza GA_Interact). Si el BP usa otro mesh visible, ese también debe bloquear Item.
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UStaticMeshComponent> AltarMesh;
 

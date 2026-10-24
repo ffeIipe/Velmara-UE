@@ -12,6 +12,8 @@ ABloodAltar::ABloodAltar()
 
 	AltarMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("AltarMesh"));
 	AltarMesh->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
+	// Canal "Item": es el que traza GA_Interact (igual que AItem).
+	AltarMesh->SetCollisionResponseToChannel(ECC_GameTraceChannel5, ECR_Block);
 	SetRootComponent(AltarMesh);
 
 	InteractionText = LOCTEXT("AltarInteraction", "Ofrendar Sangre");

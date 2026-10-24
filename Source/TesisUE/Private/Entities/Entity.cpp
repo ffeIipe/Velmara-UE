@@ -52,9 +52,6 @@ void AEntity::BeginPlay()
 
 		GiveDefaultAbilities();
 		InitializeAttributeSet();
-
-		AbilitySystemComponent->RegisterGameplayTagEvent(FVelmaraGameplayTags::Get().State_Dead, EGameplayTagEventType::NewOrRemoved)
-			.AddUObject(this, &AEntity::HandleDeadTagChanged);
 	}
 
 	bUseControllerRotationPitch = false;
@@ -192,11 +189,8 @@ void AEntity::MortalDamage_Implementation(FGameplayEventData DeathPayload)
 	IDamageable::MortalDamage_Implementation(DeathPayload);
 }
 
-void AEntity::HandleDeadTagChanged(const FGameplayTag Tag, const int32 NewCount)
+void AEntity::NotifyDeathToWorld()
 {
-	// Solo al pasar de vivo a muerto; las entidades del pool vuelven a disparar esto en cada muerte.
-	if (NewCount <= 0) return;
-
 	if (UTotemSubsystem* TotemSubsystem = GetWorld()->GetSubsystem<UTotemSubsystem>())
 	{
 		TotemSubsystem->NotifyEntityDied(this);
