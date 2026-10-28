@@ -18,12 +18,13 @@ UVelmaraGameInstance::UVelmaraGameInstance()
 	CurrentSlotName = TEXT("GameSettings");
 	UserIndex = 0;
 
-    FVelmaraGameplayTags::InitializeGameplayTags(); //initialize basic tags
+    //FVelmaraGameplayTags::InitializeGameplayTags(); //initialize basic tags
 }
 
 void UVelmaraGameInstance::Init()
 {
     Super::Init();
+    FVelmaraGameplayTags::InitializeGameplayTags();
     LoadGameSettings();
 }
 
@@ -44,17 +45,29 @@ void UVelmaraGameInstance::SetDefaultGameSettings()
         if (GEngine && GEngine->GameUserSettings)
         {
             CurrentSettings->ScreenResolution = GEngine->GameUserSettings->GetDesktopResolution();
+            CurrentSettings->WindowMode = EWindowMode::WindowedFullscreen; 
         }
         else
         {
-            CurrentSettings->ScreenResolution = FIntPoint(1920, 1080); // Fallback
+            CurrentSettings->ScreenResolution = FIntPoint(1920, 1080); 
+            CurrentSettings->WindowMode = EWindowMode::Fullscreen;
         }
 
-        CurrentSettings->TextureQuality = 2; // Alto
-        CurrentSettings->ShadowQuality = 2;  // Alto
-        // ... otros defaults
+        CurrentSettings->TextureQuality = 2;
+        CurrentSettings->ShadowQuality = 2;
+        CurrentSettings->AntiAliasingQuality = 2;
+        CurrentSettings->ViewDistanceQuality = 2;
+        CurrentSettings->PostProcessingQuality = 2;
+        CurrentSettings->VisualEffectQuality = 2;
+        CurrentSettings->GlobalIlluminationQuality = 2;
+        CurrentSettings->ShadingQuality = 2;
 
-        UE_LOG(LogTemp, Warning, TEXT("NewGameInstance: Setting default game settings."));
+        CurrentSettings->FrameRateLimit = 60;
+        CurrentSettings->GammaValue = 2.2f;
+
+        ApplyGraphicsSettings();
+        
+        UE_LOG(LogTemp, Log, TEXT("NewGameInstance: Default game settings initialized successfully."));
     }
     else
     {
@@ -115,10 +128,21 @@ void UVelmaraGameInstance::ApplyGraphicsSettings()
         UserSettings->SetShadingQuality(CurrentSettings->ShadingQuality);
         UserSettings->SetFrameRateLimit(CurrentSettings->FrameRateLimit);
         UserSettings->SetFoliageQuality(0);
-
-        UserSettings->ApplySettings(false);
+        ApplyGamma();
+        UserSettings->ApplySettings(true);
         UE_LOG(LogTemp, Log, TEXT("NewGameInstance: Graphics settings applied. Resolution: %s, TextureQ: %d, ShadowQ: %d"),
             *CurrentSettings->ScreenResolution.ToString(), CurrentSettings->TextureQuality, CurrentSettings->ShadowQuality);
+        
+        if (CurrentSettings->ShadowQuality == 0)
+        {
+            GEngine->Exec(nullptr, TEXT("r.ShadowQuality 1"));
+            GEngine->Exec(nullptr, TEXT("r.Shadow.CSM.MaxCascades 1"));
+            GEngine->Exec(nullptr, TEXT("r.Shadow.MaxResolution 512"));
+            GEngine->Exec(nullptr, TEXT("r.Shadow.RadiusThreshold 0.08"));
+            GEngine->Exec(nullptr, TEXT("r.Shadow.DistanceScale 0.6"));
+        }
+        
+        SaveGameSettings();
     }
     else
     {
@@ -244,6 +268,27 @@ void UVelmaraGameInstance::SetFrameRateLimit(int32 NewFrameRateLimit)
     }
 }
 
+void UVelmaraGameInstance::SetGamma(float NewGamma)
+{
+    if (CurrentSettings)
+    {
+        NewGamma = FMath::Clamp(NewGamma, 1.0f, 3.5f);
+        CurrentSettings->GammaValue = NewGamma;
+
+        ApplyGamma();
+        SaveGameSettings();
+    }
+}
+
+void UVelmaraGameInstance::ApplyGamma() const
+{
+    if (GEngine && CurrentSettings)
+    {
+        FString GammaCommand = FString::Printf(TEXT("gamma %f"), CurrentSettings->GammaValue);
+        GEngine->Exec(nullptr, *GammaCommand);
+    }
+}
+
 FIntPoint UVelmaraGameInstance::GetScreenResolution() const
 {
     return CurrentSettings ? CurrentSettings->ScreenResolution : FIntPoint(0, 0);
@@ -353,12 +398,14 @@ void UVelmaraGameInstance::PlayGameplayEffect_Implementation(FGameplayTag Effect
     }
 }
 
-void UVelmaraGameInstance::SaveGame()
+void UVelmaraGameInstance::SaveGame(const int32 SlotIndex)
 {
+    ActiveSaveSlotIndex = FMath::Clamp(SlotIndex, 0, 2); 
+
     if (USaveGameSubsystem* SaveSystem = GetSubsystem<USaveGameSubsystem>())
     {
         FString SlotName = GetSlotNameByIndex(ActiveSaveSlotIndex);
-        SaveSystem->SaveGame(SlotName);
+        SaveSystem->SaveGame(SlotIndex);
     }
 }
 
@@ -370,7 +417,7 @@ void UVelmaraGameInstance::LoadGame(const int32 SlotIndex)
     {
         const FString SlotName = GetSlotNameByIndex(SlotIndex);
         
-        SaveSystem->LoadGame(SlotName); 
+        SaveSystem->LoadGame(SlotIndex); 
     }
 }
 

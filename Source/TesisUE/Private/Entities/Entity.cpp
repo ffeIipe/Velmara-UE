@@ -9,6 +9,8 @@
 #include "Features/SaveSystem/Data/SaveTypes.h"
 #include "DataAssets/EntityData.h"
 #include "Features/InventorySystem/Core/InventoryComponent.h"
+#include "Features/TotemSystem/Subsystems/TotemSubsystem.h"
+#include "Features/ReanimationSystem/GraveSubsystem.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GAS/VelmaraAbilityInputID.h"
@@ -188,6 +190,19 @@ void AEntity::MortalDamage_Implementation(FGameplayEventData DeathPayload)
 	IDamageable::MortalDamage_Implementation(DeathPayload);
 }
 
+void AEntity::NotifyDeathToWorld()
+{
+	if (UTotemSubsystem* TotemSubsystem = GetWorld()->GetSubsystem<UTotemSubsystem>())
+	{
+		TotemSubsystem->NotifyEntityDied(this);
+	}
+
+	if (UGraveSubsystem* GraveSubsystem = GetWorld()->GetSubsystem<UGraveSubsystem>())
+	{
+		GraveSubsystem->RecordDeath(this);
+	}
+}
+
 TScriptInterface<IPickable> AEntity::GetCurrentItem() const
 {
 	return GetInventoryComponent()->GetCurrentWeapon();
@@ -309,6 +324,12 @@ void AEntity::SetTeam(const ETeamAttitude::Type NewTeam)
 			TeamAgent->SetGenericTeamId(NewTeam);
 		}
 	}
+	else if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 10.f, FColor::Red, "Failed to Get Controller.");
+}
+
+void AEntity::SetTeamId(const int NewTeamIndex)
+{
+	TeamId = NewTeamIndex;
 }
 
 void AEntity::InitializeAttributeSet()
@@ -327,7 +348,6 @@ void AEntity::InitializeAttributeSet()
 			AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), AbilitySystemComponent);
 		}
 	}
-	
 }
 
 void AEntity::GiveDefaultAbilities()

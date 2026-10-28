@@ -42,8 +42,6 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
 	TObjectPtr<UEntityData> EntityData;
 
-	virtual FName GetUniqueSaveID_Implementation() override { return UniqueSaveID; }
-	
 	virtual void GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const override;
 
 	UFUNCTION(BlueprintCallable)
@@ -54,7 +52,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "SaveGame")
 	virtual void OnLoadGame_Implementation(const FEntitySaveData& InData) override;
-	
+
 	virtual void ReceiveDamage_Implementation(FGameplayEventData DamagePayload) override;
 
 	virtual void MortalDamage_Implementation(FGameplayEventData DeathPayload) override;
@@ -97,6 +95,9 @@ public:
 
 	UPROPERTY(BlueprintAssignable, BlueprintCallable)
 	FOnEntityDead OnDead;
+
+	// Avisa a los sistemas del mundo (tótems, tumbas del SkeletonMage) que la entidad acaba de morir. Lo llama el AttributeSet una vez por muerte.
+	void NotifyDeathToWorld();
 
 	UFUNCTION(BlueprintCallable, Category = "Entity Flag")
 	bool IsAlive() const;
@@ -156,6 +157,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Team")
 	FGenericTeamId GetTeamId() const {return TeamId;}
+
+	UFUNCTION(BlueprintCallable, Category = "Team")
+	void SetTeamId(int NewTeamIndex);
 	
 protected:
 	UFUNCTION(BlueprintCallable)
@@ -175,7 +179,7 @@ protected:
 
 	UFUNCTION(BlueprintCallable)
 	void GiveDefaultAbilities();
-	
+
 	UPROPERTY()
 	AActor* LastDamageCauser;
 
@@ -211,7 +215,4 @@ protected:
 
 	UPROPERTY(VisibleDefaultsOnly)
 	UVelmaraAttributeSet* AttributeSet;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FName UniqueSaveID;
 };

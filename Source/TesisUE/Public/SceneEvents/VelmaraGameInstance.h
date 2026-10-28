@@ -54,6 +54,11 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Settings")
     void SetFrameRateLimit(int32 NewFrameRateLimit);
 
+	UFUNCTION(BlueprintCallable, Category = "Settings")
+	void SetGamma(float NewGamma);
+	
+    void ApplyGamma() const;
+
     UFUNCTION(BlueprintPure, Category = "Settings")
     FIntPoint GetScreenResolution() const;
 
@@ -103,7 +108,7 @@ public:
     bool DoesProgressSaveExist(int32 SlotIndex) const;
 	
     UFUNCTION(BlueprintCallable, Category = "SaveSystem")
-    void SaveGame();
+    void SaveGame(int32 SlotIndex);
 
     UFUNCTION(BlueprintCallable, Category = "SaveSystem")
     void LoadGame(int32 SlotIndex);
@@ -133,6 +138,7 @@ public:
 private:
     const FString SettingsSlotName = TEXT("GameSettings");
 
+	UFUNCTION(BlueprintCallable, Category = "GameSettings")
     void SetDefaultGameSettings();
 
 	UPROPERTY(VisibleAnywhere, Category = "Metadata")

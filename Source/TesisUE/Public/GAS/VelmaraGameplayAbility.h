@@ -21,6 +21,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	bool bActivateOnGiven = false;
 
+	// Atributo AttackSpeed del dueño (1 = normal). Conectalo al "Rate" de PlayMontageAndWait en las habilidades de ataque.
+	UFUNCTION(BlueprintPure, Category = "Attributes")
+	float GetAttackSpeedMultiplier() const;
+
 protected:
 	virtual void OnAvatarSet(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpec& Spec) override;
 

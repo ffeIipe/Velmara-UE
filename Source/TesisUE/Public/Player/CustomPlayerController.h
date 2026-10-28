@@ -28,13 +28,14 @@ public:
 	UPROPERTY(BlueprintReadOnly)
 	class APlayerMainHUD* PlayerMainHUD;
 
+	// Devuelve false si no se pudo poseer (por ejemplo, un tótem recargable que todavía no está cargado).
 	UFUNCTION(BlueprintCallable, Category = "GAS|Possession")
-	void PerformPossession(APawn* NewPawn);
+	bool PerformPossession(APawn* NewPawn);
 
 	UFUNCTION(BlueprintCallable, Category = "GAS|Possession")
 	bool IsPossessing() const;
 	
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadWrite)
 	FVector2D InputMovingVector = FVector2D::ZeroVector;
 	
 protected:

@@ -13,6 +13,8 @@ void UTriggerComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	OnComponentBeginOverlap.AddDynamic(this, &UTriggerComponent::OnBoxBeginOverlap);
+	OnComponentEndOverlap.AddDynamic(this, &UTriggerComponent::OnBoxEndOverlap);
+	
 }
 
 bool UTriggerComponent::HasMatchingGameplayTags(AActor* Actor) const
@@ -54,6 +56,14 @@ void UTriggerComponent::OnBoxBeginOverlap(UPrimitiveComponent* OverlappedCompone
 {
 	if (HasMatchingGameplayTags(OtherActor))
 	{
-		OnActorAccepted.Broadcast(OtherActor);
+		OnActorEntered.Broadcast(OtherActor);
+	}
+}
+
+void UTriggerComponent::OnBoxEndOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	if (HasMatchingGameplayTags(OtherActor))
+	{
+		OnActorExit.Broadcast(OtherActor);
 	}
 }

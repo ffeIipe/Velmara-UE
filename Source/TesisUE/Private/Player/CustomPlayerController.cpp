@@ -7,6 +7,7 @@
 #include "GenericTeamAgentInterface.h"
 #include "Blueprint/UserWidget.h"
 #include "DataAssets/InputData.h"
+#include "Features/TotemSystem/Core/TotemChargeComponent.h"
 #include "GAS/VelmaraAbilityInputID.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundMix.h"
@@ -27,9 +28,11 @@ ACustomPlayerController::ACustomPlayerController()
     TeamId = FGenericTeamId(2);
 }
 
-void ACustomPlayerController::PerformPossession(APawn* NewPawn)
-{
-    if (!NewPawn || NewPawn == GetPawn()) return;
+bool ACustomPlayerController::PerformPossession(APawn* NewPawn)
+    {
+    if (!NewPawn || NewPawn == GetPawn()) return false;
+
+    if (!UTotemChargeComponent::CanActorBePossessed(NewPawn)) return false;
 
     if (!OriginalBody)
     {
@@ -47,6 +50,8 @@ void ACustomPlayerController::PerformPossession(APawn* NewPawn)
             NewASC->InitAbilityActorInfo(this, NewPawn);
         }
     }
+
+    return true;
 }
 
 bool ACustomPlayerController::IsPossessing() const
@@ -82,14 +87,14 @@ void ACustomPlayerController::SetupInputComponent()
 
     if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
     {
-        if (InputData->Inputs.MoveAction)
+        /*if (InputData->Inputs.MoveAction)
         {
             EnhancedInputComponent->BindAction(InputData->Inputs.MoveAction, ETriggerEvent::Triggered, this, &ACustomPlayerController::Input_Move);
             EnhancedInputComponent->BindAction(InputData->Inputs.MoveAction, ETriggerEvent::Completed, this, &ACustomPlayerController::Input_Move);
         }
 		
         if (InputData->Inputs.LookAction)
-            EnhancedInputComponent->BindAction(InputData->Inputs.LookAction, ETriggerEvent::Triggered, this, &ACustomPlayerController::Input_Look);
+            EnhancedInputComponent->BindAction(InputData->Inputs.LookAction, ETriggerEvent::Triggered, this, &ACustomPlayerController::Input_Look);*/
 
         if (InputData->Inputs.CrouchAction)
         {
@@ -219,7 +224,7 @@ void ACustomPlayerController::AbilityInputTagReleased(EVelmaraAbilityInputID Inp
     }
 }
 
-void ACustomPlayerController::Input_Move(const FInputActionValue& Value)
+/*void ACustomPlayerController::Input_Move(const FInputActionValue& Value)
 {
     if (APawn* ControlledPawn = GetPawn())
     {
@@ -256,7 +261,7 @@ void ACustomPlayerController::Input_Look(const FInputActionValue& Value)
 	
     AddYawInput(LookAxisVector.X);
     AddPitchInput(LookAxisVector.Y);
-}
+}*/
 
 void ACustomPlayerController::TogglePauseMenu()
 {
