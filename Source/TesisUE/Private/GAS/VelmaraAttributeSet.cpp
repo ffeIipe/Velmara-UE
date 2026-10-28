@@ -6,6 +6,7 @@
 #include "Entities/Entity.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Interfaces/Damageable.h"
+#include "GAS/VelmaraGameplayTags.h"
 
 UVelmaraAttributeSet::UVelmaraAttributeSet()
 {
@@ -42,6 +43,12 @@ float UVelmaraAttributeSet::CalculateFinalDamage(const float RawDamage, const FG
 		if (SourceSet && SourceSet != this)
 		{
 			FinalDamage += FMath::Max(SourceSet->GetBaseDamage(), 0.f);
+
+			// Marca de sangre del pulso vampiro.
+			if (GetOwningAbilitySystemComponent()->HasMatchingGameplayTag(FVelmaraGameplayTags::Get().State_BloodMarked))
+			{
+				FinalDamage *= BloodMarkDamageMultiplier;
+			}
 		}
 	}
 
