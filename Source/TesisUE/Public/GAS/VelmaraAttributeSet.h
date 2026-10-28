@@ -80,6 +80,9 @@ public:
 	// Con esta cantidad de armadura se reduce el 50% del daño.
 	static constexpr float ArmorMitigationConstant = 100.f;
 
+	// Multiplicador de daño recibido mientras el objetivo tiene State.BloodMarked.
+	static constexpr float BloodMarkDamageMultiplier = 1.5f;
+
 protected:
 	// Aplica el daño base del atacante y la armadura propia al daño entrante.
 	float CalculateFinalDamage(float RawDamage, const FGameplayEffectSpec& EffectSpec) const;
