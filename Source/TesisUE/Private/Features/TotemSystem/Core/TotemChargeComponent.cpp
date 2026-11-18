@@ -6,6 +6,8 @@
 #include "Entities/Entity.h"
 #include "Features/TotemSystem/Subsystems/TotemSubsystem.h"
 #include "GameFramework/Pawn.h"
+#include "Items/OrbBase.h"
+#include "Subsystems/OrbsPoolManager.h"
 #include "Kismet/GameplayStatics.h"
 
 UTotemChargeComponent::UTotemChargeComponent()
@@ -81,7 +83,7 @@ bool UTotemChargeComponent::TryAbsorbDeath(AActor* DeadActor)
 	if (!bRequiresCharge || !DeadActor || DeadActor == GetOwner()) return false;
 
 	// Ya cargado, o el jugador está dentro del tótem: las muertes no suman.
-	if (IsCharged() || IsOwnerPlayerControlled()) return false;
+	if (IsCharged() || CurrentKills + PendingOrbs >= KillsToCharge || IsOwnerPlayerControlled()) return false;
 
 	if (bOnlyCountEnemies && !IsEnemyOfPlayer(DeadActor)) return false;
 
@@ -90,7 +92,24 @@ bool UTotemChargeComponent::TryAbsorbDeath(AActor* DeadActor)
 
 	OnEnemyAbsorbed.Broadcast(DeadActor);
 
-	AddCharge(1);
+	UOrbsPoolManager* OrbPool = AbsorbOrbClass ? GetWorld()->GetSubsystem<UOrbsPoolManager>() : nullptr;
+	AOrbBase* Orb = OrbPool
+		? Cast<AOrbBase>(OrbPool->SpawnOrbFromPool(AbsorbOrbClass, DeadActor->GetActorLocation(), FRotator::ZeroRotator, GetOwner()))
+		: nullptr;
+
+	if (!Orb)
+	{
+		AddCharge(1);
+		return true;
+	}
+
+	++PendingOrbs;
+	Orb->OnArrivedNative.AddWeakLambda(this, [this](AActor*)
+	{
+		PendingOrbs = FMath::Max(PendingOrbs - 1, 0);
+		AddCharge(1);
+	});
+	Orb->LaunchToTarget(GetOwner());
 
 	return true;
 }

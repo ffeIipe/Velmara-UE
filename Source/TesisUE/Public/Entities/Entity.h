@@ -25,6 +25,20 @@ class UGameplayEffect;
 class USpringArmComponent;
 class UEntityData;
 
+class AOrbBase;
+
+USTRUCT(BlueprintType)
+struct FEntityOrbDrop
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TSubclassOf<AOrbBase> OrbClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "1"))
+	int32 Count = 1;
+};
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEntityDead, AEntity*, EntityDead);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEntityDamaged, AEntity*, LastDamageCauser);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEntityCanBeFinished);
@@ -164,6 +178,12 @@ public:
 	void SetTeamId(int NewTeamIndex);
 	
 protected:
+	// Orbes que salen al morir (si no lo controla el jugador) y viajan al jugador: vida, energía, etc.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Orbs")
+	TArray<FEntityOrbDrop> DeathOrbDrops;
+
+	void SpawnDeathOrbs();
+
 	UFUNCTION(BlueprintCallable)
 	virtual void InitializeAttributeSet();
 	

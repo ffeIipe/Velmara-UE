@@ -1,7 +1,10 @@
 #include "Player/CustomPlayerController.h"
 
+#include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemInterface.h"
+#include "Entities/Entity.h"
+#include "GAS/VelmaraAttributeSet.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "GenericTeamAgentInterface.h"
@@ -13,6 +16,17 @@
 #include "Sound/SoundMix.h"
 
 #include "HUD/PlayerMainHUD.h"
+
+namespace
+{
+    // AEntity::IsAlive() no sirve para enemigos (State.Dead nunca se aplica). Sin AttributeSet, Health daría 0: no cuenta como muerto.
+    bool IsEntityDead(const AEntity* Entity)
+    {
+        const UAbilitySystemComponent* ASC = Entity ? Entity->GetAbilitySystemComponent() : nullptr;
+        const FGameplayAttribute HealthAttribute = UVelmaraAttributeSet::GetHealthAttribute();
+        return ASC && ASC->HasAttributeSetForAttribute(HealthAttribute) && ASC->GetNumericAttribute(HealthAttribute) <= 0.f;
+    }
+}
 
 
 ACustomPlayerController::ACustomPlayerController()
@@ -29,29 +43,126 @@ ACustomPlayerController::ACustomPlayerController()
 }
 
 bool ACustomPlayerController::PerformPossession(APawn* NewPawn)
-    {
+{
     if (!NewPawn || NewPawn == GetPawn()) return false;
 
     if (!UTotemChargeComponent::CanActorBePossessed(NewPawn)) return false;
 
+    APawn* PreviousPawn = GetPawn();
     if (!OriginalBody)
     {
-        OriginalBody = GetPawn();
+        OriginalBody = PreviousPawn;
     }
+
+    // Se guarda antes de Possess: al poseer, el AIController del enemigo queda suelto.
+    AController* NewPawnPreviousController = NewPawn->GetController();
+    const AEntity* NewEntity = Cast<AEntity>(NewPawn);
+    const FGenericTeamId NewPawnTeam = NewEntity ? NewEntity->GetTeamId() : FGenericTeamId::NoTeam;
 
     UnPossess();
 
     Possess(NewPawn);
 
-    if (const IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(NewPawn))
+    if (UAbilitySystemComponent* NewASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(NewPawn))
     {
-        if (UAbilitySystemComponent* NewASC = ASI->GetAbilitySystemComponent())
-        {
-            NewASC->InitAbilityActorInfo(this, NewPawn);
-        }
+        NewASC->InitAbilityActorInfo(this, NewPawn);
+    }
+
+    if (PreviousPawn && PreviousPawn != OriginalBody)
+    {
+        ReleaseHost(PreviousPawn);
+    }
+
+    if (NewPawn != OriginalBody)
+    {
+        HostAIController = NewPawnPreviousController;
+        HostTeamId = NewPawnTeam;
+        GetWorldTimerManager().SetTimer(PossessionTickTimer, this, &ACustomPlayerController::TickPossession, PossessionTickInterval, true);
+    }
+    else
+    {
+        GetWorldTimerManager().ClearTimer(PossessionTickTimer);
+        bEndingPossession = false;
     }
 
     return true;
+}
+
+void ACustomPlayerController::ReleaseHost(APawn* Host)
+{
+    if (UAbilitySystemComponent* HostASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Host))
+    {
+        HostASC->InitAbilityActorInfo(Host, Host);
+    }
+
+    AEntity* HostEntity = Cast<AEntity>(Host);
+    if (!HostEntity) return; // Tótems: no tienen IA ni equipo que restaurar.
+
+    HostEntity->TeamId = HostTeamId;
+
+    // Se destruye el AIController viejo: re-poseer con él no reinicia el Behavior Tree de forma confiable.
+    if (AController* OldController = HostAIController.Get())
+    {
+        OldController->Destroy();
+    }
+    HostAIController = nullptr;
+
+    // Murió poseído: CBP_Enemy.HandleControllerDeactivation espera un AIController para apagar la IA y hacer ragdoll.
+    if (IsEntityDead(HostEntity))
+    {
+        HostEntity->SpawnDefaultController();
+        return;
+    }
+
+    // Aturdido: sin controller no hace nada hasta que vuelve la IA.
+    TWeakObjectPtr<AEntity> WeakHost = HostEntity;
+    FTimerHandle StunTimer;
+    GetWorldTimerManager().SetTimer(StunTimer, [WeakHost]()
+    {
+        AEntity* Entity = WeakHost.Get();
+        if (Entity && !IsEntityDead(Entity) && !Entity->GetController())
+        {
+            Entity->SpawnDefaultController();
+        }
+    }, FMath::Max(UnpossessStunDuration, 0.01f), false);
+}
+
+void ACustomPlayerController::TickPossession()
+{
+    if (!IsPossessing()) return;
+
+    // El cuerpo poseído desapareció (pool/destroy): volver directo, no hay a quién mandarle el evento.
+    if (!GetPawn())
+    {
+        if (OriginalBody) PerformPossession(OriginalBody);
+        return;
+    }
+
+    if (bEndingPossession)
+    {
+        // El evento no sacó al jugador (p. ej. el cuerpo murió y bloquea habilidades): volver sin pasar por GA_Possess.
+        PerformPossession(OriginalBody);
+        return;
+    }
+
+    const AEntity* Host = Cast<AEntity>(GetPawn());
+    UAbilitySystemComponent* BodyASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OriginalBody);
+    bool bShouldEnd = IsEntityDead(Host);
+
+    if (BodyASC && Host) // Los tótems no consumen sangre.
+    {
+        const FGameplayAttribute EnergyAttribute = UVelmaraAttributeSet::GetEnergyAttribute();
+        const float NewEnergy = FMath::Max(0.f, BodyASC->GetNumericAttribute(EnergyAttribute) - PossessionEnergyDrainPerSecond * PossessionTickInterval);
+        BodyASC->SetNumericAttributeBase(EnergyAttribute, NewEnergy);
+        bShouldEnd |= NewEnergy <= 0.f;
+    }
+
+    if (bShouldEnd)
+    {
+        bEndingPossession = true;
+        // GA_Possess del cuerpo poseído hace la vuelta completa (interfaz, tags, widget).
+        UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(GetPawn(), FGameplayTag::RequestGameplayTag(TEXT("Event.Posses.Return")), FGameplayEventData());
+    }
 }
 
 bool ACustomPlayerController::IsPossessing() const
@@ -160,6 +271,12 @@ void ACustomPlayerController::SetupInputComponent()
         {
             EnhancedInputComponent->BindAction(InputData->Inputs.InputAction_Skill4, ETriggerEvent::Started, this, &ACustomPlayerController::AbilityInputTagPressed, EVelmaraAbilityInputID::Skill4);
             EnhancedInputComponent->BindAction(InputData->Inputs.InputAction_Skill4, ETriggerEvent::Completed, this, &ACustomPlayerController::AbilityInputTagReleased, EVelmaraAbilityInputID::Skill4);
+        }
+
+        if (InputData->Inputs.PossessAction)
+        {
+            EnhancedInputComponent->BindAction(InputData->Inputs.PossessAction, ETriggerEvent::Started, this, &ACustomPlayerController::AbilityInputTagPressed, EVelmaraAbilityInputID::Possess);
+            EnhancedInputComponent->BindAction(InputData->Inputs.PossessAction, ETriggerEvent::Completed, this, &ACustomPlayerController::AbilityInputTagReleased, EVelmaraAbilityInputID::Possess);
         }
     }
 }

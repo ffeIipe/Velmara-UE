@@ -20,4 +20,5 @@ enum class EVelmaraAbilityInputID : uint8
 	Skill2				UMETA(DisplayName = "Skill 2"),
 	Skill3				UMETA(DisplayName = "Skill 3"),
 	Skill4				UMETA(DisplayName = "Skill 4"),
+	Possess				UMETA(DisplayName = "Possess"),
 };

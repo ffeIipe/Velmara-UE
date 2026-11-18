@@ -49,6 +49,9 @@ struct FInputs
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input | Actions")
 	UInputAction* InputAction_Skill4 = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input | Actions")
+	UInputAction* PossessAction = nullptr;
 };
 
 UCLASS()

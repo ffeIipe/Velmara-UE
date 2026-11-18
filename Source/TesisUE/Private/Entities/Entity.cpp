@@ -18,6 +18,9 @@
 #include "GAS/VelmaraGameplayAbility.h"
 #include "GAS/VelmaraGameplayTags.h"
 #include "Interfaces/Weapon/WeaponInterface.h"
+#include "Items/OrbBase.h"
+#include "Kismet/GameplayStatics.h"
+#include "Subsystems/OrbsPoolManager.h"
 #include "Serialization/ObjectAndNameAsStringProxyArchive.h"
 
 AEntity::AEntity()
@@ -190,8 +193,37 @@ void AEntity::MortalDamage_Implementation(FGameplayEventData DeathPayload)
 	IDamageable::MortalDamage_Implementation(DeathPayload);
 }
 
+void AEntity::SpawnDeathOrbs()
+{
+	if (DeathOrbDrops.IsEmpty() || IsPlayerControlled()) return;
+
+	APlayerController* PlayerController = UGameplayStatics::GetPlayerController(this, 0);
+	AActor* Player = PlayerController ? PlayerController->GetPawn() : nullptr;
+	UOrbsPoolManager* OrbPool = GetWorld()->GetSubsystem<UOrbsPoolManager>();
+	if (!Player || Player == this || !OrbPool) return;
+
+	// Aliados del jugador no sueltan orbes.
+	const IGenericTeamAgentInterface* PlayerTeam = Cast<IGenericTeamAgentInterface>(PlayerController);
+	if (PlayerTeam && PlayerTeam->GetGenericTeamId() == GetTeamId()) return;
+
+	for (const FEntityOrbDrop& Drop : DeathOrbDrops)
+	{
+		for (int32 i = 0; i < Drop.Count; ++i)
+		{
+			// Dispersión chica para que los orbes no salgan todos del mismo punto.
+			const FVector Offset(FMath::FRandRange(-40.f, 40.f), FMath::FRandRange(-40.f, 40.f), FMath::FRandRange(40.f, 120.f));
+			if (AOrbBase* Orb = Cast<AOrbBase>(OrbPool->SpawnOrbFromPool(Drop.OrbClass, GetActorLocation() + Offset, FRotator::ZeroRotator, this)))
+			{
+				Orb->LaunchToTarget(Player);
+			}
+		}
+	}
+}
+
 void AEntity::NotifyDeathToWorld()
 {
+	SpawnDeathOrbs();
+
 	if (UTotemSubsystem* TotemSubsystem = GetWorld()->GetSubsystem<UTotemSubsystem>())
 	{
 		TotemSubsystem->NotifyEntityDied(this);

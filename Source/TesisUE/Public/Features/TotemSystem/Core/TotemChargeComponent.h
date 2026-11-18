@@ -5,6 +5,8 @@
 #include "Engine/EngineTypes.h"
 #include "TotemChargeComponent.generated.h"
 
+class AOrbBase;
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTotemEnemyAbsorbedSignature, AActor*, DeadEnemy);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnTotemChargeChangedSignature, int32, CurrentKills, int32, KillsToCharge);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTotemChargeStateSignature);
@@ -121,6 +123,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Totem | Charge", meta = (EditCondition = "bRequiresCharge"))
 	bool bOnlyCountEnemies = true;
 
+	// Orbe que sale del enemigo muerto y viaja al tótem; la carga se suma al llegar. Vacío = carga instantánea sin orbe.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Totem | Visuals", meta = (EditCondition = "bRequiresCharge"))
+	TSubclassOf<AOrbBase> AbsorbOrbClass;
+
 	/* POSESIÓN */
 
 	// Mientras está descargado, el tótem ignora este canal para que la traza de GA_Possess no lo encuentre.
@@ -156,6 +162,9 @@ private:
 
 	UPROPERTY(VisibleInstanceOnly, Category = "Totem | Charge")
 	int32 CurrentKills = 0;
+
+	// Orbes en vuelo que todavía no sumaron: evita lanzar más de los necesarios para cargar.
+	int32 PendingOrbs = 0;
 
 	// Respuestas originales al canal de posesión, para restaurarlas cuando el tótem se carga.
 	TMap<TWeakObjectPtr<UPrimitiveComponent>, TEnumAsByte<ECollisionResponse>> CachedTraceResponses;

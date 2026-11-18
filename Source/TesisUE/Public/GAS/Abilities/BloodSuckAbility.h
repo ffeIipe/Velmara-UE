@@ -43,14 +43,24 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "BloodSuck")
 	float BiteDistance = 120.f;
 
+	// Hueso del enemigo al que se pega el mesh de Velmara (conserva la pose a la espalda que ya tiene al engancharse).
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "BloodSuck")
-	float MontageLungeDistance = 300.f;
+	FName AttachBone = TEXT("spine_03");
+
+	// Distancia a la que Velmara queda pegada a la espalda del enemigo.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "BloodSuck")
+	float BackDistance = 60.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "BloodSuck")
+	TObjectPtr<UAnimMontage> VictimReactMontage;
 
 private:
 	UPROPERTY()
 	TWeakObjectPtr<AEntity> Victim;
 
 	bool bIgnoringMoveInput = false;
+	bool bAttached = false;
+	FTransform SavedMeshTransform;
 
 	AEntity* FindVictim(const AEntity* Self) const;
 	void SetVictimFrozen(bool bFrozen) const;

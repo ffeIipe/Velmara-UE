@@ -93,9 +93,10 @@ void UOrbsPoolManager::ReturnOrbToPool(AActor* Orb)
 {
     if (!Orb) return;
 
-    const TSubclassOf<AItem> ItemClass = Orb->GetClass();
+    // Antes era TSubclassOf<AItem>: para orbes que no son AItem daba null y el orbe se destruía en vez de reciclarse.
+    const TSubclassOf<AActor> OrbClass = Orb->GetClass();
 
-    if (FOrbsPool* Pool = GetOrCreatePool(ItemClass))
+    if (FOrbsPool* Pool = GetOrCreatePool(OrbClass))
     {
         if (Orb->GetClass()->ImplementsInterface(UOrbPoolingInterface::StaticClass()))
         {
