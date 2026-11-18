@@ -1,0 +1,49 @@
+{
+	"FileVersion": 3,
+	"Version": 13,
+	"VersionName": "4.2.2",
+	"FriendlyName": "Stage Zero - Preload Suite",
+	"Description": "Preloads authored manifest assets and can optionally observe Unreal Engine recorded PSO-cache lifecycle evidence before gameplay.",
+	"Category": "Performance",
+	"CreatedBy": "71 Studios",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"EngineVersion": "5.5.0",
+	"CanContainContent": true,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "StageZeroBootstrap",
+			"Type": "Runtime",
+			"LoadingPhase": "PreEarlyLoadingScreen",
+			"PlatformAllowList": [
+				"Win64",
+				"Mac",
+				"Linux"
+			]
+		},
+		{
+			"Name": "StageZero",
+			"Type": "Runtime",
+			"LoadingPhase": "PreDefault",
+			"PlatformAllowList": [
+				"Win64",
+				"Mac",
+				"Linux"
+			]
+		},
+		{
+			"Name": "StageZeroEditor",
+			"Type": "Editor",
+			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "Niagara",
+			"Enabled": true
+		}
+	]
+}
