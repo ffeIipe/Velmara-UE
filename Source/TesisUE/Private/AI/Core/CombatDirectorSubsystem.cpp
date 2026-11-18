@@ -1,12 +1,23 @@
 #include "AI/Core/CombatDirectorSubsystem.h"
-#include "Engine/Engine.h" // Necesario para AddOnScreenDebugMessage
+#include "Engine/Engine.h"
+
+static TAutoConsoleVariable<bool> CVarDebugCombatDirector(
+    TEXT("AI.DebugCombatDirector"), false, TEXT("Muestra en pantalla los turnos de ataque que reparte el CombatDirector."));
+
+static void DirectorDebug(const FColor Color, const FString& Message)
+{
+    if (GEngine && CVarDebugCombatDirector.GetValueOnGameThread())
+    {
+        GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, Color, Message);
+    }
+}
 
 void UCombatDirectorSubsystem::RegisterEnemy(AActor* Enemy, AActor* TargetActor)
 {
     if (!Enemy || !TargetActor) return;
 
     FCombatTargetData& Data = CombatMap.FindOrAdd(TargetActor);
-    
+
     // Evitamos duplicados
     if (!Data.RegisteredEnemies.Contains(Enemy))
     {
@@ -22,22 +33,13 @@ void UCombatDirectorSubsystem::UnregisterEnemy(AActor* Enemy, AActor* TargetActo
     {
         Data->RegisteredEnemies.Remove(Enemy);
 
-        if (Data->AttackingEnemies.Contains(Enemy))
+        if (Data->AttackingEnemies.Remove(Enemy) > 0)
         {
-            Data->AttackingEnemies.Remove(Enemy);
-            
-            // DEBUG: Alguien se desregistró y devolvió el token forzosamente
-            if (GEngine)
-            {
-                FString Msg = FString::Printf(TEXT("DIRECTOR: %s Unregistered & Forced Token Return. Slots: %d / %d"), 
-                    *Enemy->GetName(), 
-                    Data->AttackingEnemies.Num(), 
-                    Data->MaxConcurrentAttackers);
-                GEngine->AddOnScreenDebugMessage(INDEX_NONE, 5.f, FColor::Orange, Msg);
-            }
+            DirectorDebug(FColor::Orange, FString::Printf(TEXT("DIRECTOR: %s Unregistered & Forced Token Return. Slots: %d / %d"),
+                *GetNameSafe(Enemy), Data->AttackingEnemies.Num(), Data->MaxConcurrentAttackers));
         }
 
-        if (Data->RegisteredEnemies.Num() == 0)
+        if (Data->RegisteredEnemies.Num() == 0 && Data->AttackingEnemies.Num() == 0)
         {
             CombatMap.Remove(TargetActor);
         }
@@ -68,68 +70,23 @@ bool UCombatDirectorSubsystem::RequestAttackToken(AActor* Enemy, AActor* TargetA
 
     FCombatTargetData& Data = CombatMap.FindOrAdd(TargetActor);
 
-    // 1. Limpieza preventiva
-    int32 RemovedCount = 0;
-    Data.AttackingEnemies.RemoveAll([&RemovedCount](const TWeakObjectPtr<AActor>& Ptr)
-    {
-        if (!Ptr.IsValid())
-        {
-            RemovedCount++;
-            return true;
-        }
-        return false;
-    });
+    // Enemigos destruidos o devueltos al pool que se quedaron con un turno.
+    Data.AttackingEnemies.RemoveAll([](const TWeakObjectPtr<AActor>& Ptr) { return !Ptr.IsValid(); });
 
-    if (RemovedCount > 0 && GEngine)
-    {
-        GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, 
-            FString::Printf(TEXT("DIRECTOR: Cleaned %d invalid enemies holding tokens!"), RemovedCount));
-    }
+    if (Data.AttackingEnemies.Contains(Enemy)) return true;
 
-    // 2. Idempotencia
-    if (Data.AttackingEnemies.Contains(Enemy))
-    {
-        // DEBUG: Ya tenía token
-        if (GEngine)
-        {
-            // Usamos key aleatoria para no spamear, o un tiempo corto
-            // FString Msg = FString::Printf(TEXT("DIRECTOR: %s already has token."), *Enemy->GetName());
-            // GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1.f, FColor::Yellow, Msg);
-        }
-        return true;
-    }
+    const double Now = Enemy->GetWorld()->GetTimeSeconds();
+    if (const double* Until = Data.CooldownUntil.Find(Enemy); Until && Now < *Until) return false;
 
-    // 3. Chequeo de cupo (AQUÍ ESTÁ LA CLAVE DEL DEBUG)
     if (Data.AttackingEnemies.Num() < Data.MaxConcurrentAttackers)
     {
         Data.AttackingEnemies.Add(Enemy);
-        
-        // DEBUG: ÉXITO
-        if (GEngine)
-        {
-            FString Msg = FString::Printf(TEXT("DIRECTOR: Token GRANTED to %s. Slots Used: %d / %d"), 
-                *Enemy->GetName(), 
-                Data.AttackingEnemies.Num(), 
-                Data.MaxConcurrentAttackers);
-            GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Green, Msg);
-        }
+        DirectorDebug(FColor::Green, FString::Printf(TEXT("DIRECTOR: Token GRANTED to %s. Slots Used: %d / %d"),
+            *Enemy->GetName(), Data.AttackingEnemies.Num(), Data.MaxConcurrentAttackers));
         return true;
     }
 
-    // DEBUG: FALLO (Cupo lleno)
-    if (GEngine)
-    {
-        // Nota: Esto puede spamear mucho si llamas a Request cada tick.
-        // Recomiendo verlo una vez y luego comentar esta línea si molesta.
-        FString Msg = FString::Printf(TEXT("DIRECTOR: Token DENIED to %s. Full: %d / %d"), 
-            *Enemy->GetName(), 
-            Data.AttackingEnemies.Num(), 
-            Data.MaxConcurrentAttackers);
-        // Color Rojo para denegado
-        GEngine->AddOnScreenDebugMessage(INDEX_NONE, 0.0f, FColor::Red, Msg); 
-    }
-
-    return false; 
+    return false;
 }
 
 void UCombatDirectorSubsystem::ReturnAttackToken(AActor* Enemy, AActor* TargetActor)
@@ -138,23 +95,37 @@ void UCombatDirectorSubsystem::ReturnAttackToken(AActor* Enemy, AActor* TargetAc
 
     if (FCombatTargetData* Data = CombatMap.Find(TargetActor))
     {
-        int32 Removed = Data->AttackingEnemies.Remove(Enemy);
-        
-        // DEBUG: Retorno voluntario
-        if (Removed > 0 && GEngine)
+        if (Data->AttackingEnemies.Remove(Enemy) > 0)
         {
-            FString Msg = FString::Printf(TEXT("DIRECTOR: %s Returned Token. Slots Free: %d / %d"), 
-                *Enemy->GetName(), 
-                Data->AttackingEnemies.Num(), 
-                Data->MaxConcurrentAttackers);
-            GEngine->AddOnScreenDebugMessage(INDEX_NONE, 2.f, FColor::Cyan, Msg);
+            DirectorDebug(FColor::Cyan, FString::Printf(TEXT("DIRECTOR: %s Returned Token. Slots Used: %d / %d"),
+                *GetNameSafe(Enemy), Data->AttackingEnemies.Num(), Data->MaxConcurrentAttackers));
         }
     }
 }
 
-void UCombatDirectorSubsystem::CleanInvalidEntries(FCombatTargetData& Data)
+void UCombatDirectorSubsystem::ReturnAttackTokenWithCooldown(AActor* Enemy, AActor* TargetActor, const float Cooldown)
 {
-    // Esta función ya está integrada con debugs dentro de RequestAttackToken arriba
-    // para no duplicar lógica en el ejemplo de debug.
-    // En producción deberías mantenerla separada.
+    ReturnAttackToken(Enemy, TargetActor);
+
+    if (Enemy && TargetActor && Cooldown > 0.f)
+    {
+        CombatMap.FindOrAdd(TargetActor).CooldownUntil.Add(Enemy, Enemy->GetWorld()->GetTimeSeconds() + Cooldown);
+    }
+}
+
+void UCombatDirectorSubsystem::ReturnAllAttackTokens(AActor* Enemy)
+{
+    for (TPair<TWeakObjectPtr<AActor>, FCombatTargetData>& Pair : CombatMap)
+    {
+        if (Pair.Value.AttackingEnemies.Remove(Enemy) > 0)
+        {
+            DirectorDebug(FColor::Cyan, FString::Printf(TEXT("DIRECTOR: %s Released Token."), *GetNameSafe(Enemy)));
+        }
+    }
+}
+
+bool UCombatDirectorSubsystem::HasAttackToken(AActor* Enemy, AActor* TargetActor) const
+{
+    const FCombatTargetData* Data = TargetActor ? CombatMap.Find(TargetActor) : nullptr;
+    return Data && Data->AttackingEnemies.Contains(Enemy);
 }

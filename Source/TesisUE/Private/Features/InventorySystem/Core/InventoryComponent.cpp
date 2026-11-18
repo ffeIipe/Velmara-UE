@@ -11,6 +11,7 @@
 #include "HUD/Inventory.h"
 
 #include "DataAssets/EntityData.h"
+#include "Entities/Entity.h"
 #include "Features/InventorySystem/Items/Weapon.h"
 #include "Features/SaveSystem/Core/SaveComponent.h"
 
@@ -22,7 +23,17 @@ UInventoryComponent::UInventoryComponent()
 void UInventoryComponent::BeginPlay()
 {
     Super::BeginPlay();
-    
+
+    // InventorySlots es Transient y se llena en OnConstruction, que no vuelve a correr en los actores puestos en el nivel
+    // (al cargar el mapa o duplicarlo para PIE): sin esto llegan sin slots y TryAddWeapon falla (enemigos desarmados).
+    if (InventorySlots.Num() == 0)
+    {
+        if (const AEntity* Entity = Cast<AEntity>(GetOwner()); Entity && Entity->EntityData)
+        {
+            InitializeValues(Entity->EntityData->InventoryData);
+        }
+    }
+
     PlayerControllerRef = UGameplayStatics::GetPlayerController(GetWorld(), 0);
     OwnerController = PlayerControllerRef;
 

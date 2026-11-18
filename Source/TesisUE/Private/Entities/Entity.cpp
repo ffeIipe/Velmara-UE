@@ -307,6 +307,17 @@ void AEntity::SetWeaponCollisionEnabled(const ECollisionEnabled::Type CollisionE
 	}
 }
 
+void AEntity::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	// El cuerpo poseído toma el equipo del jugador; ACustomPlayerController::ReleaseHost le devuelve el suyo al abandonarlo.
+	if (const IGenericTeamAgentInterface* TeamAgent = Cast<IGenericTeamAgentInterface>(NewController); TeamAgent && NewController->IsPlayerController())
+	{
+		TeamId = TeamAgent->GetGenericTeamId();
+	}
+}
+
 bool AEntity::IsHostile(const AEntity* OtherEntity) const
 {
 	if (!OtherEntity) return false;
@@ -419,9 +430,9 @@ void AEntity::OnBodyPartOverlap(UPrimitiveComponent* OverlappedComponent, AActor
 
 	if (const AEntity* TargetEntity = Cast<AEntity>(OtherActor))
 	{
-		if (!TargetEntity->IsAlive()) return;
+		if (!TargetEntity->IsAlive() || !IsHostile(TargetEntity)) return;
 	}
-	
+
 	//if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Dealing body damage");
 	
 	UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor);
