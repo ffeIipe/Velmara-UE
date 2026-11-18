@@ -253,7 +253,7 @@ void UInventoryComponent::ReconstructInventory()
     {
         const FGuid& SavedID = SavedInventoryData[i].UniqueSaveID;
 
-        if (SavedID.IsValid() && WorldSaveActors.Contains(SavedID))
+        if (InventorySlots.IsValidIndex(i) && SavedID.IsValid() && WorldSaveActors.Contains(SavedID))
         {
             AActor* RestoredActor = WorldSaveActors[SavedID];
         
@@ -278,6 +278,7 @@ void UInventoryComponent::ReconstructInventory()
 
     if (EquippedSlotIndex >= 0 && EquippedSlotIndex < MaxSlots)
     {
+        CurrentItem = nullptr;
         EquipItemFromSlot(EquippedSlotIndex);
     }
 

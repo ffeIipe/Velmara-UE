@@ -74,7 +74,6 @@ void AItem::OnLoadGame_Implementation(const FEntitySaveData& InData)
 
 void AItem::OnPostGameLoaded_Implementation()
 {
-	Destroy();
 }
 
 void AItem::DisableCollision()

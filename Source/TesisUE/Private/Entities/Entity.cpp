@@ -162,7 +162,22 @@ void AEntity::OnSaveGame_Implementation(FEntitySaveData& OutData)
 	if (InventoryComponent)
 	{
 		InventoryComponent->SaveInventory(); 
-		InventoryComponent->Serialize(Ar); 
+		InventoryComponent->Serialize(Ar);
+	}
+
+	if (AbilitySystemComponent)
+	{
+		OutData.SavedStats.Add("Health", AbilitySystemComponent->GetNumericAttribute(UVelmaraAttributeSet::GetHealthAttribute()));
+		OutData.SavedStats.Add("Shield", AbilitySystemComponent->GetNumericAttribute(UVelmaraAttributeSet::GetShieldAttribute()));
+		OutData.SavedStats.Add("Energy", AbilitySystemComponent->GetNumericAttribute(UVelmaraAttributeSet::GetEnergyAttribute()));
+	}
+}
+
+void AEntity::OnPostGameLoaded_Implementation()
+{
+	if (InventoryComponent)
+	{
+		InventoryComponent->ReconstructInventory();
 	}
 }
 
@@ -178,6 +193,16 @@ void AEntity::OnLoadGame_Implementation(const FEntitySaveData& InData)
 	{
 		InventoryComponent->Serialize(Ar); 
 		InventoryComponent->LoadInventory();
+	}
+
+	if (AbilitySystemComponent)
+	{
+		if (const float* V = InData.SavedStats.Find("Health"))
+			AbilitySystemComponent->SetNumericAttributeBase(UVelmaraAttributeSet::GetHealthAttribute(), *V);
+		if (const float* V = InData.SavedStats.Find("Shield"))
+			AbilitySystemComponent->SetNumericAttributeBase(UVelmaraAttributeSet::GetShieldAttribute(), *V);
+		if (const float* V = InData.SavedStats.Find("Energy"))
+			AbilitySystemComponent->SetNumericAttributeBase(UVelmaraAttributeSet::GetEnergyAttribute(), *V);
 	}
 
 	StopAnimMontage();

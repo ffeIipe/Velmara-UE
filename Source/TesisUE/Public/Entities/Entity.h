@@ -67,6 +67,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "SaveGame")
 	virtual void OnLoadGame_Implementation(const FEntitySaveData& InData) override;
 
+	virtual void OnPostGameLoaded_Implementation() override;
+
 	virtual void ReceiveDamage_Implementation(FGameplayEventData DamagePayload) override;
 
 	virtual void MortalDamage_Implementation(FGameplayEventData DeathPayload) override;

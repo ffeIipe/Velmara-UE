@@ -39,4 +39,11 @@ public:
     // Combos de arma desbloqueados en el Altar de Sangre (UWeaponUpgradeComponent).
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SaveGameData|Progression")
     FGameplayTagContainer UnlockedWeaponCombos;
+
+    UPROPERTY()
+    FRotator PlayerControlRotation = FRotator::ZeroRotator;
+
+    // Entidad poseída al guardar (FGuid() si el jugador estaba en su cuerpo original).
+    UPROPERTY()
+    FGuid PossessedEntityID;
 };

@@ -9,6 +9,8 @@
 #include "Features/WeaponUpgradeSystem/Core/WeaponUpgradeComponent.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerController.h"
+#include "Player/CustomPlayerController.h"
 #include "Serialization/ObjectAndNameAsStringProxyArchive.h"
 
 void USaveGameSubsystem::SerializeProperties(UObject* Object, TArray<uint8>& OutBytes)
@@ -171,8 +173,8 @@ void USaveGameSubsystem::RestoreCurrentLevelState() const
         FString CurrentMap = GetWorld()->GetMapName();
         CurrentMap.RemoveFromStart(GetWorld()->StreamingLevelsPrefix);
 
-        LoadLevelActors(CurrentSaveGame);
         LoadPlayerProgression(CurrentSaveGame);
+        LoadLevelActors(CurrentSaveGame);
     }
 }
 
@@ -222,6 +224,7 @@ void USaveGameSubsystem::LoadLevelActors(UPlayerProgressSaveGame* SaveObject) co
     int32 RestoredDynamicCount = 0;
 
     TArray<FGuid> ProcessedIDs;
+    TArray<AActor*> RestoredActors;
 
     for (TActorIterator<AActor> It(GetWorld()); It; ++It)
     {
@@ -234,13 +237,16 @@ void USaveGameSubsystem::LoadLevelActors(UPlayerProgressSaveGame* SaveObject) co
             if (SaveObject->SavedActors.Contains(ActorID))
             {
                 const FEntitySaveData& Data = SaveObject->SavedActors[ActorID];
+                // El transform guardado es de mundo: soltamos al actor de cualquier padre (arma, host...) antes de moverlo.
+                Actor->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
                 Actor->SetActorTransform(Data.Transform, false, nullptr, ETeleportType::TeleportPhysics);
-                
+
                 if (Actor->Implements<USaveInterface>())
                 {
                     ISaveInterface::Execute_OnLoadGame(Actor, Data);
                 }
 
+                RestoredActors.Add(Actor);
                 ProcessedIDs.Add(ActorID);
                 RestoredStaticCount++;
             }
@@ -274,8 +280,34 @@ void USaveGameSubsystem::LoadLevelActors(UPlayerProgressSaveGame* SaveObject) co
                     {
                         ISaveInterface::Execute_OnLoadGame(NewActor, Data);
                     }
+                    RestoredActors.Add(NewActor);
                     RestoredDynamicCount++;
                 }
+            }
+        }
+    }
+
+    for (AActor* Restored : RestoredActors)
+    {
+        if (Restored->Implements<USaveInterface>())
+        {
+            ISaveInterface::Execute_OnPostGameLoaded(Restored);
+        }
+    }
+
+    if (SaveObject->PossessedEntityID.IsValid())
+    {
+        ACustomPlayerController* PC = Cast<ACustomPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
+        for (AActor* Restored : RestoredActors)
+        {
+            const USaveComponent* SaveComp = Restored->FindComponentByClass<USaveComponent>();
+            if (PC && SaveComp && SaveComp->UniqueSaveID == SaveObject->PossessedEntityID)
+            {
+                if (APawn* Host = Cast<APawn>(Restored))
+                {
+                    PC->PerformPossession(Host);
+                }
+                break;
             }
         }
     }
@@ -286,6 +318,21 @@ void USaveGameSubsystem::LoadLevelActors(UPlayerProgressSaveGame* SaveObject) co
 void USaveGameSubsystem::SavePlayerProgression(UPlayerProgressSaveGame* SaveObject) const
 {
     if (!SaveObject) return;
+
+    SaveObject->PossessedEntityID.Invalidate();
+    if (const ACustomPlayerController* PC = Cast<ACustomPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0)))
+    {
+        SaveObject->PlayerControlRotation = PC->GetControlRotation();
+
+        // IsPossessing() == (pawn actual != OriginalBody); OriginalBody es protected.
+        if (PC->IsPossessing() && PC->GetPawn())
+        {
+            if (const USaveComponent* SaveComp = PC->GetPawn()->FindComponentByClass<USaveComponent>())
+            {
+                SaveObject->PossessedEntityID = SaveComp->UniqueSaveID;
+            }
+        }
+    }
 
     if (const UAttributeTreeComponent* AttributeTree = FindPlayerComponent<UAttributeTreeComponent>())
     {
@@ -310,6 +357,11 @@ void USaveGameSubsystem::SavePlayerProgression(UPlayerProgressSaveGame* SaveObje
 void USaveGameSubsystem::LoadPlayerProgression(const UPlayerProgressSaveGame* SaveObject) const
 {
     if (!SaveObject) return;
+
+    if (APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0))
+    {
+        PC->SetControlRotation(SaveObject->PlayerControlRotation);
+    }
 
     if (UAttributeTreeComponent* AttributeTree = FindPlayerComponent<UAttributeTreeComponent>())
     {
