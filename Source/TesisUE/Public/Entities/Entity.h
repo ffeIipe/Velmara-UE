@@ -93,6 +93,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Combat | Weapon")
 	virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
 
+	virtual void PossessedBy(AController* NewController) override;
+
 	UPROPERTY(BlueprintAssignable, BlueprintCallable)
 	FOnEntityDead OnDead;
 

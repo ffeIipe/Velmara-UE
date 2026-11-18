@@ -13,6 +13,8 @@ struct FCombatTargetData
 
 	TArray<TWeakObjectPtr<AActor>> RegisteredEnemies;
 
+	TMap<TWeakObjectPtr<AActor>, double> CooldownUntil;
+
 	int32 MaxConcurrentAttackers = 3;
 };
 
@@ -36,6 +38,15 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "AI|Combat")
 	void ReturnAttackToken(AActor* Enemy, AActor* TargetActor);
+
+	UFUNCTION(BlueprintCallable, Category = "AI|Combat")
+	void ReturnAttackTokenWithCooldown(AActor* Enemy, AActor* TargetActor, float Cooldown);
+
+	UFUNCTION(BlueprintCallable, Category = "AI|Combat")
+	void ReturnAllAttackTokens(AActor* Enemy);
+
+	UFUNCTION(BlueprintPure, Category = "AI|Combat")
+	bool HasAttackToken(AActor* Enemy, AActor* TargetActor) const;
 
 protected:
 	TMap<TWeakObjectPtr<AActor>, FCombatTargetData> CombatMap;
