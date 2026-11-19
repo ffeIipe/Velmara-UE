@@ -28,7 +28,11 @@ void UVelmaraGameInstance::Init()
     FVelmaraGameplayTags::InitializeGameplayTags();
     LoadGameSettings();
 
-    if (UStageZeroSubsystem* StageZero = GetSubsystem<UStageZeroSubsystem>())
+    // En PIE no forzamos el salto al menu: se juega el nivel desde el que se da Play.
+    const FWorldContext* Context = GetWorldContext();
+    const bool bIsPIE = Context && Context->WorldType == EWorldType::PIE;
+
+    if (UStageZeroSubsystem* StageZero = GetSubsystem<UStageZeroSubsystem>(); StageZero && !bIsPIE)
     {
         StageZero->SetPrimaryLevel(TSoftObjectPtr<UWorld>(FSoftObjectPath(TEXT("/Game/Maps/MainMenu/MainMenu.MainMenu"))));
     }
