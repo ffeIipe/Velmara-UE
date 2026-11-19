@@ -39,6 +39,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Save System")
 	void RestoreCurrentLevelState() const;
+
+	// Lo llama el GameMode al iniciar el nivel: restaura solo si una carga (LoadGame) lo pidió.
+	void RestorePendingLevelState();
 	
 	UPROPERTY(BlueprintAssignable)
 	FOnGameSaved OnGameSaved;
@@ -52,6 +55,8 @@ protected:
 
 	UPROPERTY()
 	UPlayerProgressSaveGame* CurrentSaveGame;
+
+	bool bRestoreOnNextLevel = false;
 
 private:
 	FString GetSlotNameFromIndex(int32 SlotIndex) const;

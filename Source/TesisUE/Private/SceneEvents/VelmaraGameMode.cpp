@@ -12,7 +12,7 @@ void AVelmaraGameMode::BeginPlay()
 			// Al siguiente tick, para que corra tras los BeginPlay de las entidades.
 			GetWorldTimerManager().SetTimerForNextTick([SaveSystem]()
 			{
-				SaveSystem->RestoreCurrentLevelState();
+				SaveSystem->RestorePendingLevelState();
 			});
 		}
 	}

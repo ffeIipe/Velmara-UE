@@ -108,8 +108,17 @@ void USaveGameSubsystem::LoadGame(int32 SlotIndex)
     }
     else
     {
+        bRestoreOnNextLevel = true;
         UGameplayStatics::OpenLevel(this, FName(*SavedLevelName));
     }
+}
+
+void USaveGameSubsystem::RestorePendingLevelState()
+{
+    if (!bRestoreOnNextLevel) return;
+
+    bRestoreOnNextLevel = false;
+    RestoreCurrentLevelState();
 }
 
 void USaveGameSubsystem::CreateNewGame(int32 SlotIndex, const FString MapName)
