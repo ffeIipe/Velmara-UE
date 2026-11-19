@@ -7,6 +7,7 @@
 #include "Features/SaveSystem/Core/SettingsSaveGame.h"
 #include "Features/SaveSystem/Subsystems/SaveGameSubsystem.h"
 #include "GAS/VelmaraGameplayTags.h"
+#include "StageZeroSubsystem.h"
 
 class FActorIterator;
 
@@ -26,6 +27,11 @@ void UVelmaraGameInstance::Init()
     Super::Init();
     FVelmaraGameplayTags::InitializeGameplayTags();
     LoadGameSettings();
+
+    if (UStageZeroSubsystem* StageZero = GetSubsystem<UStageZeroSubsystem>())
+    {
+        StageZero->SetPrimaryLevel(TSoftObjectPtr<UWorld>(FSoftObjectPath(TEXT("/Game/Maps/MainMenu/MainMenu.MainMenu"))));
+    }
 }
 
 void UVelmaraGameInstance::Shutdown()

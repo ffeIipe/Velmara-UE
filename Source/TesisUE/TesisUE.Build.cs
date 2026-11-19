@@ -36,7 +36,8 @@ public class TesisUE : ModuleRules
 			"AnimGraphRuntime",
 			"DeveloperSettings",
 			"GeometryCollectionEngine",
-			"ChaosSolverEngine"
+			"ChaosSolverEngine",
+			"StageZero"
 		});
 
 		// Fractura de rocas del boss (UBossEditorLibrary): solo en el editor.

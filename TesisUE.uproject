@@ -127,6 +127,10 @@
 		{
 			"Name": "MetaHumanRuntime",
 			"Enabled": true
+		},
+		{
+			"Name": "StageZero",
+			"Enabled": true
 		}
 	]
 }
