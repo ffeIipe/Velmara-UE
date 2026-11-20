@@ -5,10 +5,8 @@
 #include "GameplayTagContainer.h"
 #include "AbilityTask_WaitComboInput.generated.h"
 
-// Los nodos de tarea solo muestran pines de salida si todos los delegates comparten firma.
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FComboInputDelegate, bool, bIsHold);
 
-// Lógica del input de un golpe, sin GAS para poder testearla (AbilityTask_WaitComboInputTest.cpp).
 struct FComboInputState
 {
 	enum class EResult : uint8 { Nothing, ChainPending, Chain };
@@ -19,7 +17,6 @@ struct FComboInputState
 	bool bWindowReached = false;
 	bool bPendingSent = false;
 
-	// false si ya había un input en curso: solo el primero del golpe cuenta.
 	bool Press();
 	void Release();
 	void HoldReached();
@@ -28,19 +25,12 @@ struct FComboInputState
 	EResult Evaluate();
 };
 
-/*
- * Espera el input que encadena el siguiente golpe del combo.
- * Tap: se suelta antes de HoldThreshold. Hold: se mantiene HoldThreshold (se decide ahí, sin esperar a soltar).
- * Sale cuando el input está resuelto y la ventana (WindowTag) ya se abrió en este golpe, aunque ya se haya cerrado:
- * un input apretado a tiempo no se pierde porque la decisión Tap/Hold llegue tarde.
- */
 UCLASS()
 class TESISUE_API UAbilityTask_WaitComboInput : public UAbilityTask
 {
 	GENERATED_BODY()
 
 public:
-	// Input apretado con la ventana abierta: OnComboInput llega en menos de HoldThreshold, no terminar la habilidad. bIsHold siempre false.
 	UPROPERTY(BlueprintAssignable)
 	FComboInputDelegate OnChainPending;
 

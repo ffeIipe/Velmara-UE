@@ -7,7 +7,6 @@
 
 namespace Graves
 {
-	// Nadie revive tumbas más viejas que esto, así que no vale la pena guardarlas.
 	constexpr double MaxKeptAge = 120.0;
 }
 
@@ -32,7 +31,6 @@ bool UGraveSubsystem::IsReady(const FEntityGrave& Grave, const FVector& Center, 
 	if (GetWorld()->GetTimeSeconds() - Grave.DeathTime > MaxAge) return false;
 	if (FVector::DistSquared(Grave.Location, Center) > FMath::Square(Radius)) return false;
 
-	// El cadáver tiene que haberse ido (al pool o destruido).
 	const AActor* Corpse = Grave.Corpse.Get();
 	const UActorPoolSubsystem* Pool = GetWorld()->GetSubsystem<UActorPoolSubsystem>();
 	return !IsValid(Corpse) || (Pool && Pool->IsActorInPool(Corpse));
@@ -63,7 +61,6 @@ TArray<FEntityGrave> UGraveSubsystem::ClaimGraves(const FVector& Center, const f
 		Claimed.Add(Graves[Index]);
 	}
 
-	// De atrás para adelante para que los índices sigan valiendo.
 	ReadyIndices.Sort([](const int32 A, const int32 B) { return A > B; });
 	for (const int32 Index : ReadyIndices)
 	{

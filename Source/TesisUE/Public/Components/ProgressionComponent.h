@@ -6,7 +6,6 @@
 #include "Features/CurrencySystem/Interfaces/CurrencyProvider.h"
 #include "ProgressionComponent.generated.h"
 
-// Delegados para notificar a la UI y al personaje (GAS)
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCurrencyChangedSignature, int32, NewCurrencyAmount);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnComboUnlockedSignature, FGameplayTag, UnlockedTag);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnStatUpgradedSignature, FGameplayTag, StatTag, int32, NewLevel);
@@ -22,10 +21,6 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	/* * DATOS GUARDADOS EN DISCO 
-	 * Se utiliza el especificador SaveGame para facilitar la serialización.
-	 */
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Progression | State", SaveGame)
 	int32 AvailableCurrency;
 
@@ -35,10 +30,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Progression | State", SaveGame)
 	TMap<FGameplayTag, int32> StatUpgrades;
 
-	/*
-	 * CONFIGURACIÓN
-	 * Para no hardcodear strings, definimos qué tags base identifican a un combo y a un stat.
-	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Progression | Config")
 	FGameplayTag BaseComboTag;
 
@@ -47,7 +38,6 @@ protected:
 
 public:
 
-	// DELEGADOS (Para que la UI y el Character se suscriban)
 	UPROPERTY(BlueprintAssignable, Category = "Progression | Events")
 	FOnCurrencyChangedSignature OnCurrencyChanged;
 
@@ -57,17 +47,12 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Progression | Events")
 	FOnStatUpgradedSignature OnStatUpgraded;
 
-	/* FUNCIONES PRINCIPALES */
-
-	// Llamado por la UI para intentar realizar la compra
 	UFUNCTION(BlueprintCallable, Category = "Progression")
 	bool TryBuyUpgrade(FGameplayTag TagToGrant, int32 Cost);
 
-	// Agrega o quita moneda y notifica
 	UFUNCTION(BlueprintCallable, Category = "Progression")
 	void AddCurrency(int32 Amount);
 
-	// Consultas (BlueprintPure porque no modifican estado)
 	UFUNCTION(BlueprintPure, Category = "Progression | Queries")
 	bool HasComboUnlocked(FGameplayTag ComboTag) const;
 
@@ -77,8 +62,6 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Progression | Queries")
 	int32 GetAvailableCurrency() const { return AvailableCurrency; }
 
-	/* ICurrencyProvider (lo usan, por ejemplo, el árbol de atributos y el altar de sangre) */
-
 	virtual bool ProvidesCurrency_Implementation(FGameplayTag CurrencyType) const override;
 
 	virtual int32 GetCurrencyAmount_Implementation(FGameplayTag CurrencyType) const override;
@@ -86,7 +69,6 @@ public:
 	virtual bool TrySpendCurrency_Implementation(FGameplayTag CurrencyType, int32 Amount) override;
 
 protected:
-	// Tipo de moneda que representa AvailableCurrency (por defecto, Sangre).
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Progression | Config", meta = (Categories = "Currency"))
 	FGameplayTag ProvidedCurrencyType;
 };

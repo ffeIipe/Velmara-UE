@@ -19,7 +19,6 @@ USkeletonMageBlinkAbility::USkeletonMageBlinkAbility()
 {
 	SetAssetTags(FGameplayTagContainer(FGameplayTag::RequestGameplayTag(FName("Ability.Blink"), false)));
 
-	// Mientras está deshecho no lo tocan los golpes que respetan el dodge.
 	if (const FGameplayTag DodgeTag = FGameplayTag::RequestGameplayTag(FName("State.Dodging"), false); DodgeTag.IsValid())
 	{
 		ActivationOwnedTags.AddTag(DodgeTag);
@@ -42,7 +41,6 @@ void USkeletonMageBlinkAbility::ActivateAbility(const FGameplayAbilitySpecHandle
 	const AActor* Avatar = GetAvatarActorFromActorInfo();
 	AActor* Target = Avatar ? FindTarget(Avatar) : nullptr;
 
-	// Sin lugar a donde ir no se gasta el cooldown.
 	if (!Target || !FindDestination(Avatar, Target, Destination) || !CommitAbility(Handle, ActorInfo, ActivationInfo))
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
@@ -75,7 +73,6 @@ void USkeletonMageBlinkAbility::Reappear()
 void USkeletonMageBlinkAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
 	const FGameplayAbilityActivationInfo ActivationInfo, const bool bReplicateEndAbility, const bool bWasCancelled)
 {
-	// Pase lo que pase (cancelada, muerte), el mago no puede quedar invisible.
 	if (bVanished)
 	{
 		SetVanished(false);
@@ -131,7 +128,6 @@ bool USkeletonMageBlinkAbility::FindDestination(const AActor* Avatar, const AAct
 
 	for (int32 Attempt = 0; Attempt < Blink::MaxPlacementAttempts; ++Attempt)
 	{
-		// Alcanzable a pie desde el objetivo: el mago no aparece en una plataforma aislada donde nadie lo pueda perseguir.
 		FNavLocation NavLocation;
 		if (!NavSystem->GetRandomReachablePointInRadius(TargetLocation, MaxDistanceFromTarget, NavLocation)) continue;
 		if (FVector::Dist2D(NavLocation.Location, TargetLocation) < MinDistanceFromTarget) continue;

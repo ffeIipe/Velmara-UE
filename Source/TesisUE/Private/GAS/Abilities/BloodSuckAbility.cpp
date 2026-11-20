@@ -19,12 +19,10 @@
 
 namespace BloodSuck
 {
-	// IsAlive() mira State.Dead, que nunca se aplica (GA_Death no está otorgada): la vida es la fuente confiable.
 	bool HasHealth(const AActor* Actor)
 	{
 		const UAbilitySystemComponent* ASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(const_cast<AActor*>(Actor));
 		const FGameplayAttribute HealthAttribute = UVelmaraAttributeSet::GetHealthAttribute();
-		// Hay enemigos colocados en el nivel sin AttributeSet registrado: sin atributo no se los da por muertos.
 		return ASC && (!ASC->HasAttributeSetForAttribute(HealthAttribute) || ASC->GetNumericAttribute(HealthAttribute) > 0.f);
 	}
 }
@@ -33,7 +31,6 @@ UBloodSuckAbility::UBloodSuckAbility()
 {
 	SetAssetTags(FGameplayTagContainer(FGameplayTag::RequestGameplayTag(FName("Ability.BloodSuck"), false)));
 
-	// Valor por defecto; se puede cambiar en GA_BloodSuck.
 	static ConstructorHelpers::FObjectFinder<UAnimMontage> DefaultReact(
 		TEXT("/Game/Blueprints/Montages/HitReactions/AM_Katana_Blade_Damage_Front_Big_ver_D_Retargeted"));
 	VictimReactMontage = DefaultReact.Object;
@@ -52,7 +49,6 @@ void UBloodSuckAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	ACharacter* Self = Cast<ACharacter>(GetAvatarActorFromActorInfo());
 	AEntity* Target = Self ? FindVictim(Cast<AEntity>(Self)) : nullptr;
 
-	// Sin a quién morder no se gasta el cooldown.
 	if (!Target || !CommitAbility(Handle, ActorInfo, ActivationInfo))
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
@@ -77,8 +73,6 @@ void UBloodSuckAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		return;
 	}
 
-	// Velmara se teletransporta a la espalda del enemigo y queda pegada a ella mientras dura el montage (la cámara la sigue
-	// porque va con el enemigo). El root motion del montage se anula (escala 0 en la task) para que no la separe.
 	if (UCharacterMovementComponent* Movement = Self->GetCharacterMovement())
 	{
 		Movement->StopMovementImmediately();
@@ -92,15 +86,12 @@ void UBloodSuckAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	Self->SetActorRelativeRotation(FRotator::ZeroRotator);
 	bAttached = true;
 
-	// El mesh va al hueso del enemigo para que siga su animación; la cápsula (y la cámara) quedan pegadas al actor.
 	if (USkeletalMeshComponent* SelfMesh = Self->GetMesh(); SelfMesh && Target->GetMesh())
 	{
 		SavedMeshTransform = SelfMesh->GetRelativeTransform();
-		// KeepWorld: el mesh ya está en la pose "a la espalda" (por la cápsula); así el hueso solo aporta el movimiento, sin offsets a ojo.
 		SelfMesh->AttachToComponent(Target->GetMesh(), FAttachmentTransformRules::KeepWorldTransform, AttachBone);
 	}
 
-	// El enemigo ejecuta su animación estirada para que dure lo mismo que el chupar.
 	if (VictimReactMontage)
 	{
 		const float Rate = VictimReactMontage->GetPlayLength() / FMath::Max(SuckMontage->GetPlayLength(), 0.1f);
@@ -108,7 +99,6 @@ void UBloodSuckAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		UE_LOG(LogTemp, Log, TEXT("BloodSuck: victima %s reaccion %s -> %.2f s"), *GetNameSafe(Target), *GetNameSafe(VictimReactMontage), Played);
 	}
 
-	// Si la interrumpen (hit react, muerte) no cura: el cooldown se gasta igual.
 	UAbilityTask_PlayMontageAndWait* MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, SuckMontage,
 		1.f, NAME_None, true, 0.f);
 	MontageTask->OnCompleted.AddDynamic(this, &UBloodSuckAbility::HandleMontageCompleted);
@@ -121,11 +111,9 @@ void UBloodSuckAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 void UBloodSuckAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
 	const FGameplayAbilityActivationInfo ActivationInfo, const bool bReplicateEndAbility, const bool bWasCancelled)
 {
-	// Pase lo que pase (interrumpida, muerte), Velmara se despega, recupera el control y el enemigo se descongela.
 	ACharacter* Self = Cast<ACharacter>(GetAvatarActorFromActorInfo());
 	if (bAttached && Self)
 	{
-		// El mesh vuelve a la cápsula con su transform original antes de soltar el actor.
 		if (USkeletalMeshComponent* SelfMesh = Self->GetMesh())
 		{
 			SelfMesh->AttachToComponent(Self->GetCapsuleComponent(), FAttachmentTransformRules::KeepRelativeTransform);
@@ -201,7 +189,6 @@ void UBloodSuckAbility::SetVictimFrozen(const bool bFrozen) const
 	}
 
 	AIController->ClearFocus(EAIFocusPriority::Gameplay);
-	// Si murió mientras lo chupaban no se le reanuda el árbol.
 	if (UBrainComponent* Brain = AIController->GetBrainComponent(); Brain && Target->IsAlive())
 	{
 		Brain->ResumeLogic(TEXT("BloodSuck"));

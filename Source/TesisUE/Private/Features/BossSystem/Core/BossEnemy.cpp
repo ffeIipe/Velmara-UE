@@ -104,7 +104,6 @@ ABossEnemy::ABossEnemy()
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
 	GetCapsuleComponent()->InitCapsuleSize(48.f, 96.f);
-	// Las armas del jugador (ASword) detectan golpes con el canal EnemyTrace, igual que en CBP_Enemy.
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_GameTraceChannel3, ECR_Block);
 	GetMesh()->SetRelativeLocationAndRotation(FVector(0.f, 0.f, -96.f), FRotator(0.f, -90.f, 0.f));
 
@@ -163,7 +162,6 @@ void ABossEnemy::SetupDefaultAssets()
 	TArray<FBossAttackDefinition>& Attacks = CombatComponent->Attacks;
 	Attacks.Reset();
 
-	// ---------- Corto alcance ----------
 	{
 		FBossAttackDefinition Definition = Attack("SingleAttack", TEXT("BossSingleAttack_Montage"), EBossAttackRange::Short, 0.f, 300.f, 14.f, 2.5f,
 			{ Weapon(0.2f, 0.65f) });
@@ -203,7 +201,6 @@ void ABossEnemy::SetupDefaultAssets()
 		Definition.MinStage = 1;
 		Attacks.Add(Definition);
 	}
-	// Giran hacia atrás por sí solos: sin tracking para no duplicar el giro.
 	{
 		FBossAttackDefinition Definition = Attack("TurningAttack", TEXT("BossTurningAttack1_Montage"), EBossAttackRange::Short, 0.f, 350.f, 15.f, 4.f,
 			{ Weapon(0.15f, 0.75f) });
@@ -223,7 +220,6 @@ void ABossEnemy::SetupDefaultAssets()
 		Attacks.Add(Definition);
 	}
 
-	// ---------- Mediano alcance ----------
 	{
 		FBossAttackDefinition Definition = Attack("SpearStab", TEXT("BossSpearStab_Montage"), EBossAttackRange::Medium, 250.f, 650.f, 18.f, 4.f,
 			{ Weapon(0.25f, 0.6f) });
@@ -278,13 +274,11 @@ void ABossEnemy::SetupDefaultAssets()
 		Attacks.Add(Definition);
 	}
 
-	// ---------- Largo alcance ----------
 	{
 		FBossAttackDefinition Definition = Attack("AirSlash", TEXT("BossAirSlashAttack_Montage"), EBossAttackRange::Long, 750.f, 2600.f, 16.f, 5.f,
 			{ Projectile(0.4f) });
 		Definition.DamageTypeTag = SlashTag;
 		Definition.MaxAngle = 60.f;
-		// Sigue apuntando hasta soltar el corte; después se esquiva de costado.
 		Definition.TrackingEndTime = 0.38f;
 		Attacks.Add(Definition);
 	}
@@ -312,7 +306,6 @@ void ABossEnemy::SetupDefaultAssets()
 		Attacks.Add(Definition);
 	}
 
-	// ---------- Habilidades ----------
 	SummonComponent->SummonMontage = FindMontage(TEXT("BossHeavySingleAttack_Montage"));
 	CeilingBreakComponent->BreakMontage = FindMontage(TEXT("BossJumpingAttack_Montage"));
 	CeilingBreakComponent->BreakEventTime = 0.55f;
@@ -401,7 +394,6 @@ void ABossEnemy::ReceiveDamage_Implementation(const FGameplayEventData DamagePay
 
 	LastDamageCauser = const_cast<AActor*>(DamagePayload.Instigator.Get());
 
-	// Si el jugador lo ataca por sorpresa, la pelea empieza igual.
 	StartEncounter();
 
 	HitFlash(0.08f, 1.f);
@@ -439,7 +431,6 @@ void ABossEnemy::MortalDamage_Implementation(const FGameplayEventData DeathPaylo
 	GetCharacterMovement()->DisableMovement();
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 
-	// Pasa a modo single node: el AnimBP ya no corre y se queda con la última pose.
 	if (DeathAnimation)
 	{
 		GetMesh()->PlayAnimation(DeathAnimation, false);

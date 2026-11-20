@@ -5,10 +5,6 @@
 #include "Features/BossSystem/Data/BossTypes.h"
 #include "AnimNotifyState_BossHitWindow.generated.h"
 
-/*
- * Ventana de golpe precisa para los montajes del boss. Si un montaje tiene al menos una,
- * se ignoran las ventanas por tiempo de la tabla de ataques (StartTime/EndTime no se usan acá).
- */
 UCLASS(meta = (DisplayName = "Boss Hit Window"))
 class TESISUE_API UAnimNotifyState_BossHitWindow : public UAnimNotifyState
 {

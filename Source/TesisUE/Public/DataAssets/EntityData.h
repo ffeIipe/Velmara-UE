@@ -18,8 +18,6 @@ struct FInventoryData
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
     int32 MaxSlots = 2;
 
-    /** This property is optional, so if you are filling these stats and do not
-      want to spawn with a weapon, leave it in blank. **/
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
     TSubclassOf<AActor> InitialWeapon;
 };

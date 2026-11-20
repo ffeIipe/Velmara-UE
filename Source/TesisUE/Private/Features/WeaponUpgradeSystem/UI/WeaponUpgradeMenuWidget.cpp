@@ -47,7 +47,6 @@ void UWeaponUpgradeMenuWidget::BuildLayout()
 {
 	using namespace UpgradeUIStyle;
 
-	// Fondo oscuro a pantalla completa con el panel centrado.
 	UBorder* Dimmer = Make<UBorder>(WidgetTree);
 	Dimmer->SetBrush(MakeRoundedBrush(Colors::Overlay(), 0.f));
 	Dimmer->SetPadding(FMargin(24.f));
@@ -67,13 +66,11 @@ void UWeaponUpgradeMenuWidget::BuildLayout()
 	UVerticalBox* Main = Make<UVerticalBox>(WidgetTree);
 	Panel->SetContent(Main);
 
-	// Encabezado
 	Main->AddChildToVerticalBox(MakeText(WidgetTree, LOCTEXT("AltarTitle", "ALTAR DE SANGRE"), 30, Colors::Blood(), true));
 
 	Main->AddChildToVerticalBox(MakeText(WidgetTree, LOCTEXT("AltarSubtitle", "Ofrecé Sangre para despertar nuevos combos en tus armas."), 14, Colors::TextSecondary()))
 	    ->SetPadding(FMargin(0.f, 2.f, 0.f, 0.f));
 
-	// Moneda
 	UBorder* CurrencyBar = Make<UBorder>(WidgetTree);
 	CurrencyBar->SetBrush(MakeRoundedBrush(Colors::BloodRow(), 8.f, Colors::BloodDim(), 1.f));
 	CurrencyBar->SetPadding(FMargin(16.f, 10.f));
@@ -81,11 +78,9 @@ void UWeaponUpgradeMenuWidget::BuildLayout()
 	CurrencyBar->SetContent(CurrencyText);
 	Main->AddChildToVerticalBox(CurrencyBar)->SetPadding(FMargin(0.f, 18.f, 0.f, 16.f));
 
-	// Pestañas de armas
 	TabsContainer = Make<UHorizontalBox>(WidgetTree);
 	Main->AddChildToVerticalBox(TabsContainer)->SetPadding(FMargin(0.f, 0.f, 0.f, 18.f));
 
-	// Arma seleccionada
 	UHorizontalBox* WeaponHeader = Make<UHorizontalBox>(WidgetTree);
 	Main->AddChildToVerticalBox(WeaponHeader)->SetPadding(FMargin(0.f, 0.f, 0.f, 12.f));
 
@@ -102,7 +97,6 @@ void UWeaponUpgradeMenuWidget::BuildLayout()
 	EmptyText->SetVisibility(ESlateVisibility::Collapsed);
 	Main->AddChildToVerticalBox(EmptyText)->SetPadding(FMargin(0.f, 4.f, 0.f, 12.f));
 
-	// Combos del arma (con scroll si son muchos)
 	USizeBox* RowsSize = Make<USizeBox>(WidgetTree);
 	RowsSize->SetMaxDesiredHeight(470.f);
 	Main->AddChildToVerticalBox(RowsSize);
@@ -113,14 +107,12 @@ void UWeaponUpgradeMenuWidget::BuildLayout()
 	RowsContainer = Make<UVerticalBox>(WidgetTree);
 	RowsScroll->AddChild(RowsContainer);
 
-	// Mensaje de resultado del último desbloqueo
 	FeedbackText = MakeText(WidgetTree, FText::GetEmpty(), 14, Colors::TextSecondary(), true);
 	FeedbackText->SetJustification(ETextJustify::Center);
 	UVerticalBoxSlot* FeedbackSlot = Main->AddChildToVerticalBox(FeedbackText);
 	FeedbackSlot->SetPadding(FMargin(0.f, 6.f, 0.f, 0.f));
 	FeedbackSlot->SetHorizontalAlignment(HAlign_Center);
 
-	// Pie: ayuda + botón cerrar
 	UHorizontalBox* Footer = Make<UHorizontalBox>(WidgetTree);
 	Main->AddChildToVerticalBox(Footer)->SetPadding(FMargin(0.f, 16.f, 0.f, 0.f));
 
@@ -153,7 +145,6 @@ void UWeaponUpgradeMenuWidget::OnUpgradeComponentSet()
 		FeedbackText->SetText(FText::GetEmpty());
 	}
 
-	// El inventario pudo cambiar desde la última vez: forzamos a reconstruir pestañas y filas.
 	Weapons.Reset();
 	RowsWeapon = nullptr;
 
@@ -185,7 +176,6 @@ void UWeaponUpgradeMenuWidget::RefreshMenu()
 	UWeaponUpgradeComponent* Upgrades = GetWeaponUpgrades();
 	if (!Upgrades || !CurrencyText) return;
 
-	// Moneda
 	if (Upgrades->HasCurrencyProvider())
 	{
 		CurrencyText->SetText(FText::Format(LOCTEXT("AltarCurrency", "{0}: {1}"), Upgrades->GetCurrencyDisplayName(), FText::AsNumber(Upgrades->GetCurrencyAmount())));
@@ -199,7 +189,6 @@ void UWeaponUpgradeMenuWidget::RefreshMenu()
 		CurrencyText->SetText(FText::Format(LOCTEXT("AltarCurrencyNone", "Sin proveedor de {0} disponible"), Upgrades->GetCurrencyDisplayName()));
 	}
 
-	// Pestañas: solo se reconstruyen si cambió la lista de armas (nunca mientras se procesa el click de una pestaña).
 	const TArray<UWeaponData*> CurrentWeapons = Upgrades->GetUpgradeableWeapons();
 	bool bWeaponsChanged = CurrentWeapons.Num() != Weapons.Num();
 	for (int32 Index = 0; !bWeaponsChanged && Index < CurrentWeapons.Num(); ++Index)
@@ -229,7 +218,6 @@ void UWeaponUpgradeMenuWidget::RefreshMenu()
 			Upgrades->GetUnlockedComboCount(TabWeapon), Upgrades->GetComboUpgrades(TabWeapon).Num()));
 	}
 
-	// Arma seleccionada
 	UWeaponData* Weapon = GetSelectedWeapon();
 	const int32 ComboCount = Upgrades->GetComboUpgrades(Weapon).Num();
 
@@ -389,7 +377,6 @@ void UWeaponUpgradeMenuWidget::ShowUnlockResult(const EWeaponUpgradeResult Resul
 
 	RefreshMenu();
 
-	// Si el botón clickeado quedó deshabilitado, el foco vuelve al menú para que Esc siga funcionando.
 	SetFocus();
 }
 

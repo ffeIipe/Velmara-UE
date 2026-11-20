@@ -18,7 +18,6 @@ void UCombatDirectorSubsystem::RegisterEnemy(AActor* Enemy, AActor* TargetActor)
 
     FCombatTargetData& Data = CombatMap.FindOrAdd(TargetActor);
 
-    // Evitamos duplicados
     if (!Data.RegisteredEnemies.Contains(Enemy))
     {
         Data.RegisteredEnemies.Add(Enemy);
@@ -70,7 +69,6 @@ bool UCombatDirectorSubsystem::RequestAttackToken(AActor* Enemy, AActor* TargetA
 
     FCombatTargetData& Data = CombatMap.FindOrAdd(TargetActor);
 
-    // Enemigos destruidos o devueltos al pool que se quedaron con un turno.
     Data.AttackingEnemies.RemoveAll([](const TWeakObjectPtr<AActor>& Ptr) { return !Ptr.IsValid(); });
 
     if (Data.AttackingEnemies.Contains(Enemy)) return true;

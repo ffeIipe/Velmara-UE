@@ -13,10 +13,6 @@ class UImage;
 class USizeBox;
 class UTextBlock;
 
-/*
- * Fila del menú: muestra una rama del árbol (nombre, niveles I..V conectados, bonus actual/siguiente) y el botón de mejora.
- * Construye su layout por código.
- */
 UCLASS()
 class TESISUE_API UAttributeTreeRowWidget : public UUserWidget
 {

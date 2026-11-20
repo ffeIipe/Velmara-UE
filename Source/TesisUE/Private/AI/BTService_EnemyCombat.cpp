@@ -17,7 +17,6 @@ UBTService_EnemyCombat::UBTService_EnemyCombat()
 
 	Interval = 0.2f;
 	RandomDeviation = 0.05f;
-	// Si el árbol falla en el mismo frame (ninguna rama puede correr), sin esto el servicio nunca llega a decidir.
 	bCallTickOnSearchStart = true;
 
 	TargetActorKey.AddObjectFilter(this, GET_MEMBER_NAME_CHECKED(ThisClass, TargetActorKey), AActor::StaticClass());
@@ -57,7 +56,6 @@ void UBTService_EnemyCombat::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* 
 	const bool bLostInterest = Target && LoseInterestRange > 0.f && FVector::Dist(Pawn->GetActorLocation(), Target->GetActorLocation()) > LoseInterestRange;
 	if (Target && (bLostInterest || !IsTargetAlive(Target)))
 	{
-		// Objetivo muerto o muy lejos: se suelta y la percepción buscará otro.
 		ReleaseToken(OwnerComp);
 		Blackboard->ClearValue(TargetActorKey.SelectedKeyName);
 		OwnerComp.GetAIOwner()->ClearFocus(EAIFocusPriority::Gameplay);
@@ -65,7 +63,6 @@ void UBTService_EnemyCombat::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* 
 	}
 	if (!Target)
 	{
-		// El AIC limpia el objetivo sin devolver bien el turno: se libera acá cualquiera que haya quedado.
 		if (UCombatDirectorSubsystem* Director = Pawn->GetWorld()->GetSubsystem<UCombatDirectorSubsystem>())
 		{
 			Director->ReturnAllAttackTokens(Pawn);
@@ -117,7 +114,6 @@ void UBTService_EnemyCombat::OnCeaseRelevant(UBehaviorTreeComponent& OwnerComp, 
 
 bool UBTService_EnemyCombat::IsTargetAlive(const AActor* Target)
 {
-	// State.Dead no se aplica a todas las entidades: la vida es la fuente de verdad.
 	const UAbilitySystemComponent* ASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(const_cast<AActor*>(Target));
 	if (!ASC || !ASC->HasAttributeSetForAttribute(UVelmaraAttributeSet::GetHealthAttribute())) return IsValid(Target);
 

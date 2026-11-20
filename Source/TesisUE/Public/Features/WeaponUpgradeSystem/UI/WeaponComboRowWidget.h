@@ -14,10 +14,6 @@ class UWeaponData;
 class UWeaponUpgradeComponent;
 class UWeaponUpgradeMenuWidget;
 
-/*
- * Fila del Altar de Sangre: un combo desbloqueable del arma (nombre, inputs, golpes, requisitos) y su botón de compra.
- * Construye su layout por código.
- */
 UCLASS()
 class TESISUE_API UWeaponComboRowWidget : public UUserWidget
 {

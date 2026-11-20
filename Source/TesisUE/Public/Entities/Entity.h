@@ -114,7 +114,6 @@ public:
 	UPROPERTY(BlueprintAssignable, BlueprintCallable)
 	FOnEntityDead OnDead;
 
-	// Avisa a los sistemas del mundo (tótems, tumbas del SkeletonMage) que la entidad acaba de morir. Lo llama el AttributeSet una vez por muerte.
 	void NotifyDeathToWorld();
 
 	UFUNCTION(BlueprintCallable, Category = "Entity Flag")
@@ -180,7 +179,6 @@ public:
 	void SetTeamId(int NewTeamIndex);
 	
 protected:
-	// Orbes que salen al morir (si no lo controla el jugador) y viajan al jugador: vida, energía, etc.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Orbs")
 	TArray<FEntityOrbDrop> DeathOrbDrops;
 

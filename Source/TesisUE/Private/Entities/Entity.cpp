@@ -86,25 +86,6 @@ void AEntity::BeginPlay()
 		}
 	}
 
-	//this only happens in case the entity has extra mesh's children collision boxes
-
-	/*if (GetMesh()->GetAttachChildren().Num() > 0)
-	{
-		TArray<USceneComponent*> BoxComponents;
-		GetMesh()->GetChildrenComponents(false, BoxComponents);
-
-		for (USceneComponent* Child : BoxComponents)
-		{
-			if (UBoxComponent* ChildBox = Cast<UBoxComponent>(Child))
-			{
-				if (ChildBox->ComponentTags.Num() > 0 && ChildBox->ComponentTags[0].ToString().StartsWith("Hitbox."))
-				{
-					ChildBox->OnComponentBeginOverlap.AddDynamic(this, &AEntity::OnBodyPartOverlap);
-					if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, "Child Hitbox bound...");
-				}
-			}
-		}
-	}*/
 }
 
 void AEntity::InitializeComponentsData() const
@@ -227,7 +208,6 @@ void AEntity::SpawnDeathOrbs()
 	UOrbsPoolManager* OrbPool = GetWorld()->GetSubsystem<UOrbsPoolManager>();
 	if (!Player || Player == this || !OrbPool) return;
 
-	// Aliados del jugador no sueltan orbes.
 	const IGenericTeamAgentInterface* PlayerTeam = Cast<IGenericTeamAgentInterface>(PlayerController);
 	if (PlayerTeam && PlayerTeam->GetGenericTeamId() == GetTeamId()) return;
 
@@ -235,7 +215,6 @@ void AEntity::SpawnDeathOrbs()
 	{
 		for (int32 i = 0; i < Drop.Count; ++i)
 		{
-			// Dispersión chica para que los orbes no salgan todos del mismo punto.
 			const FVector Offset(FMath::FRandRange(-40.f, 40.f), FMath::FRandRange(-40.f, 40.f), FMath::FRandRange(40.f, 120.f));
 			if (AOrbBase* Orb = Cast<AOrbBase>(OrbPool->SpawnOrbFromPool(Drop.OrbClass, GetActorLocation() + Offset, FRotator::ZeroRotator, this)))
 			{
@@ -368,7 +347,6 @@ void AEntity::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 
-	// El cuerpo poseído toma el equipo del jugador; ACustomPlayerController::ReleaseHost le devuelve el suyo al abandonarlo.
 	if (const IGenericTeamAgentInterface* TeamAgent = Cast<IGenericTeamAgentInterface>(NewController); TeamAgent && NewController->IsPlayerController())
 	{
 		TeamId = TeamAgent->GetGenericTeamId();
@@ -441,10 +419,9 @@ bool AEntity::IsAlive() const
 {
 	if (!AbilitySystemComponent) return false;
 
-	//const bool bHasHealth = AttributeSet && AttributeSet->GetHealth() > 0.0f;
 	const bool bIsNotMarkedDead = !AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("State.Dead"));
 
-	return /*bHasHealth*/ /*&&*/ bIsNotMarkedDead; 
+	return bIsNotMarkedDead;
 }
 
 bool AEntity::IsShielded() const
@@ -490,25 +467,20 @@ void AEntity::OnBodyPartOverlap(UPrimitiveComponent* OverlappedComponent, AActor
 		if (!TargetEntity->IsAlive() || !IsHostile(TargetEntity)) return;
 	}
 
-	//if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Dealing body damage");
-	
 	UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor);
 	if (!TargetASC) return;
 		
 	if (EntityData && EntityData->UnarmedDamageEffectSpecClass)
 	{
-		//Context
 		FGameplayEffectContextHandle Context = GetAbilitySystemComponent()->MakeEffectContext();
 		Context.AddHitResult(SweepResult);
 
-		//Spec + Context
 		FGameplayEffectSpecHandle DamageEffectSpecHandle = GetAbilitySystemComponent()->MakeOutgoingSpec(
 		EntityData->UnarmedDamageEffectSpecClass, 
 		1.0f, 
 		Context
 		);
 
-		//Set Damage type
 		if (DamageEffectSpecHandle.IsValid())
 		{
 			DamageEffectSpecHandle.Data.Get()->AddDynamicAssetTag(EntityData->UnarmedDamageTag);
@@ -519,13 +491,11 @@ void AEntity::OnBodyPartOverlap(UPrimitiveComponent* OverlappedComponent, AActor
 			);
 		}
 			
-		//Applying the gameplay effect to the hit actor
 		GetAbilitySystemComponent()->ApplyGameplayEffectSpecToTarget(
 			*DamageEffectSpecHandle.Data.Get(),
 			TargetASC
 		);
 
-		//VFX call
 		FGameplayCueParameters CueParameters;
 		CueParameters.Location = SweepResult.ImpactPoint;
 		CueParameters.Normal = SweepResult.ImpactNormal;
@@ -543,7 +513,6 @@ void AEntity::ActivateBodyHitbox(const FName ComponentTag, FGameplayTag DamageTy
 		{
 			if (UPrimitiveComponent* Prim = Cast<UPrimitiveComponent>(Comp))
 			{
-				//if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Emerald, "Collision Enabled...");
 				
 				Prim->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 				Prim->IgnoreActorWhenMoving(this, true);

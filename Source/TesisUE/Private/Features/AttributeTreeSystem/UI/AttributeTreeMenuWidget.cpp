@@ -40,7 +40,6 @@ void UAttributeTreeMenuWidget::BuildLayout()
 {
 	using namespace UpgradeUIStyle;
 
-	// Fondo oscuro a pantalla completa con el panel centrado.
 	UBorder* Dimmer = Make<UBorder>(WidgetTree);
 	Dimmer->SetBrush(MakeRoundedBrush(Colors::Overlay(), 0.f));
 	Dimmer->SetPadding(FMargin(24.f));
@@ -60,13 +59,11 @@ void UAttributeTreeMenuWidget::BuildLayout()
 	UVerticalBox* Main = Make<UVerticalBox>(WidgetTree);
 	Panel->SetContent(Main);
 
-	// Encabezado
 	Main->AddChildToVerticalBox(MakeText(WidgetTree, LOCTEXT("MenuTitle", "ÁRBOL DE ATRIBUTOS"), 30, Colors::Gold(), true));
 
 	Main->AddChildToVerticalBox(MakeText(WidgetTree, LOCTEXT("MenuSubtitle", "Mejorá cada atributo del Nivel I al Nivel V."), 14, Colors::TextSecondary()))
 	    ->SetPadding(FMargin(0.f, 2.f, 0.f, 0.f));
 
-	// Moneda
 	UBorder* CurrencyBar = Make<UBorder>(WidgetTree);
 	CurrencyBar->SetBrush(MakeRoundedBrush(Colors::Row(), 8.f, Colors::RowOutline(), 1.f));
 	CurrencyBar->SetPadding(FMargin(16.f, 10.f));
@@ -74,18 +71,15 @@ void UAttributeTreeMenuWidget::BuildLayout()
 	CurrencyBar->SetContent(CurrencyText);
 	Main->AddChildToVerticalBox(CurrencyBar)->SetPadding(FMargin(0.f, 18.f, 0.f, 16.f));
 
-	// Ramas
 	RowsContainer = Make<UVerticalBox>(WidgetTree);
 	Main->AddChildToVerticalBox(RowsContainer);
 
-	// Mensaje de resultado de la última compra
 	FeedbackText = MakeText(WidgetTree, FText::GetEmpty(), 14, Colors::TextSecondary(), true);
 	FeedbackText->SetJustification(ETextJustify::Center);
 	UVerticalBoxSlot* FeedbackSlot = Main->AddChildToVerticalBox(FeedbackText);
 	FeedbackSlot->SetPadding(FMargin(0.f, 6.f, 0.f, 0.f));
 	FeedbackSlot->SetHorizontalAlignment(HAlign_Center);
 
-	// Pie: ayuda + botón cerrar
 	UHorizontalBox* Footer = Make<UHorizontalBox>(WidgetTree);
 	Main->AddChildToVerticalBox(Footer)->SetPadding(FMargin(0.f, 16.f, 0.f, 0.f));
 
@@ -254,7 +248,6 @@ void UAttributeTreeMenuWidget::ShowUpgradeResult(const EAttributeUpgradeResult R
 
 	RefreshMenu();
 
-	// Si el botón clickeado quedó deshabilitado (nivel máximo), el foco vuelve al menú para que Esc siga funcionando.
 	SetFocus();
 }
 

@@ -33,7 +33,6 @@ public:
 	void TimeWarp(FGameplayTag TimeWarpTag);
 	
 private:
-	/** Initialization */
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
 	virtual void Deinitialize() override;
@@ -50,7 +49,6 @@ private:
 
 	virtual bool IsTickable() const override;
 
-	/** Refs */
 	UPROPERTY(Transient)
 	TObjectPtr<UCameraComponent> CameraComponent;
 
@@ -60,7 +58,6 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UEffectsManagerData> Data;
 	
-	/** Variables */
 	UPROPERTY()
 	FZoomEffectParameters ZoomEffectParams;
 

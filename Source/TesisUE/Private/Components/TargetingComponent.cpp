@@ -5,7 +5,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
-#include "DrawDebugHelpers.h" // Necesario para los debugs visuales de C++
+#include "DrawDebugHelpers.h"
 
 UTargetingComponent::UTargetingComponent()
 {
@@ -36,7 +36,6 @@ void UTargetingComponent::BeginPlay()
 
 void UTargetingComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
-    // CRÍTICA RESUELTA: Había dos Super::TickComponent aquí.
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
     
     if (!CurrentTarget || !OwnerCharacter)
@@ -244,10 +243,8 @@ TArray<AActor*> UTargetingComponent::GetTargets(const float Radius) const
 
     TArray<AActor*> Hits;
     
-    // DEBUG VISUAL: Dibuja la esfera para que confirmes que el tamaño de búsqueda es correcto
     DrawDebugSphere(GetWorld(), GetOwner()->GetActorLocation(), Radius, 24, FColor::Red, false, 2.0f);
 
-    // CRÍTICA RESUELTA: TSubclassOf<AEntity>() instanciaba a NULL. Se cambió a AEntity::StaticClass()
     UKismetSystemLibrary::SphereOverlapActors(
         GetWorld(),
         GetOwner()->GetActorLocation(),
@@ -321,7 +318,7 @@ AActor* UTargetingComponent::SearchCombatTarget(const FVector& Start, const FVec
         ObjectTypes,
         false,
         ActorsToIgnore,
-        EDrawDebugTrace::ForDuration, // Si quieres ver este debug, tienes que asegurarte de ver los canales en pantalla
+        EDrawDebugTrace::ForDuration,
         ResultHit,
         true
     );

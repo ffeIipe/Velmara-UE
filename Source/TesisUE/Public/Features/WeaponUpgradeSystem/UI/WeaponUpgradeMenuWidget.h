@@ -13,10 +13,6 @@ class UWeaponData;
 class UWeaponUpgradeComponent;
 class UWeaponUpgradeTabWidget;
 
-/*
- * Menú del Altar de Sangre: una pestaña por arma y, para la seleccionada, sus combos desbloqueables.
- * Construye su layout por código. Lo abre/cierra UWeaponUpgradeComponent::ToggleMenu() (ej. desde ABloodAltar).
- */
 UCLASS()
 class TESISUE_API UWeaponUpgradeMenuWidget : public UUpgradeMenuWidgetBase
 {
@@ -30,7 +26,6 @@ public:
 
 	void SelectWeapon(int32 WeaponIndex);
 
-	// Lo llaman las filas tras intentar un desbloqueo.
 	void ShowUnlockResult(EWeaponUpgradeResult Result, const UWeaponData* Weapon, const FGameplayTag& UnlockTag);
 
 protected:
@@ -69,7 +64,6 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UWeaponData> SelectedWeapon;
 
-	// Arma y cantidad de combos con las que se construyeron las filas actuales.
 	UPROPERTY(Transient)
 	TObjectPtr<UWeaponData> RowsWeapon;
 

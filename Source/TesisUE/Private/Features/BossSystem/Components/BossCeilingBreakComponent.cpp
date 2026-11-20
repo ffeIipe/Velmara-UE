@@ -135,7 +135,6 @@ void UBossCeilingBreakComponent::HandleBreakFinished(const bool bInterrupted)
 {
 	bExecutingStage = false;
 
-	// Si se cortó antes del golpe, la etapa vuelve a la cola.
 	if (!bStageEventFired && !bBossDead && Stages.IsValidIndex(ExecutingStageIndex))
 	{
 		PendingStages.Insert(ExecutingStageIndex, 0);
@@ -259,7 +258,6 @@ void UBossCeilingBreakComponent::BuildShaftRequests(const int32 StageIndex, cons
 	const FBossCeilingStage& Stage = Stages[StageIndex];
 	int32 Remaining = Stage.ShaftCount;
 
-	// 1) Sobre el jugador: el aviso le da tiempo a salir.
 	if (Stage.bOpenShaftOnTarget && Target && Remaining > 0)
 	{
 		FShaftRequest Request;
@@ -270,7 +268,6 @@ void UBossCeilingBreakComponent::BuildShaftRequests(const int32 StageIndex, cons
 		}
 	}
 
-	// 2) Puntos del nivel: primero los de esta etapa, después los de cualquier etapa.
 	for (int32 Pass = 0; Pass < 2 && Remaining > 0; ++Pass)
 	{
 		TArray<ABossCeilingBreakPoint*> Candidates;
@@ -309,7 +306,6 @@ void UBossCeilingBreakComponent::BuildShaftRequests(const int32 StageIndex, cons
 		}
 	}
 
-	// 3) Completa con huecos aleatorios dentro de la arena.
 	for (int32 Attempt = 0; Remaining > 0 && Attempt < Stage.ShaftCount * 4; ++Attempt)
 	{
 		FVector GroundPoint;

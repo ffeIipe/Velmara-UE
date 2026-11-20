@@ -5,9 +5,6 @@
 #include "Tutorial/InputPromptData.h"
 #include "InputPromptWidget.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class TESISUE_API UInputPromptWidget : public UUserWidget
 {

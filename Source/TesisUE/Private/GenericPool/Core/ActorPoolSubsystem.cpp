@@ -6,7 +6,6 @@
 
 namespace ActorPool
 {
-	// Sin colisión, un Character con el movimiento activo cae por el piso hasta el KillZ y se destruye estando en el pool.
 	void SetMovementActive(const AActor* Actor, const bool bActive)
 	{
 		TInlineComponentArray<UMovementComponent*> MovementComponents(Actor);
@@ -40,7 +39,6 @@ void UActorPoolSubsystem::ReturnToPool(AActor* ActorToReturn)
 
 	FActorPoolBucket& Bucket = InactivePools.FindOrAdd(ActorToReturn->GetClass());
 
-	// Devolver dos veces el mismo actor haría que dos pedidos posteriores reciban la misma instancia.
 	if (Bucket.Actors.Contains(ActorToReturn)) return;
 
 	if (ActorToReturn->Implements<UPoolableActor>())
@@ -123,7 +121,6 @@ AActor* UActorPoolSubsystem::RetrieveActor(const UClass* ClassType)
 
 	while (Bucket->Actors.Num() > 0)
 	{
-		// Los actores destruidos por fuera del pool (ej. streaming) quedan inválidos y se descartan.
 		if (AActor* Candidate = Bucket->Actors.Pop(EAllowShrinking::No); IsValid(Candidate))
 		{
 			return Candidate;

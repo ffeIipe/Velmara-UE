@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -36,33 +34,4 @@ public:
 	UPROPERTY(BlueprintReadOnly)
 	bool bIsDodging = false;
 	
-	/*UPROPERTY(BlueprintReadOnly)
-	UCharacterMovementComponent* CharacterMovementComponent;*/
-	
-	/*UPROPERTY(BlueprintReadOnly, Category = "Movement")
-	float GroundSpeed;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
-	bool bIsFalling;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
-	bool bHasAcceleration;
-
-	UPROPERTY(BlueprintReadWrite, Category = "Movement")
-	float Direction;
-	
-	UPROPERTY(BlueprintReadWrite, Category = "Movement")
-	float WalkRight;
-	
-	UPROPERTY(BlueprintReadWrite, Category = "Movement")
-	float WalkForward;
-	
-	UPROPERTY(BlueprintReadWrite, Category = "Movement")
-	float MaxWalkSpeed;
-
-	UPROPERTY(BlueprintReadWrite, Category = "Combat")
-	bool bIsLocking;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Movement | Animation States")
-	bool bIsMeleeWeapon;*/
 };

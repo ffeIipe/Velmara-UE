@@ -32,18 +32,15 @@ public:
     UPROPERTY(VisibleAnywhere, Category = "Save Data")
     TMap<FGuid, FEntitySaveData> SavedActors;
 
-    // Niveles del árbol de atributos del jugador (UAttributeTreeComponent). Las ramas que no figuran están en Nivel I.
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SaveGameData|Progression")
     TMap<FGameplayTag, int32> AttributeTreeLevels;
 
-    // Combos de arma desbloqueados en el Altar de Sangre (UWeaponUpgradeComponent).
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SaveGameData|Progression")
     FGameplayTagContainer UnlockedWeaponCombos;
 
     UPROPERTY()
     FRotator PlayerControlRotation = FRotator::ZeroRotator;
 
-    // Entidad poseída al guardar (FGuid() si el jugador estaba en su cuerpo original).
     UPROPERTY()
     FGuid PossessedEntityID;
 };

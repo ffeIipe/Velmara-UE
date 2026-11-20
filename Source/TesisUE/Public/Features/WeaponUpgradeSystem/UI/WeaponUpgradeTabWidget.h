@@ -8,7 +8,6 @@ class UButton;
 class UTextBlock;
 class UWeaponUpgradeMenuWidget;
 
-// Pestaña de un arma en el menú del Altar de Sangre. Construye su layout por código.
 UCLASS()
 class TESISUE_API UWeaponUpgradeTabWidget : public UUserWidget
 {

@@ -16,29 +16,13 @@ void UEntityAnimInstance::NativeInitializeAnimation()
 	{
 		AbilitySystemComponent = EntityOwner->GetAbilitySystemComponent();
 		
-		//CharacterMovementComponent = EntityOwner->GetCharacterMovementComponent();
 	}
 	
-	/*if (CharacterMovementComponent)
-	{
-		MaxWalkSpeed = CharacterMovementComponent->MaxWalkSpeed;
-	}*/
 }
 
 void UEntityAnimInstance::NativeUpdateAnimation(const float DeltaTime)
 {
 	Super::NativeUpdateAnimation(DeltaTime);
-
-	/*if (CharacterMovementComponent)
-	{
-		GroundSpeed = UKismetMathLibrary::VSizeXY(CharacterMovementComponent->Velocity);
-
-		bIsFalling = CharacterMovementComponent->IsFalling();
-
-		bHasAcceleration = CharacterMovementComponent->GetCurrentAcceleration().SizeSquared2D() > SMALL_NUMBER;
-		
-		Direction = UKismetAnimationLibrary::CalculateDirection(CharacterMovementComponent->Velocity, EntityOwner->GetActorRotation());
-	}*/
 
 	if (AbilitySystemComponent)
 	{

@@ -12,10 +12,6 @@ class UProjectileMovementComponent;
 class USoundBase;
 class USphereComponent;
 
-/*
- * Proyectil de ataque a distancia del boss (onda de corte). Viaja en línea recta: se esquiva moviéndose de costado
- * o con el dodge (State.Dodging). Sale del pool y vuelve a él al impactar o al vencer su tiempo de vida.
- */
 UCLASS()
 class TESISUE_API ABossProjectile : public AActor, public IPoolableActor
 {
@@ -55,7 +51,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Projectile")
 	TObjectPtr<USoundBase> ImpactSound;
 
-	// Atraviesa objetivos en vez de desaparecer con el primer golpe.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Projectile")
 	bool bPierceTargets = false;
 

@@ -10,10 +10,6 @@ class UAttributeTreeRowWidget;
 class UTextBlock;
 class UVerticalBox;
 
-/*
- * Menú del árbol de atributos. Construye su layout por código, así que funciona sin un Widget Blueprint.
- * Lo abre/cierra UAttributeTreeComponent::ToggleMenu(). El cierre por teclado lo maneja UUpgradeMenuWidgetBase.
- */
 UCLASS()
 class TESISUE_API UAttributeTreeMenuWidget : public UUpgradeMenuWidgetBase
 {
@@ -25,7 +21,6 @@ public:
 
 	virtual void RefreshMenu() override;
 
-	// Lo llaman las filas tras intentar una compra.
 	void ShowUpgradeResult(EAttributeUpgradeResult Result, const FGameplayTag& UpgradeTag);
 
 protected:

@@ -49,7 +49,6 @@ void UAttributeTreeRowWidget::BuildLayout()
 	UHorizontalBox* Columns = Make<UHorizontalBox>(WidgetTree);
 	Background->SetContent(Columns);
 
-	// Ícono (opcional, se oculta si la rama no tiene uno)
 	IconBox = Make<USizeBox>(WidgetTree);
 	IconBox->SetWidthOverride(56.f);
 	IconBox->SetHeightOverride(56.f);
@@ -61,7 +60,6 @@ void UAttributeTreeRowWidget::BuildLayout()
 	IconSlot->SetPadding(FMargin(0.f, 0.f, 16.f, 0.f));
 	IconSlot->SetVerticalAlignment(VAlign_Center);
 
-	// Información de la rama
 	UVerticalBox* Info = Make<UVerticalBox>(WidgetTree);
 	UHorizontalBoxSlot* InfoSlot = Columns->AddChildToHorizontalBox(Info);
 	InfoSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
@@ -90,7 +88,6 @@ void UAttributeTreeRowWidget::BuildLayout()
 	StatsText = MakeText(WidgetTree, FText::GetEmpty(), 13, Colors::TextPrimary());
 	Info->AddChildToVerticalBox(StatsText)->SetPadding(FMargin(0.f, 10.f, 0.f, 0.f));
 
-	// Botón de mejora
 	USizeBox* ButtonSize = Make<USizeBox>(WidgetTree);
 	ButtonSize->SetWidthOverride(180.f);
 	ButtonSize->SetHeightOverride(64.f);
@@ -163,7 +160,6 @@ void UAttributeTreeRowWidget::Refresh()
 		StatsText->SetText(FText::Format(LOCTEXT("RowStats", "Valor: {0}   ·   Bonus: {1}  »  {2}"), CurrentValue, CurrentBonus, NextBonus));
 	}
 
-	// Botón
 	const bool bButtonEnabled = !bIsMaxLevel && bCanAfford;
 	UpgradeButton->SetIsEnabled(bButtonEnabled);
 
@@ -201,7 +197,6 @@ void UAttributeTreeRowWidget::RebuildLevelPips(const int32 CurrentLevel, const i
 		const bool bOwned = Level <= CurrentLevel;
 		const bool bNext = Level == CurrentLevel + 1;
 
-		// Conector entre niveles: dorado si ya se alcanzó el nivel de la derecha.
 		if (Level > 1)
 		{
 			USizeBox* ConnectorSize = Make<USizeBox>(WidgetTree);

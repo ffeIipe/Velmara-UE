@@ -12,8 +12,6 @@ void AEnergyItem::OnEnteredInventory_Implementation(AActor* NewOwner)
 
 	if (NewOwner)
 	{
-		//AttributeProvider->IncreaseHealth(HealthToIncrease);
-		//AttributeProvider->IncreaseEnergy(EnergyToIncrease);
 
 		if (OnUsedSpawnEnergy.IsBound())
 		{

@@ -91,7 +91,6 @@ void UBTTask_EnemyAttack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* Nod
 
 	Memory->Elapsed += DeltaSeconds;
 
-	// Un frame de input apretado alcanza para que el combo lo lea como "tap".
 	if (Memory->bInputHeld)
 	{
 		ASC->AbilityLocalInputReleased(AttackInputID);
@@ -143,7 +142,6 @@ void UBTTask_EnemyAttack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* Nod
 
 EBTNodeResult::Type UBTTask_EnemyAttack::AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-	// La habilidad termina sola (montage); cortar el árbol no la cancela, así el golpe no queda a medias.
 	return EBTNodeResult::Aborted;
 }
 

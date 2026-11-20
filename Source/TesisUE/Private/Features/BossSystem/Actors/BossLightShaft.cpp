@@ -23,7 +23,6 @@
 
 namespace BossLightShaft
 {
-	// Parámetro escalar opcional del BeamMaterial (0-1) que sigue la intensidad de la luz.
 	const FName BeamIntensityParam(TEXT("Intensity"));
 }
 
@@ -43,9 +42,7 @@ ABossLightShaft::ABossLightShaft()
 	Light->IntensityUnits = ELightUnits::Candelas;
 	Light->Intensity = 0.f;
 	Light->SetCastShadows(true);
-	// Con Exponential Height Fog + Volumetric Fog en el nivel se ve la columna de luz sin necesidad de mesh.
 	Light->VolumetricScatteringIntensity = 4.f;
-	// El hueco no ilumina: de la luz se encarga la Directional Light del nivel. Activalo en un Blueprint hijo si hace falta.
 	Light->SetVisibility(false);
 
 	BeamMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BeamMesh"));
@@ -142,7 +139,6 @@ void ABossLightShaft::BeginOpenPhase()
 
 	DustEffect->Deactivate();
 
-	// El techo cae recién ahora: durante el aviso solo se filtra un poco de luz.
 	if (ABossCeilingBreakPoint* LinkedPoint = BreakPoint.Get())
 	{
 		LinkedPoint->Break();
@@ -202,7 +198,6 @@ void ABossLightShaft::Tick(const float DeltaSeconds)
 	{
 	case EShaftPhase::Telegraph:
 		{
-			// Parpadeo tenue: avisa dónde va a caer el techo.
 			const float FadeIn = FMath::Clamp(PhaseElapsed / 0.3f, 0.f, 1.f);
 			const float Flicker = 0.65f + 0.35f * FMath::Sin(PhaseElapsed * 30.f);
 			SetLightAlpha(TelegraphIntensityFraction * FadeIn * Flicker);
@@ -337,7 +332,6 @@ void ABossLightShaft::DamageTick()
 
 		if (Mode != ELightShaftDamageMode::SunBurningEvent && DirectParams.Damage > 0.f)
 		{
-			// Daño ambiental: se lo aplica el propio objetivo, igual que el sol.
 			UBossSystemLibrary::ApplyBossDamage(nullptr, this, Target, DirectParams, 1.f, FHitResult());
 		}
 	}
@@ -390,7 +384,6 @@ bool ABossLightShaft::IsPointInsideShaft(const FVector& Point) const
 
 bool ABossLightShaft::HasLineOfSight(const AActor* Target) const
 {
-	// Rayo vertical desde el hueco hasta el objetivo: cualquier cosa encima lo cubre del sol.
 	const FVector TargetLocation = Target->GetActorLocation();
 	const FVector Start(TargetLocation.X, TargetLocation.Y, Top.Z - 30.f);
 	const FVector End = TargetLocation + FVector(0.f, 0.f, 40.f);
@@ -404,7 +397,6 @@ bool ABossLightShaft::HasLineOfSight(const AActor* Target) const
 		Params.AddIgnoredActor(BossActor);
 	}
 
-	// Las armas e items pegados al objetivo no lo cubren.
 	TArray<AActor*> AttachedActors;
 	Target->GetAttachedActors(AttachedActors, true, true);
 	Params.AddIgnoredActors(AttachedActors);
@@ -432,7 +424,6 @@ void ABossLightShaft::LayoutComponents()
 
 	if (BeamMaterial)
 	{
-		// El cilindro básico mide 100 uu con el pivote al centro.
 		const UMaterialInstanceDynamic* CurrentInstance = Cast<UMaterialInstanceDynamic>(BeamMesh->GetMaterial(0));
 		if (!CurrentInstance || CurrentInstance->Parent != BeamMaterial)
 		{

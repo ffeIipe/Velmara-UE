@@ -77,7 +77,6 @@ void USaveGameSubsystem::SaveGame(int32 SlotIndex)
     if(bSaved) 
     {
         if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("SUCCESS: Partida GUARDADA en slot: %s"), *TargetSlotName));
-        //OnSaveDataUpdated.Broadcast();
     }
     OnGameSaved.Broadcast(bSaved);
 }
@@ -145,7 +144,6 @@ void USaveGameSubsystem::CreateNewGame(int32 SlotIndex, const FString MapName)
         if (bSaved)
         {
             if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, FString::Printf(TEXT("Nueva Partida en Slot %d. Cargando: %s"), SlotIndex, *MapName));
-            //OnSaveDataUpdated.Broadcast();
         }
 
         UGameplayStatics::OpenLevel(GetWorld(), FName(*MapName));
@@ -246,7 +244,6 @@ void USaveGameSubsystem::LoadLevelActors(UPlayerProgressSaveGame* SaveObject) co
             if (SaveObject->SavedActors.Contains(ActorID))
             {
                 const FEntitySaveData& Data = SaveObject->SavedActors[ActorID];
-                // El transform guardado es de mundo: soltamos al actor de cualquier padre (arma, host...) antes de moverlo.
                 Actor->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
                 Actor->SetActorTransform(Data.Transform, false, nullptr, ETeleportType::TeleportPhysics);
 
@@ -262,7 +259,6 @@ void USaveGameSubsystem::LoadLevelActors(UPlayerProgressSaveGame* SaveObject) co
         }
     }
 
-    //Dynamics objects
     for (const auto& Pair : SaveObject->SavedActors)
     {
         FGuid SavedID = Pair.Key;
@@ -333,7 +329,6 @@ void USaveGameSubsystem::SavePlayerProgression(UPlayerProgressSaveGame* SaveObje
     {
         SaveObject->PlayerControlRotation = PC->GetControlRotation();
 
-        // IsPossessing() == (pawn actual != OriginalBody); OriginalBody es protected.
         if (PC->IsPossessing() && PC->GetPawn())
         {
             if (const USaveComponent* SaveComp = PC->GetPawn()->FindComponentByClass<USaveComponent>())
@@ -349,7 +344,6 @@ void USaveGameSubsystem::SavePlayerProgression(UPlayerProgressSaveGame* SaveObje
     }
     else if (CurrentSaveGame)
     {
-        // Sin árbol en el mundo no hay niveles nuevos: conservamos los de la partida cargada.
         SaveObject->AttributeTreeLevels = CurrentSaveGame->AttributeTreeLevels;
     }
 
@@ -394,7 +388,6 @@ TComponent* USaveGameSubsystem::FindPlayerComponent() const
         }
     }
 
-    // El jugador puede estar poseyendo otra entidad: buscamos el componente en el personaje jugable.
     for (TActorIterator<APawn> It(GetWorld()); It; ++It)
     {
         if (TComponent* Component = It->FindComponentByClass<TComponent>())

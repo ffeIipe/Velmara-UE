@@ -15,13 +15,6 @@ struct FOnAttributeChangeData;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnBossEncounterEvent);
 
-/*
- * Boss invocador. Combina:
- *  - UBossCombatComponent: ataques esquivables de rango corto, medio y largo (montajes del BossAnimationsPack).
- *  - UBossSummonComponent: invoca enemigos (clases configurables) usando el pool.
- *  - UBossCeilingBreakComponent: al cruzar umbrales de vida rompe el techo y abre huecos de luz que queman a Velmara.
- * Lo maneja ABossAIController (no necesita Behavior Tree).
- */
 UCLASS()
 class TESISUE_API ABossEnemy : public AEntity
 {
@@ -36,7 +29,6 @@ public:
 
 	virtual void MortalDamage_Implementation(FGameplayEventData DeathPayload) override;
 
-	// Arranca la pelea (barra de vida, invocaciones). Se llama sola por proximidad o al recibir daño.
 	UFUNCTION(BlueprintCallable, Category = "Boss")
 	void StartEncounter();
 
@@ -64,7 +56,6 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Boss|Components")
 	UStaticMeshComponent* GetWeaponMesh() const { return WeaponMesh; }
 
-	// 0 = usa los valores de DefaultAttributeEffect.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Stats", meta = (ClampMin = "0"))
 	float MaxHealthOverride = 1000.f;
 
@@ -86,11 +77,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI", meta = (ClampMin = "0.02"))
 	float DecisionInterval = 0.1f;
 
-	// Velocidad de giro (grados/s) hacia el objetivo mientras se recupera o espera.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI", meta = (ClampMin = "0"))
 	float FacingSpeed = 240.f;
 
-	// Esquiva cuando recibe varios golpes seguidos (BossDodgeB/L/R).
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|AI|Evade")
 	TArray<TObjectPtr<UAnimMontage>> EvadeMontages;
 
@@ -144,7 +133,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Components")
 	TObjectPtr<UBossCeilingBreakComponent> CeilingBreakComponent;
 
-	// Arma del boss (el "Stick" del pack). El barrido de daño sigue a este mesh.
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Components")
 	TObjectPtr<UStaticMeshComponent> WeaponMesh;
 

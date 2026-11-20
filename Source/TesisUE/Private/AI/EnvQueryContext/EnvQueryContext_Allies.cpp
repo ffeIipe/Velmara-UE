@@ -1,6 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "AI/EnvQueryContext/EnvQueryContext_Allies.h"
 
 #include "AIController.h"

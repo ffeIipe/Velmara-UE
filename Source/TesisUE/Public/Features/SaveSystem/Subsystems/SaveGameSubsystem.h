@@ -40,7 +40,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Save System")
 	void RestoreCurrentLevelState() const;
 
-	// Lo llama el GameMode al iniciar el nivel: restaura solo si una carga (LoadGame) lo pidió.
 	void RestorePendingLevelState();
 	
 	UPROPERTY(BlueprintAssignable)
@@ -67,7 +66,6 @@ private:
 	void SavePlayerProgression(UPlayerProgressSaveGame* SaveObject) const;
 	void LoadPlayerProgression(const UPlayerProgressSaveGame* SaveObject) const;
 
-	// Busca el componente en el pawn del jugador o, si está poseyendo otra entidad, en el personaje jugable.
 	template <typename TComponent>
 	TComponent* FindPlayerComponent() const;
 };

@@ -87,7 +87,6 @@ void ABossAIController::Tick(const float DeltaSeconds)
 	const UBossCeilingBreakComponent* Ceiling = BossPawn->GetCeilingBreakComponent();
 	const bool bStagePending = Ceiling && Ceiling->HasPendingStage();
 
-	// Cambio de etapa: corta el ataque en curso para romper el techo cuanto antes.
 	if (bStagePending && Ceiling->bInterruptAttacks && Combat->IsAttacking())
 	{
 		Combat->CancelCurrentAction();
@@ -106,7 +105,6 @@ void ABossAIController::Tick(const float DeltaSeconds)
 		return;
 	}
 
-	// Parado esperando cooldowns: no le da la espalda al jugador.
 	if (BrainState == EBossBrainState::Chasing && GetMoveStatus() != EPathFollowingStatus::Moving)
 	{
 		Combat->RotateOwnerTowards(Target->GetActorLocation(), DeltaSeconds, BossPawn->FacingSpeed);
@@ -173,7 +171,6 @@ void ABossAIController::ChaseTarget(AActor* Target)
 		return;
 	}
 
-	// MoveToActor ya actualiza el camino si el objetivo se mueve.
 	if (GetMoveStatus() == EPathFollowingStatus::Moving) return;
 
 	MoveToActor(Target, BossPawn->ChaseAcceptanceRadius, true, true, false, nullptr, true);
@@ -220,7 +217,6 @@ void ABossAIController::NotifyBossDamaged(AActor* DamageInstigator)
 
 	if (RecentHitTimes.Num() < BossPawn->EvadeHitThreshold || Now < NextEvadeTime) return;
 
-	// Si falla la tirada vuelve a contar desde cero.
 	if (FMath::FRand() < BossPawn->EvadeChance)
 	{
 		bWantsToEvade = true;

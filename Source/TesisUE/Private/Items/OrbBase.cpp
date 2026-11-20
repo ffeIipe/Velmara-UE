@@ -63,7 +63,6 @@ void AOrbBase::LaunchToTarget(AActor* Target)
 	HoverTime = FMath::FRandRange(HoverTimeMin, FMath::Max(HoverTimeMin, HoverTimeMax));
 	ArcSign = FMath::RandBool() ? 1.f : -1.f;
 
-	// Sale hacia afuera y arriba, en una dirección horizontal al azar.
 	const FVector Horizontal = FRotator(0.f, FMath::FRandRange(0.f, 360.f), 0.f).Vector();
 	Velocity = Horizontal * BurstSpeed + FVector::UpVector * BurstUpSpeed;
 
@@ -74,13 +73,11 @@ void AOrbBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	// Un hitch no debe teletransportar el orbe ni hacerlo "llegar" de golpe.
 	DeltaSeconds = FMath::Min(DeltaSeconds, 1.f / 30.f);
 
 	const AActor* Target = TargetActor.Get();
 	Age += DeltaSeconds;
 
-	// Objetivo destruido o vuelo demasiado largo: se recicla sin avisar de llegada.
 	if (!Target || Age > MaxLifetime)
 	{
 		ReturnToPool();
@@ -89,7 +86,6 @@ void AOrbBase::Tick(float DeltaSeconds)
 
 	if (Age < HoverTime)
 	{
-		// Fase 1: frena por fricción y la dirección gira, así el recorrido es un arco abierto.
 		Velocity *= FMath::Exp(-BurstDrag * DeltaSeconds);
 		Velocity = Velocity.RotateAngleAxis(ArcSign * ArcTurnRate * DeltaSeconds, FVector::UpVector);
 
@@ -97,7 +93,6 @@ void AOrbBase::Tick(float DeltaSeconds)
 		return;
 	}
 
-	// Fase 2: acelera de golpe y gira hacia el objetivo.
 	const FVector ToTarget = Target->GetActorLocation() + TargetOffset - GetActorLocation();
 	const float Distance = ToTarget.Size();
 
@@ -105,14 +100,12 @@ void AOrbBase::Tick(float DeltaSeconds)
 	const FVector Desired = ToTarget.GetSafeNormal();
 	const FVector Current = Velocity.IsNearlyZero() ? Desired : Velocity.GetSafeNormal();
 
-	// El giro crece con Speed/Distance: con un giro fijo y velocidad alta el orbe describe círculos alrededor del objetivo sin llegar nunca.
 	const float Steer = SteerRate + 2.f * Speed / FMath::Max(Distance, 1.f);
 	Velocity = FMath::Lerp(Current, Desired, FMath::Clamp(Steer * DeltaSeconds, 0.f, 1.f)).GetSafeNormal() * Speed;
 
 	const float Step = Speed * DeltaSeconds;
 	if (Distance <= ArriveDistance || Distance <= Step)
 	{
-		// Se posa en el punto de impacto antes de desaparecer, así se ve que toca el cuerpo.
 		SetActorLocation(GetActorLocation() + ToTarget);
 		Arrive();
 		return;
@@ -128,7 +121,6 @@ void AOrbBase::Arrive()
 	ApplyEffect(Target);
 	ReceiveArrived(Target);
 
-	// Copia: los listeners pueden relanzar este mismo orbe desde el pool.
 	FOnOrbArrivedNative NativeCopy = OnArrivedNative;
 	OnArrived.Broadcast(Target);
 	NativeCopy.Broadcast(Target);

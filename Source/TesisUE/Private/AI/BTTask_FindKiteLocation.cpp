@@ -47,7 +47,6 @@ EBTNodeResult::Type UBTTask_FindKiteLocation::ExecuteTask(UBehaviorTreeComponent
 		Away = -Target->GetActorForwardVector().GetSafeNormal2D();
 	}
 
-	// Ángulos (grados, alrededor del objetivo) en orden de preferencia.
 	TArray<float> Angles;
 	const bool bRetreat = FVector::Dist2D(Pawn->GetActorLocation(), TargetLocation) < RetreatDistance;
 	if (bRetreat)
@@ -70,7 +69,6 @@ EBTNodeResult::Type UBTTask_FindKiteLocation::ExecuteTask(UBehaviorTreeComponent
 		FNavLocation Projected;
 		if (!NavSys->ProjectPointToNavigation(Desired, Projected, FVector(300.f, 300.f, 600.f))) continue;
 
-		// Si al proyectar quedó otra vez pegado al objetivo no sirve para alejarse.
 		if (FVector::Dist2D(Projected.Location, TargetLocation) < RetreatDistance * 0.9f) continue;
 		if (!IsReachable(Pawn, Projected.Location)) continue;
 

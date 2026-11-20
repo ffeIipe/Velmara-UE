@@ -28,7 +28,6 @@ public:
 	UPROPERTY(BlueprintReadOnly)
 	class APlayerMainHUD* PlayerMainHUD;
 
-	// Devuelve false si no se pudo poseer (por ejemplo, un tótem recargable que todavía no está cargado).
 	UFUNCTION(BlueprintCallable, Category = "GAS|Possession")
 	bool PerformPossession(APawn* NewPawn);
 
@@ -59,11 +58,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "GAS|Possession")
 	APawn* OriginalBody;
 
-	// Sangre (Energy del cuerpo original) que se gasta por segundo mientras se posee una entidad. En 0 se sale.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GAS|Possession")
 	float PossessionEnergyDrainPerSecond = 5.f;
 
-	// Segundos que el enemigo queda quieto (sin IA) al ser abandonado.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GAS|Possession")
 	float UnpossessStunDuration = 2.f;
 
@@ -90,10 +87,8 @@ private:
 	
 	void Input_Look(const FInputActionValue& Value);
 
-	// Devuelve la IA (tras el stun), el equipo y el ASC al cuerpo abandonado.
 	void ReleaseHost(APawn* Host);
 
-	// Drena sangre y saca al jugador si se queda sin sangre o el cuerpo poseído muere.
 	void TickPossession();
 
 	TWeakObjectPtr<AController> HostAIController;

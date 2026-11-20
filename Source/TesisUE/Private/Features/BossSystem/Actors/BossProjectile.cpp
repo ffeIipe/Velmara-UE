@@ -39,7 +39,6 @@ ABossProjectile::ABossProjectile()
 	Movement->bRotationFollowsVelocity = true;
 	Movement->bAutoActivate = false;
 
-	// Valores por defecto con assets del proyecto; se pueden cambiar en un Blueprint hijo.
 	static ConstructorHelpers::FObjectFinder<UNiagaraSystem> TrailFinder(TEXT("/Game/SlashTrail_SoftTofu/Niagara/Dark/NS_SlashTrail_Dark_Loop.NS_SlashTrail_Dark_Loop"));
 	if (TrailFinder.Succeeded())
 	{
@@ -71,7 +70,6 @@ void ABossProjectile::Launch(AActor* InInstigator, const FVector& Direction, con
 	const FVector LaunchDirection = Direction.GetSafeNormal();
 	SetActorRotation(LaunchDirection.Rotation());
 
-	// Al detenerse, el ProjectileMovement suelta su UpdatedComponent: se reasigna en cada lanzamiento.
 	Movement->SetUpdatedComponent(Collision);
 	Movement->InitialSpeed = Speed;
 	Movement->MaxSpeed = Speed;
@@ -85,7 +83,6 @@ void ABossProjectile::Launch(AActor* InInstigator, const FVector& Direction, con
 
 	bLaunched = true;
 
-	// Lo que ya estaba dentro de la esfera al salir del pool no dispara un BeginOverlap nuevo.
 	TArray<AActor*> AlreadyOverlapping;
 	Collision->GetOverlappingActors(AlreadyOverlapping);
 	for (AActor* Other : AlreadyOverlapping)
@@ -109,7 +106,6 @@ void ABossProjectile::HandleOverlap(UPrimitiveComponent* OverlappedComponent, AA
 
 	HandledActors.Add(OtherActor);
 
-	// Con el dodge el proyectil lo atraviesa sin dañarlo.
 	if (UBossSystemLibrary::IsImmuneToBossHit(OtherActor, DamageParams.ImmunityTags)) return;
 
 	const FHitResult Hit = bFromSweep ? SweepResult : FHitResult(OtherActor, OtherComp, GetActorLocation(), -GetActorForwardVector());
@@ -121,7 +117,6 @@ void ABossProjectile::HandleOverlap(UPrimitiveComponent* OverlappedComponent, AA
 
 	if (!bPierceTargets)
 	{
-		// Se devuelve al pool en el próximo tick: no conviene apagar la colisión dentro del propio evento de overlap.
 		bLaunched = false;
 		Movement->StopMovementImmediately();
 		GetWorldTimerManager().SetTimerForNextTick(this, &ABossProjectile::Expire);
@@ -181,6 +176,5 @@ void ABossProjectile::OnPoolDeactivate_Implementation()
 	Movement->StopMovementImmediately();
 	Movement->Deactivate();
 
-	// Inmediato: si no, el trail se estira desde el último impacto hasta el próximo spawn.
 	Effect->DeactivateImmediate();
 }

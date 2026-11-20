@@ -6,10 +6,6 @@
 #include "Styling/SlateBrush.h"
 #include "Styling/SlateTypes.h"
 
-/*
- * Estilo compartido de los menús de mejora (colores, fuentes y brushes).
- * Se usan funciones en lugar de constantes globales para evitar problemas de orden de inicialización estática.
- */
 namespace UpgradeUIStyle
 {
 	inline FLinearColor Hex(const TCHAR* HexColor, const float Alpha = 1.f)
@@ -41,7 +37,6 @@ namespace UpgradeUIStyle
 		inline FLinearColor ButtonPressed() { return Hex(TEXT("6E5219")); }
 		inline FLinearColor RowHovered()    { return Hex(TEXT("27232E")); }
 
-		// Paleta del altar de sangre
 		inline FLinearColor Blood()         { return Hex(TEXT("C4293F")); }
 		inline FLinearColor BloodDim()      { return Hex(TEXT("6E1A27")); }
 		inline FLinearColor BloodPanel()    { return Hex(TEXT("140D10"), 0.98f); }

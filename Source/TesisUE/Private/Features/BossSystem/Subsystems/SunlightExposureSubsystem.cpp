@@ -53,7 +53,6 @@ void USunlightExposureSubsystem::ClearSource(UObject* Source)
 		SetExposed(Target, Source, false);
 	}
 
-	// Limpia objetivos destruidos.
 	for (auto It = Exposures.CreateIterator(); It; ++It)
 	{
 		if (!It.Key().IsValid()) It.RemoveCurrent();

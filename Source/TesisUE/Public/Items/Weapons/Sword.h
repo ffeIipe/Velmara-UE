@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -24,15 +22,12 @@ public:
     
     virtual void BeginPlay() override;
     
-    // En runtime, si el dueño tiene UWeaponUpgradeComponent, apunta a una copia sin las ramas de combo bloqueadas.
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
     USwordData* SwordData;
 
-    // Data Asset original (sin filtrar por los combos desbloqueados).
     UFUNCTION(BlueprintPure, Category = "Combat")
     USwordData* GetBaseSwordData() const { return BaseSwordData ? BaseSwordData.Get() : SwordData; }
 
-    // Regenera SwordData a partir del original quitando las ramas que el dueño todavía no desbloqueó.
     UFUNCTION(BlueprintCallable, Category = "Combat")
     void RefreshComboUnlocks();
 

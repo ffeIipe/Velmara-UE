@@ -31,7 +31,6 @@ void UTotemChargeComponent::BeginPlay()
 		OwnerPawn->ReceiveControllerChangedDelegate.AddDynamic(this, &UTotemChargeComponent::HandleOwnerControllerChanged);
 	}
 
-	// Se aplica en el siguiente frame para no pisarse con el BeginPlay del dueño (MIDs de AEntity, perfiles de colisión del Blueprint).
 	GetWorld()->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
 		RefreshPossessionTraceResponse();
@@ -82,7 +81,6 @@ bool UTotemChargeComponent::TryAbsorbDeath(AActor* DeadActor)
 {
 	if (!bRequiresCharge || !DeadActor || DeadActor == GetOwner()) return false;
 
-	// Ya cargado, o el jugador está dentro del tótem: las muertes no suman.
 	if (IsCharged() || CurrentKills + PendingOrbs >= KillsToCharge || IsOwnerPlayerControlled()) return false;
 
 	if (bOnlyCountEnemies && !IsEnemyOfPlayer(DeadActor)) return false;
@@ -248,7 +246,6 @@ void UTotemChargeComponent::RefreshChargeMaterials() const
 
 	for (UMeshComponent* Mesh : Meshes)
 	{
-		// El widget de posesión también es un UMeshComponent, pero maneja sus propios materiales.
 		if (Mesh->IsA<UWidgetComponent>()) continue;
 
 		Mesh->SetScalarParameterValueOnMaterials(ChargeMaterialParameter, ChargePercent);

@@ -50,7 +50,6 @@ void UWeaponComboRowWidget::BuildLayout()
 	UHorizontalBox* Columns = Make<UHorizontalBox>(WidgetTree);
 	Background->SetContent(Columns);
 
-	// Ícono (opcional)
 	IconBox = Make<USizeBox>(WidgetTree);
 	IconBox->SetWidthOverride(56.f);
 	IconBox->SetHeightOverride(56.f);
@@ -62,7 +61,6 @@ void UWeaponComboRowWidget::BuildLayout()
 	IconSlot->SetPadding(FMargin(0.f, 0.f, 16.f, 0.f));
 	IconSlot->SetVerticalAlignment(VAlign_Center);
 
-	// Información del combo
 	UVerticalBox* Info = Make<UVerticalBox>(WidgetTree);
 	UHorizontalBoxSlot* InfoSlot = Columns->AddChildToHorizontalBox(Info);
 	InfoSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
@@ -90,7 +88,6 @@ void UWeaponComboRowWidget::BuildLayout()
 	RequirementsText->SetAutoWrapText(true);
 	Info->AddChildToVerticalBox(RequirementsText)->SetPadding(FMargin(0.f, 6.f, 0.f, 0.f));
 
-	// Botón de desbloqueo
 	USizeBox* ButtonSize = Make<USizeBox>(WidgetTree);
 	ButtonSize->SetWidthOverride(190.f);
 	ButtonSize->SetHeightOverride(64.f);
@@ -147,7 +144,6 @@ void UWeaponComboRowWidget::Refresh()
 		IconBox->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
-	// Cómo se ejecuta: "Suelo: Pulsar · Pulsar · Mantener   ·   4 golpes"
 	const FComboInputPath Path = WeaponUpgradeUtils::FindComboPath(WeaponData, UnlockTag);
 	const FText InputDescription = WeaponUpgradeUtils::DescribeComboInput(Path);
 	InputText->SetText(Path.bFound && Path.HitCount > 0
@@ -155,7 +151,6 @@ void UWeaponComboRowWidget::Refresh()
 		: InputDescription);
 	InputText->SetColorAndOpacity(FSlateColor(Path.bFound ? Colors::Gold() : Colors::Error()));
 
-	// Requisitos faltantes, con el nombre del combo si es de esta misma arma.
 	const FGameplayTagContainer MissingRequirements = Upgrades->GetMissingRequirements(WeaponData, UnlockTag);
 	if (MissingRequirements.IsEmpty())
 	{
@@ -176,7 +171,6 @@ void UWeaponComboRowWidget::Refresh()
 		RequirementsText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	}
 
-	// Estado visual
 	switch (State)
 	{
 	case EWeaponComboState::Unlocked:
@@ -196,7 +190,6 @@ void UWeaponComboRowWidget::Refresh()
 		break;
 	}
 
-	// Botón
 	const bool bButtonEnabled = State == EWeaponComboState::Available && bCanAfford;
 	UnlockButton->SetIsEnabled(bButtonEnabled);
 

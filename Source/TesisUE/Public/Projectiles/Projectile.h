@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -60,9 +58,6 @@ protected:
 		bool bFromSweep,
 		const FHitResult& SweepResult);
 
-	/*
-	* Effects
-	*/
 	UPROPERTY(EditAnywhere, Category = "Effects");
 	USoundBase* HitSound;
 

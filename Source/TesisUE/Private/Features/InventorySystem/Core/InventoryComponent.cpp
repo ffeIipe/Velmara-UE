@@ -24,8 +24,6 @@ void UInventoryComponent::BeginPlay()
 {
     Super::BeginPlay();
 
-    // InventorySlots es Transient y se llena en OnConstruction, que no vuelve a correr en los actores puestos en el nivel
-    // (al cargar el mapa o duplicarlo para PIE): sin esto llegan sin slots y TryAddWeapon falla (enemigos desarmados).
     if (InventorySlots.Num() == 0)
     {
         if (const AEntity* Entity = Cast<AEntity>(GetOwner()); Entity && Entity->EntityData)
@@ -94,8 +92,6 @@ void UInventoryComponent::EquipItemFromSlot(const int32 SlotIndex)
 
     if (CurrentItem == InventorySlots[SlotIndex]) return;
     
-    //UnequipCurrentWeapon();
-    
     if (CurrentItem)
     {
         CurrentItem->Execute_OnRemovedFromInventory(CurrentItem.GetObject());
@@ -111,7 +107,6 @@ void UInventoryComponent::EquipItemFromSlot(const int32 SlotIndex)
         CurrentItem->Execute_OnEnteredInventory(CurrentItem.GetObject(), GetOwner());
     }
     
-    //UpdateInventoryUI();
 }
 
 void UInventoryComponent::DropWeaponFromSlot(const int32 SlotIndex)
@@ -299,7 +294,7 @@ void UInventoryComponent::PerformInteract(const FVector& StartTrace, const FVect
         StartTrace,
         EndTrace,
         RadiusTrace,
-        UEngineTypes::ConvertToTraceType(ECC_GameTraceChannel5), //item trace
+        UEngineTypes::ConvertToTraceType(ECC_GameTraceChannel5),
         false,
         ActorsToIgnore,
         EDrawDebugTrace::ForDuration,

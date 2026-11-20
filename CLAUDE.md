@@ -15,3 +15,7 @@ Reglas:
 - Cada brief a un agente debe incluir objetivo, archivos, restricciones y criterio de "hecho"; los agentes no ven esta conversación.
 - No des por buena la entrega de `coder`: revisa el diff y el resultado de la compilación antes de reportar.
 - Dos `coder` en paralelo nunca tocan los mismos archivos.
+
+## Código
+
+- No escribir comentarios en el código fuente (`Source/`). El código debe ser autoexplicativo mediante nombres claros.

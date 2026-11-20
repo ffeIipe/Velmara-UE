@@ -14,7 +14,6 @@
 
 UUpgradeComponentBase::UUpgradeComponentBase()
 {
-	// Componente puramente reactivo.
 	PrimaryComponentTick.bCanEverTick = false;
 
 	CurrencyType = CurrencyTags::Blood;
@@ -27,8 +26,6 @@ void UUpgradeComponentBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 	Super::EndPlay(EndPlayReason);
 }
-
-/* MENÚ */
 
 void UUpgradeComponentBase::ToggleMenu()
 {
@@ -49,7 +46,6 @@ void UUpgradeComponentBase::OpenMenu()
 	APlayerController* PlayerController = GetOwningPlayerController();
 	if (!PlayerController || !PlayerController->IsLocalController()) return;
 
-	// Un solo menú de mejoras abierto a la vez (ej. árbol de atributos y altar).
 	TInlineComponentArray<UUpgradeComponentBase*> UpgradeComponents(GetOwner());
 	for (UUpgradeComponentBase* Other : UpgradeComponents)
 	{
@@ -114,8 +110,6 @@ APlayerController* UUpgradeComponentBase::GetOwningPlayerController() const
 	const APawn* OwnerPawn = Cast<APawn>(GetOwner());
 	return OwnerPawn ? OwnerPawn->GetController<APlayerController>() : nullptr;
 }
-
-/* MONEDA */
 
 void UUpgradeComponentBase::SetCurrencyProvider(UObject* NewProvider)
 {
@@ -197,7 +191,6 @@ UObject* UUpgradeComponentBase::ResolveCurrencyProvider() const
 		return nullptr;
 	};
 
-	// Orden de búsqueda: Pawn (y componentes) -> Controller -> PlayerState -> GameInstance.
 	AActor* Owner = GetOwner();
 	if (UObject* Found = SearchActor(Owner)) return Found;
 

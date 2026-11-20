@@ -1,5 +1,3 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
-
 using UnrealBuildTool;
 
 public class TesisUE : ModuleRules
@@ -40,7 +38,6 @@ public class TesisUE : ModuleRules
 			"StageZero"
 		});
 
-		// Fractura de rocas del boss (UBossEditorLibrary): solo en el editor.
 		if (Target.bBuildEditor)
 		{
 			PrivateDependencyModuleNames.AddRange(new string[] { "FractureEngine", "DataflowCore", "AssetRegistry" });
@@ -50,9 +47,5 @@ public class TesisUE : ModuleRules
 		
 		PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
 
-        // Uncomment if you are using online features
-        // PrivateDependencyModuleNames.Add("OnlineSubsystem");
-
-        // To include OnlineSubsystemSteam, add it to the plugins section in your uproject file with the Enabled attribute set to true
     }
 }

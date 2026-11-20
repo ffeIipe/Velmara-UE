@@ -10,7 +10,6 @@
 
 UVelmaraAttributeSet::UVelmaraAttributeSet()
 {
-	// Valores neutros para que las entidades que no los configuran (enemigos) no se vean afectadas.
 	InitArmor(0.f);
 	InitBaseDamage(0.f);
 	InitAttackSpeed(1.f);
@@ -36,7 +35,6 @@ float UVelmaraAttributeSet::CalculateFinalDamage(const float RawDamage, const FG
 
 	float FinalDamage = RawDamage;
 
-	// Daño base del atacante (no se aplica al daño auto-infligido, ej. el sol).
 	if (const UAbilitySystemComponent* SourceASC = EffectSpec.GetContext().GetInstigatorAbilitySystemComponent())
 	{
 		const UVelmaraAttributeSet* SourceSet = SourceASC->GetSet<UVelmaraAttributeSet>();
@@ -44,7 +42,6 @@ float UVelmaraAttributeSet::CalculateFinalDamage(const float RawDamage, const FG
 		{
 			FinalDamage += FMath::Max(SourceSet->GetBaseDamage(), 0.f);
 
-			// Marca de sangre del pulso vampiro.
 			if (GetOwningAbilitySystemComponent()->HasMatchingGameplayTag(FVelmaraGameplayTags::Get().State_BloodMarked))
 			{
 				FinalDamage *= BloodMarkDamageMultiplier;
@@ -52,7 +49,6 @@ float UVelmaraAttributeSet::CalculateFinalDamage(const float RawDamage, const FG
 		}
 	}
 
-	// Armadura del objetivo.
 	const float CurrentArmor = FMath::Max(GetArmor(), 0.f);
 	FinalDamage *= ArmorMitigationConstant / (ArmorMitigationConstant + CurrentArmor);
 
@@ -111,7 +107,6 @@ void UVelmaraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCal
                 DeathPayload.Target = GetOwningActor();
                 DeathPayload.InstigatorTags.AddTag(DeathReason);
 
-                // Solo en el golpe que la mata: los golpes posteriores también llegan acá con la vida en 0.
                 if (bWasAlive)
                 {
                     if (AEntity* OwnerEntity = Cast<AEntity>(GetOwningActor()))

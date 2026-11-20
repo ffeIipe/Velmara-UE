@@ -7,12 +7,6 @@
 
 class UStaticMeshComponent;
 
-/*
- * Altar de Sangre: al interactuar (GA_Interact) abre/cierra el menú de mejoras de arma del personaje
- * (UWeaponUpgradeComponent::ToggleMenu).
- *
- * Para usarlo con BP_Shop/BP_Altar: Class Settings > Parent Class > BloodAltar.
- */
 UCLASS()
 class TESISUE_API ABloodAltar : public AActor, public IInteractable
 {
@@ -26,14 +20,12 @@ public:
 	virtual FText GetInteractionText() const override { return InteractionText; }
 
 protected:
-	// Bloquea el canal "Item" (el que traza GA_Interact). Si el BP usa otro mesh visible, ese también debe bloquear Item.
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UStaticMeshComponent> AltarMesh;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Altar")
 	FText InteractionText;
 
-	// Para sonido/VFX al usar el altar. bOpened indica si el menú quedó abierto.
 	UFUNCTION(BlueprintImplementableEvent, Category = "Altar")
 	void OnAltarUsed(AActor* Interactor, bool bOpened);
 };

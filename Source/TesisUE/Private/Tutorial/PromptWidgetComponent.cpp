@@ -12,13 +12,6 @@ UPromptWidgetComponent::UPromptWidgetComponent()
         PromptDataTable = InputDataTable.Object;
     }
 
-    /*static ConstructorHelpers::FObjectFinder<UInputPromptWidget> InputPromptWidgetClass(TEXT("/Game/Blueprints/Tutorial/WBP_InputPrompt.WBP_InputPrompt"));
-    if (InputPromptWidgetClass.Succeeded())
-    {  
-        SetWidgetClass(InputPromptWidgetClass.Object->GetClass());
-    }*/
-    /*else if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Missing! Input Prompt Widget");*/
-    
     SetDrawAtDesiredSize(true);
     SetWidgetSpace(EWidgetSpace::Screen);
 }
@@ -61,7 +54,6 @@ void UPromptWidgetComponent::EnablePromptWidget()
     SetHiddenInGame(false);
     SetVisibility(true);
 
-    /*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Green, "Prompt Widget Enabled");*/
 }
 
 void UPromptWidgetComponent::DisablePromptWidget()
@@ -73,5 +65,4 @@ void UPromptWidgetComponent::DisablePromptWidget()
     SetHiddenInGame(true);
     SetVisibility(false);
 
-    /*GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Prompt Widget Disabled");*/
 }

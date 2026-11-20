@@ -14,16 +14,11 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBossMinionSpawned, AActor*, Minio
 UENUM(BlueprintType)
 enum class EBossMinionCleanup : uint8
 {
-	// Les aplica MortalDamage: hacen su muerte normal y vuelven solos al pool.
 	Kill,
 	ReturnToPool,
 	Keep
 };
 
-/*
- * Invoca enemigos alrededor del boss usando el UActorPoolSubsystem. Los enemigos que implementan PoolableActor
- * (ej. CBP_Enemy) vuelven al pool al morir y se reutilizan en la próxima invocación.
- */
 UCLASS(ClassGroup = (Boss), meta = (BlueprintSpawnableComponent))
 class TESISUE_API UBossSummonComponent : public UActorComponent
 {
@@ -32,7 +27,6 @@ class TESISUE_API UBossSummonComponent : public UActorComponent
 public:
 	UBossSummonComponent();
 
-	// Enemigos a invocar: por cada invocado se elige una clase al azar.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Summon")
 	TArray<TSubclassOf<AActor>> MinionClasses;
 
@@ -45,7 +39,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Summon", meta = (ClampMin = "0"))
 	float SummonCooldown = 22.f;
 
-	// Segundos desde que arranca la pelea hasta la primera invocación posible.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Summon", meta = (ClampMin = "0"))
 	float FirstSummonDelay = 8.f;
 
@@ -55,14 +48,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Summon|Placement", meta = (ClampMin = "0"))
 	float MaxSpawnRadius = 900.f;
 
-	// Instancias por clase que se crean en el pool al empezar. 0 = se crean a demanda.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Summon|Pool", meta = (ClampMin = "0"))
 	int32 PrewarmPerClass = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Summon|Animation")
 	TObjectPtr<UAnimMontage> SummonMontage;
 
-	// Momento normalizado del montaje en que aparecen los avisos (o AnimNotify "Boss Action Event").
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Summon|Animation", meta = (ClampMin = "0", ClampMax = "1"))
 	float SummonEventTime = 0.45f;
 
@@ -72,7 +63,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Summon|Animation", meta = (ClampMin = "0"))
 	float RecoveryAfterSummon = 0.5f;
 
-	// Tiempo entre el efecto en el piso y la aparición del enemigo.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Summon|Feedback", meta = (ClampMin = "0"))
 	float SpawnDelay = 0.8f;
 
@@ -94,11 +84,9 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Boss|Summon")
 	bool CanSummon() const;
 
-	// Reproduce el montaje de invocación (a través del componente de combate) y en su evento aparecen los enemigos.
 	UFUNCTION(BlueprintCallable, Category = "Boss|Summon")
 	bool StartSummon(AActor* Target, int32 CountOverride = 0);
 
-	// Invoca sin montaje ni cooldown (respeta MaxAliveMinions). Devuelve cuántos quedaron programados.
 	UFUNCTION(BlueprintCallable, Category = "Boss|Summon")
 	int32 SpawnMinionsNow(AActor* Target, int32 Count = 0);
 

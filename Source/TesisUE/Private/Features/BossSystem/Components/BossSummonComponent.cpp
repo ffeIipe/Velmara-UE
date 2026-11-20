@@ -139,7 +139,6 @@ int32 UBossSummonComponent::SpawnMinionsNow(AActor* Target, const int32 Count)
 
 		const TSubclassOf<AActor> MinionClass = ValidClasses[FMath::RandRange(0, ValidClasses.Num() - 1)];
 
-		// El efecto en el piso avisa dónde va a aparecer cada enemigo.
 		if (SpawnEffect)
 		{
 			UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, SpawnEffect, Location);
@@ -176,7 +175,6 @@ void UBossSummonComponent::SpawnMinion(const TSubclassOf<AActor> MinionClass, FV
 
 	if (bBossDead || !MinionClass) return;
 
-	// El pivote de un Character es el centro de la cápsula.
 	if (const ACharacter* CharacterDefaults = Cast<ACharacter>(MinionClass->GetDefaultObject()))
 	{
 		Location.Z += CharacterDefaults->GetCapsuleComponent()->GetScaledCapsuleHalfHeight() + 5.f;

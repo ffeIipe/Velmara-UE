@@ -14,7 +14,6 @@ UShamanStaffMagicAbility::UShamanStaffMagicAbility()
 {
 	ProjectileClass = ABossProjectile::StaticClass();
 
-	// Mismos defaults que el daño del boss (BossEnemy / BossCombatComponent).
 	static ConstructorHelpers::FClassFinder<UGameplayEffect> DamageEffectFinder(TEXT("/Game/Blueprints/GAS/Effects/GE_Damage"));
 	if (DamageEffectFinder.Succeeded())
 	{
@@ -39,7 +38,6 @@ void UShamanStaffMagicAbility::ActivateAbility(const FGameplayAbilitySpecHandle 
 
 	const float Rate = GetAttackSpeedMultiplier();
 
-	// Si el montage se interrumpe (hit react, muerte) la habilidad termina y este delay se cancela: no sale el proyectil.
 	UAbilityTask_WaitDelay* DelayTask = UAbilityTask_WaitDelay::WaitDelay(this, FireDelay / Rate);
 	DelayTask->OnFinish.AddDynamic(this, &UShamanStaffMagicAbility::FireProjectile);
 	DelayTask->ReadyForActivation();
@@ -75,7 +73,6 @@ void UShamanStaffMagicAbility::FireProjectile()
 		}
 	}
 
-	// Sin montage no hay nada más que esperar.
 	if (!CastMontage)
 	{
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);

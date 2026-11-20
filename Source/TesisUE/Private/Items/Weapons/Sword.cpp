@@ -41,7 +41,6 @@ void ASword::BeginPlay()
 
 	if (!SwordData)
 	{
-		//if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "MISSING! Data asset of: " + GetName() + " is nullptr.");
 	}
 }
 
@@ -49,7 +48,6 @@ void ASword::Equip()
 {
 	Super::Equip();
 
-	// Antes de dar las habilidades, para que el combo arranque con los desbloqueos del dueño.
 	RefreshComboUnlocks();
 
 	IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(GetOwner());
@@ -186,22 +184,18 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 			
 			if (TargetASC && DamageEffectSpecHandle.IsValid())
 			{
-				//Set the damage type
 				DamageEffectSpecHandle.Data.Get()->AddDynamicAssetTag(CurrentDamageTag);
 				
-				//Also sending the hit result
 				FGameplayEffectContextHandle Context = GetOwner()->FindComponentByClass<UAbilitySystemComponent>()->MakeEffectContext();
 				Context.AddHitResult(Hit);
 
 				DamageEffectSpecHandle.Data->SetContext(Context);
 				
-				//Applying the gameplay effect to the hit actor
 				GetOwner()->FindComponentByClass<UAbilitySystemComponent>()->ApplyGameplayEffectSpecToTarget(
 					*DamageEffectSpecHandle.Data.Get(),
 					TargetASC
 				);
 				
-				//VFX call
 				FGameplayCueParameters CueParameters;
 				CueParameters.Location = Hit.ImpactPoint;
 				CueParameters.Normal = Hit.ImpactNormal;
@@ -210,10 +204,6 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 
 				TargetASC->ExecuteGameplayCue(CurrentCueTag, CueParameters);
 
-				/*if (GetGameInstance()->Implements<UEffectManagerProvider>())
-				{
-					IEffectManagerProvider::Execute_PlayGameplayEffect(GetGameInstance(), CurrentDamageTag, Hit.ImpactPoint);
-				}*/
 			}
 		}
 
@@ -256,17 +246,14 @@ void ASword::RefreshComboUnlocks()
 		BoundUpgradeComponent = Upgrades;
 	}
 
-	// Sin sistema de mejoras (ej. enemigos) se usan todos los combos del Data Asset.
 	if (!Upgrades)
 	{
 		SwordData = BaseSwordData;
 		return;
 	}
 
-	// Nunca se modifica el Data Asset: se trabaja sobre una copia propia de esta espada.
 	USwordData* FilteredData = DuplicateObject<USwordData>(BaseSwordData, this);
 
-	// La copia hereda los flags de asset (Standalone/Public): sin limpiarlos no se liberaría y retendría a la espada.
 	auto MakeRuntimeOnly = [](UObject* Object)
 	{
 		Object->ClearFlags(RF_Standalone | RF_Public);
@@ -293,7 +280,6 @@ UComboNode* ASword::PruneLockedBranches(UComboNode* Node, const UWeaponUpgradeCo
 	{
 		Visited.Add(Node);
 
-		// Solo se tocan nodos de la copia; uno que viva fuera del Data Asset se deja intacto.
 		if (Node->IsIn(&FilteredData))
 		{
 			Node->NextActionInputTap = PruneLockedBranches(Node->NextActionInputTap, Upgrades, FilteredData, Visited);

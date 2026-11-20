@@ -19,7 +19,6 @@
 
 namespace
 {
-    // AEntity::IsAlive() no sirve para enemigos (State.Dead nunca se aplica). Sin AttributeSet, Health daría 0: no cuenta como muerto.
     bool IsEntityDead(const AEntity* Entity)
     {
         const UAbilitySystemComponent* ASC = Entity ? Entity->GetAbilitySystemComponent() : nullptr;
@@ -54,7 +53,6 @@ bool ACustomPlayerController::PerformPossession(APawn* NewPawn)
         OriginalBody = PreviousPawn;
     }
 
-    // Se guarda antes de Possess: al poseer, el AIController del enemigo queda suelto.
     AController* NewPawnPreviousController = NewPawn->GetController();
     const AEntity* NewEntity = Cast<AEntity>(NewPawn);
     const FGenericTeamId NewPawnTeam = NewEntity ? NewEntity->GetTeamId() : FGenericTeamId::NoTeam;
@@ -96,25 +94,22 @@ void ACustomPlayerController::ReleaseHost(APawn* Host)
     }
 
     AEntity* HostEntity = Cast<AEntity>(Host);
-    if (!HostEntity) return; // Tótems: no tienen IA ni equipo que restaurar.
+    if (!HostEntity) return;
 
     HostEntity->TeamId = HostTeamId;
 
-    // Se destruye el AIController viejo: re-poseer con él no reinicia el Behavior Tree de forma confiable.
     if (AController* OldController = HostAIController.Get())
     {
         OldController->Destroy();
     }
     HostAIController = nullptr;
 
-    // Murió poseído: CBP_Enemy.HandleControllerDeactivation espera un AIController para apagar la IA y hacer ragdoll.
     if (IsEntityDead(HostEntity))
     {
         HostEntity->SpawnDefaultController();
         return;
     }
 
-    // Aturdido: sin controller no hace nada hasta que vuelve la IA.
     TWeakObjectPtr<AEntity> WeakHost = HostEntity;
     FTimerHandle StunTimer;
     GetWorldTimerManager().SetTimer(StunTimer, [WeakHost]()
@@ -131,7 +126,6 @@ void ACustomPlayerController::TickPossession()
 {
     if (!IsPossessing()) return;
 
-    // El cuerpo poseído desapareció (pool/destroy): volver directo, no hay a quién mandarle el evento.
     if (!GetPawn())
     {
         if (OriginalBody) PerformPossession(OriginalBody);
@@ -140,7 +134,6 @@ void ACustomPlayerController::TickPossession()
 
     if (bEndingPossession)
     {
-        // El evento no sacó al jugador (p. ej. el cuerpo murió y bloquea habilidades): volver sin pasar por GA_Possess.
         PerformPossession(OriginalBody);
         return;
     }
@@ -149,7 +142,7 @@ void ACustomPlayerController::TickPossession()
     UAbilitySystemComponent* BodyASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OriginalBody);
     bool bShouldEnd = IsEntityDead(Host);
 
-    if (BodyASC && Host) // Los tótems no consumen sangre.
+    if (BodyASC && Host)
     {
         const FGameplayAttribute EnergyAttribute = UVelmaraAttributeSet::GetEnergyAttribute();
         const float NewEnergy = FMath::Max(0.f, BodyASC->GetNumericAttribute(EnergyAttribute) - PossessionEnergyDrainPerSecond * PossessionTickInterval);
@@ -160,7 +153,6 @@ void ACustomPlayerController::TickPossession()
     if (bShouldEnd)
     {
         bEndingPossession = true;
-        // GA_Possess del cuerpo poseído hace la vuelta completa (interfaz, tags, widget).
         UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(GetPawn(), FGameplayTag::RequestGameplayTag(TEXT("Event.Posses.Return")), FGameplayEventData());
     }
 }
@@ -198,14 +190,6 @@ void ACustomPlayerController::SetupInputComponent()
 
     if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
     {
-        /*if (InputData->Inputs.MoveAction)
-        {
-            EnhancedInputComponent->BindAction(InputData->Inputs.MoveAction, ETriggerEvent::Triggered, this, &ACustomPlayerController::Input_Move);
-            EnhancedInputComponent->BindAction(InputData->Inputs.MoveAction, ETriggerEvent::Completed, this, &ACustomPlayerController::Input_Move);
-        }
-		
-        if (InputData->Inputs.LookAction)
-            EnhancedInputComponent->BindAction(InputData->Inputs.LookAction, ETriggerEvent::Triggered, this, &ACustomPlayerController::Input_Look);*/
 
         if (InputData->Inputs.CrouchAction)
         {
@@ -341,45 +325,6 @@ void ACustomPlayerController::AbilityInputTagReleased(EVelmaraAbilityInputID Inp
     }
 }
 
-/*void ACustomPlayerController::Input_Move(const FInputActionValue& Value)
-{
-    if (APawn* ControlledPawn = GetPawn())
-    {
-        if (const IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(ControlledPawn))
-        {
-            if (ASI->GetAbilitySystemComponent())
-            {
-                const FVector2D FlatVector = Value.Get<FVector2D>();
-	
-                const FRotator YawRotation(0.f, GetControlRotation().Yaw, 0.f);
-
-                const FVector DirectionForward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-                const FVector DirectionSideward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-
-                ControlledPawn->AddMovementInput(DirectionForward, FlatVector.Y);
-                ControlledPawn->AddMovementInput(DirectionSideward, FlatVector.X);
-
-                if (Value.Get<bool>())
-                {
-                    InputMovingVector = FlatVector;
-                }
-                else
-                {
-                    InputMovingVector = FVector2D::ZeroVector;
-                }
-            }
-        }
-    }
-}
-
-void ACustomPlayerController::Input_Look(const FInputActionValue& Value)
-{
-    const FVector2D LookAxisVector = Value.Get<FVector2D>();
-	
-    AddYawInput(LookAxisVector.X);
-    AddPitchInput(LookAxisVector.Y);
-}*/
-
 void ACustomPlayerController::TogglePauseMenu()
 {
     if (bIsGamePausedExplicitly)
@@ -433,7 +378,7 @@ void ACustomPlayerController::TogglePauseMenu()
             SetShowMouseCursor(true);
 
             FInputModeGameAndUI InputModeData;
-            InputModeData.SetWidgetToFocus(CurrentPauseMenuInstance->TakeWidget()); // Enfocar el men� de pausa
+            InputModeData.SetWidgetToFocus(CurrentPauseMenuInstance->TakeWidget());
             InputModeData.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
             SetInputMode(InputModeData);
 

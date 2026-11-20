@@ -87,7 +87,6 @@ struct FZoomEffectParameters : public FEffectProgressParameters
         Start(InDuration);
     	Curve = InCurveAsset;
         InitialFOV = InInitialFOV;
-        // TargetFOV = InTargetFOV;
     }
 };
 

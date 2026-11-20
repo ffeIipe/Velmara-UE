@@ -19,7 +19,6 @@ UVelmaraGameInstance::UVelmaraGameInstance()
 	CurrentSlotName = TEXT("GameSettings");
 	UserIndex = 0;
 
-    //FVelmaraGameplayTags::InitializeGameplayTags(); //initialize basic tags
 }
 
 void UVelmaraGameInstance::Init()
@@ -28,7 +27,6 @@ void UVelmaraGameInstance::Init()
     FVelmaraGameplayTags::InitializeGameplayTags();
     LoadGameSettings();
 
-    // En PIE no forzamos el salto al menu: se juega el nivel desde el que se da Play.
     const FWorldContext* Context = GetWorldContext();
     const bool bIsPIE = Context && Context->WorldType == EWorldType::PIE;
 
@@ -375,7 +373,6 @@ void UVelmaraGameInstance::HideLoadingScreen()
 
 void UVelmaraGameInstance::PlayGameplayEffect_Implementation(FGameplayTag EffectTag, const FVector Location)
 {
-    //UVelmaraGameInstance::PlayGameplayEffect_Implementation(EffectTag, Location);
 
     UEffectsManager* EffectsSys = nullptr;
 

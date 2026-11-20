@@ -58,17 +58,14 @@ public:
 	FGameplayAttributeData MovementSpeed;
 	ATTRIBUTE_ACCESSORS(UVelmaraAttributeSet, MovementSpeed);
 
-	// Reduce el daño recibido con rendimiento decreciente: Armor / (Armor + ArmorMitigationConstant).
 	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing=OnRep_Armor)
 	FGameplayAttributeData Armor;
 	ATTRIBUTE_ACCESSORS(UVelmaraAttributeSet, Armor);
 
-	// Daño plano que se suma a cada golpe que este personaje inflige (vía GE de daño sobre DamageIncoming).
 	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing=OnRep_BaseDamage)
 	FGameplayAttributeData BaseDamage;
 	ATTRIBUTE_ACCESSORS(UVelmaraAttributeSet, BaseDamage);
 
-	// Multiplicador de velocidad de ataque (1 = normal). Usar como Rate de los montajes de ataque.
 	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing=OnRep_AttackSpeed)
 	FGameplayAttributeData AttackSpeed;
 	ATTRIBUTE_ACCESSORS(UVelmaraAttributeSet, AttackSpeed);
@@ -77,14 +74,11 @@ public:
 	FGameplayAttributeData DamageIncoming;
 	ATTRIBUTE_ACCESSORS(UVelmaraAttributeSet, DamageIncoming);
 
-	// Con esta cantidad de armadura se reduce el 50% del daño.
 	static constexpr float ArmorMitigationConstant = 100.f;
 
-	// Multiplicador de daño recibido mientras el objetivo tiene State.BloodMarked.
 	static constexpr float BloodMarkDamageMultiplier = 1.5f;
 
 protected:
-	// Aplica el daño base del atacante y la armadura propia al daño entrante.
 	float CalculateFinalDamage(float RawDamage, const FGameplayEffectSpec& EffectSpec) const;
 
 	UFUNCTION()

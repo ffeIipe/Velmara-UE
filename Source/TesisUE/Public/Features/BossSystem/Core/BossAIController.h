@@ -7,10 +7,6 @@
 
 class ABossEnemy;
 
-/*
- * Cerebro del boss. Cada decisión prioriza: romper el techo (si cruzó un umbral) > esquivar > invocar > atacar según
- * la distancia > perseguir. Toda la configuración vive en el ABossEnemy y sus componentes.
- */
 UCLASS()
 class TESISUE_API ABossAIController : public ACustomAIController
 {
@@ -27,7 +23,6 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Boss|AI")
 	EBossBrainState GetBrainState() const { return BrainState; }
 
-	// Fuerza un objetivo. Sin objetivo forzado persigue al pawn del jugador 0 (Velmara o lo que esté poseyendo).
 	UFUNCTION(BlueprintCallable, Category = "Boss|AI")
 	void SetCombatTarget(AActor* NewTarget) { ForcedTarget = NewTarget; }
 

@@ -21,14 +21,14 @@ void UDramaticBar::SetPercent(float NewPercent, bool bInstant)
 	}
 	else if (NewPercent < Target)
 	{
-		Display = NewPercent; // la caida del fill es instantanea; la estela blanca la persigue
+		Display = NewPercent;
 		GhostHold = GhostDelay;
 		FlashLeft = FlashDuration;
 		ShakeLeft = ShakeDuration;
 	}
 	else if (NewPercent > Target)
 	{
-		Ghost = NewPercent; // al subir, la fantasma marca el destino y el fill la persigue
+		Ghost = NewPercent;
 	}
 	Target = NewPercent;
 }
@@ -57,17 +57,14 @@ void UDramaticBar::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 		GhostBar->SetPercent(Ghost);
 	}
 
-	// Flash: del color de flash vuelve al color base
 	FlashLeft = FMath::Max(0.f, FlashLeft - InDeltaTime);
 	const float FlashAlpha = FlashDuration > 0.f ? FlashLeft / FlashDuration : 0.f;
 	MainBar->SetFillColorAndOpacity(FMath::Lerp(BaseColor, FlashColor, FlashAlpha));
 
-	// Shake: oscila y se amortigua
 	ShakeLeft = FMath::Max(0.f, ShakeLeft - InDeltaTime);
 	const float ShakeAlpha = ShakeDuration > 0.f ? ShakeLeft / ShakeDuration : 0.f;
 	SetRenderTranslation(FVector2D(FMath::FRandRange(-1.f, 1.f), FMath::FRandRange(-1.f, 1.f)) * ShakeIntensity * ShakeAlpha);
 
-	// Pulso con valor bajo
 	if (LowThreshold > 0.f && Target > 0.f && Target <= LowThreshold)
 	{
 		PulseTime += InDeltaTime * PulseSpeed;
