@@ -1,6 +1,7 @@
 #include "Components/TargetingComponent.h"
 #include "Curves/CurveFloat.h"
 #include "Entities/Entity.h"
+#include "Features/TotemSystem/Core/TotemChargeComponent.h"
 #include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
@@ -278,7 +279,7 @@ TArray<AActor*> UTargetingComponent::GetTargets(const float Radius) const
                 bIsAlive ? TEXT("True") : TEXT("False"), 
                 bIsHostile ? TEXT("True") : TEXT("False"));
 
-            if (bIsAlive && bIsHostile)
+            if (bIsAlive && bIsHostile && !TargetEntity->FindComponentByClass<UTotemChargeComponent>())
             {
                 ValidTargets.Add(TargetEntity);
             }
@@ -309,8 +310,8 @@ AActor* UTargetingComponent::SearchCombatTarget(const FVector& Start, const FVec
     TArray<AActor*> ActorsToIgnore;
     ActorsToIgnore.Add(GetOwner());
 
-    FHitResult ResultHit;
-    const bool bHit = UKismetSystemLibrary::SphereTraceSingleForObjects(
+    TArray<FHitResult> ResultHits;
+    UKismetSystemLibrary::SphereTraceMultiForObjects(
         GetWorld(),
         Start,
         End,
@@ -319,14 +320,18 @@ AActor* UTargetingComponent::SearchCombatTarget(const FVector& Start, const FVec
         false,
         ActorsToIgnore,
         EDrawDebugTrace::ForDuration,
-        ResultHit,
+        ResultHits,
         true
     );
 
-    if (bHit)
+    for (const FHitResult& ResultHit : ResultHits)
     {
-        UE_LOG(LogTemp, Log, TEXT("[UTargetingComponent] SearchCombatTarget: Impacto con %s"), *ResultHit.GetActor()->GetName());
-        return ResultHit.GetActor();
+        AActor* HitActor = ResultHit.GetActor();
+        if (HitActor && !HitActor->FindComponentByClass<UTotemChargeComponent>())
+        {
+            UE_LOG(LogTemp, Log, TEXT("[UTargetingComponent] SearchCombatTarget: Impacto con %s"), *HitActor->GetName());
+            return HitActor;
+        }
     }
 
     UE_LOG(LogTemp, Warning, TEXT("[UTargetingComponent] SearchCombatTarget: No se impactó nada."));
