@@ -8,6 +8,9 @@
 #include "Components/TargetingComponent.h"
 #include "Features/SaveSystem/Data/SaveTypes.h"
 #include "DataAssets/EntityData.h"
+#include "DataAssets/Items/Weapons/WeaponData.h"
+#include "Entities/WeaponOverlayAnimInstance.h"
+#include "Curves/CurveFloat.h"
 #include "Features/InventorySystem/Core/InventoryComponent.h"
 #include "Features/TotemSystem/Subsystems/TotemSubsystem.h"
 #include "Features/ReanimationSystem/GraveSubsystem.h"
@@ -50,6 +53,8 @@ void AEntity::BeginPlay()
 {
 	Super::BeginPlay();
 
+	UWeaponOverlayAnimInstance::LinkToCharacter(this, InnateWeaponOverlay, nullptr);
+
 	if (AbilitySystemComponent)
 	{
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
@@ -66,15 +71,21 @@ void AEntity::BeginPlay()
 	
 	GetSpringArmComponent()->bUsePawnControlRotation = true;
 
-	if (GetMesh())
-	{
-		const TArray<UMaterialInterface*> TempArray = GetMesh()->GetMaterials();
+	TArray<USkeletalMeshComponent*> SkeletalMeshComponents;
+	GetComponents<USkeletalMeshComponent>(SkeletalMeshComponents);
 
-		for (int32 MatIndex = 0; MatIndex < TempArray.Num(); MatIndex++)
+	for (USkeletalMeshComponent* MeshComponent : SkeletalMeshComponents)
+	{
+		const int32 MaterialCount = MeshComponent->GetNumMaterials();
+
+		for (int32 MatIndex = 0; MatIndex < MaterialCount; MatIndex++)
 		{
-			UMaterialInterface* CurrentMaterial = GetMesh()->GetMaterial(MatIndex);
-			DissolveMaterials.Add(UMaterialInstanceDynamic::Create(CurrentMaterial, this));
-			GetMesh()->SetMaterial(MatIndex, DissolveMaterials[MatIndex]);
+			UMaterialInterface* CurrentMaterial = MeshComponent->GetMaterial(MatIndex);
+			if (!CurrentMaterial) continue;
+
+			UMaterialInstanceDynamic* DissolveMaterial = UMaterialInstanceDynamic::Create(CurrentMaterial, this);
+			DissolveMaterials.Add(DissolveMaterial);
+			MeshComponent->SetMaterial(MatIndex, DissolveMaterial);
 		}
 	}
 
@@ -535,25 +546,103 @@ void AEntity::DeactivateBodyHitbox(const FName ComponentTag) const
 	}
 }
 
+namespace
+{
+	constexpr float HitFlashUpdateInterval = 1.f / 60.f;
+}
+
 void AEntity::HitFlash(const float Duration, const float Amount)
+{
+	HitFlashPeakAmount = Amount;
+	HitFlashDuration = FMath::Max(Duration, KINDA_SMALL_NUMBER);
+	HitFlashElapsed = 0.f;
+
+	SetHitFlashAmount(Amount);
+	GetWorldTimerManager().SetTimer(HitFlashTimerHandle, this, &AEntity::UpdateHitFlash, HitFlashUpdateInterval, true);
+}
+
+void AEntity::UpdateHitFlash()
+{
+	HitFlashElapsed += HitFlashUpdateInterval;
+
+	const float Alpha = HitFlashElapsed / HitFlashDuration;
+	if (Alpha >= 1.f)
+	{
+		DeactivateHitFlash();
+		return;
+	}
+
+	SetHitFlashAmount(HitFlashPeakAmount * FMath::Square(1.f - Alpha));
+}
+
+void AEntity::DeactivateHitFlash()
+{
+	GetWorldTimerManager().ClearTimer(HitFlashTimerHandle);
+	SetHitFlashAmount(0.f);
+}
+
+void AEntity::SetHitFlashAmount(const float Amount)
 {
 	for (UMaterialInstanceDynamic* DissolveMaterial : DissolveMaterials)
 	{
 		if (DissolveMaterial)
 		{
 			DissolveMaterial->SetScalarParameterValue(FName("HitFlashAmount"), Amount);
-			GetWorldTimerManager().SetTimer(HitFlashTimerHandle, this, &AEntity::DeactivateHitFlash, Duration, false);
 		}
 	}
 }
 
-void AEntity::DeactivateHitFlash()
+namespace
 {
-	for (UMaterialInstanceDynamic* DissolveMaterial : DissolveMaterials)
+	constexpr float KnockbackUpdateInterval = 1.f / 60.f;
+}
+
+void AEntity::ApplyKnockback(const FVector& AttackerLocation, const FWeaponKnockback& Knockback)
+{
+	if (bKnockbackResistant || Knockback.Distance <= 0.f) return;
+	if (!IsAlive() || IsBlocking() || IsShielded() || GetCharacterMovement()->IsFalling()) return;
+
+	FVector Direction = (GetActorLocation() - AttackerLocation).GetSafeNormal2D();
+	if (Direction.IsNearlyZero())
 	{
-		if (DissolveMaterial)
-		{
-			DissolveMaterial->SetScalarParameterValue(FName("HitFlashAmount"), 0);
-		}
+		Direction = -GetActorForwardVector().GetSafeNormal2D();
 	}
+
+	KnockbackDirection = Direction;
+	KnockbackDistance = Knockback.Distance;
+	KnockbackDuration = FMath::Max(Knockback.Duration, KINDA_SMALL_NUMBER);
+	KnockbackCurve = Knockback.ProgressCurve;
+	KnockbackElapsed = 0.f;
+
+	GetWorldTimerManager().SetTimer(KnockbackTimerHandle, this, &AEntity::UpdateKnockback, KnockbackUpdateInterval, true);
+}
+
+void AEntity::UpdateKnockback()
+{
+	const float PreviousAlpha = KnockbackElapsed / KnockbackDuration;
+	KnockbackElapsed += KnockbackUpdateInterval;
+	const float Alpha = FMath::Min(KnockbackElapsed / KnockbackDuration, 1.f);
+
+	const float Step = EvaluateKnockbackProgress(Alpha) - EvaluateKnockbackProgress(PreviousAlpha);
+	AddActorWorldOffset(KnockbackDirection * KnockbackDistance * Step, true);
+
+	if (Alpha >= 1.f || !IsAlive() || GetCharacterMovement()->IsFalling())
+	{
+		StopKnockback();
+	}
+}
+
+void AEntity::StopKnockback()
+{
+	GetWorldTimerManager().ClearTimer(KnockbackTimerHandle);
+}
+
+float AEntity::EvaluateKnockbackProgress(const float Alpha) const
+{
+	if (KnockbackCurve)
+	{
+		return KnockbackCurve->GetFloatValue(Alpha);
+	}
+
+	return 1.f - FMath::Square(1.f - Alpha);
 }

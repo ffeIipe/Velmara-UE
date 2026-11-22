@@ -18,6 +18,9 @@ class UTargetingComponent;
 class UCameraComponent;
 class UMotionWarpingComponent;
 struct FHitReactDefinition;
+struct FWeaponKnockback;
+class UWeaponData;
+class UCurveFloat;
 struct FInputActionValue;
 class UVelmaraAttributeSet;
 class UInputMappingContext;
@@ -159,6 +162,43 @@ public:
 
 	UPROPERTY()
 	FTimerHandle HitFlashTimerHandle;
+
+	float HitFlashPeakAmount = 0.f;
+
+	float HitFlashDuration = 0.1f;
+
+	float HitFlashElapsed = 0.f;
+
+	void UpdateHitFlash();
+
+	void SetHitFlashAmount(float Amount);
+
+	void ApplyKnockback(const FVector& AttackerLocation, const FWeaponKnockback& Knockback);
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Combat")
+	bool bKnockbackResistant = false;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Overlay")
+	TObjectPtr<UWeaponData> InnateWeaponOverlay;
+
+	FTimerHandle KnockbackTimerHandle;
+
+	FVector KnockbackDirection = FVector::ZeroVector;
+
+	float KnockbackDistance = 0.f;
+
+	float KnockbackDuration = 0.15f;
+
+	float KnockbackElapsed = 0.f;
+
+	UPROPERTY()
+	TObjectPtr<UCurveFloat> KnockbackCurve;
+
+	void UpdateKnockback();
+
+	void StopKnockback();
+
+	float EvaluateKnockbackProgress(float Alpha) const;
 	
 	UPROPERTY()
 	TArray<UMaterialInstanceDynamic*> DissolveMaterials;

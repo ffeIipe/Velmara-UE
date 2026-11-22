@@ -1,6 +1,7 @@
 #include "AI/EnemyEditorLibrary.h"
 
 #include "Animation/AnimMontage.h"
+#include "Animation/Skeleton.h"
 #include "Animation/AnimNotifies/AnimNotify.h"
 #include "Animation/AnimNotifies/AnimNotifyState.h"
 
@@ -84,5 +85,31 @@ bool UEnemyEditorLibrary::CopyAttackNotifiesFromTemplate(UAnimMontage* Montage, 
 	return true;
 #else
 	return false;
+#endif
+}
+
+int32 UEnemyEditorLibrary::SetChildBonesTranslationFromSkeleton(USkeleton* Skeleton, const FName ParentBone)
+{
+#if WITH_EDITOR
+	if (!Skeleton) return 0;
+
+	const FReferenceSkeleton& RefSkeleton = Skeleton->GetReferenceSkeleton();
+	const int32 ParentIndex = RefSkeleton.FindBoneIndex(ParentBone);
+	if (ParentIndex == INDEX_NONE) return 0;
+
+	Skeleton->Modify();
+	int32 ChangedCount = 0;
+	for (int32 BoneIndex = ParentIndex + 1; BoneIndex < RefSkeleton.GetNum(); ++BoneIndex)
+	{
+		if (RefSkeleton.BoneIsChildOf(BoneIndex, ParentIndex))
+		{
+			Skeleton->SetBoneTranslationRetargetingMode(BoneIndex, EBoneTranslationRetargetingMode::Skeleton);
+			++ChangedCount;
+		}
+	}
+	Skeleton->MarkPackageDirty();
+	return ChangedCount;
+#else
+	return 0;
 #endif
 }

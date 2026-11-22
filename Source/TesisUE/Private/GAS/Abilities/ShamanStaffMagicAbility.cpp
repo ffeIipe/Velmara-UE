@@ -99,12 +99,19 @@ AActor* UShamanStaffMagicAbility::FindTarget() const
 
 FVector UShamanStaffMagicAbility::GetStaffTipLocation(const AActor* Avatar) const
 {
-	TInlineComponentArray<USceneComponent*> Components(Avatar);
-	for (const USceneComponent* Component : Components)
+	TArray<AActor*> ActorsToSearch;
+	Avatar->GetAttachedActors(ActorsToSearch, true, true);
+	ActorsToSearch.Insert(const_cast<AActor*>(Avatar), 0);
+
+	for (const AActor* Actor : ActorsToSearch)
 	{
-		if (Component->DoesSocketExist(StaffTipSocket))
+		TInlineComponentArray<USceneComponent*> Components(Actor);
+		for (const USceneComponent* Component : Components)
 		{
-			return Component->GetSocketLocation(StaffTipSocket);
+			if (Component->DoesSocketExist(StaffTipSocket))
+			{
+				return Component->GetSocketLocation(StaffTipSocket);
+			}
 		}
 	}
 	return Avatar->GetActorLocation() + Avatar->GetActorForwardVector() * 100.f;

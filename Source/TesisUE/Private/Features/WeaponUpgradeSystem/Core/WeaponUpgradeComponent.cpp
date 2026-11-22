@@ -66,9 +66,7 @@ bool UWeaponUpgradeComponent::IsComboUnlocked(const FGameplayTag UnlockTag) cons
 
 bool UWeaponUpgradeComponent::IsComboNodeUnlocked(const UComboNode* Node) const
 {
-	if (!Node) return false;
-
-	return !Node->RequiredUnlockTag.IsValid() || IsComboUnlocked(Node->RequiredUnlockTag);
+	return Node != nullptr;
 }
 
 TArray<UWeaponData*> UWeaponUpgradeComponent::GetUpgradeableWeapons() const

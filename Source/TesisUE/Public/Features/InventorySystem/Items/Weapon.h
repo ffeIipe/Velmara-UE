@@ -23,6 +23,8 @@ public:
 
 	virtual void Holster();
 
+	virtual FName GetEquipSocketName() const { return FName("RightHandSword"); }
+
 	virtual void EnableVisuals() override { Super::EnableVisuals(); }
 	virtual void DisableVisuals() override { Super::DisableVisuals(); }
 

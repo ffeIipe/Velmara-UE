@@ -5,6 +5,7 @@
 #include "EnemyEditorLibrary.generated.h"
 
 class UAnimMontage;
+class USkeleton;
 
 UCLASS()
 class TESISUE_API UEnemyEditorLibrary : public UBlueprintFunctionLibrary
@@ -14,4 +15,7 @@ class TESISUE_API UEnemyEditorLibrary : public UBlueprintFunctionLibrary
 public:
 	UFUNCTION(BlueprintCallable, Category = "Enemy|Editor")
 	static bool CopyAttackNotifiesFromTemplate(UAnimMontage* Montage, UAnimMontage* Template, float HitStart, float HitEnd, float ComboWindowEnd);
+
+	UFUNCTION(BlueprintCallable, Category = "Enemy|Editor")
+	static int32 SetChildBonesTranslationFromSkeleton(USkeleton* Skeleton, FName ParentBone);
 };

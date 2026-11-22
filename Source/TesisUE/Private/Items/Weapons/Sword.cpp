@@ -9,6 +9,8 @@
 #include "UObject/UObjectHash.h"
 
 #include "DataAssets/Items/Weapons/SwordData.h"
+#include "Entities/Entity.h"
+#include "Entities/WeaponOverlayAnimInstance.h"
 #include "Features/GlobalEffectsSystem/Interfaces/EffectManagerProvider.h"
 #include "Features/WeaponUpgradeSystem/Core/WeaponUpgradeComponent.h"
 #include "GameFramework/Character.h"
@@ -81,14 +83,13 @@ void ASword::Equip()
 			}
 		}
 
-		if (IsValid(SwordData->AnimLayer))
-		{
-			if (const ACharacter* CharacterOwner = Cast<ACharacter>(GetOwner()))
-			{
-				CharacterOwner->GetMesh()->GetAnimInstance()->LinkAnimClassLayers(SwordData->AnimLayer);
-			}
-		}
+		UWeaponOverlayAnimInstance::LinkToCharacter(Cast<ACharacter>(GetOwner()), SwordData, ItemMesh);
 	}
+}
+
+FName ASword::GetEquipSocketName() const
+{
+	return SwordData && !SwordData->CustomInSocketName.IsNone() ? SwordData->CustomInSocketName : Super::GetEquipSocketName();
 }
 
 void ASword::Holster()
@@ -118,13 +119,7 @@ void ASword::Holster()
 		ASC->AddLooseGameplayTag(SwordData->HolsterTag);
 	}
 
-	if (IsValid(SwordData->AnimLayer))
-	{
-		if (const ACharacter* CharacterOwner = Cast<ACharacter>(GetOwner()))
-		{
-			CharacterOwner->GetMesh()->GetAnimInstance()->UnlinkAnimClassLayers(SwordData->AnimLayer);
-		}
-	}
+	UWeaponOverlayAnimInstance::UnlinkFromCharacter(Cast<ACharacter>(GetOwner()), SwordData);
 }
 
 void ASword::AttachMeshToSocket(USceneComponent* InParent, const FName InSocketName)
@@ -204,6 +199,13 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 
 				TargetASC->ExecuteGameplayCue(CurrentCueTag, CueParameters);
 
+				if (const USwordData* Data = GetBaseSwordData())
+				{
+					if (AEntity* TargetEntity = Cast<AEntity>(Hit.GetActor()))
+					{
+						TargetEntity->ApplyKnockback(GetOwner()->GetActorLocation(), Data->Knockback);
+					}
+				}
 			}
 		}
 

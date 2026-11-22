@@ -244,8 +244,6 @@ TArray<AActor*> UTargetingComponent::GetTargets(const float Radius) const
 
     TArray<AActor*> Hits;
     
-    DrawDebugSphere(GetWorld(), GetOwner()->GetActorLocation(), Radius, 24, FColor::Red, false, 2.0f);
-
     UKismetSystemLibrary::SphereOverlapActors(
         GetWorld(),
         GetOwner()->GetActorLocation(),
@@ -294,6 +292,53 @@ TArray<AActor*> UTargetingComponent::GetTargets(const float Radius) const
     return ValidTargets;
 }
 
+AActor* UTargetingComponent::FindSoftLockTarget(const float Radius) const
+{
+    const APawn* OwnerPawn = Cast<APawn>(GetOwner());
+    if (!OwnerPawn) return nullptr;
+
+    const FVector Origin = OwnerPawn->GetActorLocation();
+    const FVector AimDirection = FRotator(0.f, OwnerPawn->GetControlRotation().Yaw, 0.f).Vector();
+
+    AActor* BestTarget = nullptr;
+    float BestAngle = SoftLockHalfAngle;
+    float BestDistSq = TNumericLimits<float>::Max();
+
+    for (AActor* Candidate : GetTargets(Radius))
+    {
+        FVector ToCandidate = Candidate->GetActorLocation() - Origin;
+        const float DistSq = ToCandidate.SizeSquared();
+        ToCandidate.Z = 0.f;
+        if (!ToCandidate.Normalize()) continue;
+
+        const float Angle = FMath::RadiansToDegrees(FMath::Acos(FMath::Clamp(FVector::DotProduct(AimDirection, ToCandidate), -1.f, 1.f)));
+        if (Angle > SoftLockHalfAngle) continue;
+
+        const bool bClearlyBetterAngle = !BestTarget || Angle < BestAngle - SoftLockAngleTieTolerance;
+        const bool bTiedAngleButCloser = BestTarget && FMath::Abs(Angle - BestAngle) <= SoftLockAngleTieTolerance && DistSq < BestDistSq;
+        if (bClearlyBetterAngle || bTiedAngleButCloser)
+        {
+            BestTarget = Candidate;
+            BestAngle = Angle;
+            BestDistSq = DistSq;
+        }
+    }
+
+    if (bDebugSoftLock)
+    {
+        const float HalfAngleRad = FMath::DegreesToRadians(SoftLockHalfAngle);
+        const FColor ConeColor = BestTarget ? FColor::Green : FColor::Red;
+        DrawDebugCone(GetWorld(), Origin, AimDirection, Radius, HalfAngleRad, KINDA_SMALL_NUMBER, 24, ConeColor, false, 2.f, 0, 2.f);
+        if (BestTarget)
+        {
+            DrawDebugLine(GetWorld(), Origin, BestTarget->GetActorLocation(), FColor::Green, false, 2.f, 0, 3.f);
+            DrawDebugSphere(GetWorld(), BestTarget->GetActorLocation(), 40.f, 12, FColor::Green, false, 2.f);
+        }
+    }
+
+    return BestTarget;
+}
+
 void UTargetingComponent::RemoveCombatTarget()
 {
     if (!bIsLocking)
@@ -324,16 +369,25 @@ AActor* UTargetingComponent::SearchCombatTarget(const FVector& Start, const FVec
         true
     );
 
-    for (const FHitResult& ResultHit : ResultHits)
+    if (AActor* HitActor = GetFirstNonTotemHitActor(ResultHits))
     {
-        AActor* HitActor = ResultHit.GetActor();
-        if (HitActor && !HitActor->FindComponentByClass<UTotemChargeComponent>())
-        {
-            UE_LOG(LogTemp, Log, TEXT("[UTargetingComponent] SearchCombatTarget: Impacto con %s"), *HitActor->GetName());
-            return HitActor;
-        }
+        UE_LOG(LogTemp, Log, TEXT("[UTargetingComponent] SearchCombatTarget: Impacto con %s"), *HitActor->GetName());
+        return HitActor;
     }
 
     UE_LOG(LogTemp, Warning, TEXT("[UTargetingComponent] SearchCombatTarget: No se impactó nada."));
+    return nullptr;
+}
+
+AActor* UTargetingComponent::GetFirstNonTotemHitActor(const TArray<FHitResult>& Hits)
+{
+    for (const FHitResult& Hit : Hits)
+    {
+        AActor* HitActor = Hit.GetActor();
+        if (HitActor && !HitActor->FindComponentByClass<UTotemChargeComponent>())
+        {
+            return HitActor;
+        }
+    }
     return nullptr;
 }

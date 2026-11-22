@@ -44,6 +44,9 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Targeting")
     AActor* SearchCombatTarget(const FVector& Start, const FVector& End, float SearchRadius) const;
     
+    UFUNCTION(BlueprintPure, Category = "Targeting")
+    static AActor* GetFirstNonTotemHitActor(const TArray<FHitResult>& Hits);
+
     UFUNCTION(BlueprintCallable, Category = "Targeting")
     AActor* SelectNearestTarget(TArray<AActor*> Targets);
 
@@ -53,8 +56,20 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Targeting")
     TArray<AActor*> GetTargets(const float Radius) const;
 
+    UFUNCTION(BlueprintCallable, Category = "Targeting")
+    AActor* FindSoftLockTarget(float Radius) const;
+
     UPROPERTY(BlueprintReadWrite, Category = "Targeting")
     float TargetingLostRadius = 2000.f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Targeting|SoftLock", meta = (ClampMin = "1", ClampMax = "180"))
+    float SoftLockHalfAngle = 45.f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Targeting|SoftLock", meta = (ClampMin = "0"))
+    float SoftLockAngleTieTolerance = 5.f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Targeting|SoftLock")
+    bool bDebugSoftLock = true;
 
 protected:
     virtual void BeginPlay() override;

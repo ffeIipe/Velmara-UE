@@ -36,6 +36,8 @@ public:
 
     virtual void Equip() override;
 
+    virtual FName GetEquipSocketName() const override;
+
     virtual void Holster() override;
     
     virtual void AttachMeshToSocket(USceneComponent* InParent, FName InSocketName = NAME_None) override;

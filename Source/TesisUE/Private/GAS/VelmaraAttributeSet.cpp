@@ -65,6 +65,22 @@ void UVelmaraAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribu
 	}
 }
 
+bool UVelmaraAttributeSet::PreGameplayEffectExecute(FGameplayEffectModCallbackData& Data)
+{
+	if (!Super::PreGameplayEffectExecute(Data)) return false;
+
+	if (Data.EvaluatedData.Attribute == GetDamageIncomingAttribute())
+	{
+		const UAbilitySystemComponent* SourceASC = Data.EffectSpec.GetContext().GetOriginalInstigatorAbilitySystemComponent();
+		const AEntity* Attacker = SourceASC ? Cast<AEntity>(SourceASC->GetAvatarActor()) : nullptr;
+		const AEntity* Victim = Cast<AEntity>(GetOwningAbilitySystemComponent() ? GetOwningAbilitySystemComponent()->GetAvatarActor() : nullptr);
+
+		if (Attacker && Victim && Attacker != Victim && !Attacker->IsHostile(Victim)) return false;
+	}
+
+	return true;
+}
+
 void UVelmaraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
 {
     Super::PostGameplayEffectExecute(Data);

@@ -90,6 +90,8 @@ ABossEnemy::ABossEnemy()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
+	bKnockbackResistant = true;
+
 	CombatComponent = CreateDefaultSubobject<UBossCombatComponent>(TEXT("BossCombat"));
 	SummonComponent = CreateDefaultSubobject<UBossSummonComponent>(TEXT("BossSummon"));
 	CeilingBreakComponent = CreateDefaultSubobject<UBossCeilingBreakComponent>(TEXT("BossCeilingBreak"));
