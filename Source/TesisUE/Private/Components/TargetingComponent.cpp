@@ -28,10 +28,39 @@ void UTargetingComponent::BeginPlay()
     if (OwnerCharacter)
     {
         OwnerController = OwnerCharacter->GetController();
+        OwnerCharacter->ReceiveControllerChangedDelegate.AddDynamic(this, &UTargetingComponent::HandleOwnerControllerChanged);
     }
     else
     {
         UE_LOG(LogTemp, Error, TEXT("[UTargetingComponent] BeginPlay: Owner no es un ACharacter."));
+    }
+}
+
+void UTargetingComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+    if (OwnerCharacter)
+    {
+        OwnerCharacter->ReceiveControllerChangedDelegate.RemoveDynamic(this, &UTargetingComponent::HandleOwnerControllerChanged);
+    }
+
+    Super::EndPlay(EndPlayReason);
+}
+
+void UTargetingComponent::RefreshOwnerController()
+{
+    if (!OwnerCharacter)
+    {
+        OwnerCharacter = Cast<ACharacter>(GetOwner());
+    }
+    OwnerController = OwnerCharacter ? OwnerCharacter->GetController() : nullptr;
+}
+
+void UTargetingComponent::HandleOwnerControllerChanged(APawn* Pawn, AController* OldController, AController* NewController)
+{
+    OwnerController = NewController;
+    if (bIsLocking && (!NewController || !NewController->IsPlayerController()))
+    {
+        DisableLock();
     }
 }
 
@@ -74,6 +103,7 @@ void UTargetingComponent::HandleTargetDeath(AEntity* DeadEntity)
 void UTargetingComponent::EnableLock(const float LockRange)
 {
     UE_LOG(LogTemp, Log, TEXT("[UTargetingComponent] EnableLock llamado con rango: %f"), LockRange);
+    RefreshOwnerController();
     ActiveLockRange = LockRange;
     CombatTargets = GetTargets(ActiveLockRange);
     CurrentTarget = SelectNearestTarget(CombatTargets);
@@ -112,6 +142,11 @@ void UTargetingComponent::DisableLock()
         World->GetTimerManager().ClearTimer(TargetRefreshTimerHandle);
     }
     
+    if (AEntity* OldTarget = Cast<AEntity>(CurrentTarget))
+    {
+        OldTarget->OnDead.RemoveDynamic(this, &UTargetingComponent::HandleTargetDeath);
+    }
+
     CurrentTarget = nullptr;
     CombatTargets.Empty();
 }
@@ -215,6 +250,8 @@ AActor* UTargetingComponent::SelectNearestTarget(TArray<AActor*> Targets)
 
 void UTargetingComponent::RotateTowardsTarget(AActor* Target)
 {
+    RefreshOwnerController();
+
     if (!OwnerController || !OwnerCharacter || !Target)
     {
         if (bIsLocking)
@@ -277,7 +314,7 @@ TArray<AActor*> UTargetingComponent::GetTargets(const float Radius) const
                 bIsAlive ? TEXT("True") : TEXT("False"), 
                 bIsHostile ? TEXT("True") : TEXT("False"));
 
-            if (bIsAlive && bIsHostile && !TargetEntity->FindComponentByClass<UTotemChargeComponent>())
+            if (bIsAlive && bIsHostile && !TargetEntity->IsHidden() && !TargetEntity->FindComponentByClass<UTotemChargeComponent>())
             {
                 ValidTargets.Add(TargetEntity);
             }

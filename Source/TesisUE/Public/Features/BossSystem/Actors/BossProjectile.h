@@ -6,6 +6,7 @@
 #include "GenericPool/Interfaces/PoolableActor.h"
 #include "BossProjectile.generated.h"
 
+class AEntity;
 class UNiagaraComponent;
 class UNiagaraSystem;
 class UProjectileMovementComponent;
@@ -22,6 +23,18 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Boss|Projectile")
 	void Launch(AActor* InInstigator, const FVector& Direction, float Speed, float Lifetime, const FBossDamageParams& InDamageParams);
+
+	UFUNCTION(BlueprintCallable, Category = "Boss|Projectile")
+	void SetHomingTarget(AActor* TargetActor, float HomingAcceleration);
+
+	UFUNCTION(BlueprintCallable, Category = "Boss|Projectile")
+	void ClearHomingTarget();
+
+	UFUNCTION(BlueprintCallable, Category = "Boss|Projectile")
+	void SetPierceTargets(bool bShouldPierce);
+
+	UFUNCTION(BlueprintCallable, Category = "Boss|Projectile")
+	void SetCollisionRadius(float Radius);
 
 	virtual void OnPoolActivate_Implementation() override;
 
@@ -62,6 +75,11 @@ private:
 	UFUNCTION()
 	void HandleStop(const FHitResult& ImpactResult);
 
+	UFUNCTION()
+	void HandleHomingTargetDead(AEntity* DeadEntity);
+
+	void ConfigureMoveIgnores(AActor* InInstigator);
+
 	void Expire();
 
 	void PlayImpactFeedback(const FVector& Location) const;
@@ -70,9 +88,15 @@ private:
 
 	TWeakObjectPtr<AActor> BossInstigator;
 
+	TWeakObjectPtr<AEntity> HomingEntity;
+
 	TArray<TWeakObjectPtr<AActor>> HandledActors;
 
 	FTimerHandle LifetimeTimer;
+
+	float DefaultCollisionRadius = 55.f;
+
+	bool DefaultPierceTargets = false;
 
 	bool bLaunched = false;
 };

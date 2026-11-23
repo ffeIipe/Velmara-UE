@@ -16,6 +16,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Items/OrbBase.h"
+#include "Subsystems/OrbsPoolManager.h"
 
 namespace BloodSuck
 {
@@ -34,6 +36,9 @@ UBloodSuckAbility::UBloodSuckAbility()
 	static ConstructorHelpers::FObjectFinder<UAnimMontage> DefaultReact(
 		TEXT("/Game/Blueprints/Montages/HitReactions/AM_Katana_Blade_Damage_Front_Big_ver_D_Retargeted"));
 	VictimReactMontage = DefaultReact.Object;
+
+	static ConstructorHelpers::FClassFinder<AOrbBase> DefaultBloodOrb(TEXT("/Game/Blueprints/Items/Orbs/BP_Orb_Blood"));
+	BloodOrbClass = DefaultBloodOrb.Class;
 }
 
 bool UBloodSuckAbility::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
@@ -58,8 +63,9 @@ void UBloodSuckAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	Victim = Target;
 	SetVictimFrozen(true);
 
-	const FVector ToVictim = Target->GetActorLocation() - Self->GetActorLocation();
-	Self->SetActorRotation(FRotator(0.f, ToVictim.Rotation().Yaw, 0.f));
+	const FRotator FacingVictim(0.f, (Target->GetActorLocation() - Self->GetActorLocation()).Rotation().Yaw, 0.f);
+	Self->SetActorRotation(FacingVictim);
+	Target->SetActorRotation(FacingVictim);
 
 	if (AController* Controller = Self->GetController())
 	{
@@ -80,16 +86,17 @@ void UBloodSuckAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	}
 	Self->GetCapsuleComponent()->IgnoreActorWhenMoving(Target, true);
 	Target->GetCapsuleComponent()->IgnoreActorWhenMoving(Self, true);
-	Self->AttachToActor(Target, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-	Self->SetActorRelativeLocation(FVector(-BackDistance, 0.f,
-		Self->GetCapsuleComponent()->GetScaledCapsuleHalfHeight() - Target->GetCapsuleComponent()->GetScaledCapsuleHalfHeight()));
-	Self->SetActorRelativeRotation(FRotator::ZeroRotator);
+	Self->AttachToActor(Target, FAttachmentTransformRules::KeepWorldTransform);
 	bAttached = true;
+	LungeStartLocation = Self->GetRootComponent()->GetRelativeLocation();
+	LungeStartRotation = FRotator(0.f, Self->GetRootComponent()->GetRelativeRotation().Yaw, 0.f);
+	LungeStartTime = GetWorld()->GetTimeSeconds();
+	TickAttachment();
 
-	if (USkeletalMeshComponent* SelfMesh = Self->GetMesh(); SelfMesh && Target->GetMesh())
+	if (BloodPulseCount > 0)
 	{
-		SavedMeshTransform = SelfMesh->GetRelativeTransform();
-		SelfMesh->AttachToComponent(Target->GetMesh(), FAttachmentTransformRules::KeepWorldTransform, AttachBone);
+		const float PulseInterval = FMath::Max(SuckMontage->GetPlayLength() - LungeDuration, 0.1f) / BloodPulseCount;
+		GetWorld()->GetTimerManager().SetTimer(BloodPulseTimer, this, &UBloodSuckAbility::EmitBloodPulse, PulseInterval, true, LungeDuration);
 	}
 
 	if (VictimReactMontage)
@@ -111,15 +118,15 @@ void UBloodSuckAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 void UBloodSuckAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
 	const FGameplayAbilityActivationInfo ActivationInfo, const bool bReplicateEndAbility, const bool bWasCancelled)
 {
+	if (const UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(AttachmentTimer);
+		World->GetTimerManager().ClearTimer(BloodPulseTimer);
+	}
+
 	ACharacter* Self = Cast<ACharacter>(GetAvatarActorFromActorInfo());
 	if (bAttached && Self)
 	{
-		if (USkeletalMeshComponent* SelfMesh = Self->GetMesh())
-		{
-			SelfMesh->AttachToComponent(Self->GetCapsuleComponent(), FAttachmentTransformRules::KeepRelativeTransform);
-			SelfMesh->SetRelativeTransform(SavedMeshTransform);
-		}
-
 		Self->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 		Self->SetActorRotation(FRotator(0.f, Self->GetActorRotation().Yaw, 0.f));
 		if (AEntity* Target = Victim.Get())
@@ -174,13 +181,21 @@ AEntity* UBloodSuckAbility::FindVictim(const AEntity* Self) const
 void UBloodSuckAbility::SetVictimFrozen(const bool bFrozen) const
 {
 	AEntity* Target = Victim.Get();
-	AAIController* AIController = Target ? Cast<AAIController>(Target->GetController()) : nullptr;
+	if (!Target) return;
+
+	if (UCharacterMovementComponent* Movement = Target->GetCharacterMovement(); Movement && (bFrozen || BloodSuck::HasHealth(Target)))
+	{
+		Movement->StopMovementImmediately();
+		Movement->SetMovementMode(bFrozen ? MOVE_None : MOVE_Falling);
+	}
+
+	AAIController* AIController = Cast<AAIController>(Target->GetController());
 	if (!AIController) return;
 
 	if (bFrozen)
 	{
 		AIController->StopMovement();
-		AIController->SetFocus(GetAvatarActorFromActorInfo(), EAIFocusPriority::Gameplay);
+		AIController->ClearFocus(EAIFocusPriority::Gameplay);
 		if (UBrainComponent* Brain = AIController->GetBrainComponent())
 		{
 			Brain->PauseLogic(TEXT("BloodSuck"));
@@ -188,10 +203,73 @@ void UBloodSuckAbility::SetVictimFrozen(const bool bFrozen) const
 		return;
 	}
 
-	AIController->ClearFocus(EAIFocusPriority::Gameplay);
 	if (UBrainComponent* Brain = AIController->GetBrainComponent(); Brain && Target->IsAlive())
 	{
 		Brain->ResumeLogic(TEXT("BloodSuck"));
+	}
+}
+
+void UBloodSuckAbility::TickAttachment()
+{
+	ACharacter* Self = Cast<ACharacter>(GetAvatarActorFromActorInfo());
+	AEntity* Target = Victim.Get();
+	USkeletalMeshComponent* SelfMesh = Self ? Self->GetMesh() : nullptr;
+	USkeletalMeshComponent* TargetMesh = Target ? Target->GetMesh() : nullptr;
+	if (!bAttached || !SelfMesh || !TargetMesh)
+	{
+		return;
+	}
+
+	const FVector BitePoint = TargetMesh->GetSocketLocation(VictimBiteBone) + Target->GetActorRotation().RotateVector(BiteOffset);
+	FVector Correction = BitePoint - SelfMesh->GetSocketLocation(SelfBiteBone);
+
+	const FVector VictimHip = TargetMesh->GetSocketLocation(VictimHipBone);
+	const FVector VictimBackAxis = (TargetMesh->GetSocketLocation(VictimBiteBone) - VictimHip).GetSafeNormal();
+	const FVector VictimBehind = -Target->GetActorForwardVector();
+	const FVector OutOfVictimBack = (VictimBehind - VictimBackAxis * FVector::DotProduct(VictimBehind, VictimBackAxis)).GetSafeNormal();
+	float Penetration = 0.f;
+	for (const FName& BodyBone : SelfBodyBones)
+	{
+		const FVector BodyPoint = SelfMesh->GetSocketLocation(BodyBone) + Correction;
+		Penetration = FMath::Max(Penetration, BodyClearance - FVector::DotProduct(BodyPoint - VictimHip, OutOfVictimBack));
+	}
+	Correction += OutOfVictimBack * Penetration;
+
+	const FVector AlignedWorldLocation = Self->GetActorLocation() + Correction;
+	const FVector AlignedRelativeLocation = Target->GetActorTransform().InverseTransformPositionNoScale(AlignedWorldLocation);
+
+	const float LungeElapsed = FMath::Min(GetWorld()->GetTimeSeconds() - LungeStartTime, LungeDuration);
+	const float Alpha = LungeDuration > 0.f ? FMath::InterpEaseOut(0.f, 1.f, LungeElapsed / LungeDuration, 2.f) : 1.f;
+	Self->SetActorRelativeLocation(FMath::Lerp(LungeStartLocation, AlignedRelativeLocation, Alpha));
+	Self->SetActorRelativeRotation(FQuat::Slerp(LungeStartRotation.Quaternion(), FQuat::Identity, Alpha));
+
+	AttachmentTimer = GetWorld()->GetTimerManager().SetTimerForNextTick(this, &UBloodSuckAbility::TickAttachment);
+}
+
+void UBloodSuckAbility::EmitBloodPulse() const
+{
+	AEntity* Target = Victim.Get();
+	AActor* Self = GetAvatarActorFromActorInfo();
+	if (!Target || !Self || !Target->GetMesh()) return;
+
+	const FVector BitePoint = Target->GetMesh()->GetSocketLocation(VictimBiteBone);
+
+	if (UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Target); TargetASC && BleedCueTag.IsValid())
+	{
+		FGameplayCueParameters CueParameters;
+		CueParameters.Location = BitePoint;
+		CueParameters.Normal = (FVector::UpVector - Target->GetActorForwardVector() * 0.5f).GetSafeNormal();
+		CueParameters.Instigator = Self;
+		CueParameters.EffectCauser = Self;
+		TargetASC->ExecuteGameplayCue(BleedCueTag, CueParameters);
+	}
+
+	UOrbsPoolManager* OrbPool = GetWorld()->GetSubsystem<UOrbsPoolManager>();
+	if (!OrbPool || !BloodOrbClass) return;
+
+	if (AOrbBase* Orb = Cast<AOrbBase>(OrbPool->SpawnOrbFromPool(BloodOrbClass, BitePoint, FRotator::ZeroRotator, Target)))
+	{
+		Orb->LaunchToTarget(Self);
 	}
 }
 

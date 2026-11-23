@@ -362,6 +362,16 @@ void AEntity::PossessedBy(AController* NewController)
 	{
 		TeamId = TeamAgent->GetGenericTeamId();
 	}
+
+	if (TargetingComponent)
+	{
+		TargetingComponent->RefreshOwnerController();
+	}
+
+	if (NewController && NewController->IsPlayerController() && SpringArmComponent)
+	{
+		SpringArmComponent->bUsePawnControlRotation = true;
+	}
 }
 
 bool AEntity::IsHostile(const AEntity* OtherEntity) const
@@ -635,6 +645,75 @@ void AEntity::UpdateKnockback()
 void AEntity::StopKnockback()
 {
 	GetWorldTimerManager().ClearTimer(KnockbackTimerHandle);
+}
+
+void AEntity::StartJuggle(const float HoverDuration)
+{
+	UCharacterMovementComponent* Movement = GetCharacterMovement();
+	if (!Movement || !IsAlive()) return;
+
+	JuggleRemaining = HoverDuration > 0.f ? HoverDuration : DefaultJuggleDuration;
+
+	if (!bJuggled)
+	{
+		bJuggled = true;
+		JuggleSavedGravityScale = EntityData ? EntityData->CharMoveData.GravityScale : Movement->GravityScale;
+		GetWorldTimerManager().SetTimer(JuggleTimerHandle, this, &AEntity::UpdateJuggle, KnockbackUpdateInterval, true);
+	}
+
+	Movement->GravityScale = 0.f;
+	Movement->Velocity = FVector::ZeroVector;
+	Movement->SetMovementMode(MOVE_Falling);
+}
+
+void AEntity::OnDamageReceived()
+{
+	if (IsInAir() || bJuggled)
+	{
+		StartJuggle(AirHitStunDuration);
+	}
+}
+
+void AEntity::UpdateJuggle()
+{
+	UCharacterMovementComponent* Movement = GetCharacterMovement();
+	if (!Movement || !IsAlive())
+	{
+		EndJuggle();
+		return;
+	}
+
+	JuggleRemaining -= KnockbackUpdateInterval;
+	if (JuggleRemaining <= 0.f)
+	{
+		EndJuggle();
+		return;
+	}
+
+	if (Movement->MovementMode == MOVE_None || Movement->MovementMode == MOVE_Flying)
+	{
+		Movement->SetMovementMode(MOVE_Falling);
+	}
+
+	Movement->GravityScale = 0.f;
+}
+
+void AEntity::EndJuggle()
+{
+	GetWorldTimerManager().ClearTimer(JuggleTimerHandle);
+
+	if (!bJuggled) return;
+
+	bJuggled = false;
+
+	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+	{
+		Movement->GravityScale = JuggleSavedGravityScale;
+		if (Movement->MovementMode == MOVE_None || Movement->MovementMode == MOVE_Flying)
+		{
+			Movement->SetMovementMode(MOVE_Falling);
+		}
+	}
 }
 
 float AEntity::EvaluateKnockbackProgress(const float Alpha) const

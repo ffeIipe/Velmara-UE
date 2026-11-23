@@ -110,6 +110,18 @@ void UVelmaraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCal
                 SetHealth(FMath::Clamp(CurrentHealth - DamageToHealth, 0.0f, GetMaxHealth()));
             }
 
+            if (AEntity* DamagedEntity = Cast<AEntity>(GetOwningActor()))
+            {
+                if (GetHealth() <= 0.0f)
+                {
+                    DamagedEntity->EndJuggle();
+                }
+                else
+                {
+                    DamagedEntity->OnDamageReceived();
+                }
+            }
+
             if (GetHealth() <= 0.0f)
             {
                 FGameplayTagContainer DeathTagContainer;

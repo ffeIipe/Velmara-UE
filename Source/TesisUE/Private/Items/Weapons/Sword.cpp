@@ -145,8 +145,13 @@ void ASword::AttachMeshToSocket(USceneComponent* InParent, const FName InSocketN
 
 void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	const FVector Start = BoxTraceStart->GetComponentLocation();
-	const FVector End = BoxTraceEnd->GetComponentLocation();
+	TraceAndApplyHits(OverlappedComponent, BoxTraceStart, BoxTraceEnd);
+}
+
+void ASword::TraceAndApplyHits(UPrimitiveComponent* OverlappedComponent, const USceneComponent* TraceStart, const USceneComponent* TraceEnd)
+{
+	const FVector Start = TraceStart->GetComponentLocation();
+	const FVector End = TraceEnd->GetComponentLocation();
 
 	IgnoreActors.Add(this);
 	IgnoreActors.Add(GetOwner());
@@ -157,8 +162,8 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 		this,
 		Start,
 		End,
-		FVector(20.f, 20.f, 20.f),
-		BoxTraceStart->GetComponentRotation(),
+		TraceHalfExtent,
+		TraceStart->GetComponentRotation(),
 		UEngineTypes::ConvertToTraceType(ECC_GameTraceChannel3),
 		false,
 		IgnoreActors,
@@ -169,7 +174,7 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 
 	for (const FHitResult& Hit : HitResults)
 	{
-		if (IgnoreActors.Contains(Hit.GetActor())) return;
+		if (IgnoreActors.Contains(Hit.GetActor())) continue;
 
 		IgnoreActors.Add(Hit.GetActor());
 		
@@ -206,10 +211,34 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 						TargetEntity->ApplyKnockback(GetOwner()->GetActorLocation(), Data->Knockback);
 					}
 				}
+
+				ApplyJuggle(Hit.GetActor());
 			}
 		}
 
 		OnActorsWeaponHit(HitResults);
+	}
+}
+
+void ASword::ApplyJuggle(AActor* Target)
+{
+	static const FGameplayTag LaunchTag = FGameplayTag::RequestGameplayTag(FName("Damage.Launch"));
+	static const FGameplayTag FromAirTag = FGameplayTag::RequestGameplayTag(FName("Damage.FromAir"));
+
+	const bool bLaunch = CurrentDamageTag.MatchesTag(LaunchTag);
+	const bool bFromAir = CurrentDamageTag.MatchesTag(FromAirTag);
+	if (!bLaunch && !bFromAir) return;
+
+	AEntity* TargetEntity = Cast<AEntity>(Target);
+	if (TargetEntity && TargetEntity->IsLaunchable() && (bLaunch || TargetEntity->IsInAir()))
+	{
+		TargetEntity->StartJuggle();
+	}
+
+	AEntity* OwnerEntity = Cast<AEntity>(GetOwner());
+	if (OwnerEntity && OwnerEntity->IsInAir())
+	{
+		OwnerEntity->StartJuggle();
 	}
 }
 

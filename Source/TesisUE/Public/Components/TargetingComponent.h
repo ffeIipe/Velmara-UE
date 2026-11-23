@@ -29,6 +29,9 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "Targeting")
     void DisableLock();
+
+    UFUNCTION(BlueprintCallable, Category = "Targeting")
+    void RefreshOwnerController();
     
     void RefreshTargets();
 
@@ -74,6 +77,8 @@ public:
 protected:
     virtual void BeginPlay() override;
 
+    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
     virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
     UPROPERTY(EditAnywhere, BlueprintAssignable, Category = "Targeting")
@@ -83,6 +88,9 @@ protected:
     FOnTargetedEntityChanged OnTargetedEntityChanged;
 
 private:
+    UFUNCTION()
+    void HandleOwnerControllerChanged(APawn* Pawn, AController* OldController, AController* NewController);
+
     UPROPERTY()
     TObjectPtr<ACharacter> OwnerCharacter;
 

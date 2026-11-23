@@ -175,6 +175,33 @@ public:
 
 	void ApplyKnockback(const FVector& AttackerLocation, const FWeaponKnockback& Knockback);
 
+	UFUNCTION(BlueprintCallable, Category = "Combat|Juggle")
+	void StartJuggle(float HoverDuration = -1.f);
+
+	UFUNCTION(BlueprintCallable, Category = "Combat|Juggle")
+	void EndJuggle();
+
+	UFUNCTION(BlueprintPure, Category = "Combat|Juggle")
+	bool IsJuggled() const { return bJuggled; }
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Combat|Juggle", meta = (ClampMin = "0.1", Units = "s"))
+	float DefaultJuggleDuration = 2.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Combat|Juggle", meta = (ClampMin = "0.05", Units = "s"))
+	float AirHitStunDuration = 0.5f;
+
+	void OnDamageReceived();
+
+	FTimerHandle JuggleTimerHandle;
+
+	bool bJuggled = false;
+
+	float JuggleRemaining = 0.f;
+
+	float JuggleSavedGravityScale = 1.f;
+
+	void UpdateJuggle();
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Combat")
 	bool bKnockbackResistant = false;
 

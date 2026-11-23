@@ -33,6 +33,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "GAS|Possession")
 	bool IsPossessing() const;
+
+	UFUNCTION(BlueprintPure, Category = "GAS|Possession")
+	APawn* GetOriginalBody() const { return OriginalBody; }
 	
 	UPROPERTY(BlueprintReadWrite)
 	FVector2D InputMovingVector = FVector2D::ZeroVector;

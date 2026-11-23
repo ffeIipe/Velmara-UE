@@ -34,6 +34,9 @@ public:
     UPROPERTY()
     TArray<AActor*> IgnoreActors;
 
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
+    FVector TraceHalfExtent = FVector(20.f, 20.f, 20.f);
+
     virtual void Equip() override;
 
     virtual FName GetEquipSocketName() const override;
@@ -52,7 +55,10 @@ protected:
        bool bFromSweep,
        const FHitResult& SweepResult);
 
-private:
+    void ApplyJuggle(AActor* Target);
+
+    void TraceAndApplyHits(UPrimitiveComponent* OverlappedComponent, const USceneComponent* TraceStart, const USceneComponent* TraceEnd);
+
     UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
     UBoxComponent* WeaponDamageBox;
 
@@ -62,8 +68,11 @@ private:
     UPROPERTY(VisibleAnywhere)
     USceneComponent* BoxTraceEnd;
 
+public:
     virtual void ClearIgnoreActors() override;
     virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled) override;
+
+private:
 
     UFUNCTION()
     void HandleCombosChanged();
