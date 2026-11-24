@@ -30,7 +30,6 @@ namespace WeaponUpgradeUtils
 		{
 			if (!Node || Visited.Contains(Node)) return 0;
 
-			// Un nodo con otro desbloqueo ya pertenece a otra rama.
 			if (Node->RequiredUnlockTag.IsValid() && Node->RequiredUnlockTag != UnlockTag) return 0;
 
 			Visited.Add(Node);
@@ -94,7 +93,6 @@ namespace WeaponUpgradeUtils
 		TSet<const UComboNode*> Visited;
 		for (const FComboRootEntry& Entry : Roots)
 		{
-			// Suelo y aire arrancan con el input de ataque; lanzamiento y habilidad tienen su propio disparador.
 			TArray<EComboInput> Inputs;
 			if (Entry.Root == EComboRoot::Ground || Entry.Root == EComboRoot::Air)
 			{

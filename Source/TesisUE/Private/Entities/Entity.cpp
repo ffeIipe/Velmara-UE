@@ -8,6 +8,9 @@
 #include "Components/TargetingComponent.h"
 #include "Features/SaveSystem/Data/SaveTypes.h"
 #include "DataAssets/EntityData.h"
+#include "DataAssets/Items/Weapons/WeaponData.h"
+#include "Entities/WeaponOverlayAnimInstance.h"
+#include "Curves/CurveFloat.h"
 #include "Features/InventorySystem/Core/InventoryComponent.h"
 #include "Features/TotemSystem/Subsystems/TotemSubsystem.h"
 #include "Features/ReanimationSystem/GraveSubsystem.h"
@@ -50,6 +53,8 @@ void AEntity::BeginPlay()
 {
 	Super::BeginPlay();
 
+	UWeaponOverlayAnimInstance::LinkToCharacter(this, InnateWeaponOverlay, nullptr);
+
 	if (AbilitySystemComponent)
 	{
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
@@ -66,15 +71,21 @@ void AEntity::BeginPlay()
 	
 	GetSpringArmComponent()->bUsePawnControlRotation = true;
 
-	if (GetMesh())
-	{
-		const TArray<UMaterialInterface*> TempArray = GetMesh()->GetMaterials();
+	TArray<USkeletalMeshComponent*> SkeletalMeshComponents;
+	GetComponents<USkeletalMeshComponent>(SkeletalMeshComponents);
 
-		for (int32 MatIndex = 0; MatIndex < TempArray.Num(); MatIndex++)
+	for (USkeletalMeshComponent* MeshComponent : SkeletalMeshComponents)
+	{
+		const int32 MaterialCount = MeshComponent->GetNumMaterials();
+
+		for (int32 MatIndex = 0; MatIndex < MaterialCount; MatIndex++)
 		{
-			UMaterialInterface* CurrentMaterial = GetMesh()->GetMaterial(MatIndex);
-			DissolveMaterials.Add(UMaterialInstanceDynamic::Create(CurrentMaterial, this));
-			GetMesh()->SetMaterial(MatIndex, DissolveMaterials[MatIndex]);
+			UMaterialInterface* CurrentMaterial = MeshComponent->GetMaterial(MatIndex);
+			if (!CurrentMaterial) continue;
+
+			UMaterialInstanceDynamic* DissolveMaterial = UMaterialInstanceDynamic::Create(CurrentMaterial, this);
+			DissolveMaterials.Add(DissolveMaterial);
+			MeshComponent->SetMaterial(MatIndex, DissolveMaterial);
 		}
 	}
 
@@ -86,25 +97,6 @@ void AEntity::BeginPlay()
 		}
 	}
 
-	//this only happens in case the entity has extra mesh's children collision boxes
-
-	/*if (GetMesh()->GetAttachChildren().Num() > 0)
-	{
-		TArray<USceneComponent*> BoxComponents;
-		GetMesh()->GetChildrenComponents(false, BoxComponents);
-
-		for (USceneComponent* Child : BoxComponents)
-		{
-			if (UBoxComponent* ChildBox = Cast<UBoxComponent>(Child))
-			{
-				if (ChildBox->ComponentTags.Num() > 0 && ChildBox->ComponentTags[0].ToString().StartsWith("Hitbox."))
-				{
-					ChildBox->OnComponentBeginOverlap.AddDynamic(this, &AEntity::OnBodyPartOverlap);
-					if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Blue, "Child Hitbox bound...");
-				}
-			}
-		}
-	}*/
 }
 
 void AEntity::InitializeComponentsData() const
@@ -227,7 +219,6 @@ void AEntity::SpawnDeathOrbs()
 	UOrbsPoolManager* OrbPool = GetWorld()->GetSubsystem<UOrbsPoolManager>();
 	if (!Player || Player == this || !OrbPool) return;
 
-	// Aliados del jugador no sueltan orbes.
 	const IGenericTeamAgentInterface* PlayerTeam = Cast<IGenericTeamAgentInterface>(PlayerController);
 	if (PlayerTeam && PlayerTeam->GetGenericTeamId() == GetTeamId()) return;
 
@@ -235,7 +226,6 @@ void AEntity::SpawnDeathOrbs()
 	{
 		for (int32 i = 0; i < Drop.Count; ++i)
 		{
-			// Dispersión chica para que los orbes no salgan todos del mismo punto.
 			const FVector Offset(FMath::FRandRange(-40.f, 40.f), FMath::FRandRange(-40.f, 40.f), FMath::FRandRange(40.f, 120.f));
 			if (AOrbBase* Orb = Cast<AOrbBase>(OrbPool->SpawnOrbFromPool(Drop.OrbClass, GetActorLocation() + Offset, FRotator::ZeroRotator, this)))
 			{
@@ -368,10 +358,19 @@ void AEntity::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 
-	// El cuerpo poseído toma el equipo del jugador; ACustomPlayerController::ReleaseHost le devuelve el suyo al abandonarlo.
 	if (const IGenericTeamAgentInterface* TeamAgent = Cast<IGenericTeamAgentInterface>(NewController); TeamAgent && NewController->IsPlayerController())
 	{
 		TeamId = TeamAgent->GetGenericTeamId();
+	}
+
+	if (TargetingComponent)
+	{
+		TargetingComponent->RefreshOwnerController();
+	}
+
+	if (NewController && NewController->IsPlayerController() && SpringArmComponent)
+	{
+		SpringArmComponent->bUsePawnControlRotation = true;
 	}
 }
 
@@ -441,10 +440,9 @@ bool AEntity::IsAlive() const
 {
 	if (!AbilitySystemComponent) return false;
 
-	//const bool bHasHealth = AttributeSet && AttributeSet->GetHealth() > 0.0f;
 	const bool bIsNotMarkedDead = !AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("State.Dead"));
 
-	return /*bHasHealth*/ /*&&*/ bIsNotMarkedDead; 
+	return bIsNotMarkedDead;
 }
 
 bool AEntity::IsShielded() const
@@ -490,25 +488,20 @@ void AEntity::OnBodyPartOverlap(UPrimitiveComponent* OverlappedComponent, AActor
 		if (!TargetEntity->IsAlive() || !IsHostile(TargetEntity)) return;
 	}
 
-	//if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "Dealing body damage");
-	
 	UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor);
 	if (!TargetASC) return;
 		
 	if (EntityData && EntityData->UnarmedDamageEffectSpecClass)
 	{
-		//Context
 		FGameplayEffectContextHandle Context = GetAbilitySystemComponent()->MakeEffectContext();
 		Context.AddHitResult(SweepResult);
 
-		//Spec + Context
 		FGameplayEffectSpecHandle DamageEffectSpecHandle = GetAbilitySystemComponent()->MakeOutgoingSpec(
 		EntityData->UnarmedDamageEffectSpecClass, 
 		1.0f, 
 		Context
 		);
 
-		//Set Damage type
 		if (DamageEffectSpecHandle.IsValid())
 		{
 			DamageEffectSpecHandle.Data.Get()->AddDynamicAssetTag(EntityData->UnarmedDamageTag);
@@ -519,13 +512,11 @@ void AEntity::OnBodyPartOverlap(UPrimitiveComponent* OverlappedComponent, AActor
 			);
 		}
 			
-		//Applying the gameplay effect to the hit actor
 		GetAbilitySystemComponent()->ApplyGameplayEffectSpecToTarget(
 			*DamageEffectSpecHandle.Data.Get(),
 			TargetASC
 		);
 
-		//VFX call
 		FGameplayCueParameters CueParameters;
 		CueParameters.Location = SweepResult.ImpactPoint;
 		CueParameters.Normal = SweepResult.ImpactNormal;
@@ -543,7 +534,6 @@ void AEntity::ActivateBodyHitbox(const FName ComponentTag, FGameplayTag DamageTy
 		{
 			if (UPrimitiveComponent* Prim = Cast<UPrimitiveComponent>(Comp))
 			{
-				//if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Emerald, "Collision Enabled...");
 				
 				Prim->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 				Prim->IgnoreActorWhenMoving(this, true);
@@ -566,25 +556,172 @@ void AEntity::DeactivateBodyHitbox(const FName ComponentTag) const
 	}
 }
 
+namespace
+{
+	constexpr float HitFlashUpdateInterval = 1.f / 60.f;
+}
+
 void AEntity::HitFlash(const float Duration, const float Amount)
+{
+	HitFlashPeakAmount = Amount;
+	HitFlashDuration = FMath::Max(Duration, KINDA_SMALL_NUMBER);
+	HitFlashElapsed = 0.f;
+
+	SetHitFlashAmount(Amount);
+	GetWorldTimerManager().SetTimer(HitFlashTimerHandle, this, &AEntity::UpdateHitFlash, HitFlashUpdateInterval, true);
+}
+
+void AEntity::UpdateHitFlash()
+{
+	HitFlashElapsed += HitFlashUpdateInterval;
+
+	const float Alpha = HitFlashElapsed / HitFlashDuration;
+	if (Alpha >= 1.f)
+	{
+		DeactivateHitFlash();
+		return;
+	}
+
+	SetHitFlashAmount(HitFlashPeakAmount * FMath::Square(1.f - Alpha));
+}
+
+void AEntity::DeactivateHitFlash()
+{
+	GetWorldTimerManager().ClearTimer(HitFlashTimerHandle);
+	SetHitFlashAmount(0.f);
+}
+
+void AEntity::SetHitFlashAmount(const float Amount)
 {
 	for (UMaterialInstanceDynamic* DissolveMaterial : DissolveMaterials)
 	{
 		if (DissolveMaterial)
 		{
 			DissolveMaterial->SetScalarParameterValue(FName("HitFlashAmount"), Amount);
-			GetWorldTimerManager().SetTimer(HitFlashTimerHandle, this, &AEntity::DeactivateHitFlash, Duration, false);
 		}
 	}
 }
 
-void AEntity::DeactivateHitFlash()
+namespace
 {
-	for (UMaterialInstanceDynamic* DissolveMaterial : DissolveMaterials)
+	constexpr float KnockbackUpdateInterval = 1.f / 60.f;
+}
+
+void AEntity::ApplyKnockback(const FVector& AttackerLocation, const FWeaponKnockback& Knockback)
+{
+	if (bKnockbackResistant || Knockback.Distance <= 0.f) return;
+	if (!IsAlive() || IsBlocking() || IsShielded() || GetCharacterMovement()->IsFalling()) return;
+
+	FVector Direction = (GetActorLocation() - AttackerLocation).GetSafeNormal2D();
+	if (Direction.IsNearlyZero())
 	{
-		if (DissolveMaterial)
+		Direction = -GetActorForwardVector().GetSafeNormal2D();
+	}
+
+	KnockbackDirection = Direction;
+	KnockbackDistance = Knockback.Distance;
+	KnockbackDuration = FMath::Max(Knockback.Duration, KINDA_SMALL_NUMBER);
+	KnockbackCurve = Knockback.ProgressCurve;
+	KnockbackElapsed = 0.f;
+
+	GetWorldTimerManager().SetTimer(KnockbackTimerHandle, this, &AEntity::UpdateKnockback, KnockbackUpdateInterval, true);
+}
+
+void AEntity::UpdateKnockback()
+{
+	const float PreviousAlpha = KnockbackElapsed / KnockbackDuration;
+	KnockbackElapsed += KnockbackUpdateInterval;
+	const float Alpha = FMath::Min(KnockbackElapsed / KnockbackDuration, 1.f);
+
+	const float Step = EvaluateKnockbackProgress(Alpha) - EvaluateKnockbackProgress(PreviousAlpha);
+	AddActorWorldOffset(KnockbackDirection * KnockbackDistance * Step, true);
+
+	if (Alpha >= 1.f || !IsAlive() || GetCharacterMovement()->IsFalling())
+	{
+		StopKnockback();
+	}
+}
+
+void AEntity::StopKnockback()
+{
+	GetWorldTimerManager().ClearTimer(KnockbackTimerHandle);
+}
+
+void AEntity::StartJuggle(const float HoverDuration)
+{
+	UCharacterMovementComponent* Movement = GetCharacterMovement();
+	if (!Movement || !IsAlive()) return;
+
+	JuggleRemaining = HoverDuration > 0.f ? HoverDuration : DefaultJuggleDuration;
+
+	if (!bJuggled)
+	{
+		bJuggled = true;
+		JuggleSavedGravityScale = EntityData ? EntityData->CharMoveData.GravityScale : Movement->GravityScale;
+		GetWorldTimerManager().SetTimer(JuggleTimerHandle, this, &AEntity::UpdateJuggle, KnockbackUpdateInterval, true);
+	}
+
+	Movement->GravityScale = 0.f;
+	Movement->Velocity = FVector::ZeroVector;
+	Movement->SetMovementMode(MOVE_Falling);
+}
+
+void AEntity::OnDamageReceived()
+{
+	if (IsInAir() || bJuggled)
+	{
+		StartJuggle(AirHitStunDuration);
+	}
+}
+
+void AEntity::UpdateJuggle()
+{
+	UCharacterMovementComponent* Movement = GetCharacterMovement();
+	if (!Movement || !IsAlive())
+	{
+		EndJuggle();
+		return;
+	}
+
+	JuggleRemaining -= KnockbackUpdateInterval;
+	if (JuggleRemaining <= 0.f)
+	{
+		EndJuggle();
+		return;
+	}
+
+	if (Movement->MovementMode == MOVE_None || Movement->MovementMode == MOVE_Flying)
+	{
+		Movement->SetMovementMode(MOVE_Falling);
+	}
+
+	Movement->GravityScale = 0.f;
+}
+
+void AEntity::EndJuggle()
+{
+	GetWorldTimerManager().ClearTimer(JuggleTimerHandle);
+
+	if (!bJuggled) return;
+
+	bJuggled = false;
+
+	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+	{
+		Movement->GravityScale = JuggleSavedGravityScale;
+		if (Movement->MovementMode == MOVE_None || Movement->MovementMode == MOVE_Flying)
 		{
-			DissolveMaterial->SetScalarParameterValue(FName("HitFlashAmount"), 0);
+			Movement->SetMovementMode(MOVE_Falling);
 		}
 	}
+}
+
+float AEntity::EvaluateKnockbackProgress(const float Alpha) const
+{
+	if (KnockbackCurve)
+	{
+		return KnockbackCurve->GetFloatValue(Alpha);
+	}
+
+	return 1.f - FMath::Square(1.f - Alpha);
 }

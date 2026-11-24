@@ -20,7 +20,6 @@ namespace Reanimate
 
 		FVector Location = Grave.Location;
 
-		// La posición de muerte puede estar en el aire (launch): se apoya en el navmesh y se sube media cápsula.
 		if (const UNavigationSystemV1* NavSystem = FNavigationSystem::GetCurrent<UNavigationSystemV1>(World))
 		{
 			FNavLocation NavLocation;
@@ -70,7 +69,6 @@ void USkeletonMageReanimateAbility::ActivateAbility(const FGameplayAbilitySpecHa
 
 	const float Rate = GetAttackSpeedMultiplier();
 
-	// Si el casteo se interrumpe (hit react, muerte) antes del evento, no se levanta nadie.
 	UAbilityTask_WaitDelay* DelayTask = UAbilityTask_WaitDelay::WaitDelay(this, CastEventDelay / Rate);
 	DelayTask->OnFinish.AddDynamic(this, &USkeletonMageReanimateAbility::ReanimateGraves);
 	DelayTask->ReadyForActivation();
@@ -104,7 +102,6 @@ void USkeletonMageReanimateAbility::ReanimateGraves()
 				UGameplayStatics::PlaySoundAtLocation(World, RiseSound, Grave.Location);
 			}
 
-			// Timer del mundo, no de la habilidad: una vez marcada la tumba el enemigo sale aunque maten al mago.
 			FTimerHandle Handle;
 			World->GetTimerManager().SetTimer(Handle, FTimerDelegate::CreateWeakLambda(World, [World, Grave]()
 			{

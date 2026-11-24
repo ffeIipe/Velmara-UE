@@ -14,18 +14,19 @@
 #include "Entities/Entity.h"
 #include "Features/InventorySystem/Items/Weapon.h"
 #include "Features/SaveSystem/Core/SaveComponent.h"
+#include "UI/Layout/VelmaraPrimaryGameLayout.h"
+#include "UI/Widgets/Menus/VelmaraInventoryWidget.h"
 
 UInventoryComponent::UInventoryComponent()
 {
     PrimaryComponentTick.bCanEverTick = false;
+    InventoryWidgetClass = UVelmaraInventoryWidget::StaticClass();
 }
 
 void UInventoryComponent::BeginPlay()
 {
     Super::BeginPlay();
 
-    // InventorySlots es Transient y se llena en OnConstruction, que no vuelve a correr en los actores puestos en el nivel
-    // (al cargar el mapa o duplicarlo para PIE): sin esto llegan sin slots y TryAddWeapon falla (enemigos desarmados).
     if (InventorySlots.Num() == 0)
     {
         if (const AEntity* Entity = Cast<AEntity>(GetOwner()); Entity && Entity->EntityData)
@@ -51,20 +52,15 @@ void UInventoryComponent::ToggleInventorySlot()
 {
     EquippedSlotIndex++;
     if (EquippedSlotIndex >= MaxSlots) EquippedSlotIndex = 0;
-    
-     EquipItemFromSlot(EquippedSlotIndex);
+
+    EquipItemFromSlot(EquippedSlotIndex);
 }
 
 void UInventoryComponent::InitializeInventoryWidget()
 {
-    if (InventoryWidgetClass && PlayerControllerRef && PlayerControllerRef->IsLocalController() && !InventoryWidgetInstance)
+    if (!InventoryWidgetClass || !InventoryWidgetClass->IsChildOf(UInventory::StaticClass()))
     {
-        InventoryWidgetInstance = CreateWidget<UInventory>(PlayerControllerRef, InventoryWidgetClass);
-        if (InventoryWidgetInstance)
-        {
-            InventoryWidgetInstance->AddToViewport();
-            InventoryWidgetInstance->SetVisibility(ESlateVisibility::Collapsed);
-        }
+        InventoryWidgetClass = UVelmaraInventoryWidget::StaticClass();
     }
 }
 
@@ -73,7 +69,7 @@ bool UInventoryComponent::TryAddWeapon(const TScriptInterface<IPickable> Pickabl
     if (!PickableToAdd) return false;
 
     if (PickableToAdd->Execute_ShouldConsumeOnUse(PickableToAdd.GetObject())) return false;
-    
+
     for (int32 i = 0; i < InventorySlots.Num(); ++i)
     {
         if (InventorySlots[i] == nullptr)
@@ -93,25 +89,25 @@ void UInventoryComponent::EquipItemFromSlot(const int32 SlotIndex)
     if (!InventorySlots.IsValidIndex(SlotIndex) || InventorySlots[SlotIndex] == nullptr) return;
 
     if (CurrentItem == InventorySlots[SlotIndex]) return;
-    
-    //UnequipCurrentWeapon();
-    
+
     if (CurrentItem)
     {
         CurrentItem->Execute_OnRemovedFromInventory(CurrentItem.GetObject());
     }
-    
+
     if (const TScriptInterface<IPickable> Pickable = InventorySlots[SlotIndex].GetObject())
+    {
         Pickable->Execute_OnEnteredInventory(Pickable.GetObject(), GetOwner());
+    }
 
     if (InventorySlots.IsValidIndex(SlotIndex))
     {
         CurrentItem = InventorySlots[SlotIndex];
         EquippedSlotIndex = SlotIndex;
         CurrentItem->Execute_OnEnteredInventory(CurrentItem.GetObject(), GetOwner());
+        OnItemEquipped.Broadcast(CurrentItem);
+        UpdateInventoryUI();
     }
-    
-    //UpdateInventoryUI();
 }
 
 void UInventoryComponent::DropWeaponFromSlot(const int32 SlotIndex)
@@ -121,11 +117,13 @@ void UInventoryComponent::DropWeaponFromSlot(const int32 SlotIndex)
         return;
     }
 
-    InventorySlots[SlotIndex] = CurrentItem;
-    
-    if (CurrentItem)
+    if (SlotIndex == EquippedSlotIndex && CurrentItem)
     {
         UnequipCurrentWeapon();
+    }
+    else if (InventorySlots[SlotIndex])
+    {
+        InventorySlots[SlotIndex]->Execute_OnRemovedFromInventory(InventorySlots[SlotIndex].GetObject());
     }
 
     InventorySlots[SlotIndex] = nullptr;
@@ -137,62 +135,100 @@ void UInventoryComponent::UnequipCurrentWeapon()
 {
     if (!CurrentItem) return;
 
-    if (CurrentItem)
-    {
-        CurrentItem->Execute_OnRemovedFromInventory(CurrentItem.GetObject());
-        CurrentItem = nullptr;
-        EquippedSlotIndex = -1;
+    CurrentItem->Execute_OnRemovedFromInventory(CurrentItem.GetObject());
+    CurrentItem = nullptr;
+    EquippedSlotIndex = -1;
 
-        if (OnItemEquipped.IsBound()) OnItemEquipped.Broadcast(nullptr);
-    }
-    else
+    if (OnItemEquipped.IsBound())
     {
-        if (EquippedSlotIndex != -1)
-        {
-            EquippedSlotIndex = -1;
-        }
-    }
-
-    if (OnItemEquipped.IsBound()) 
-    {
-        OnItemEquipped.Broadcast(CurrentItem);
+        OnItemEquipped.Broadcast(nullptr);
     }
 }
 
 void UInventoryComponent::ShowInventory()
 {
     if (bIsInventoryOpen) return;
+
+    if (!PlayerControllerRef)
+    {
+        PlayerControllerRef = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+    }
+    if (!PlayerControllerRef || !PlayerControllerRef->IsLocalController())
+    {
+        return;
+    }
+
+    InitializeInventoryWidget();
+
+    TSubclassOf<UInventory> TargetClass = UVelmaraInventoryWidget::StaticClass();
+    if (InventoryWidgetClass && InventoryWidgetClass->IsChildOf(UInventory::StaticClass()))
+    {
+        TargetClass = InventoryWidgetClass.Get();
+    }
+
+    if (UVelmaraPrimaryGameLayout* Layout = UVelmaraPrimaryGameLayout::GetOrCreate(PlayerControllerRef))
+    {
+        bIsInventoryOpen = true;
+        UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 0.2f);
+        InventoryWidgetInstance = Layout->PushMenuWidget<UInventory>(
+            TargetClass,
+            [this](UInventory& CreatedWidget)
+            {
+                CreatedWidget.BindInventoryComponent(this);
+                CreatedWidget.RefreshInventoryUI(InventorySlots);
+            });
+        return;
+    }
+
     if (!InventoryWidgetInstance)
     {
-        InitializeInventoryWidget();
+        InventoryWidgetInstance = CreateWidget<UInventory>(PlayerControllerRef, TargetClass);
         if (!InventoryWidgetInstance) return;
+        InventoryWidgetInstance->AddToViewport();
     }
 
     bIsInventoryOpen = true;
+    InventoryWidgetInstance->BindInventoryComponent(this);
     UpdateInventoryUI();
     InventoryWidgetInstance->SetVisibility(ESlateVisibility::Visible);
     UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 0.2f);
 
-    if (PlayerControllerRef)
-    {
-        FInputModeGameAndUI InputMode;
-        InputMode.SetWidgetToFocus(InventoryWidgetInstance->TakeWidget());
-        InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-        PlayerControllerRef->SetInputMode(InputMode);
-        PlayerControllerRef->bShowMouseCursor = true;
-    }
+    FInputModeGameAndUI InputMode;
+    InputMode.SetWidgetToFocus(InventoryWidgetInstance->TakeWidget());
+    InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+    PlayerControllerRef->SetInputMode(InputMode);
+    PlayerControllerRef->bShowMouseCursor = true;
 }
 
 void UInventoryComponent::HideInventory()
 {
     if (!bIsInventoryOpen) return;
-    if (!InventoryWidgetInstance) return;
+
+    if (InventoryWidgetInstance)
+    {
+        InventoryWidgetInstance->DeactivateWidget();
+        InventoryWidgetInstance = nullptr;
+    }
+
+    NotifyInventoryClosed();
+}
+
+void UInventoryComponent::NotifyInventoryClosed()
+{
+    if (!bIsInventoryOpen)
+    {
+        return;
+    }
 
     bIsInventoryOpen = false;
-    InventoryWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
+    InventoryWidgetInstance = nullptr;
     UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 1.0f);
 
-    if (PlayerControllerRef)
+    if (UVelmaraPrimaryGameLayout* Layout = UVelmaraPrimaryGameLayout::Get(this))
+    {
+        Layout->RefreshInputMode();
+    }
+    else if (PlayerControllerRef)
     {
         const FInputModeGameOnly InputMode;
         PlayerControllerRef->SetInputMode(InputMode);
@@ -215,7 +251,7 @@ void UInventoryComponent::SaveInventory()
     for (const TScriptInterface<IPickable>& SlotItem : InventorySlots)
     {
         FInventoryItemSaveData Data;
-        
+
         if (SlotItem && SlotItem.GetObject())
         {
             if (AActor* WeaponActor = Cast<AActor>(SlotItem.GetObject()))
@@ -226,7 +262,7 @@ void UInventoryComponent::SaveInventory()
                 }
             }
         }
-        
+
         SavedInventoryData.Add(Data);
     }
 }
@@ -256,13 +292,13 @@ void UInventoryComponent::ReconstructInventory()
         if (InventorySlots.IsValidIndex(i) && SavedID.IsValid() && WorldSaveActors.Contains(SavedID))
         {
             AActor* RestoredActor = WorldSaveActors[SavedID];
-        
+
             InventorySlots[i] = RestoredActor;
-        
+
             if (RestoredActor->Implements<UPickable>())
             {
                 const TScriptInterface<IPickable> Pickable = RestoredActor;
-            
+
                 Pickable->Execute_OnEnteredInventory(Pickable.GetObject(), GetOwner());
 
                 if (i != EquippedSlotIndex)
@@ -288,18 +324,18 @@ void UInventoryComponent::ReconstructInventory()
 void UInventoryComponent::PerformInteract(const FVector& StartTrace, const FVector& EndTrace, const float RadiusTrace)
 {
     if (IsInventoryOpen()) return;
-    
+
     TArray<AActor*> ActorsToIgnore;
     ActorsToIgnore.Add(GetOwner());
 
     FHitResult ResultHit;
-    
+
     const bool bHit = UKismetSystemLibrary::SphereTraceSingle(
         GetWorld(),
         StartTrace,
         EndTrace,
         RadiusTrace,
-        UEngineTypes::ConvertToTraceType(ECC_GameTraceChannel5), //item trace
+        UEngineTypes::ConvertToTraceType(ECC_GameTraceChannel5),
         false,
         ActorsToIgnore,
         EDrawDebugTrace::ForDuration,

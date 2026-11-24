@@ -27,7 +27,6 @@ void APistol::BeginPlay()
 	}
 	else
 	{
-		//if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "MISSING! Data asset is nullptr.");
 	}
 }
 
@@ -68,7 +67,6 @@ void APistol::PlayEffects()
 
 void APistol::Fire()
 {
-	//if (!AttributeProvider->RequiresEnergy(PistolData->Stats.EnergyToDecrease)) return;
 
 	if (CurrentAmmo >= 1 && !bIsReloading && bIsFireEnabled)
 	{
@@ -78,11 +76,8 @@ void APistol::Fire()
 
 		if (OnFire.IsBound()) OnFire.Broadcast();
 
-		//AnimatorProvider->Execute_PlayAnimMontage(GetOwner(), PistolData->Montages.PrimaryFireMontage, 1.f, "Default");
-		
 		FVector TraceStart;
 		FRotator CameraRotation;
-		//ControllerProvider->GetEntityController()->GetPlayerViewPoint(TraceStart, CameraRotation);
 
 		const FVector TraceDirection = CameraRotation.Vector();
 		const FVector TraceEnd = TraceStart + TraceDirection * 1000000.f;
@@ -104,22 +99,6 @@ void APistol::Fire()
 		
 		if (!bHit) return;
 		
-		/*if (const TScriptInterface<IHitInterface> HitInterface = HitResult.GetActor())
-		{
-			UGameplayStatics::ApplyPointDamage(
-			HitResult.GetActor(),
-			PistolData->PistolTypeStats.BaseDamage,
-			TraceDirection,
-			HitResult,
-			/*ControllerProvider->GetEntityController()#1# nullptr,
-			GetOwner(),
-			nullptr
-			);
-
-			const FDamageEvent DamageEvent(UDamageType::StaticClass());
-			HitInterface->GetHit(GetOwner(), HitResult.ImpactPoint, DamageEvent, PistolData->PistolTypeStats.BaseDamage);
-		}*/
-
 		if (GetGameInstance()->Implements<UEffectManagerProvider>())
 		{
 			IEffectManagerProvider::Execute_PlayGameplayEffect(GetGameInstance(), CurrentDamageTag, HitResult.ImpactPoint);
@@ -140,7 +119,6 @@ void APistol::Reload()
 
 	bIsReloading = true;
 	
-	//AnimatorProvider->Execute_PlayAnimMontage(GetOwner(), PistolData->Montages.ReloadMontage, 1.f, "Default");
 	SetTimer(TimerHandle_Reload, 1.f, &APistol::FinishReload);
 }
 

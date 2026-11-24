@@ -9,8 +9,8 @@
 namespace Spectral
 {
 	constexpr float UpdateInterval = 0.05f;
-	constexpr float WarningTime = 1.5f;   // Parpadeo antes de desaparecer.
-	constexpr float LeaveGrace = 3.f;     // Tras bajarse: 1.5 s fijo + 1.5 s parpadeando.
+	constexpr float WarningTime = 1.5f;
+	constexpr float LeaveGrace = 3.f;
 	constexpr float FlickerPeriod = 0.25f;
 	constexpr float TouchMargin = 30.f;
 }
@@ -23,7 +23,6 @@ void USpectralObjectsSubsystem::AddSpectralObject(AActor* Actor)
 		const TScriptInterface<ISpectral> SpectralInterface = Actor;
 		SpectralObjects.AddUnique(SpectralInterface);
 
-		// Stencil 4 = "SP Item" en M_BloodSenseV2: así el post process los ilumina durante el pulso.
 		Actor->ForEachComponent<UPrimitiveComponent>(false, [](UPrimitiveComponent* Primitive)
 		{
 			Primitive->SetRenderCustomDepth(true);
@@ -65,7 +64,6 @@ void USpectralObjectsSubsystem::UpdateRevealedObjects()
 			continue;
 		}
 
-		// Nunca se le va el piso al jugador: el tiempo recién corre cuando se baja.
 		if (IsPlayerUsing(Actor))
 		{
 			It->Value = FMath::Max(It->Value, Now + Spectral::LeaveGrace);
@@ -79,7 +77,6 @@ void USpectralObjectsSubsystem::UpdateRevealedObjects()
 		}
 		else if (Remaining <= Spectral::WarningTime)
 		{
-			// Parpadeo de aviso: solo la visibilidad, la colisión sigue hasta el final.
 			Actor->SetActorHiddenInGame(FMath::Fmod(Remaining, Spectral::FlickerPeriod) < Spectral::FlickerPeriod * 0.5);
 		}
 		else
@@ -99,7 +96,6 @@ bool USpectralObjectsSubsystem::IsPlayerUsing(const AActor* Actor) const
 	const ACharacter* Player = UGameplayStatics::GetPlayerCharacter(this, 0);
 	if (!Player) return false;
 
-	// Tocando el bounds con la cápsula cubre parado encima, colgado o trepando.
 	const float Reach = Player->GetCapsuleComponent()->GetScaledCapsuleHalfHeight() + Spectral::TouchMargin;
 	return Actor->GetComponentsBoundingBox(true).ComputeSquaredDistanceToPoint(Player->GetActorLocation()) <= FMath::Square(Reach);
 }

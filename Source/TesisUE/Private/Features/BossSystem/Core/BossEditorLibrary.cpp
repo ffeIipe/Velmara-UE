@@ -24,7 +24,6 @@ UGeometryCollection* UBossEditorLibrary::FractureMeshToGeometryCollection(UStati
 	UGeometryCollection* Collection = NewObject<UGeometryCollection>(Package, FName(*FPackageName::GetLongPackageAssetName(AssetPath)),
 		RF_Public | RF_Standalone | RF_Transactional);
 
-	// Igual que el botón "New" de Fracture Mode.
 	TArray<TObjectPtr<UMaterialInterface>> Materials;
 	for (const FStaticMaterial& StaticMaterial : SourceMesh->GetStaticMaterials())
 	{
@@ -36,7 +35,6 @@ UGeometryCollection* UBossEditorLibrary::FractureMeshToGeometryCollection(UStati
 
 	FGeometryCollection& GeometryCollection = *Collection->GetGeometryCollection();
 
-	// Igual que "Uniform Voronoi": un sitio al azar por pieza dentro del bounding box. Sin separar islas, así no salen más de NumPieces.
 	const FBox Bounds = SourceMesh->GetBoundingBox();
 	FRandomStream Random(RandomSeed);
 	TArray<FVector> Sites;
@@ -52,7 +50,6 @@ UGeometryCollection* UBossEditorLibrary::FractureMeshToGeometryCollection(UStati
 	FFractureEngineFracturing::VoronoiFracture(GeometryCollection, Selection, Sites, FTransform::Identity, RandomSeed,
 		1.f, false, 0.f, 0.f, 0.1f, 0.5f, 2.f, 4, 10.f, false, 50.f);
 
-	// Lo que Fracture Mode hace al terminar el corte. Sin convex hulls ni volúmenes, Chaos no tiene nada que simular.
 	FGeometryCollectionClusteringUtility::UpdateHierarchyLevelOfChildren(&GeometryCollection, -1);
 	::GeometryCollection::GenerateTemporaryGuids(&GeometryCollection, 0, true);
 	Collection->UpdateGeometryDependentProperties();

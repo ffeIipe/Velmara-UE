@@ -4,10 +4,6 @@
 #include "Animation/AnimInstance.h"
 #include "BossAnimInstance.generated.h"
 
-/*
- * Base opcional para el AnimBP del boss. BossAnimationBluepint del pack castea a BossCharacter (el boss de demo),
- * así que con ABossEnemy su Speed queda en 0: reparentalo a esta clase y usá GroundSpeed en el Blendspace.
- */
 UCLASS()
 class TESISUE_API UBossAnimInstance : public UAnimInstance
 {

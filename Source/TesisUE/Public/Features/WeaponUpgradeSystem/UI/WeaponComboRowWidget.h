@@ -10,14 +10,11 @@ class UButton;
 class UImage;
 class USizeBox;
 class UTextBlock;
+class UTexture2D;
 class UWeaponData;
 class UWeaponUpgradeComponent;
 class UWeaponUpgradeMenuWidget;
 
-/*
- * Fila del Altar de Sangre: un combo desbloqueable del arma (nombre, inputs, golpes, requisitos) y su botón de compra.
- * Construye su layout por código.
- */
 UCLASS()
 class TESISUE_API UWeaponComboRowWidget : public UUserWidget
 {
@@ -28,14 +25,32 @@ public:
 
 	void Refresh();
 
+	FGameplayTag GetUnlockTag() const { return UnlockTag; }
+
+	UWeaponData* GetWeapon() const { return Weapon.Get(); }
+
+	UWidget* GetFocusTarget() const;
+
 protected:
 	virtual void NativeOnInitialized() override;
+	virtual void NativeOnAddedToFocusPath(const FFocusEvent& InFocusEvent) override;
+	virtual void NativeOnRemovedFromFocusPath(const FFocusEvent& InFocusEvent) override;
 
 private:
 	void BuildLayout();
 
+	void RefreshVisualState();
+
+	UTexture2D* ResolveFallbackIcon() const;
+
 	UFUNCTION()
 	void HandleUnlockClicked();
+
+	UFUNCTION()
+	void HandleRowHovered();
+
+	UFUNCTION()
+	void HandleRowUnhovered();
 
 	TWeakObjectPtr<UWeaponUpgradeComponent> WeaponUpgrades;
 
@@ -45,8 +60,28 @@ private:
 
 	FGameplayTag UnlockTag;
 
+	bool bIsRowHovered = false;
+
+	bool bIsRowFocused = false;
+
+	bool bIsUnlocked = false;
+
+	bool bIsAvailable = false;
+
 	UPROPERTY(Transient)
-	TObjectPtr<UBorder> Background;
+	TObjectPtr<UButton> RowButton;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UBorder> FillBorder;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UImage> HoverWashImage;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UImage> FrameBorderImage;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UImage> FocusStarImage;
 
 	UPROPERTY(Transient)
 	TObjectPtr<USizeBox> IconBox;
@@ -58,23 +93,20 @@ private:
 	TObjectPtr<UTextBlock> NameText;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UTextBlock> StateText;
-
-	UPROPERTY(Transient)
 	TObjectPtr<UTextBlock> InputText;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UTextBlock> DescriptionText;
+	TObjectPtr<UImage> StateDiamondImage;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UTextBlock> RequirementsText;
+	TObjectPtr<UTextBlock> StateText;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UButton> UnlockButton;
+	TObjectPtr<UImage> CostBloodIcon;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UTextBlock> ButtonLabelText;
+	TObjectPtr<UTextBlock> CostText;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UTextBlock> ButtonCostText;
+	TObjectPtr<UImage> ChevronImage;
 };

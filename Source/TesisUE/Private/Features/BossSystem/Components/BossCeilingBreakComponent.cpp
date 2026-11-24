@@ -9,6 +9,7 @@
 #include "Features/BossSystem/Actors/BossLightShaft.h"
 #include "Features/BossSystem/Components/BossCombatComponent.h"
 #include "Features/BossSystem/Components/BossSummonComponent.h"
+#include "Features/BossSystem/Core/BossEnemy.h"
 #include "Features/BossSystem/Core/BossSystemLibrary.h"
 #include "GenericPool/Core/ActorPoolSubsystem.h"
 #include "Kismet/GameplayStatics.h"
@@ -28,18 +29,27 @@ UBossCeilingBreakComponent::UBossCeilingBreakComponent()
 
 	LightShaftClass = ABossLightShaft::StaticClass();
 
-	FBossCeilingStage Stage;
-	Stage.HealthThreshold = 0.75f;
-	Stage.ShaftCount = 2;
-	Stages.Add(Stage);
+	FBossCeilingStage Stage1To2;
+	Stage1To2.HealthThreshold = 0.66f;
+	Stage1To2.ShaftCount = 3;
+	Stage1To2.bOpenShaftOnTarget = true;
+	Stage1To2.bSummonMinions = true;
+	Stage1To2.MinionCountOverride = 3;
+	Stage1To2.bFullArenaCollapse = false;
+	Stage1To2.bActivateSolarShield = false;
+	Stage1To2.SolarShieldAmountOverride = 0.f;
+	Stages.Add(Stage1To2);
 
-	Stage.HealthThreshold = 0.5f;
-	Stage.ShaftCount = 3;
-	Stages.Add(Stage);
-
-	Stage.HealthThreshold = 0.25f;
-	Stage.ShaftCount = 4;
-	Stages.Add(Stage);
+	FBossCeilingStage Stage2To3;
+	Stage2To3.HealthThreshold = 0.33f;
+	Stage2To3.ShaftCount = 0;
+	Stage2To3.bOpenShaftOnTarget = false;
+	Stage2To3.bSummonMinions = true;
+	Stage2To3.MinionCountOverride = 4;
+	Stage2To3.bFullArenaCollapse = true;
+	Stage2To3.bActivateSolarShield = true;
+	Stage2To3.SolarShieldAmountOverride = 0.f;
+	Stages.Add(Stage2To3);
 
 	static ConstructorHelpers::FClassFinder<UCameraShakeBase> ShakeFinder(TEXT("/Game/Blueprints/Cameras/CameraShakes/CS_Rock"));
 	if (ShakeFinder.Succeeded())
@@ -77,6 +87,27 @@ void UBossCeilingBreakComponent::BeginPlay()
 			Pool->InitializePool(LightShaftClass, ShaftPoolPrewarm - Pool->GetInactiveCount(LightShaftClass));
 		}
 	}
+}
+
+void UBossCeilingBreakComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (UWorld* World = GetWorld())
+	{
+		FTimerManager& TimerManager = World->GetTimerManager();
+		for (FTimerHandle& Handle : ShaftTimers)
+		{
+			TimerManager.ClearTimer(Handle);
+		}
+		for (FTimerHandle& Handle : CollapseTimers)
+		{
+			TimerManager.ClearTimer(Handle);
+		}
+	}
+
+	ShaftTimers.Reset();
+	CollapseTimers.Reset();
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void UBossCeilingBreakComponent::EvaluateHealth(const float HealthPercent)
@@ -135,7 +166,6 @@ void UBossCeilingBreakComponent::HandleBreakFinished(const bool bInterrupted)
 {
 	bExecutingStage = false;
 
-	// Si se cortó antes del golpe, la etapa vuelve a la cola.
 	if (!bStageEventFired && !bBossDead && Stages.IsValidIndex(ExecutingStageIndex))
 	{
 		PendingStages.Insert(ExecutingStageIndex, 0);
@@ -148,8 +178,11 @@ void UBossCeilingBreakComponent::BreakCeilingNow(const int32 StageIndex, AActor*
 {
 	if (!Stages.IsValidIndex(StageIndex)) return;
 
+	AActor* Owner = GetOwner();
+	if (!Owner) return;
+
 	const FBossCeilingStage Stage = Stages[StageIndex];
-	const FVector BossLocation = GetOwner()->GetActorLocation();
+	const FVector BossLocation = Owner->GetActorLocation();
 
 	if (BreakCameraShake)
 	{
@@ -168,40 +201,172 @@ void UBossCeilingBreakComponent::BreakCeilingNow(const int32 StageIndex, AActor*
 
 	ApplyShockwave();
 
-	TArray<FShaftRequest> Requests;
-	BuildShaftRequests(StageIndex, Target, Requests);
-
-	for (int32 Index = 0; Index < Requests.Num(); ++Index)
+	if (Stage.bFullArenaCollapse)
 	{
-		const float Delay = ShaftStagger * Index;
-		if (Delay <= 0.f)
-		{
-			OpenShaft(Requests[Index]);
-			continue;
-		}
+		ExecuteFullArenaCollapse();
+	}
+	else
+	{
+		TArray<FShaftRequest> Requests;
+		BuildShaftRequests(StageIndex, Target, Requests);
 
-		FTimerHandle Handle;
-		GetWorld()->GetTimerManager().SetTimer(Handle,
-			FTimerDelegate::CreateUObject(this, &UBossCeilingBreakComponent::OpenShaft, Requests[Index]), Delay, false);
-		ShaftTimers.Add(Handle);
+		for (int32 Index = 0; Index < Requests.Num(); ++Index)
+		{
+			const float Delay = ShaftStagger * Index;
+			if (Delay <= 0.f)
+			{
+				OpenShaft(Requests[Index]);
+				continue;
+			}
+
+			FTimerHandle Handle;
+			GetWorld()->GetTimerManager().SetTimer(Handle,
+				FTimerDelegate::CreateUObject(this, &UBossCeilingBreakComponent::OpenShaft, Requests[Index]), Delay, false);
+			ShaftTimers.Add(Handle);
+		}
 	}
 
 	CompletedStages = FMath::Max(CompletedStages, StageIndex + 1);
 
-	if (UBossCombatComponent* Combat = GetOwner()->FindComponentByClass<UBossCombatComponent>())
+	if (UBossCombatComponent* Combat = Owner->FindComponentByClass<UBossCombatComponent>())
 	{
 		Combat->SetStage(CompletedStages);
 	}
 
-	if (Stage.bSummonMinions)
+	UBossSummonComponent* Summon = Owner->FindComponentByClass<UBossSummonComponent>();
+	if (Summon)
 	{
-		if (UBossSummonComponent* Summon = GetOwner()->FindComponentByClass<UBossSummonComponent>())
+		Summon->SetCurrentStage(CompletedStages);
+	}
+
+	if (Stage.bSummonMinions && Summon)
+	{
+		Summon->SpawnMinionsNow(Target, Stage.MinionCountOverride);
+	}
+
+	if (Stage.bActivateSolarShield)
+	{
+		if (ABossEnemy* Boss = Cast<ABossEnemy>(Owner))
 		{
-			Summon->SpawnMinionsNow(Target, Stage.MinionCountOverride);
+			Boss->ActivateSolarShield(Stage.SolarShieldAmountOverride);
 		}
 	}
 
 	OnStageChanged.Broadcast(CompletedStages);
+}
+
+void UBossCeilingBreakComponent::ExecuteFullArenaCollapse()
+{
+	AActor* Owner = GetOwner();
+	UWorld* World = GetWorld();
+
+	for (AActor* CeilingPiece : ExtraCeilingPiecesToHideOnFullCollapse)
+	{
+		if (IsValid(CeilingPiece))
+		{
+			CeilingPiece->SetActorHiddenInGame(true);
+			CeilingPiece->SetActorEnableCollision(false);
+		}
+	}
+
+	if (bClosePreviousShaftsOnFullCollapse)
+	{
+		if (World)
+		{
+			FTimerManager& TimerManager = World->GetTimerManager();
+			for (FTimerHandle& Handle : ShaftTimers)
+			{
+				TimerManager.ClearTimer(Handle);
+			}
+		}
+		ShaftTimers.Reset();
+		CloseAllShafts();
+	}
+
+	int32 CollapseIndex = 0;
+	for (ABossCeilingBreakPoint* Point : BreakPoints)
+	{
+		if (!IsValid(Point) || Point->IsBroken()) continue;
+
+		const float Delay = FullCollapseBreakPointStagger * CollapseIndex;
+		++CollapseIndex;
+
+		if (Delay <= 0.f || !World)
+		{
+			Point->Break();
+			continue;
+		}
+
+		FTimerHandle Handle;
+		const TWeakObjectPtr<ABossCeilingBreakPoint> WeakPoint = Point;
+		World->GetTimerManager().SetTimer(Handle,
+			FTimerDelegate::CreateUObject(this, &UBossCeilingBreakComponent::BreakPointDeferred, WeakPoint), Delay, false);
+		CollapseTimers.Add(Handle);
+	}
+
+	const FVector Center = ResolveArenaCenter();
+	float FloorZ = Center.Z;
+
+	if (World)
+	{
+		FCollisionQueryParams Params(SCENE_QUERY_STAT(BossFullCollapseTrace), false, Owner);
+		for (const ABossCeilingBreakPoint* Point : BreakPoints)
+		{
+			if (IsValid(Point))
+			{
+				Params.AddIgnoredActor(Point);
+			}
+		}
+
+		FHitResult FloorHit;
+		const FVector TraceStart(Center.X, Center.Y, Center.Z + 200.f);
+		const FVector TraceEnd(Center.X, Center.Y, Center.Z - MaxCeilingTraceHeight);
+		if (World->LineTraceSingleByChannel(FloorHit, TraceStart, TraceEnd, ECC_WorldStatic, Params))
+		{
+			FloorZ = FloorHit.ImpactPoint.Z;
+		}
+	}
+
+	const FVector Floor(Center.X, Center.Y, FloorZ);
+	const FVector Top(Center.X, Center.Y, FloorZ + OpenSkyShaftHeight);
+	const float Radius = FullCollapseShaftRadius > 0.f ? FullCollapseShaftRadius : ArenaRadius;
+
+	if (LightShaftClass && World)
+	{
+		AActor* Spawned = nullptr;
+		if (UActorPoolSubsystem* Pool = World->GetSubsystem<UActorPoolSubsystem>())
+		{
+			Spawned = Pool->GetActorFromPool(LightShaftClass, FTransform(Top));
+		}
+
+		ABossLightShaft* Shaft = Cast<ABossLightShaft>(Spawned);
+		if (!Shaft)
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			Shaft = World->SpawnActor<ABossLightShaft>(LightShaftClass, Top, FRotator::ZeroRotator, SpawnParams);
+		}
+
+		if (Shaft)
+		{
+			Shaft->OpenFullArenaShaft(Top, Floor, Radius, Owner, GetShaftDamageParams());
+			ActiveShafts.RemoveAll([](const TWeakObjectPtr<ABossLightShaft>& Existing) { return !Existing.IsValid() || Existing->IsHidden(); });
+			ActiveShafts.Add(Shaft);
+		}
+	}
+
+	OnFullArenaCollapsed.Broadcast();
+}
+
+void UBossCeilingBreakComponent::BreakPointDeferred(const TWeakObjectPtr<ABossCeilingBreakPoint> Point)
+{
+	if (ABossCeilingBreakPoint* BreakPoint = Point.Get())
+	{
+		if (!BreakPoint->IsBroken())
+		{
+			BreakPoint->Break();
+		}
+	}
 }
 
 void UBossCeilingBreakComponent::ApplyShockwave() const
@@ -259,7 +424,6 @@ void UBossCeilingBreakComponent::BuildShaftRequests(const int32 StageIndex, cons
 	const FBossCeilingStage& Stage = Stages[StageIndex];
 	int32 Remaining = Stage.ShaftCount;
 
-	// 1) Sobre el jugador: el aviso le da tiempo a salir.
 	if (Stage.bOpenShaftOnTarget && Target && Remaining > 0)
 	{
 		FShaftRequest Request;
@@ -270,7 +434,6 @@ void UBossCeilingBreakComponent::BuildShaftRequests(const int32 StageIndex, cons
 		}
 	}
 
-	// 2) Puntos del nivel: primero los de esta etapa, después los de cualquier etapa.
 	for (int32 Pass = 0; Pass < 2 && Remaining > 0; ++Pass)
 	{
 		TArray<ABossCeilingBreakPoint*> Candidates;
@@ -309,7 +472,6 @@ void UBossCeilingBreakComponent::BuildShaftRequests(const int32 StageIndex, cons
 		}
 	}
 
-	// 3) Completa con huecos aleatorios dentro de la arena.
 	for (int32 Attempt = 0; Remaining > 0 && Attempt < Stage.ShaftCount * 4; ++Attempt)
 	{
 		FVector GroundPoint;
@@ -429,14 +591,45 @@ bool UBossCeilingBreakComponent::IsFarFromExisting(const FVector& Point, const T
 
 FBossDamageParams UBossCeilingBreakComponent::GetShaftDamageParams() const
 {
-	if (const UBossCombatComponent* Combat = GetOwner()->FindComponentByClass<UBossCombatComponent>())
+	if (const AActor* Owner = GetOwner())
 	{
-		return Combat->DamageParams;
+		if (const UBossCombatComponent* Combat = Owner->FindComponentByClass<UBossCombatComponent>())
+		{
+			return Combat->DamageParams;
+		}
 	}
 
 	FBossDamageParams Params;
 	Params.SetByCallerTag = FGameplayTag::RequestGameplayTag(FName("Damage"), false);
 	return Params;
+}
+
+FVector UBossCeilingBreakComponent::ResolveArenaCenter() const
+{
+	if (IsValid(ArenaCenter))
+	{
+		return ArenaCenter->GetActorLocation();
+	}
+
+	FVector2D SumXY = FVector2D::ZeroVector;
+	int32 ValidCount = 0;
+
+	for (const ABossCeilingBreakPoint* Point : BreakPoints)
+	{
+		if (!IsValid(Point)) continue;
+
+		const FVector Location = Point->GetActorLocation();
+		SumXY.X += Location.X;
+		SumXY.Y += Location.Y;
+		++ValidCount;
+	}
+
+	if (ValidCount > 0)
+	{
+		return FVector(SumXY.X / ValidCount, SumXY.Y / ValidCount, SpawnOrigin.Z);
+	}
+
+	return SpawnOrigin;
 }
 
 FVector UBossCeilingBreakComponent::GetArenaOrigin() const
@@ -461,14 +654,33 @@ void UBossCeilingBreakComponent::OnBossDied()
 	bBossDead = true;
 	PendingStages.Reset();
 
-	if (bCloseShaftsOnBossDeath)
+	if (UWorld* World = GetWorld())
 	{
-		for (FTimerHandle& Handle : ShaftTimers)
+		FTimerManager& TimerManager = World->GetTimerManager();
+		for (FTimerHandle& Handle : CollapseTimers)
 		{
-			GetWorld()->GetTimerManager().ClearTimer(Handle);
+			TimerManager.ClearTimer(Handle);
 		}
-		ShaftTimers.Reset();
+		CollapseTimers.Reset();
 
-		CloseAllShafts();
+		if (bCloseShaftsOnBossDeath)
+		{
+			for (FTimerHandle& Handle : ShaftTimers)
+			{
+				TimerManager.ClearTimer(Handle);
+			}
+			ShaftTimers.Reset();
+
+			CloseAllShafts();
+		}
+	}
+	else
+	{
+		CollapseTimers.Reset();
+		if (bCloseShaftsOnBossDeath)
+		{
+			ShaftTimers.Reset();
+			CloseAllShafts();
+		}
 	}
 }

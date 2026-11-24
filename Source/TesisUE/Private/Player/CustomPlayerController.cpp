@@ -3,23 +3,33 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemInterface.h"
+#include "NavigationSystem.h"
+#include "TimerManager.h"
+#include "Blueprint/UserWidget.h"
+#include "Components/CapsuleComponent.h"
+#include "DataAssets/InputData.h"
+#include "Engine/World.h"
 #include "Entities/Entity.h"
-#include "GAS/VelmaraAttributeSet.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
-#include "GenericTeamAgentInterface.h"
-#include "Blueprint/UserWidget.h"
-#include "DataAssets/InputData.h"
+#include "Features/BossSystem/Subsystems/SunlightExposureSubsystem.h"
 #include "Features/TotemSystem/Core/TotemChargeComponent.h"
 #include "GAS/VelmaraAbilityInputID.h"
+#include "GAS/VelmaraAttributeSet.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "GenericTeamAgentInterface.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundMix.h"
 
 #include "HUD/PlayerMainHUD.h"
+#include "CommonInputSubsystem.h"
+#include "SceneEvents/VelmaraGameInstance.h"
+#include "UI/Layout/VelmaraPrimaryGameLayout.h"
+#include "UI/Widgets/Menus/VelmaraPauseMenuWidget.h"
 
 namespace
 {
-    // AEntity::IsAlive() no sirve para enemigos (State.Dead nunca se aplica). Sin AttributeSet, Health daría 0: no cuenta como muerto.
     bool IsEntityDead(const AEntity* Entity)
     {
         const UAbilitySystemComponent* ASC = Entity ? Entity->GetAbilitySystemComponent() : nullptr;
@@ -54,10 +64,18 @@ bool ACustomPlayerController::PerformPossession(APawn* NewPawn)
         OriginalBody = PreviousPawn;
     }
 
-    // Se guarda antes de Possess: al poseer, el AIController del enemigo queda suelto.
+    const bool bReturningToOriginalBody = (NewPawn == OriginalBody);
+    const bool bWasPossessingHost = (PreviousPawn && PreviousPawn != OriginalBody) || bOriginalBodyProtected;
+    APawn* ReleasedHost = (PreviousPawn && PreviousPawn != OriginalBody) ? PreviousPawn : nullptr;
+
     AController* NewPawnPreviousController = NewPawn->GetController();
     const AEntity* NewEntity = Cast<AEntity>(NewPawn);
     const FGenericTeamId NewPawnTeam = NewEntity ? NewEntity->GetTeamId() : FGenericTeamId::NoTeam;
+
+    if (bReturningToOriginalBody && bWasPossessingHost)
+    {
+        RestoreOriginalBody(ReleasedHost);
+    }
 
     UnPossess();
 
@@ -68,21 +86,32 @@ bool ACustomPlayerController::PerformPossession(APawn* NewPawn)
         NewASC->InitAbilityActorInfo(this, NewPawn);
     }
 
-    if (PreviousPawn && PreviousPawn != OriginalBody)
+    if (ReleasedHost)
     {
-        ReleaseHost(PreviousPawn);
+        ReleaseHost(ReleasedHost);
     }
 
-    if (NewPawn != OriginalBody)
+    if (!bReturningToOriginalBody)
     {
+        GetWorldTimerManager().ClearTimer(EmergeVerifyTimer);
+        ProtectOriginalBody();
         HostAIController = NewPawnPreviousController;
         HostTeamId = NewPawnTeam;
+        bEndingPossession = false;
+        LastKnownHostLocation = NewPawn->GetActorLocation();
+        bHasLastKnownHostLocation = true;
         GetWorldTimerManager().SetTimer(PossessionTickTimer, this, &ACustomPlayerController::TickPossession, PossessionTickInterval, true);
+        OnPossessionStarted.Broadcast(NewPawn);
     }
     else
     {
         GetWorldTimerManager().ClearTimer(PossessionTickTimer);
         bEndingPossession = false;
+        bHasLastKnownHostLocation = false;
+        if (bWasPossessingHost)
+        {
+            OnPossessionEnded.Broadcast(ReleasedHost, PostPossessionSunGraceDuration);
+        }
     }
 
     return true;
@@ -96,25 +125,22 @@ void ACustomPlayerController::ReleaseHost(APawn* Host)
     }
 
     AEntity* HostEntity = Cast<AEntity>(Host);
-    if (!HostEntity) return; // Tótems: no tienen IA ni equipo que restaurar.
+    if (!HostEntity) return;
 
     HostEntity->TeamId = HostTeamId;
 
-    // Se destruye el AIController viejo: re-poseer con él no reinicia el Behavior Tree de forma confiable.
     if (AController* OldController = HostAIController.Get())
     {
         OldController->Destroy();
     }
     HostAIController = nullptr;
 
-    // Murió poseído: CBP_Enemy.HandleControllerDeactivation espera un AIController para apagar la IA y hacer ragdoll.
     if (IsEntityDead(HostEntity))
     {
         HostEntity->SpawnDefaultController();
         return;
     }
 
-    // Aturdido: sin controller no hace nada hasta que vuelve la IA.
     TWeakObjectPtr<AEntity> WeakHost = HostEntity;
     FTimerHandle StunTimer;
     GetWorldTimerManager().SetTimer(StunTimer, [WeakHost]()
@@ -131,16 +157,17 @@ void ACustomPlayerController::TickPossession()
 {
     if (!IsPossessing()) return;
 
-    // El cuerpo poseído desapareció (pool/destroy): volver directo, no hay a quién mandarle el evento.
     if (!GetPawn())
     {
         if (OriginalBody) PerformPossession(OriginalBody);
         return;
     }
 
+    LastKnownHostLocation = GetPawn()->GetActorLocation();
+    bHasLastKnownHostLocation = true;
+
     if (bEndingPossession)
     {
-        // El evento no sacó al jugador (p. ej. el cuerpo murió y bloquea habilidades): volver sin pasar por GA_Possess.
         PerformPossession(OriginalBody);
         return;
     }
@@ -149,7 +176,7 @@ void ACustomPlayerController::TickPossession()
     UAbilitySystemComponent* BodyASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OriginalBody);
     bool bShouldEnd = IsEntityDead(Host);
 
-    if (BodyASC && Host) // Los tótems no consumen sangre.
+    if (BodyASC && Host)
     {
         const FGameplayAttribute EnergyAttribute = UVelmaraAttributeSet::GetEnergyAttribute();
         const float NewEnergy = FMath::Max(0.f, BodyASC->GetNumericAttribute(EnergyAttribute) - PossessionEnergyDrainPerSecond * PossessionTickInterval);
@@ -160,14 +187,418 @@ void ACustomPlayerController::TickPossession()
     if (bShouldEnd)
     {
         bEndingPossession = true;
-        // GA_Possess del cuerpo poseído hace la vuelta completa (interfaz, tags, widget).
         UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(GetPawn(), FGameplayTag::RequestGameplayTag(TEXT("Event.Posses.Return")), FGameplayEventData());
     }
 }
 
 bool ACustomPlayerController::IsPossessing() const
 {
-    return OriginalBody != GetPawn();
+    return OriginalBody != nullptr && OriginalBody != GetPawn();
+}
+
+bool ACustomPlayerController::IsOriginalBodyProtected() const
+{
+    return bOriginalBodyProtected && IsValid(OriginalBody);
+}
+
+bool ACustomPlayerController::IsPossessedHost(const AActor* Candidate) const
+{
+    return IsPossessing() && Candidate != nullptr && Candidate == GetPawn() && Candidate != OriginalBody;
+}
+
+void ACustomPlayerController::RestoreOriginalBodyEnergy(const float Amount)
+{
+    if (Amount <= 0.f || !OriginalBody) return;
+
+    UAbilitySystemComponent* BodyASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OriginalBody);
+    if (!BodyASC) return;
+
+    const FGameplayAttribute EnergyAttribute = UVelmaraAttributeSet::GetEnergyAttribute();
+    const FGameplayAttribute MaxEnergyAttribute = UVelmaraAttributeSet::GetMaxEnergyAttribute();
+    if (!BodyASC->HasAttributeSetForAttribute(EnergyAttribute)) return;
+
+    const float CurrentEnergy = BodyASC->GetNumericAttribute(EnergyAttribute);
+    float NewEnergy = FMath::Max(0.f, CurrentEnergy + Amount);
+
+    if (BodyASC->HasAttributeSetForAttribute(MaxEnergyAttribute))
+    {
+        const float MaxEnergy = BodyASC->GetNumericAttribute(MaxEnergyAttribute);
+        if (MaxEnergy > 0.f)
+        {
+            NewEnergy = FMath::Clamp(NewEnergy, 0.f, MaxEnergy);
+        }
+    }
+
+    BodyASC->SetNumericAttributeBase(EnergyAttribute, NewEnergy);
+
+    if (IsPossessing())
+    {
+        APawn* CurrentHost = GetPawn();
+        if (CurrentHost && CurrentHost != OriginalBody)
+        {
+            if (UAbilitySystemComponent* HostASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(CurrentHost))
+            {
+                if (HostASC != BodyASC && HostASC->HasAttributeSetForAttribute(EnergyAttribute))
+                {
+                    float HostEnergy = NewEnergy;
+                    if (HostASC->HasAttributeSetForAttribute(MaxEnergyAttribute))
+                    {
+                        const float HostMaxEnergy = HostASC->GetNumericAttribute(MaxEnergyAttribute);
+                        if (HostMaxEnergy > 0.f)
+                        {
+                            HostEnergy = FMath::Clamp(HostEnergy, 0.f, HostMaxEnergy);
+                        }
+                    }
+                    HostASC->SetNumericAttributeBase(EnergyAttribute, HostEnergy);
+                }
+            }
+        }
+    }
+}
+
+void ACustomPlayerController::ProtectOriginalBody()
+{
+    if (bOriginalBodyProtected || !OriginalBody) return;
+
+    OriginalBody->SetActorHiddenInGame(true);
+    OriginalBody->SetActorEnableCollision(false);
+    OriginalBody->SetCanBeDamaged(false);
+
+    if (ACharacter* OriginalCharacter = Cast<ACharacter>(OriginalBody))
+    {
+        if (UCharacterMovementComponent* Movement = OriginalCharacter->GetCharacterMovement())
+        {
+            Movement->StopMovementImmediately();
+            Movement->SetMovementMode(MOVE_None);
+        }
+    }
+
+    bOriginalBodyProtected = true;
+
+    if (UWorld* World = GetWorld())
+    {
+        if (USunlightExposureSubsystem* SunSubsystem = World->GetSubsystem<USunlightExposureSubsystem>())
+        {
+            SunSubsystem->SetSunProtection(OriginalBody, true);
+        }
+    }
+}
+
+void ACustomPlayerController::RestoreOriginalBody(APawn* ReferenceHost)
+{
+    if (!OriginalBody) return;
+
+    FVector SafeLocation = OriginalBody->GetActorLocation();
+    FRotator SafeRotation = FRotator(0.f, GetControlRotation().Yaw, 0.f);
+    FindSafeEmergeLocation(ReferenceHost, SafeLocation, SafeRotation);
+
+    if (UWorld* World = GetWorld())
+    {
+        if (USunlightExposureSubsystem* SunSubsystem = World->GetSubsystem<USunlightExposureSubsystem>())
+        {
+            SunSubsystem->SetSunProtection(OriginalBody, false);
+            SunSubsystem->GrantSunGrace(OriginalBody, PostPossessionSunGraceDuration);
+        }
+    }
+
+    OriginalBody->SetActorLocationAndRotation(SafeLocation, SafeRotation, false, nullptr, ETeleportType::TeleportPhysics);
+    OriginalBody->SetActorEnableCollision(true);
+    OriginalBody->SetActorHiddenInGame(false);
+    OriginalBody->SetCanBeDamaged(true);
+
+    if (ACharacter* OriginalCharacter = Cast<ACharacter>(OriginalBody))
+    {
+        if (UCharacterMovementComponent* Movement = OriginalCharacter->GetCharacterMovement())
+        {
+            Movement->SetMovementMode(MOVE_Walking);
+        }
+    }
+
+    bOriginalBodyProtected = false;
+    OriginalBody->TeleportTo(SafeLocation, SafeRotation, false, true);
+
+    LastReleasedHost = ReferenceHost;
+    GetWorldTimerManager().ClearTimer(EmergeVerifyTimer);
+    EmergeVerifyTimer = GetWorldTimerManager().SetTimerForNextTick(this, &ACustomPlayerController::VerifyOriginalBodyEmergeLocation);
+}
+
+bool ACustomPlayerController::FindSafeEmergeLocation(const APawn* ReferenceHost, FVector& OutLocation, FRotator& OutRotation) const
+{
+    if (!OriginalBody) return false;
+
+    UWorld* World = GetWorld();
+    const FRotator ControlRot = GetControlRotation();
+    OutRotation = FRotator(0.f, ControlRot.Yaw, 0.f);
+
+    float CapsuleHalfHeight = 88.f;
+    float CapsuleRadius = 34.f;
+    ECollisionChannel CapsuleChannel = ECC_Pawn;
+    if (const ACharacter* OriginalCharacter = Cast<ACharacter>(OriginalBody))
+    {
+        if (const UCapsuleComponent* Capsule = OriginalCharacter->GetCapsuleComponent())
+        {
+            CapsuleHalfHeight = Capsule->GetScaledCapsuleHalfHeight();
+            CapsuleRadius = Capsule->GetScaledCapsuleRadius();
+            CapsuleChannel = Capsule->GetCollisionObjectType();
+        }
+    }
+
+    FVector HostLocation = OriginalBody->GetActorLocation();
+    if (ReferenceHost)
+    {
+        HostLocation = ReferenceHost->GetActorLocation();
+    }
+    else if (bHasLastKnownHostLocation)
+    {
+        HostLocation = LastKnownHostLocation;
+    }
+
+    float HostHalfHeight = CapsuleHalfHeight;
+    float HostRadius = CapsuleRadius;
+    if (const ACharacter* HostCharacter = Cast<ACharacter>(ReferenceHost))
+    {
+        if (const UCapsuleComponent* HostCapsule = HostCharacter->GetCapsuleComponent())
+        {
+            HostHalfHeight = HostCapsule->GetScaledCapsuleHalfHeight();
+            HostRadius = HostCapsule->GetScaledCapsuleRadius();
+        }
+    }
+
+    const AEntity* HostEntity = Cast<AEntity>(ReferenceHost);
+    const bool bHostDead = !ReferenceHost || (HostEntity && (!HostEntity->IsAlive() || IsEntityDead(HostEntity)));
+    const FVector FallbackLocation(HostLocation.X, HostLocation.Y, HostLocation.Z - HostHalfHeight + CapsuleHalfHeight);
+
+    if (!World)
+    {
+        OutLocation = FallbackLocation;
+        return true;
+    }
+
+    UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(World);
+    const FVector QueryExtent(EmergeSearchRadius, EmergeSearchRadius, 300.f);
+
+    auto AdjustNavPointToCapsuleCenter = [&](const FVector& NavPoint) -> FVector
+    {
+        float FloorZ = NavPoint.Z;
+        FHitResult FloorHit;
+        FCollisionQueryParams FloorParams(SCENE_QUERY_STAT(FindSafeEmergeFloor), false, OriginalBody);
+        if (ReferenceHost)
+        {
+            FloorParams.AddIgnoredActor(ReferenceHost);
+        }
+        const FVector TraceStart = NavPoint + FVector(0.f, 0.f, CapsuleHalfHeight);
+        const FVector TraceEnd = NavPoint - FVector(0.f, 0.f, 50.f);
+        if (World->LineTraceSingleByChannel(FloorHit, TraceStart, TraceEnd, ECC_WorldStatic, FloorParams))
+        {
+            if (FloorHit.ImpactNormal.Z > 0.5f)
+            {
+                FloorZ = FMath::Max(FloorZ, FloorHit.ImpactPoint.Z);
+            }
+        }
+        return FVector(NavPoint.X, NavPoint.Y, FloorZ + CapsuleHalfHeight + 2.f);
+    };
+
+    auto ValidateCandidate = [&](FVector& InOutCandidate) -> bool
+    {
+        if (!OriginalBody->GetActorEnableCollision())
+        {
+            FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(FindSafeEmergeOverlap), false, OriginalBody);
+            if (bHostDead && ReferenceHost)
+            {
+                QueryParams.AddIgnoredActor(ReferenceHost);
+            }
+            const float TestRadius = FMath::Max(CapsuleRadius - 2.f, 10.f);
+            const float TestHalfHeight = FMath::Max(CapsuleHalfHeight - 10.f, 10.f);
+            const FCollisionShape CapsuleShape = FCollisionShape::MakeCapsule(TestRadius, TestHalfHeight);
+            const FVector TestCenter = InOutCandidate + FVector(0.f, 0.f, 5.f);
+            if (World->OverlapBlockingTestByChannel(TestCenter, FQuat::Identity, CapsuleChannel, CapsuleShape, QueryParams))
+            {
+                return false;
+            }
+        }
+
+        if (!World->FindTeleportSpot(OriginalBody, InOutCandidate, OutRotation))
+        {
+            return false;
+        }
+
+        if (!bHostDead && ReferenceHost)
+        {
+            const float MinHorizontalSep = CapsuleRadius + HostRadius + 5.f;
+            const float Dist2DSq = FVector::DistSquared2D(InOutCandidate, HostLocation);
+            const float DistZ = FMath::Abs(InOutCandidate.Z - HostLocation.Z);
+            if (Dist2DSq < FMath::Square(MinHorizontalSep) && DistZ < (CapsuleHalfHeight + HostHalfHeight))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    };
+
+    static constexpr float RingYawOffsets[] = { 180.f, 135.f, -135.f, 90.f, -90.f, 45.f, -45.f, 0.f };
+    TArray<FVector> CandidatePoints;
+    CandidatePoints.Reserve(9);
+
+    for (const float YawOffset : RingYawOffsets)
+    {
+        const FRotator DirRot(0.f, ControlRot.Yaw + YawOffset, 0.f);
+        const FVector Offset = DirRot.Vector() * EmergeOffsetDistance;
+        CandidatePoints.Add(HostLocation + Offset);
+    }
+
+    if (bHostDead)
+    {
+        CandidatePoints.Add(HostLocation);
+    }
+
+    for (const FVector& RawCandidate : CandidatePoints)
+    {
+        FVector CandidateLoc;
+        if (NavSys)
+        {
+            FNavLocation ProjectedNav;
+            if (!NavSys->ProjectPointToNavigation(RawCandidate, ProjectedNav, QueryExtent))
+            {
+                continue;
+            }
+            CandidateLoc = AdjustNavPointToCapsuleCenter(ProjectedNav.Location);
+        }
+        else
+        {
+            CandidateLoc = FVector(RawCandidate.X, RawCandidate.Y, FallbackLocation.Z);
+        }
+
+        if (ValidateCandidate(CandidateLoc))
+        {
+            OutLocation = CandidateLoc;
+            return true;
+        }
+    }
+
+    if (NavSys)
+    {
+        for (int32 Attempt = 0; Attempt < 6; ++Attempt)
+        {
+            FNavLocation RandomNav;
+            if (NavSys->GetRandomReachablePointInRadius(HostLocation, EmergeSearchRadius, RandomNav))
+            {
+                FVector CandidateLoc = AdjustNavPointToCapsuleCenter(RandomNav.Location);
+                if (ValidateCandidate(CandidateLoc))
+                {
+                    OutLocation = CandidateLoc;
+                    return true;
+                }
+            }
+        }
+
+        FNavLocation RandomNav;
+        if (NavSys->GetRandomReachablePointInRadius(HostLocation, EmergeSearchRadius, RandomNav))
+        {
+            OutLocation = AdjustNavPointToCapsuleCenter(RandomNav.Location);
+            return true;
+        }
+    }
+
+    OutLocation = FallbackLocation;
+    return true;
+}
+
+void ACustomPlayerController::VerifyOriginalBodyEmergeLocation()
+{
+    APawn* ReleasedHost = LastReleasedHost.Get();
+    LastReleasedHost = nullptr;
+
+    if (!OriginalBody || IsPossessing() || GetPawn() != OriginalBody) return;
+
+    UWorld* World = GetWorld();
+    if (!World) return;
+
+    const FVector CurrentLocation = OriginalBody->GetActorLocation();
+    float CapsuleHalfHeight = 88.f;
+    float CapsuleRadius = 34.f;
+    if (const ACharacter* OriginalCharacter = Cast<ACharacter>(OriginalBody))
+    {
+        if (const UCapsuleComponent* Capsule = OriginalCharacter->GetCapsuleComponent())
+        {
+            CapsuleHalfHeight = Capsule->GetScaledCapsuleHalfHeight();
+            CapsuleRadius = Capsule->GetScaledCapsuleRadius();
+        }
+    }
+
+    bool bOnNavMesh = true;
+    if (UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(World))
+    {
+        FNavLocation NavCheck;
+        const FVector CheckExtent(CapsuleRadius + 20.f, CapsuleRadius + 20.f, CapsuleHalfHeight + 150.f);
+        bOnNavMesh = NavSys->ProjectPointToNavigation(CurrentLocation, NavCheck, CheckExtent);
+    }
+
+    bool bOverlappingLiveHost = false;
+    if (ReleasedHost && ReleasedHost != OriginalBody)
+    {
+        const AEntity* HostEntity = Cast<AEntity>(ReleasedHost);
+        const bool bHostAlive = HostEntity ? (HostEntity->IsAlive() && !IsEntityDead(HostEntity)) : true;
+        if (bHostAlive)
+        {
+            float HostRadius = 34.f;
+            float HostHalfHeight = 88.f;
+            if (const ACharacter* HostCharacter = Cast<ACharacter>(ReleasedHost))
+            {
+                if (const UCapsuleComponent* HostCapsule = HostCharacter->GetCapsuleComponent())
+                {
+                    HostRadius = HostCapsule->GetScaledCapsuleRadius();
+                    HostHalfHeight = HostCapsule->GetScaledCapsuleHalfHeight();
+                }
+            }
+
+            const float MinSep = CapsuleRadius + HostRadius;
+            const float Dist2DSq = FVector::DistSquared2D(CurrentLocation, ReleasedHost->GetActorLocation());
+            const float DistZ = FMath::Abs(CurrentLocation.Z - ReleasedHost->GetActorLocation().Z);
+            bOverlappingLiveHost = (Dist2DSq < FMath::Square(MinSep)) && (DistZ < (CapsuleHalfHeight + HostHalfHeight));
+        }
+    }
+
+    FCollisionQueryParams StaticOverlapParams(SCENE_QUERY_STAT(VerifyOriginalBodyStaticOverlap), false, OriginalBody);
+    TArray<AActor*> AttachedActors;
+    OriginalBody->GetAttachedActors(AttachedActors, true, true);
+    StaticOverlapParams.AddIgnoredActors(AttachedActors);
+    if (ReleasedHost)
+    {
+        StaticOverlapParams.AddIgnoredActor(ReleasedHost);
+    }
+    const float TestRadius = FMath::Max(CapsuleRadius - 2.f, 10.f);
+    const float TestHalfHeight = FMath::Max(CapsuleHalfHeight - 10.f, TestRadius);
+    const FCollisionShape CapsuleShape = FCollisionShape::MakeCapsule(TestRadius, TestHalfHeight);
+    const FVector TestCenter = CurrentLocation + FVector(0.f, 0.f, 5.f);
+    const bool bOverlappingWorldStatic = World->OverlapBlockingTestByChannel(TestCenter, FQuat::Identity, ECC_WorldStatic, CapsuleShape, StaticOverlapParams);
+
+    if (!bOnNavMesh || bOverlappingLiveHost || bOverlappingWorldStatic)
+    {
+        FVector SafeLocation = CurrentLocation;
+        FRotator SafeRotation = OriginalBody->GetActorRotation();
+        if (FindSafeEmergeLocation(ReleasedHost, SafeLocation, SafeRotation))
+        {
+            OriginalBody->TeleportTo(SafeLocation, SafeRotation, false, true);
+        }
+    }
+}
+
+void ACustomPlayerController::TickShadowEnergyRegen()
+{
+    if (!bEnableShadowEnergyRegen || IsPossessing() || !OriginalBody) return;
+
+    const AEntity* OriginalEntity = Cast<AEntity>(OriginalBody);
+    if (!OriginalEntity || !OriginalEntity->IsAlive()) return;
+
+    UWorld* World = GetWorld();
+    if (!World) return;
+
+    USunlightExposureSubsystem* SunSubsystem = World->GetSubsystem<USunlightExposureSubsystem>();
+    if (!SunSubsystem || !SunSubsystem->IsInShadowDuringSunHazard(OriginalBody)) return;
+
+    const float EffectiveInterval = FMath::Max(ShadowEnergyRegenInterval, 0.05f);
+    RestoreOriginalBodyEnergy(ShadowEnergyRegenPerSecond * EffectiveInterval);
 }
 
 void ACustomPlayerController::BeginPlay()
@@ -178,6 +609,16 @@ void ACustomPlayerController::BeginPlay()
     
     PlayerMainHUD = Cast<APlayerMainHUD>(GetHUD());
 
+    if (const UVelmaraGameInstance* VelmaraGI = Cast<UVelmaraGameInstance>(GetGameInstance()))
+    {
+        bForceFeedbackEnabled = VelmaraGI->IsVibrationEnabled();
+    }
+
+    if (IsLocalController())
+    {
+        UVelmaraPrimaryGameLayout::GetOrCreate(this);
+    }
+
     if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
     {
         if (DefaultMappingContext)
@@ -185,6 +626,31 @@ void ACustomPlayerController::BeginPlay()
             Subsystem->AddMappingContext(DefaultMappingContext, 0);
         }
     }
+
+    const float RegenInterval = FMath::Max(ShadowEnergyRegenInterval, 0.05f);
+    GetWorldTimerManager().SetTimer(ShadowEnergyRegenTimer, this, &ACustomPlayerController::TickShadowEnergyRegen, RegenInterval, true);
+}
+
+void ACustomPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+    if (UWorld* World = GetWorld())
+    {
+        FTimerManager& TimerManager = World->GetTimerManager();
+        TimerManager.ClearTimer(PossessionTickTimer);
+        TimerManager.ClearTimer(ShadowEnergyRegenTimer);
+        TimerManager.ClearTimer(EmergeVerifyTimer);
+
+        if (bOriginalBodyProtected && OriginalBody)
+        {
+            if (USunlightExposureSubsystem* SunSubsystem = World->GetSubsystem<USunlightExposureSubsystem>())
+            {
+                SunSubsystem->SetSunProtection(OriginalBody, false);
+            }
+            bOriginalBodyProtected = false;
+        }
+    }
+
+    Super::EndPlay(EndPlayReason);
 }
 
 void ACustomPlayerController::SetupInputComponent()
@@ -193,19 +659,12 @@ void ACustomPlayerController::SetupInputComponent()
 
     if (InputComponent)
     {
-        InputComponent->BindAction("PauseGame", IE_Pressed, this, &ACustomPlayerController::TogglePauseMenu);
+        FInputActionBinding& PauseBinding = InputComponent->BindAction("PauseGame", IE_Pressed, this, &ACustomPlayerController::TogglePauseMenu);
+        PauseBinding.bExecuteWhenPaused = true;
     }
 
     if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
     {
-        /*if (InputData->Inputs.MoveAction)
-        {
-            EnhancedInputComponent->BindAction(InputData->Inputs.MoveAction, ETriggerEvent::Triggered, this, &ACustomPlayerController::Input_Move);
-            EnhancedInputComponent->BindAction(InputData->Inputs.MoveAction, ETriggerEvent::Completed, this, &ACustomPlayerController::Input_Move);
-        }
-		
-        if (InputData->Inputs.LookAction)
-            EnhancedInputComponent->BindAction(InputData->Inputs.LookAction, ETriggerEvent::Triggered, this, &ACustomPlayerController::Input_Look);*/
 
         if (InputData->Inputs.CrouchAction)
         {
@@ -341,110 +800,72 @@ void ACustomPlayerController::AbilityInputTagReleased(EVelmaraAbilityInputID Inp
     }
 }
 
-/*void ACustomPlayerController::Input_Move(const FInputActionValue& Value)
+void ACustomPlayerController::SetPauseAudioMixState(bool bPaused)
 {
-    if (APawn* ControlledPawn = GetPawn())
+    bIsGamePausedExplicitly = bPaused;
+    if (PauseSoundMix && GetWorld())
     {
-        if (const IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(ControlledPawn))
+        if (bPaused)
         {
-            if (ASI->GetAbilitySystemComponent())
-            {
-                const FVector2D FlatVector = Value.Get<FVector2D>();
-	
-                const FRotator YawRotation(0.f, GetControlRotation().Yaw, 0.f);
-
-                const FVector DirectionForward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-                const FVector DirectionSideward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-
-                ControlledPawn->AddMovementInput(DirectionForward, FlatVector.Y);
-                ControlledPawn->AddMovementInput(DirectionSideward, FlatVector.X);
-
-                if (Value.Get<bool>())
-                {
-                    InputMovingVector = FlatVector;
-                }
-                else
-                {
-                    InputMovingVector = FVector2D::ZeroVector;
-                }
-            }
+            UGameplayStatics::PushSoundMixModifier(GetWorld(), PauseSoundMix);
+        }
+        else
+        {
+            UGameplayStatics::PopSoundMixModifier(GetWorld(), PauseSoundMix);
         }
     }
 }
 
-void ACustomPlayerController::Input_Look(const FInputActionValue& Value)
+void ACustomPlayerController::AddYawInput(float Val)
 {
-    const FVector2D LookAxisVector = Value.Get<FVector2D>();
-	
-    AddYawInput(LookAxisVector.X);
-    AddPitchInput(LookAxisVector.Y);
-}*/
+    float Scale = 1.0f;
+    if (const UVelmaraGameInstance* VelmaraGI = Cast<UVelmaraGameInstance>(GetGameInstance()))
+    {
+        const UCommonInputSubsystem* CommonInput = UCommonInputSubsystem::Get(GetLocalPlayer());
+        const bool bGamepad = CommonInput && CommonInput->GetCurrentInputType() == ECommonInputType::Gamepad;
+        Scale = bGamepad ? VelmaraGI->GetGamepadSensitivity() : VelmaraGI->GetMouseSensitivity();
+    }
+    Super::AddYawInput(Val * Scale);
+}
+
+void ACustomPlayerController::AddPitchInput(float Val)
+{
+    float Scale = 1.0f;
+    if (const UVelmaraGameInstance* VelmaraGI = Cast<UVelmaraGameInstance>(GetGameInstance()))
+    {
+        const UCommonInputSubsystem* CommonInput = UCommonInputSubsystem::Get(GetLocalPlayer());
+        const bool bGamepad = CommonInput && CommonInput->GetCurrentInputType() == ECommonInputType::Gamepad;
+        Scale = bGamepad ? VelmaraGI->GetGamepadSensitivity() : VelmaraGI->GetMouseSensitivity();
+        if (VelmaraGI->IsInvertY())
+        {
+            Scale = -Scale;
+        }
+    }
+    Super::AddPitchInput(Val * Scale);
+}
 
 void ACustomPlayerController::TogglePauseMenu()
 {
-    if (bIsGamePausedExplicitly)
+    if (PlayerMainHUD)
     {
-        if (CurrentOptionsMenuInstance_Pause && CurrentOptionsMenuInstance_Pause->IsInViewport())
-        {
-            CurrentOptionsMenuInstance_Pause->RemoveFromParent();
-            CurrentOptionsMenuInstance_Pause = nullptr;
-
-            if (CurrentPauseMenuInstance)
-            {
-                CurrentPauseMenuInstance->SetFocus();
-            }
-            return;
-        }
-
-        if (CurrentPauseMenuInstance)
-        {
-            CurrentPauseMenuInstance->RemoveFromParent();
-            CurrentPauseMenuInstance = nullptr;
-        }
-
-        SetShowMouseCursor(false);
-        SetInputMode(FInputModeGameOnly());
-        UGameplayStatics::SetGamePaused(GetWorld(), false);
-        bIsGamePausedExplicitly = false;
-
-        if (PauseSoundMix)
-        {
-            UGameplayStatics::PopSoundMixModifier(GetWorld(), PauseSoundMix);
-        }
-        UE_LOG(LogTemp, Log, TEXT("Game Unpaused"));
+        PlayerMainHUD->TogglePauseMenu();
+        return;
     }
-    else
+
+    if (UVelmaraPrimaryGameLayout* Layout = UVelmaraPrimaryGameLayout::GetOrCreate(this))
     {
-        if (!PauseMenuWidgetClass)
-        {
-            UE_LOG(LogTemp, Error, TEXT("PauseMenuWidgetClass not set in PlayerController!"));
-            return;
-        }
-
-        if (CurrentPauseMenuInstance && CurrentPauseMenuInstance->IsInViewport())
+        if (Layout->HasActiveModal())
         {
             return;
         }
-
-        CurrentPauseMenuInstance = CreateWidget<UUserWidget>(this, PauseMenuWidgetClass);
-        if (CurrentPauseMenuInstance)
+        if (UCommonActivatableWidgetStack* MenuStack = Layout->GetMenuStack())
         {
-            CurrentPauseMenuInstance->AddToViewport();
-            SetShowMouseCursor(true);
-
-            FInputModeGameAndUI InputModeData;
-            InputModeData.SetWidgetToFocus(CurrentPauseMenuInstance->TakeWidget()); // Enfocar el men� de pausa
-            InputModeData.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-            SetInputMode(InputModeData);
-
-            UGameplayStatics::SetGamePaused(GetWorld(), true);
-            bIsGamePausedExplicitly = true;
-
-            if (PauseSoundMix)
+            if (UCommonActivatableWidget* ActiveMenu = MenuStack->GetActiveWidget())
             {
-                UGameplayStatics::PushSoundMixModifier(GetWorld(), PauseSoundMix);
+                ActiveMenu->DeactivateWidget();
+                return;
             }
-            UE_LOG(LogTemp, Log, TEXT("Game Paused"));
         }
+        Layout->PushMenuWidget<UVelmaraPauseMenuWidget>(UVelmaraPauseMenuWidget::StaticClass());
     }
 }

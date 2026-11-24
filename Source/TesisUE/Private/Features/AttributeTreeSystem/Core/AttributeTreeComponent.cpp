@@ -43,7 +43,6 @@ void UAttributeTreeComponent::AddDefaultUpgrade(const FGameplayTag& Tag, const F
                                                 const EAttributeUpgradeDisplay DisplayFormat,
                                                 const FGameplayAttribute& LinkedCurrentAttribute)
 {
-	// Costos por nivel: I (inicial), II, III, IV, V.
 	static const int32 DefaultCosts[] = {0, 100, 250, 450, 700};
 
 	FAttributeUpgradeDefinition& Definition = Upgrades.AddDefaulted_GetRef();
@@ -66,12 +65,8 @@ void UAttributeTreeComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// El Entity inicializa el ASC y sus stats por defecto en su propio BeginPlay (después del de sus componentes),
-	// así que esperamos un tick para aplicar los niveles ya comprados/cargados.
 	GetWorld()->GetTimerManager().SetTimerForNextTick(this, &UAttributeTreeComponent::ReapplyAllUpgrades);
 }
-
-/* MEJORAS */
 
 EAttributeUpgradeResult UAttributeTreeComponent::TryUpgrade(const FGameplayTag UpgradeTag)
 {
@@ -81,7 +76,6 @@ EAttributeUpgradeResult UAttributeTreeComponent::TryUpgrade(const FGameplayTag U
 	const int32 CurrentLevel = GetUpgradeLevel(UpgradeTag);
 	if (CurrentLevel >= Definition->GetMaxLevel()) return EAttributeUpgradeResult::MaxLevelReached;
 
-	// Validamos el ASC antes de cobrar para no perder moneda si no se puede aplicar el bonus.
 	const UAbilitySystemComponent* AbilitySystem = GetAbilitySystem();
 	if (!AbilitySystem) return EAttributeUpgradeResult::NoAbilitySystem;
 	if (!AbilitySystem->HasAttributeSetForAttribute(Definition->Attribute)) return EAttributeUpgradeResult::InvalidUpgrade;
@@ -134,15 +128,12 @@ void UAttributeTreeComponent::RestoreUpgradeLevels(const TMap<FGameplayTag, int3
 
 	for (const TPair<FGameplayTag, int32>& SavedLevel : SavedLevels)
 	{
-		// Las ramas que ya no existen en la configuración se descartan.
 		if (const FAttributeUpgradeDefinition* Definition = FindDefinition(SavedLevel.Key))
 		{
 			UpgradeLevels.Add(SavedLevel.Key, FMath::Clamp(SavedLevel.Value, 1, Definition->GetMaxLevel()));
 		}
 	}
 
-	// Si la carga llega antes del BeginPlay (ej. al abrir otro nivel), el ASC todavía no está inicializado:
-	// BeginPlay ya programa ReapplyAllUpgrades para el próximo tick, así que alcanza con dejar los niveles cargados.
 	if (HasBegunPlay())
 	{
 		ReapplyAllUpgrades();
@@ -170,7 +161,6 @@ void UAttributeTreeComponent::ApplyUpgradeEffect(const FAttributeUpgradeDefiniti
 	const float PreviousBonus = AppliedBonuses.FindRef(Tag);
 	const float NewBonus = Definition.GetTotalBonusAtLevel(GetUpgradeLevel(Tag));
 
-	// Reemplazamos el GE anterior de la rama por uno con el bonus total del nivel actual.
 	if (const FActiveGameplayEffectHandle* ExistingHandle = ActiveUpgradeEffectHandles.Find(Tag))
 	{
 		AbilitySystem->RemoveActiveGameplayEffect(*ExistingHandle);
@@ -198,15 +188,12 @@ void UAttributeTreeComponent::ApplyUpgradeEffect(const FAttributeUpgradeDefiniti
 
 	AppliedBonuses.Add(Tag, NewBonus);
 
-	// Si sube un máximo (ej. MaxHealth), el valor actual (Health) recibe la misma diferencia.
 	const float Delta = NewBonus - PreviousBonus;
 	if (Delta > 0.f && Definition.LinkedCurrentAttribute.IsValid() && AbilitySystem->HasAttributeSetForAttribute(Definition.LinkedCurrentAttribute))
 	{
 		AbilitySystem->ApplyModToAttribute(Definition.LinkedCurrentAttribute, EGameplayModOp::AddBase, Delta);
 	}
 }
-
-/* CONSULTAS */
 
 int32 UAttributeTreeComponent::GetUpgradeLevel(const FGameplayTag UpgradeTag) const
 {

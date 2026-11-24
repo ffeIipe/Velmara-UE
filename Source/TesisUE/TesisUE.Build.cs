@@ -1,5 +1,3 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
-
 using UnrealBuildTool;
 
 public class TesisUE : ModuleRules
@@ -7,8 +5,10 @@ public class TesisUE : ModuleRules
 	public TesisUE(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core",
+
+		PublicDependencyModuleNames.AddRange(new string[]
+		{
+			"Core",
 			"CoreUObject",
 			"Engine",
 			"InputCore",
@@ -25,34 +25,37 @@ public class TesisUE : ModuleRules
 			"MotionTrajectory",
 			"PoseSearch",
 			"NetCore",
-			"AnimGraphRuntime", 
+			"AnimGraphRuntime",
 			"AIModule",
 			"NavigationSystem",
-			"UMG"
+			"UMG",
+			"Slate",
+			"SlateCore",
+			"CommonUI",
+			"CommonInput",
+			"AudioModulation"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[]
 		{
-			"AnimGraphRuntime",
 			"DeveloperSettings",
 			"GeometryCollectionEngine",
 			"ChaosSolverEngine",
-			"StageZero"
+			"StageZero",
+			"ApplicationCore",
+			"MoviePlayer"
 		});
 
-		// Fractura de rocas del boss (UBossEditorLibrary): solo en el editor.
 		if (Target.bBuildEditor)
 		{
-			PrivateDependencyModuleNames.AddRange(new string[] { "FractureEngine", "DataflowCore", "AssetRegistry" });
+			PrivateDependencyModuleNames.AddRange(new string[]
+			{
+				"FractureEngine",
+				"DataflowCore",
+				"AssetRegistry"
+			});
 		}
 
-        bUseUnity = true;
-		
-		PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
-
-        // Uncomment if you are using online features
-        // PrivateDependencyModuleNames.Add("OnlineSubsystem");
-
-        // To include OnlineSubsystemSteam, add it to the plugins section in your uproject file with the Enabled attribute set to true
-    }
+		bUseUnity = true;
+	}
 }

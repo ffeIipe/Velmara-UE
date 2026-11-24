@@ -9,7 +9,6 @@ void AVelmaraGameMode::BeginPlay()
 	{
 		if (USaveGameSubsystem* SaveSystem = GI->GetSubsystem<USaveGameSubsystem>())
 		{
-			// Al siguiente tick, para que corra tras los BeginPlay de las entidades.
 			GetWorldTimerManager().SetTimerForNextTick([SaveSystem]()
 			{
 				SaveSystem->RestorePendingLevelState();

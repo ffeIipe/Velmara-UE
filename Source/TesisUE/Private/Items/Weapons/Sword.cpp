@@ -9,6 +9,8 @@
 #include "UObject/UObjectHash.h"
 
 #include "DataAssets/Items/Weapons/SwordData.h"
+#include "Entities/Entity.h"
+#include "Entities/WeaponOverlayAnimInstance.h"
 #include "Features/GlobalEffectsSystem/Interfaces/EffectManagerProvider.h"
 #include "Features/WeaponUpgradeSystem/Core/WeaponUpgradeComponent.h"
 #include "GameFramework/Character.h"
@@ -41,7 +43,6 @@ void ASword::BeginPlay()
 
 	if (!SwordData)
 	{
-		//if (GEngine) GEngine->AddOnScreenDebugMessage(INDEX_NONE, 3.f, FColor::Red, "MISSING! Data asset of: " + GetName() + " is nullptr.");
 	}
 }
 
@@ -49,7 +50,6 @@ void ASword::Equip()
 {
 	Super::Equip();
 
-	// Antes de dar las habilidades, para que el combo arranque con los desbloqueos del dueño.
 	RefreshComboUnlocks();
 
 	IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(GetOwner());
@@ -83,14 +83,13 @@ void ASword::Equip()
 			}
 		}
 
-		if (IsValid(SwordData->AnimLayer))
-		{
-			if (const ACharacter* CharacterOwner = Cast<ACharacter>(GetOwner()))
-			{
-				CharacterOwner->GetMesh()->GetAnimInstance()->LinkAnimClassLayers(SwordData->AnimLayer);
-			}
-		}
+		UWeaponOverlayAnimInstance::LinkToCharacter(Cast<ACharacter>(GetOwner()), SwordData, ItemMesh);
 	}
+}
+
+FName ASword::GetEquipSocketName() const
+{
+	return SwordData && !SwordData->CustomInSocketName.IsNone() ? SwordData->CustomInSocketName : Super::GetEquipSocketName();
 }
 
 void ASword::Holster()
@@ -120,13 +119,7 @@ void ASword::Holster()
 		ASC->AddLooseGameplayTag(SwordData->HolsterTag);
 	}
 
-	if (IsValid(SwordData->AnimLayer))
-	{
-		if (const ACharacter* CharacterOwner = Cast<ACharacter>(GetOwner()))
-		{
-			CharacterOwner->GetMesh()->GetAnimInstance()->UnlinkAnimClassLayers(SwordData->AnimLayer);
-		}
-	}
+	UWeaponOverlayAnimInstance::UnlinkFromCharacter(Cast<ACharacter>(GetOwner()), SwordData);
 }
 
 void ASword::AttachMeshToSocket(USceneComponent* InParent, const FName InSocketName)
@@ -152,8 +145,13 @@ void ASword::AttachMeshToSocket(USceneComponent* InParent, const FName InSocketN
 
 void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	const FVector Start = BoxTraceStart->GetComponentLocation();
-	const FVector End = BoxTraceEnd->GetComponentLocation();
+	TraceAndApplyHits(OverlappedComponent, BoxTraceStart, BoxTraceEnd);
+}
+
+void ASword::TraceAndApplyHits(UPrimitiveComponent* OverlappedComponent, const USceneComponent* TraceStart, const USceneComponent* TraceEnd)
+{
+	const FVector Start = TraceStart->GetComponentLocation();
+	const FVector End = TraceEnd->GetComponentLocation();
 
 	IgnoreActors.Add(this);
 	IgnoreActors.Add(GetOwner());
@@ -164,8 +162,8 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 		this,
 		Start,
 		End,
-		FVector(20.f, 20.f, 20.f),
-		BoxTraceStart->GetComponentRotation(),
+		TraceHalfExtent,
+		TraceStart->GetComponentRotation(),
 		UEngineTypes::ConvertToTraceType(ECC_GameTraceChannel3),
 		false,
 		IgnoreActors,
@@ -176,7 +174,7 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 
 	for (const FHitResult& Hit : HitResults)
 	{
-		if (IgnoreActors.Contains(Hit.GetActor())) return;
+		if (IgnoreActors.Contains(Hit.GetActor())) continue;
 
 		IgnoreActors.Add(Hit.GetActor());
 		
@@ -186,22 +184,18 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 			
 			if (TargetASC && DamageEffectSpecHandle.IsValid())
 			{
-				//Set the damage type
 				DamageEffectSpecHandle.Data.Get()->AddDynamicAssetTag(CurrentDamageTag);
 				
-				//Also sending the hit result
 				FGameplayEffectContextHandle Context = GetOwner()->FindComponentByClass<UAbilitySystemComponent>()->MakeEffectContext();
 				Context.AddHitResult(Hit);
 
 				DamageEffectSpecHandle.Data->SetContext(Context);
 				
-				//Applying the gameplay effect to the hit actor
 				GetOwner()->FindComponentByClass<UAbilitySystemComponent>()->ApplyGameplayEffectSpecToTarget(
 					*DamageEffectSpecHandle.Data.Get(),
 					TargetASC
 				);
 				
-				//VFX call
 				FGameplayCueParameters CueParameters;
 				CueParameters.Location = Hit.ImpactPoint;
 				CueParameters.Normal = Hit.ImpactNormal;
@@ -210,14 +204,41 @@ void ASword::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Othe
 
 				TargetASC->ExecuteGameplayCue(CurrentCueTag, CueParameters);
 
-				/*if (GetGameInstance()->Implements<UEffectManagerProvider>())
+				if (const USwordData* Data = GetBaseSwordData())
 				{
-					IEffectManagerProvider::Execute_PlayGameplayEffect(GetGameInstance(), CurrentDamageTag, Hit.ImpactPoint);
-				}*/
+					if (AEntity* TargetEntity = Cast<AEntity>(Hit.GetActor()))
+					{
+						TargetEntity->ApplyKnockback(GetOwner()->GetActorLocation(), Data->Knockback);
+					}
+				}
+
+				ApplyJuggle(Hit.GetActor());
 			}
 		}
 
 		OnActorsWeaponHit(HitResults);
+	}
+}
+
+void ASword::ApplyJuggle(AActor* Target)
+{
+	static const FGameplayTag LaunchTag = FGameplayTag::RequestGameplayTag(FName("Damage.Launch"));
+	static const FGameplayTag FromAirTag = FGameplayTag::RequestGameplayTag(FName("Damage.FromAir"));
+
+	const bool bLaunch = CurrentDamageTag.MatchesTag(LaunchTag);
+	const bool bFromAir = CurrentDamageTag.MatchesTag(FromAirTag);
+	if (!bLaunch && !bFromAir) return;
+
+	AEntity* TargetEntity = Cast<AEntity>(Target);
+	if (TargetEntity && TargetEntity->IsLaunchable() && (bLaunch || TargetEntity->IsInAir()))
+	{
+		TargetEntity->StartJuggle();
+	}
+
+	AEntity* OwnerEntity = Cast<AEntity>(GetOwner());
+	if (OwnerEntity && OwnerEntity->IsInAir())
+	{
+		OwnerEntity->StartJuggle();
 	}
 }
 
@@ -256,17 +277,14 @@ void ASword::RefreshComboUnlocks()
 		BoundUpgradeComponent = Upgrades;
 	}
 
-	// Sin sistema de mejoras (ej. enemigos) se usan todos los combos del Data Asset.
 	if (!Upgrades)
 	{
 		SwordData = BaseSwordData;
 		return;
 	}
 
-	// Nunca se modifica el Data Asset: se trabaja sobre una copia propia de esta espada.
 	USwordData* FilteredData = DuplicateObject<USwordData>(BaseSwordData, this);
 
-	// La copia hereda los flags de asset (Standalone/Public): sin limpiarlos no se liberaría y retendría a la espada.
 	auto MakeRuntimeOnly = [](UObject* Object)
 	{
 		Object->ClearFlags(RF_Standalone | RF_Public);
@@ -293,7 +311,6 @@ UComboNode* ASword::PruneLockedBranches(UComboNode* Node, const UWeaponUpgradeCo
 	{
 		Visited.Add(Node);
 
-		// Solo se tocan nodos de la copia; uno que viva fuera del Data Asset se deja intacto.
 		if (Node->IsIn(&FilteredData))
 		{
 			Node->NextActionInputTap = PruneLockedBranches(Node->NextActionInputTap, Upgrades, FilteredData, Visited);

@@ -2,19 +2,22 @@
 
 #include "Blueprint/UserWidget.h"
 #include "Engine/GameInstance.h"
+#include "Features/AttributeTreeSystem/Core/AttributeTreeComponent.h"
+#include "Features/AttributeTreeSystem/UI/AttributeTreeMenuWidget.h"
 #include "Features/CurrencySystem/Data/CurrencyTags.h"
 #include "Features/CurrencySystem/Interfaces/CurrencyProvider.h"
 #include "Features/UpgradeSystem/UI/UpgradeMenuWidgetBase.h"
+#include "Features/WeaponUpgradeSystem/UI/WeaponUpgradeMenuWidget.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerState.h"
 #include "Kismet/GameplayStatics.h"
+#include "UI/Widgets/Menus/VelmaraBloodAltarMenuWidget.h"
 
 #define LOCTEXT_NAMESPACE "Upgrades"
 
 UUpgradeComponentBase::UUpgradeComponentBase()
 {
-	// Componente puramente reactivo.
 	PrimaryComponentTick.bCanEverTick = false;
 
 	CurrencyType = CurrencyTags::Blood;
@@ -27,8 +30,6 @@ void UUpgradeComponentBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 	Super::EndPlay(EndPlayReason);
 }
-
-/* MENÚ */
 
 void UUpgradeComponentBase::ToggleMenu()
 {
@@ -49,7 +50,22 @@ void UUpgradeComponentBase::OpenMenu()
 	APlayerController* PlayerController = GetOwningPlayerController();
 	if (!PlayerController || !PlayerController->IsLocalController()) return;
 
-	// Un solo menú de mejoras abierto a la vez (ej. árbol de atributos y altar).
+	const bool bUseUnifiedAltar =
+		MenuWidgetClass == UAttributeTreeMenuWidget::StaticClass() ||
+		MenuWidgetClass == UWeaponUpgradeMenuWidget::StaticClass();
+
+	if (bUseUnifiedAltar)
+	{
+		const EVelmaraBloodAltarTab InitialTab = IsA<UAttributeTreeComponent>()
+			? EVelmaraBloodAltarTab::Attributes
+			: EVelmaraBloodAltarTab::WeaponUpgrades;
+
+		if (UVelmaraBloodAltarMenuWidget::OpenBloodAltar(PlayerController, GetOwner(), InitialTab))
+		{
+			return;
+		}
+	}
+
 	TInlineComponentArray<UUpgradeComponentBase*> UpgradeComponents(GetOwner());
 	for (UUpgradeComponentBase* Other : UpgradeComponents)
 	{
@@ -85,6 +101,12 @@ void UUpgradeComponentBase::OpenMenu()
 
 void UUpgradeComponentBase::CloseMenu()
 {
+	if (UVelmaraBloodAltarMenuWidget::IsActiveForComponent(this))
+	{
+		UVelmaraBloodAltarMenuWidget::CloseActiveAltar(this);
+		return;
+	}
+
 	if (!IsMenuOpen()) return;
 
 	MenuInstance->RemoveFromParent();
@@ -106,6 +128,11 @@ void UUpgradeComponentBase::CloseMenu()
 
 bool UUpgradeComponentBase::IsMenuOpen() const
 {
+	if (UVelmaraBloodAltarMenuWidget::IsActiveForComponent(this))
+	{
+		return true;
+	}
+
 	return MenuInstance && MenuInstance->IsInViewport();
 }
 
@@ -114,8 +141,6 @@ APlayerController* UUpgradeComponentBase::GetOwningPlayerController() const
 	const APawn* OwnerPawn = Cast<APawn>(GetOwner());
 	return OwnerPawn ? OwnerPawn->GetController<APlayerController>() : nullptr;
 }
-
-/* MONEDA */
 
 void UUpgradeComponentBase::SetCurrencyProvider(UObject* NewProvider)
 {
@@ -197,7 +222,6 @@ UObject* UUpgradeComponentBase::ResolveCurrencyProvider() const
 		return nullptr;
 	};
 
-	// Orden de búsqueda: Pawn (y componentes) -> Controller -> PlayerState -> GameInstance.
 	AActor* Owner = GetOwner();
 	if (UObject* Found = SearchActor(Owner)) return Found;
 

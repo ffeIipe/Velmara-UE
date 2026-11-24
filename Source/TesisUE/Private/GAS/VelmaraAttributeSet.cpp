@@ -3,14 +3,17 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Net/UnrealNetwork.h"
 #include "GameplayEffectExtension.h"
+#include "Engine/World.h"
 #include "Entities/Entity.h"
+#include "Features/BossSystem/Core/BossEnemy.h"
+#include "Features/BossSystem/Subsystems/SunlightExposureSubsystem.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Interfaces/Damageable.h"
 #include "GAS/VelmaraGameplayTags.h"
+#include "Player/CustomPlayerController.h"
 
 UVelmaraAttributeSet::UVelmaraAttributeSet()
 {
-	// Valores neutros para que las entidades que no los configuran (enemigos) no se vean afectadas.
 	InitArmor(0.f);
 	InitBaseDamage(0.f);
 	InitAttackSpeed(1.f);
@@ -36,7 +39,6 @@ float UVelmaraAttributeSet::CalculateFinalDamage(const float RawDamage, const FG
 
 	float FinalDamage = RawDamage;
 
-	// Daño base del atacante (no se aplica al daño auto-infligido, ej. el sol).
 	if (const UAbilitySystemComponent* SourceASC = EffectSpec.GetContext().GetInstigatorAbilitySystemComponent())
 	{
 		const UVelmaraAttributeSet* SourceSet = SourceASC->GetSet<UVelmaraAttributeSet>();
@@ -44,7 +46,6 @@ float UVelmaraAttributeSet::CalculateFinalDamage(const float RawDamage, const FG
 		{
 			FinalDamage += FMath::Max(SourceSet->GetBaseDamage(), 0.f);
 
-			// Marca de sangre del pulso vampiro.
 			if (GetOwningAbilitySystemComponent()->HasMatchingGameplayTag(FVelmaraGameplayTags::Get().State_BloodMarked))
 			{
 				FinalDamage *= BloodMarkDamageMultiplier;
@@ -52,7 +53,6 @@ float UVelmaraAttributeSet::CalculateFinalDamage(const float RawDamage, const FG
 		}
 	}
 
-	// Armadura del objetivo.
 	const float CurrentArmor = FMath::Max(GetArmor(), 0.f);
 	FinalDamage *= ArmorMitigationConstant / (ArmorMitigationConstant + CurrentArmor);
 
@@ -67,6 +67,57 @@ void UVelmaraAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribu
 	{
 		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxHealth());
 	}
+}
+
+bool UVelmaraAttributeSet::PreGameplayEffectExecute(FGameplayEffectModCallbackData& Data)
+{
+	if (!Super::PreGameplayEffectExecute(Data)) return false;
+
+	if (Data.EvaluatedData.Attribute == GetDamageIncomingAttribute())
+	{
+		const UAbilitySystemComponent* OwningASC = GetOwningAbilitySystemComponent();
+		const AEntity* Victim = Cast<AEntity>(OwningASC ? OwningASC->GetAvatarActor() : nullptr);
+
+		if (Victim)
+		{
+			if (!Victim->CanBeDamaged()) return false;
+
+			UWorld* World = Victim->GetWorld();
+			const ACustomPlayerController* PC = World ? Cast<ACustomPlayerController>(World->GetFirstPlayerController()) : nullptr;
+
+			if (PC && PC->GetOriginalBody() == Victim && PC->IsPossessing()) return false;
+
+			FGameplayTagContainer AllAssetTags;
+			Data.EffectSpec.GetAllAssetTags(AllAssetTags);
+
+			const FGameplayTag SunSetByCallerTag = FGameplayTag::RequestGameplayTag(FName("Data.Damage.Sun"), false);
+			const FGameplayTag SunDamageTypeTag = FGameplayTag::RequestGameplayTag(FName("Damage.Environmental.Sun"), false);
+			const bool bIsSunDamage =
+				(SunSetByCallerTag.IsValid() && Data.EffectSpec.GetSetByCallerMagnitude(SunSetByCallerTag, false, 0.f) > 0.f) ||
+				(SunDamageTypeTag.IsValid() && AllAssetTags.HasTag(SunDamageTypeTag));
+
+			if (bIsSunDamage)
+			{
+				if (const USunlightExposureSubsystem* Exposure = World ? World->GetSubsystem<USunlightExposureSubsystem>() : nullptr)
+				{
+					if (Exposure->IsSunProtected(Victim) || Exposure->IsUnderSunGrace(Victim)) return false;
+				}
+
+				const FGameplayTag PossessedTag = FGameplayTag::RequestGameplayTag(FName("Character.Possessed"), false);
+				if ((PC && PC->IsPossessedHost(Victim)) || (OwningASC && PossessedTag.IsValid() && OwningASC->HasMatchingGameplayTag(PossessedTag)))
+				{
+					return false;
+				}
+			}
+		}
+
+		const UAbilitySystemComponent* SourceASC = Data.EffectSpec.GetContext().GetOriginalInstigatorAbilitySystemComponent();
+		const AEntity* Attacker = SourceASC ? Cast<AEntity>(SourceASC->GetAvatarActor()) : nullptr;
+
+		if (Attacker && Victim && Attacker != Victim && !Attacker->IsHostile(Victim)) return false;
+	}
+
+	return true;
 }
 
 void UVelmaraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
@@ -84,19 +135,66 @@ void UVelmaraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCal
             const bool bWasAlive = GetHealth() > 0.0f;
 
             const float CurrentShield = GetShield();
-            const float DamageToShield = FMath::Min(CurrentShield, LocalDamageDone);
+            float DamageToShield = FMath::Min(CurrentShield, LocalDamageDone);
+            float DamageToHealth = LocalDamageDone - DamageToShield;
+            bool bHitByPossessedMinion = false;
+
+            AEntity* DamagedEntity = Cast<AEntity>(GetOwningActor());
+            ABossEnemy* BossVictim = Cast<ABossEnemy>(DamagedEntity);
+            AActor* AttackerActor = nullptr;
+
+            if (BossVictim)
+            {
+                const FGameplayEffectContextHandle& Context = Data.EffectSpec.GetContext();
+                UAbilitySystemComponent* SourceASC = Context.GetOriginalInstigatorAbilitySystemComponent();
+                if (!SourceASC)
+                {
+                    SourceASC = Context.GetInstigatorAbilitySystemComponent();
+                }
+                AttackerActor = SourceASC ? SourceASC->GetAvatarActor() : Context.GetEffectCauser();
+                const AActor* InstigatorActor = Context.GetInstigator();
+
+                BossVictim->ResolveIncomingDamage(LocalDamageDone, CurrentShield, AttackerActor, InstigatorActor, SourceASC,
+                    DamageToShield, DamageToHealth, bHitByPossessedMinion);
+            }
 
             if (DamageToShield > 0.0f)
             {
-                SetShield(CurrentShield - DamageToShield);
+                SetShield(FMath::Max(0.0f, CurrentShield - DamageToShield));
             }
 
-            const float DamageToHealth = LocalDamageDone - DamageToShield;
             if (DamageToHealth > 0.0f)
             {
                 const float CurrentHealth = GetHealth();
                 SetHealth(FMath::Clamp(CurrentHealth - DamageToHealth, 0.0f, GetMaxHealth()));
             }
+
+            if (BossVictim)
+            {
+                if (bHitByPossessedMinion)
+                {
+                    BossVictim->NotifyHitByPossessedMinion(AttackerActor, DamageToShield, DamageToHealth);
+                }
+
+                if (CurrentShield > 0.0f && GetShield() <= 0.0f)
+                {
+                    BossVictim->HandleSolarShieldBroken(AttackerActor);
+                }
+            }
+
+            if (DamagedEntity)
+            {
+                if (GetHealth() <= 0.0f)
+                {
+                    DamagedEntity->EndJuggle();
+                }
+                else
+                {
+                    DamagedEntity->OnDamageReceived();
+                }
+            }
+
+            const float EffectiveTotalDamage = DamageToShield + DamageToHealth;
 
             if (GetHealth() <= 0.0f)
             {
@@ -111,7 +209,6 @@ void UVelmaraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCal
                 DeathPayload.Target = GetOwningActor();
                 DeathPayload.InstigatorTags.AddTag(DeathReason);
 
-                // Solo en el golpe que la mata: los golpes posteriores también llegan acá con la vida en 0.
                 if (bWasAlive)
                 {
                     if (AEntity* OwnerEntity = Cast<AEntity>(GetOwningActor()))
@@ -130,7 +227,7 @@ void UVelmaraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCal
                 FGameplayEventData DamagePayload;
                 DamagePayload.EventTag = FGameplayTag::RequestGameplayTag(FName("Event.Hit"));
                 DamagePayload.Instigator = Data.EffectSpec.GetContext().GetInstigator();
-                DamagePayload.EventMagnitude = LocalDamageDone; 
+                DamagePayload.EventMagnitude = EffectiveTotalDamage;
                 DamagePayload.Target = GetOwningActor();
 
                 Data.EffectSpec.GetAllAssetTags(DamagePayload.InstigatorTags);

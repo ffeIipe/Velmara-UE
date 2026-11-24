@@ -26,9 +26,6 @@ struct FInventoryItemSaveData
     UPROPERTY(SaveGame)
     TSubclassOf<AActor> ActorClass;
 
-    // Si tenías munición descomentada en tu código antiguo, agrega esto:
-    // UPROPERTY(SaveGame)
-    // int32 AmmoCount;
 };
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -79,6 +76,8 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "Inventory|Widget")
     void HideInventory();
+
+    void NotifyInventoryClosed();
 
     UFUNCTION(BlueprintPure, Category = "Inventory|Widget")
     bool IsInventoryOpen() const { return bIsInventoryOpen; }

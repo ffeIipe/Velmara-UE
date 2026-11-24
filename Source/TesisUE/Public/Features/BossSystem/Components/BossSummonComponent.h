@@ -10,20 +10,16 @@ class UNiagaraSystem;
 class USoundBase;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBossMinionSpawned, AActor*, Minion);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBossEmergencySummon, int32, SpawnedCount);
 
 UENUM(BlueprintType)
 enum class EBossMinionCleanup : uint8
 {
-	// Les aplica MortalDamage: hacen su muerte normal y vuelven solos al pool.
 	Kill,
 	ReturnToPool,
 	Keep
 };
 
-/*
- * Invoca enemigos alrededor del boss usando el UActorPoolSubsystem. Los enemigos que implementan PoolableActor
- * (ej. CBP_Enemy) vuelven al pool al morir y se reutilizan en la próxima invocación.
- */
 UCLASS(ClassGroup = (Boss), meta = (BlueprintSpawnableComponent))
 class TESISUE_API UBossSummonComponent : public UActorComponent
 {
@@ -32,20 +28,48 @@ class TESISUE_API UBossSummonComponent : public UActorComponent
 public:
 	UBossSummonComponent();
 
-	// Enemigos a invocar: por cada invocado se elige una clase al azar.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Summon")
 	TArray<TSubclassOf<AActor>> MinionClasses;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Summon", meta = (ClampMin = "1"))
-	int32 MinionsPerSummon = 3;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Summon", meta = (ClampMin = "0"))
+	int32 MinSummonStage = 1;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Summon", meta = (ClampMin = "1"))
-	int32 MaxAliveMinions = 5;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Summon", meta = (ClampMin = "1"))
+	int32 MinionsPerSummon = 2;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Summon", meta = (ClampMin = "0"))
-	float SummonCooldown = 22.f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Summon", meta = (ClampMin = "1"))
+	int32 MaxAliveMinions = 4;
 
-	// Segundos desde que arranca la pelea hasta la primera invocación posible.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Summon", meta = (ClampMin = "0"))
+	int32 FinalStageIndex = 2;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Summon", meta = (ClampMin = "1"))
+	int32 MaxAliveMinionsFinalStage = 5;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Summon", meta = (ClampMin = "0"))
+	float SummonCooldown = 20.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Summon")
+	bool bForceMinionsDirectlyPossessable = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Summon|Composition")
+	TArray<TSubclassOf<AActor>> RangedMinionClasses;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Summon|Composition", meta = (ClampMin = "0"))
+	int32 MaxAliveRangedMinions = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Summon|Composition", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float RangedMinionChance = 0.30f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Summon|Anti-Softlock", meta = (ClampMin = "0"))
+	int32 MinGuaranteedMinionsFinalStage = 2;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Summon|Anti-Softlock", meta = (ClampMin = "0.0"))
+	float EmergencySummonCooldown = 4.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Summon|Anti-Softlock", meta = (ClampMin = "0.0"))
+	float AutoFallbackSummonDelay = 6.0f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Summon", meta = (ClampMin = "0"))
 	float FirstSummonDelay = 8.f;
 
@@ -55,14 +79,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Summon|Placement", meta = (ClampMin = "0"))
 	float MaxSpawnRadius = 900.f;
 
-	// Instancias por clase que se crean en el pool al empezar. 0 = se crean a demanda.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Summon|Pool", meta = (ClampMin = "0"))
 	int32 PrewarmPerClass = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Summon|Animation")
 	TObjectPtr<UAnimMontage> SummonMontage;
 
-	// Momento normalizado del montaje en que aparecen los avisos (o AnimNotify "Boss Action Event").
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Summon|Animation", meta = (ClampMin = "0", ClampMax = "1"))
 	float SummonEventTime = 0.45f;
 
@@ -72,7 +94,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Summon|Animation", meta = (ClampMin = "0"))
 	float RecoveryAfterSummon = 0.5f;
 
-	// Tiempo entre el efecto en el piso y la aparición del enemigo.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Summon|Feedback", meta = (ClampMin = "0"))
 	float SpawnDelay = 0.8f;
 
@@ -91,14 +112,36 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Boss|Summon")
 	FOnBossMinionSpawned OnMinionSpawned;
 
+	UPROPERTY(BlueprintAssignable, Category = "Boss Summon|Events")
+	FOnBossEmergencySummon OnEmergencySummonTriggered;
+
+	UFUNCTION(BlueprintCallable, Category = "Boss Summon")
+	void SetCurrentStage(int32 NewStage);
+
+	UFUNCTION(BlueprintPure, Category = "Boss Summon")
+	int32 GetCurrentStage() const { return CurrentStage; }
+
+	UFUNCTION(BlueprintPure, Category = "Boss Summon")
+	int32 GetEffectiveMaxAliveMinions() const;
+
+	UFUNCTION(BlueprintPure, Category = "Boss Summon")
+	bool NeedsEmergencySummon() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Boss Summon")
+	bool StartEmergencySummon(AActor* Target);
+
+	UFUNCTION(BlueprintPure, Category = "Boss Summon")
+	bool HasValidMinionClass() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Boss Summon")
+	TSubclassOf<AActor> ChooseMinionClass() const;
+
 	UFUNCTION(BlueprintPure, Category = "Boss|Summon")
 	bool CanSummon() const;
 
-	// Reproduce el montaje de invocación (a través del componente de combate) y en su evento aparecen los enemigos.
 	UFUNCTION(BlueprintCallable, Category = "Boss|Summon")
 	bool StartSummon(AActor* Target, int32 CountOverride = 0);
 
-	// Invoca sin montaje ni cooldown (respeta MaxAliveMinions). Devuelve cuántos quedaron programados.
 	UFUNCTION(BlueprintCallable, Category = "Boss|Summon")
 	int32 SpawnMinionsNow(AActor* Target, int32 Count = 0);
 
@@ -120,13 +163,17 @@ protected:
 
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+
 private:
 	UFUNCTION()
 	void HandleMinionDead(AEntity* DeadEntity);
 
 	void HandleSummonEvent(TWeakObjectPtr<AActor> Target, int32 Count);
 
-	void SpawnMinion(TSubclassOf<AActor> MinionClass, FVector Location, TWeakObjectPtr<AActor> Target);
+	void HandleSummonActionFinished(bool bInterrupted);
+
+	void SpawnMinion(FVector Location, TWeakObjectPtr<AActor> Target);
 
 	bool FindSpawnLocation(const FVector& Center, const TArray<FVector>& UsedLocations, FVector& OutLocation) const;
 
@@ -140,7 +187,15 @@ private:
 
 	int32 PendingSpawns = 0;
 
+	int32 CurrentStage = 0;
+
+	int32 PendingSummonCountOverride = 0;
+
 	double NextSummonTime = 0.0;
+
+	double NextEmergencySummonTime = 0.0;
+
+	double EmergencyStarvationStartTime = -1.0;
 
 	bool bEncounterStarted = false;
 

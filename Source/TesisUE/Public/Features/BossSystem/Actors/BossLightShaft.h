@@ -19,17 +19,11 @@ class UStaticMeshComponent;
 UENUM(BlueprintType)
 enum class ELightShaftDamageMode : uint8
 {
-	// Usa el sistema de sol existente (GA_SunBurning): respeta sus inmunidades, cue y sonido.
 	SunBurningEvent,
-	// Aplica el GE de daño directamente cada tick.
 	DirectDamage,
 	Both
 };
 
-/*
- * Hueco de luz que deja el boss al romper el techo. Primero avisa (polvo + luz tenue), después caen los escombros
- * (daño de impacto en el área) y queda una columna de luz que quema a Velmara mientras esté adentro y sin nada que la cubra.
- */
 UCLASS()
 class TESISUE_API ABossLightShaft : public AActor, public IPoolableActor
 {
@@ -38,16 +32,21 @@ class TESISUE_API ABossLightShaft : public AActor, public IPoolableActor
 public:
 	ABossLightShaft();
 
-	// Top = hueco en el techo, Floor = punto del piso debajo.
 	UFUNCTION(BlueprintCallable, Category = "Boss|Light Shaft")
 	void OpenShaft(AActor* InBoss, const FVector& InTop, const FVector& InFloor, float InRadius, const FBossDamageParams& InDamageParams,
 		ABossCeilingBreakPoint* InBreakPoint = nullptr);
+
+	UFUNCTION(BlueprintCallable, Category = "Boss Light Shaft")
+	void OpenFullArenaShaft(const FVector& InTop, const FVector& InFloor, float InRadius, AActor* InBoss, const FBossDamageParams& InDamageParams, float InTelegraphDurationOverride = -1.f);
 
 	UFUNCTION(BlueprintCallable, Category = "Boss|Light Shaft")
 	void CloseShaft();
 
 	UFUNCTION(BlueprintPure, Category = "Boss|Light Shaft")
 	bool IsShaftOpen() const { return Phase == EShaftPhase::Open; }
+
+	UFUNCTION(BlueprintPure, Category = "Boss Light Shaft")
+	bool IsFullArenaShaft() const { return bFullArenaShaft; }
 
 	UFUNCTION(BlueprintPure, Category = "Boss|Light Shaft")
 	bool IsPointInsideShaft(const FVector& Point) const;
@@ -57,6 +56,18 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Boss|Light Shaft")
 	FVector GetFloorLocation() const { return Floor; }
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Light Shaft|Full Arena", meta = (ClampMin = "0.0"))
+	float FullArenaLightIntensity = 120000.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Light Shaft|Full Arena")
+	bool bHideBeamMeshInFullArena = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Light Shaft|Full Arena")
+	bool bHideGroundDecalInFullArena = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Light Shaft|Full Arena")
+	bool bSkipImpactDamageInFullArena = true;
 
 	virtual void OnPoolActivate_Implementation() override;
 
@@ -82,14 +93,12 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USpotLightComponent> Light;
 
-	// Columna visible (cilindro). Solo se muestra si BeamMaterial está asignado (ej. material translúcido aditivo).
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UStaticMeshComponent> BeamMesh;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UDecalComponent> GroundDecal;
 
-	// Polvo que cae del techo durante el aviso.
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UNiagaraComponent> DustEffect;
 
@@ -99,7 +108,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Light Shaft|Timing", meta = (ClampMin = "0.01"))
 	float LightRampDuration = 0.35f;
 
-	// 0 = el hueco queda abierto para siempre.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Light Shaft|Timing", meta = (ClampMin = "0"))
 	float Lifetime = 0.f;
 
@@ -112,7 +120,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Light Shaft|Light")
 	FLinearColor LightColor = FLinearColor(1.f, 0.93f, 0.78f);
 
-	// Fracción de la intensidad final durante el aviso.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Light Shaft|Light", meta = (ClampMin = "0", ClampMax = "1"))
 	float TelegraphIntensityFraction = 0.12f;
 
@@ -128,22 +135,18 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Light Shaft|Damage")
 	ELightShaftDamageMode PlayerDamageMode = ELightShaftDamageMode::SunBurningEvent;
 
-	// Daño por segundo en modo DirectDamage (y para entidades que no son el jugador).
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Light Shaft|Damage", meta = (ClampMin = "0"))
 	float DirectDamagePerSecond = 12.f;
 
-	// La luz también quema a otras entidades (ej. los esqueletos invocados), nunca al boss.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Light Shaft|Damage")
 	bool bAffectNonPlayerEntities = false;
 
-	// Si algo tapa la luz entre el hueco y el objetivo, no quema (cubrirse detrás de un pilar funciona).
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Light Shaft|Damage")
 	bool bRequireLineOfSight = true;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Light Shaft|Damage")
 	TEnumAsByte<ECollisionChannel> LineOfSightChannel = ECC_Visibility;
 
-	// Daño de los escombros al abrirse el hueco (se esquiva saliendo del área durante el aviso, o con el dodge).
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Light Shaft|Impact", meta = (ClampMin = "0"))
 	float ImpactDamage = 20.f;
 
@@ -186,9 +189,15 @@ private:
 	void ClearExposure();
 	void GatherCandidates(TArray<AActor*>& OutCandidates) const;
 	bool HasLineOfSight(const AActor* Target) const;
+	bool IsPossessedMinionCandidate(const AActor* Candidate) const;
+	float GetEffectiveLightIntensity() const { return bFullArenaShaft ? FullArenaLightIntensity : LightIntensity; }
 
 	EShaftPhase Phase = EShaftPhase::Inactive;
 	float PhaseElapsed = 0.f;
+	float CurrentLightAlpha = 0.f;
+	float ClosingStartAlpha = 1.f;
+	bool bFullArenaShaft = false;
+	float ActiveTelegraphDuration = 1.6f;
 
 	FVector Top = FVector::ZeroVector;
 	FVector Floor = FVector::ZeroVector;

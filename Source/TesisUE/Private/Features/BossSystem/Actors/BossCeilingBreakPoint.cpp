@@ -9,7 +9,6 @@
 
 namespace BossCeilingRock
 {
-	// Si por algún motivo no llega el evento de impacto, se parte igual pasado este tiempo de caída.
 	constexpr float MaxFallTime = 3.f;
 }
 
@@ -30,18 +29,13 @@ ABossCeilingBreakPoint::ABossCeilingBreakPoint()
 	Rock = CreateDefaultSubobject<UGeometryCollectionComponent>(TEXT("Rock"));
 	Rock->SetupAttachment(Root);
 	Rock->SetMobility(EComponentMobility::Movable);
-	// Simula desde el inicio pero anclada (BeginPlay): así queda quieta en el techo hasta que se rompe.
 	Rock->SetSimulatePhysics(true);
 	Rock->bNotifyCollisions = true;
 	Rock->SetCollisionProfileName(TEXT("Destructible"));
-	// Mientras simula, nadie la puede empujar (ni jugador, ni enemigos, ni el boss): los pawns la atraviesan.
-	// Al asentarse pasa a bloquear Pawn y queda estática.
 	Rock->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 	Rock->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
-	// Los traces de techo/piso y de línea de sol usan Visibility: la roca no tiene que taparlos.
 	Rock->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
 
-	// Roca fracturada por defecto (5 pedazos). Se puede reemplazar en el Blueprint.
 	static ConstructorHelpers::FObjectFinder<UGeometryCollection> RockFinder(TEXT("/Game/Blueprints/Entities/Enemies/Boss/GC_BossCeilingSlab.GC_BossCeilingSlab"));
 	if (RockFinder.Succeeded())
 	{
@@ -53,11 +47,12 @@ void ABossCeilingBreakPoint::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// El GC no pasa de estático a dinámico con SetSimulatePhysics en runtime: se ancla y Break quita los anclajes.
 	if (Rock && Rock->GetRestCollection())
 	{
 		Rock->SetAnchoredByBox(Rock->Bounds.GetBox().ExpandBy(500.f), true);
 	}
+
+	SetShadowCoverEnabled(false);
 }
 
 void ABossCeilingBreakPoint::Break()
@@ -75,11 +70,20 @@ void ABossCeilingBreakPoint::Break()
 		}
 	}
 
+	if (bEnableShadowCoverOnBreak)
+	{
+		SetShadowCoverEnabled(true);
+	}
+
 	if (Rock && Rock->GetRestCollection())
 	{
 		Rock->OnChaosPhysicsCollision.AddUniqueDynamic(this, &ABossCeilingBreakPoint::HandleRockCollision);
 		Rock->RemoveAllAnchors();
 		GetWorldTimerManager().SetTimer(SettleTimer, this, &ABossCeilingBreakPoint::Shatter, BossCeilingRock::MaxFallTime, false);
+	}
+	else if (!bEnableShadowCoverOnBreak)
+	{
+		SetShadowCoverEnabled(true);
 	}
 
 	OnCeilingBroken();
@@ -97,7 +101,6 @@ void ABossCeilingBreakPoint::Shatter()
 	bShattered = true;
 	Rock->OnChaosPhysicsCollision.RemoveDynamic(this, &ABossCeilingBreakPoint::HandleRockCollision);
 
-	// Se parte en los pedazos del fracturado (máximo 5) al tocar el suelo.
 	Rock->CrumbleActiveClusters();
 
 	GetWorldTimerManager().SetTimer(SettleTimer, this, &ABossCeilingBreakPoint::Settle, SettleTime, false);
@@ -105,14 +108,38 @@ void ABossCeilingBreakPoint::Shatter()
 
 void ABossCeilingBreakPoint::Settle()
 {
-	// Todos los pedazos pasan a cinemáticos: quedan donde cayeron, sin física.
-	Rock->ApplyKinematicField(Rock->Bounds.SphereRadius * 4.f + 1000.f, Rock->Bounds.Origin);
-	Rock->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+	if (Rock)
+	{
+		if (Rock->GetRestCollection())
+		{
+			Rock->ApplyKinematicField(Rock->Bounds.SphereRadius * 4.f + 1000.f, Rock->Bounds.Origin);
+		}
+		Rock->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+		if (bBlockSunlightWhenSettled)
+		{
+			Rock->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+		}
+	}
+
+	SetShadowCoverEnabled(true);
 }
 
 void ABossCeilingBreakPoint::ResetPoint()
 {
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(SettleTimer);
+	}
+
 	bBroken = false;
+	bShattered = false;
+
+	if (Rock)
+	{
+		Rock->OnChaosPhysicsCollision.RemoveDynamic(this, &ABossCeilingBreakPoint::HandleRockCollision);
+		Rock->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+		Rock->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
+	}
 
 	for (AActor* Piece : CeilingPiecesToHide)
 	{
@@ -120,6 +147,20 @@ void ABossCeilingBreakPoint::ResetPoint()
 		{
 			Piece->SetActorHiddenInGame(false);
 			Piece->SetActorEnableCollision(true);
+		}
+	}
+
+	SetShadowCoverEnabled(false);
+}
+
+void ABossCeilingBreakPoint::SetShadowCoverEnabled(const bool bEnabled)
+{
+	for (AActor* CoverActor : ShadowCoverActorsToEnable)
+	{
+		if (IsValid(CoverActor))
+		{
+			CoverActor->SetActorHiddenInGame(!bEnabled);
+			CoverActor->SetActorEnableCollision(bEnabled);
 		}
 	}
 }

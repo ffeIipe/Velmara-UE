@@ -39,7 +39,7 @@ void AWeapon::Equip()
 {
 	if (USkeletalMeshComponent* SkeletalMesh = Cast<ACharacter>(GetOwner())->GetMesh())
 	{
-		AttachMeshToSocket(SkeletalMesh, FName("RightHandSword"));
+		AttachMeshToSocket(SkeletalMesh, GetEquipSocketName());
 		OnWeaponEquipped();
 	}
 }

@@ -4,6 +4,8 @@
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 #include "Components/SphereComponent.h"
+#include "EngineUtils.h"
+#include "Entities/Entity.h"
 #include "Features/BossSystem/Core/BossSystemLibrary.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/ProjectileMovementComponent.h"
@@ -24,6 +26,11 @@ ABossProjectile::ABossProjectile()
 	Collision->SetCollisionResponseToAllChannels(ECR_Ignore);
 	Collision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	Collision->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
+	Collision->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block);
+	Collision->SetCollisionResponseToChannel(ECC_PhysicsBody, ECR_Block);
+	Collision->SetCollisionResponseToChannel(ECC_Destructible, ECR_Block);
+	Collision->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Block);
+	Collision->SetCollisionResponseToChannel(ECC_GameTraceChannel4, ECR_Block);
 	Collision->SetGenerateOverlapEvents(true);
 	Collision->CanCharacterStepUpOn = ECB_No;
 	RootComponent = Collision;
@@ -39,7 +46,6 @@ ABossProjectile::ABossProjectile()
 	Movement->bRotationFollowsVelocity = true;
 	Movement->bAutoActivate = false;
 
-	// Valores por defecto con assets del proyecto; se pueden cambiar en un Blueprint hijo.
 	static ConstructorHelpers::FObjectFinder<UNiagaraSystem> TrailFinder(TEXT("/Game/SlashTrail_SoftTofu/Niagara/Dark/NS_SlashTrail_Dark_Loop.NS_SlashTrail_Dark_Loop"));
 	if (TrailFinder.Succeeded())
 	{
@@ -57,21 +63,34 @@ void ABossProjectile::BeginPlay()
 {
 	Super::BeginPlay();
 
+	DefaultPierceTargets = bPierceTargets;
+	DefaultCollisionRadius = Collision->GetUnscaledSphereRadius();
+
 	Collision->OnComponentBeginOverlap.AddUniqueDynamic(this, &ABossProjectile::HandleOverlap);
 	Movement->OnProjectileStop.AddUniqueDynamic(this, &ABossProjectile::HandleStop);
 }
 
 void ABossProjectile::Launch(AActor* InInstigator, const FVector& Direction, const float Speed, const float Lifetime, const FBossDamageParams& InDamageParams)
 {
+	ClearHomingTarget();
+
 	BossInstigator = InInstigator;
 	DamageParams = InDamageParams;
 	HandledActors.Reset();
 	SetInstigator(Cast<APawn>(InInstigator));
 
 	const FVector LaunchDirection = Direction.GetSafeNormal();
+	if (LaunchDirection.IsNearlyZero())
+	{
+		Expire();
+		return;
+	}
+
 	SetActorRotation(LaunchDirection.Rotation());
 
-	// Al detenerse, el ProjectileMovement suelta su UpdatedComponent: se reasigna en cada lanzamiento.
+	Collision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	ConfigureMoveIgnores(InInstigator);
+
 	Movement->SetUpdatedComponent(Collision);
 	Movement->InitialSpeed = Speed;
 	Movement->MaxSpeed = Speed;
@@ -85,7 +104,6 @@ void ABossProjectile::Launch(AActor* InInstigator, const FVector& Direction, con
 
 	bLaunched = true;
 
-	// Lo que ya estaba dentro de la esfera al salir del pool no dispara un BeginOverlap nuevo.
 	TArray<AActor*> AlreadyOverlapping;
 	Collision->GetOverlappingActors(AlreadyOverlapping);
 	for (AActor* Other : AlreadyOverlapping)
@@ -95,6 +113,56 @@ void ABossProjectile::Launch(AActor* InInstigator, const FVector& Direction, con
 	}
 
 	OnLaunched();
+}
+
+void ABossProjectile::SetHomingTarget(AActor* TargetActor, const float HomingAcceleration)
+{
+	ClearHomingTarget();
+
+	if (!bLaunched || !IsValid(TargetActor) || HomingAcceleration <= 0.f) return;
+
+	USceneComponent* TargetComponent = TargetActor->GetRootComponent();
+	if (!TargetComponent) return;
+
+	if (AEntity* TargetEntity = Cast<AEntity>(TargetActor))
+	{
+		if (!TargetEntity->IsAlive()) return;
+		HomingEntity = TargetEntity;
+		TargetEntity->OnDead.AddUniqueDynamic(this, &ABossProjectile::HandleHomingTargetDead);
+	}
+
+	Movement->HomingTargetComponent = TargetComponent;
+	Movement->HomingAccelerationMagnitude = HomingAcceleration;
+	Movement->bIsHomingProjectile = true;
+}
+
+void ABossProjectile::ClearHomingTarget()
+{
+	if (AEntity* TargetEntity = HomingEntity.Get())
+	{
+		TargetEntity->OnDead.RemoveDynamic(this, &ABossProjectile::HandleHomingTargetDead);
+	}
+	HomingEntity.Reset();
+
+	if (Movement)
+	{
+		Movement->bIsHomingProjectile = false;
+		Movement->HomingTargetComponent = nullptr;
+		Movement->HomingAccelerationMagnitude = 0.f;
+	}
+}
+
+void ABossProjectile::SetPierceTargets(const bool bShouldPierce)
+{
+	bPierceTargets = bShouldPierce;
+}
+
+void ABossProjectile::SetCollisionRadius(const float Radius)
+{
+	if (Collision && Radius > 0.f)
+	{
+		Collision->SetSphereRadius(Radius, true);
+	}
 }
 
 void ABossProjectile::HandleOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
@@ -109,7 +177,6 @@ void ABossProjectile::HandleOverlap(UPrimitiveComponent* OverlappedComponent, AA
 
 	HandledActors.Add(OtherActor);
 
-	// Con el dodge el proyectil lo atraviesa sin dañarlo.
 	if (UBossSystemLibrary::IsImmuneToBossHit(OtherActor, DamageParams.ImmunityTags)) return;
 
 	const FHitResult Hit = bFromSweep ? SweepResult : FHitResult(OtherActor, OtherComp, GetActorLocation(), -GetActorForwardVector());
@@ -121,8 +188,9 @@ void ABossProjectile::HandleOverlap(UPrimitiveComponent* OverlappedComponent, AA
 
 	if (!bPierceTargets)
 	{
-		// Se devuelve al pool en el próximo tick: no conviene apagar la colisión dentro del propio evento de overlap.
 		bLaunched = false;
+		ClearHomingTarget();
+		Collision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		Movement->StopMovementImmediately();
 		GetWorldTimerManager().SetTimerForNextTick(this, &ABossProjectile::Expire);
 	}
@@ -133,6 +201,9 @@ void ABossProjectile::HandleStop(const FHitResult& ImpactResult)
 	if (!bLaunched) return;
 
 	bLaunched = false;
+	ClearHomingTarget();
+	Collision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	Movement->StopMovementImmediately();
 
 	PlayImpactFeedback(ImpactResult.bBlockingHit ? FVector(ImpactResult.ImpactPoint) : GetActorLocation());
 	OnImpact(ImpactResult, false);
@@ -140,9 +211,48 @@ void ABossProjectile::HandleStop(const FHitResult& ImpactResult)
 	GetWorldTimerManager().SetTimerForNextTick(this, &ABossProjectile::Expire);
 }
 
+void ABossProjectile::HandleHomingTargetDead(AEntity* DeadEntity)
+{
+	ClearHomingTarget();
+}
+
+void ABossProjectile::ConfigureMoveIgnores(AActor* InInstigator)
+{
+	Collision->ClearMoveIgnoreActors();
+
+	if (InInstigator)
+	{
+		Collision->IgnoreActorWhenMoving(InInstigator, true);
+
+		TArray<AActor*> AttachedActors;
+		InInstigator->GetAttachedActors(AttachedActors, true, true);
+		for (AActor* Attached : AttachedActors)
+		{
+			Collision->IgnoreActorWhenMoving(Attached, true);
+		}
+	}
+
+	if (UWorld* World = GetWorld())
+	{
+		for (TActorIterator<ABossProjectile> It(World); It; ++It)
+		{
+			ABossProjectile* OtherProjectile = *It;
+			if (OtherProjectile && OtherProjectile != this)
+			{
+				Collision->IgnoreActorWhenMoving(OtherProjectile, true);
+				if (OtherProjectile->Collision)
+				{
+					OtherProjectile->Collision->IgnoreActorWhenMoving(this, true);
+				}
+			}
+		}
+	}
+}
+
 void ABossProjectile::Expire()
 {
 	bLaunched = false;
+	ClearHomingTarget();
 	GetWorldTimerManager().ClearTimer(LifetimeTimer);
 
 	if (UActorPoolSubsystem* Pool = GetWorld() ? GetWorld()->GetSubsystem<UActorPoolSubsystem>() : nullptr)
@@ -171,16 +281,24 @@ void ABossProjectile::PlayImpactFeedback(const FVector& Location) const
 void ABossProjectile::OnPoolActivate_Implementation()
 {
 	HandledActors.Reset();
+	Collision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 }
 
 void ABossProjectile::OnPoolDeactivate_Implementation()
 {
 	bLaunched = false;
+	ClearHomingTarget();
 	GetWorldTimerManager().ClearTimer(LifetimeTimer);
+
+	Collision->ClearMoveIgnoreActors();
+	bPierceTargets = DefaultPierceTargets;
+	if (DefaultCollisionRadius > 0.f)
+	{
+		Collision->SetSphereRadius(DefaultCollisionRadius, false);
+	}
 
 	Movement->StopMovementImmediately();
 	Movement->Deactivate();
 
-	// Inmediato: si no, el trail se estira desde el último impacto hasta el próximo spawn.
 	Effect->DeactivateImmediate();
 }

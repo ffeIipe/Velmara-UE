@@ -70,9 +70,6 @@ AActor* UOrbsPoolManager::SpawnOrbFromPool(const TSubclassOf<AActor> OrbsClass, 
         ItemToSpawn = SpawnNewOrbForPool(OrbsClass, Location, Rotation, Owner, Instigator);
         if (ItemToSpawn && Pool)
         {
-            // Freshly spawned actor might have run its BeginPlay.
-            // We ideally want to control this. For now, we assume it's okay and call Activate.
-            // More robust solution: spawn deferred, then call custom Init, then FinishSpawning.
         }
     }
 
@@ -93,7 +90,6 @@ void UOrbsPoolManager::ReturnOrbToPool(AActor* Orb)
 {
     if (!Orb) return;
 
-    // Antes era TSubclassOf<AItem>: para orbes que no son AItem daba null y el orbe se destruía en vez de reciclarse.
     const TSubclassOf<AActor> OrbClass = Orb->GetClass();
 
     if (FOrbsPool* Pool = GetOrCreatePool(OrbClass))

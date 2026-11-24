@@ -5,7 +5,6 @@
 #include "Features/SaveSystem/Core/PlayerProgressSaveGame.h"
 #include "SaveGameSubsystem.generated.h"
 
-
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGameSaved, bool, bSuccess);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGameLoaded, bool, bSuccess);
 
@@ -20,7 +19,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "SaveSystem")
 	static void DeserializeProperties(UObject* Object, const TArray<uint8>& InBytes);
-	
+
 public:
 	UFUNCTION(BlueprintCallable, Category = "Save System")
 	void SaveGame(int32 SlotIndex);
@@ -31,8 +30,20 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Save System")
 	void CreateNewGame(int32 SlotIndex, const FString MapName);
 
+	UFUNCTION(BlueprintCallable, Category = "Save System")
+	bool DeleteSaveSlot(int32 SlotIndex);
+
 	UFUNCTION(BlueprintPure, Category = "Save System")
 	bool DoesSaveGameExist(int32 SlotIndex) const;
+
+	UFUNCTION(BlueprintPure, Category = "Save System")
+	int32 GetMostRecentSaveSlot() const;
+
+	UFUNCTION(BlueprintPure, Category = "Save System")
+	int32 GetCurrentSlotIndex() const { return CurrentSlotIndex; }
+
+	UFUNCTION(BlueprintPure, Category = "Save System")
+	UPlayerProgressSaveGame* LoadSaveSlotObject(int32 SlotIndex) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Save System")
 	bool GetSaveSlotInfo(int32 SlotIndex, FString& OutLevelName, FDateTime& OutTimestamp, FString& OutSlotLabel) const;
@@ -40,9 +51,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Save System")
 	void RestoreCurrentLevelState() const;
 
-	// Lo llama el GameMode al iniciar el nivel: restaura solo si una carga (LoadGame) lo pidió.
 	void RestorePendingLevelState();
-	
+
 	UPROPERTY(BlueprintAssignable)
 	FOnGameSaved OnGameSaved;
 
@@ -67,7 +77,6 @@ private:
 	void SavePlayerProgression(UPlayerProgressSaveGame* SaveObject) const;
 	void LoadPlayerProgression(const UPlayerProgressSaveGame* SaveObject) const;
 
-	// Busca el componente en el pawn del jugador o, si está poseyendo otra entidad, en el personaje jugable.
 	template <typename TComponent>
 	TComponent* FindPlayerComponent() const;
 };

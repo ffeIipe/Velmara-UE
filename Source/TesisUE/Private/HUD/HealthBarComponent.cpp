@@ -1,6 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "HUD/HealthBarComponent.h"
 #include "HUD/HealthBar.h"
 #include "Components/ProgressBar.h"
@@ -26,7 +23,6 @@ void UHealthBarComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	//SetHealthOpacity(DeltaTime);
 }
 
 void UHealthBarComponent::SetHealthPercent(float Percent)

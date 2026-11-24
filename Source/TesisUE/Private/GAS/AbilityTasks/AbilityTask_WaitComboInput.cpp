@@ -3,8 +3,6 @@
 #include "AbilitySystemComponent.h"
 #include "TimerManager.h"
 
-/* ESTADO */
-
 bool FComboInputState::Press()
 {
 	if (bPressed) return false;
@@ -39,8 +37,6 @@ FComboInputState::EResult FComboInputState::Evaluate()
 	return EResult::ChainPending;
 }
 
-/* TAREA */
-
 UAbilityTask_WaitComboInput* UAbilityTask_WaitComboInput::WaitComboInput(UGameplayAbility* OwningAbility, const FGameplayTag WindowTag, const float HoldThreshold)
 {
 	UAbilityTask_WaitComboInput* MyTask = NewAbilityTask<UAbilityTask_WaitComboInput>(OwningAbility);
@@ -56,7 +52,6 @@ void UAbilityTask_WaitComboInput::Activate()
 	UAbilitySystemComponent* ASC = AbilitySystemComponent.Get();
 	if (!ASC || !Ability) return;
 
-	// shortcut: no avisa al servidor del input (juego single player); con red, replicarlo como UAbilityTask_WaitInputPress.
 	PressedHandle = ASC->AbilityReplicatedEventDelegate(EAbilityGenericReplicatedEvent::InputPressed, GetAbilitySpecHandle(), GetActivationPredictionKey())
 		.AddUObject(this, &UAbilityTask_WaitComboInput::OnInputPressed);
 	ReleasedHandle = ASC->AbilityReplicatedEventDelegate(EAbilityGenericReplicatedEvent::InputReleased, GetAbilitySpecHandle(), GetActivationPredictionKey())
@@ -68,7 +63,6 @@ void UAbilityTask_WaitComboInput::Activate()
 		return;
 	}
 
-	// La ventana del golpe anterior puede seguir activa mientras se mezcla: solo cuenta una que se abra desde ahora.
 	WindowTagCount = ASC->GetTagCount(WindowTag);
 	WindowTagHandle = ASC->RegisterGameplayTagEvent(WindowTag, EGameplayTagEventType::AnyCountChange)
 		.AddUObject(this, &UAbilityTask_WaitComboInput::OnWindowTagCountChanged);

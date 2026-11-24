@@ -5,7 +5,9 @@
 #include "Features/WeaponUpgradeSystem/Data/WeaponUpgradeTypes.h"
 #include "WeaponUpgradeMenuWidget.generated.h"
 
+class UBorder;
 class UHorizontalBox;
+class USizeBox;
 class UTextBlock;
 class UVerticalBox;
 class UWeaponComboRowWidget;
@@ -13,10 +15,9 @@ class UWeaponData;
 class UWeaponUpgradeComponent;
 class UWeaponUpgradeTabWidget;
 
-/*
- * Menú del Altar de Sangre: una pestaña por arma y, para la seleccionada, sus combos desbloqueables.
- * Construye su layout por código. Lo abre/cierra UWeaponUpgradeComponent::ToggleMenu() (ej. desde ABloodAltar).
- */
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnWeaponComboSelectedSignature, UWeaponData*, FGameplayTag);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnWeaponFeedbackSignature, const FText&, bool);
+
 UCLASS()
 class TESISUE_API UWeaponUpgradeMenuWidget : public UUpgradeMenuWidgetBase
 {
@@ -28,10 +29,19 @@ public:
 
 	virtual void RefreshMenu() override;
 
+	virtual UWidget* GetFirstFocusableWidget() const override;
+
 	void SelectWeapon(int32 WeaponIndex);
 
-	// Lo llaman las filas tras intentar un desbloqueo.
+	void CycleWeapon(int32 Delta);
+
 	void ShowUnlockResult(EWeaponUpgradeResult Result, const UWeaponData* Weapon, const FGameplayTag& UnlockTag);
+
+	void NotifyComboSelected(UWeaponData* InWeapon, const FGameplayTag& InUnlockTag);
+
+	FOnWeaponComboSelectedSignature OnComboSelected;
+
+	FOnWeaponFeedbackSignature OnFeedbackMessage;
 
 protected:
 	virtual void NativeOnInitialized() override;
@@ -42,6 +52,8 @@ protected:
 
 	virtual void OnUpgradeComponentSet() override;
 
+	virtual void OnEmbeddedModeChanged() override;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon Upgrades")
 	TSubclassOf<UWeaponComboRowWidget> RowWidgetClass;
 
@@ -50,6 +62,8 @@ protected:
 
 private:
 	void BuildLayout();
+
+	void UpdateStandaloneChromeVisibility();
 
 	void RebuildTabs();
 
@@ -69,9 +83,23 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UWeaponData> SelectedWeapon;
 
-	// Arma y cantidad de combos con las que se construyeron las filas actuales.
 	UPROPERTY(Transient)
 	TObjectPtr<UWeaponData> RowsWeapon;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UBorder> RootDimmer;
+
+	UPROPERTY(Transient)
+	TObjectPtr<USizeBox> PanelSizeBox;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UBorder> PanelBorder;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UVerticalBox> StandaloneHeaderBox;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UWidget> StandaloneFooterBox;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UTextBlock> CurrencyText;

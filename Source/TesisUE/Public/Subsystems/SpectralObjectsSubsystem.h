@@ -19,8 +19,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ActivateSpectralObjects();
 
-	// Pulso del vampiro: revela los objetos cuyo bounds cae dentro del radio durante Duration segundos.
-	// No se ocultan mientras el jugador los usa, y parpadean antes de desaparecer.
 	UFUNCTION(BlueprintCallable)
 	void ActivateSpectralObjectsInRange(const FVector& Origin, float Radius, float Duration = 5.f);
 
@@ -35,7 +33,6 @@ private:
 
 	TArray<TScriptInterface<ISpectral>> SpectralObjects;
 
-	// Objeto revelado -> tiempo de mundo en el que se oculta.
 	TMap<TWeakObjectPtr<AActor>, double> RevealedUntil;
 	FTimerHandle UpdateTimer;
 };

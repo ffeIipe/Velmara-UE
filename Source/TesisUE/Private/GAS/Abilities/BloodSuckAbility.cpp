@@ -16,15 +16,15 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Items/OrbBase.h"
+#include "Subsystems/OrbsPoolManager.h"
 
 namespace BloodSuck
 {
-	// IsAlive() mira State.Dead, que nunca se aplica (GA_Death no está otorgada): la vida es la fuente confiable.
 	bool HasHealth(const AActor* Actor)
 	{
 		const UAbilitySystemComponent* ASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(const_cast<AActor*>(Actor));
 		const FGameplayAttribute HealthAttribute = UVelmaraAttributeSet::GetHealthAttribute();
-		// Hay enemigos colocados en el nivel sin AttributeSet registrado: sin atributo no se los da por muertos.
 		return ASC && (!ASC->HasAttributeSetForAttribute(HealthAttribute) || ASC->GetNumericAttribute(HealthAttribute) > 0.f);
 	}
 }
@@ -33,10 +33,12 @@ UBloodSuckAbility::UBloodSuckAbility()
 {
 	SetAssetTags(FGameplayTagContainer(FGameplayTag::RequestGameplayTag(FName("Ability.BloodSuck"), false)));
 
-	// Valor por defecto; se puede cambiar en GA_BloodSuck.
 	static ConstructorHelpers::FObjectFinder<UAnimMontage> DefaultReact(
 		TEXT("/Game/Blueprints/Montages/HitReactions/AM_Katana_Blade_Damage_Front_Big_ver_D_Retargeted"));
 	VictimReactMontage = DefaultReact.Object;
+
+	static ConstructorHelpers::FClassFinder<AOrbBase> DefaultBloodOrb(TEXT("/Game/Blueprints/Items/Orbs/BP_Orb_Blood"));
+	BloodOrbClass = DefaultBloodOrb.Class;
 }
 
 bool UBloodSuckAbility::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
@@ -52,7 +54,6 @@ void UBloodSuckAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	ACharacter* Self = Cast<ACharacter>(GetAvatarActorFromActorInfo());
 	AEntity* Target = Self ? FindVictim(Cast<AEntity>(Self)) : nullptr;
 
-	// Sin a quién morder no se gasta el cooldown.
 	if (!Target || !CommitAbility(Handle, ActorInfo, ActivationInfo))
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
@@ -62,8 +63,9 @@ void UBloodSuckAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	Victim = Target;
 	SetVictimFrozen(true);
 
-	const FVector ToVictim = Target->GetActorLocation() - Self->GetActorLocation();
-	Self->SetActorRotation(FRotator(0.f, ToVictim.Rotation().Yaw, 0.f));
+	const FRotator FacingVictim(0.f, (Target->GetActorLocation() - Self->GetActorLocation()).Rotation().Yaw, 0.f);
+	Self->SetActorRotation(FacingVictim);
+	Target->SetActorRotation(FacingVictim);
 
 	if (AController* Controller = Self->GetController())
 	{
@@ -77,8 +79,6 @@ void UBloodSuckAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		return;
 	}
 
-	// Velmara se teletransporta a la espalda del enemigo y queda pegada a ella mientras dura el montage (la cámara la sigue
-	// porque va con el enemigo). El root motion del montage se anula (escala 0 en la task) para que no la separe.
 	if (UCharacterMovementComponent* Movement = Self->GetCharacterMovement())
 	{
 		Movement->StopMovementImmediately();
@@ -86,21 +86,19 @@ void UBloodSuckAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	}
 	Self->GetCapsuleComponent()->IgnoreActorWhenMoving(Target, true);
 	Target->GetCapsuleComponent()->IgnoreActorWhenMoving(Self, true);
-	Self->AttachToActor(Target, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-	Self->SetActorRelativeLocation(FVector(-BackDistance, 0.f,
-		Self->GetCapsuleComponent()->GetScaledCapsuleHalfHeight() - Target->GetCapsuleComponent()->GetScaledCapsuleHalfHeight()));
-	Self->SetActorRelativeRotation(FRotator::ZeroRotator);
+	Self->AttachToActor(Target, FAttachmentTransformRules::KeepWorldTransform);
 	bAttached = true;
+	LungeStartLocation = Self->GetRootComponent()->GetRelativeLocation();
+	LungeStartRotation = FRotator(0.f, Self->GetRootComponent()->GetRelativeRotation().Yaw, 0.f);
+	LungeStartTime = GetWorld()->GetTimeSeconds();
+	TickAttachment();
 
-	// El mesh va al hueso del enemigo para que siga su animación; la cápsula (y la cámara) quedan pegadas al actor.
-	if (USkeletalMeshComponent* SelfMesh = Self->GetMesh(); SelfMesh && Target->GetMesh())
+	if (BloodPulseCount > 0)
 	{
-		SavedMeshTransform = SelfMesh->GetRelativeTransform();
-		// KeepWorld: el mesh ya está en la pose "a la espalda" (por la cápsula); así el hueso solo aporta el movimiento, sin offsets a ojo.
-		SelfMesh->AttachToComponent(Target->GetMesh(), FAttachmentTransformRules::KeepWorldTransform, AttachBone);
+		const float PulseInterval = FMath::Max(SuckMontage->GetPlayLength() - LungeDuration, 0.1f) / BloodPulseCount;
+		GetWorld()->GetTimerManager().SetTimer(BloodPulseTimer, this, &UBloodSuckAbility::EmitBloodPulse, PulseInterval, true, LungeDuration);
 	}
 
-	// El enemigo ejecuta su animación estirada para que dure lo mismo que el chupar.
 	if (VictimReactMontage)
 	{
 		const float Rate = VictimReactMontage->GetPlayLength() / FMath::Max(SuckMontage->GetPlayLength(), 0.1f);
@@ -108,7 +106,6 @@ void UBloodSuckAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		UE_LOG(LogTemp, Log, TEXT("BloodSuck: victima %s reaccion %s -> %.2f s"), *GetNameSafe(Target), *GetNameSafe(VictimReactMontage), Played);
 	}
 
-	// Si la interrumpen (hit react, muerte) no cura: el cooldown se gasta igual.
 	UAbilityTask_PlayMontageAndWait* MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, SuckMontage,
 		1.f, NAME_None, true, 0.f);
 	MontageTask->OnCompleted.AddDynamic(this, &UBloodSuckAbility::HandleMontageCompleted);
@@ -121,17 +118,15 @@ void UBloodSuckAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 void UBloodSuckAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
 	const FGameplayAbilityActivationInfo ActivationInfo, const bool bReplicateEndAbility, const bool bWasCancelled)
 {
-	// Pase lo que pase (interrumpida, muerte), Velmara se despega, recupera el control y el enemigo se descongela.
+	if (const UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(AttachmentTimer);
+		World->GetTimerManager().ClearTimer(BloodPulseTimer);
+	}
+
 	ACharacter* Self = Cast<ACharacter>(GetAvatarActorFromActorInfo());
 	if (bAttached && Self)
 	{
-		// El mesh vuelve a la cápsula con su transform original antes de soltar el actor.
-		if (USkeletalMeshComponent* SelfMesh = Self->GetMesh())
-		{
-			SelfMesh->AttachToComponent(Self->GetCapsuleComponent(), FAttachmentTransformRules::KeepRelativeTransform);
-			SelfMesh->SetRelativeTransform(SavedMeshTransform);
-		}
-
 		Self->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 		Self->SetActorRotation(FRotator(0.f, Self->GetActorRotation().Yaw, 0.f));
 		if (AEntity* Target = Victim.Get())
@@ -186,13 +181,21 @@ AEntity* UBloodSuckAbility::FindVictim(const AEntity* Self) const
 void UBloodSuckAbility::SetVictimFrozen(const bool bFrozen) const
 {
 	AEntity* Target = Victim.Get();
-	AAIController* AIController = Target ? Cast<AAIController>(Target->GetController()) : nullptr;
+	if (!Target) return;
+
+	if (UCharacterMovementComponent* Movement = Target->GetCharacterMovement(); Movement && (bFrozen || BloodSuck::HasHealth(Target)))
+	{
+		Movement->StopMovementImmediately();
+		Movement->SetMovementMode(bFrozen ? MOVE_None : MOVE_Falling);
+	}
+
+	AAIController* AIController = Cast<AAIController>(Target->GetController());
 	if (!AIController) return;
 
 	if (bFrozen)
 	{
 		AIController->StopMovement();
-		AIController->SetFocus(GetAvatarActorFromActorInfo(), EAIFocusPriority::Gameplay);
+		AIController->ClearFocus(EAIFocusPriority::Gameplay);
 		if (UBrainComponent* Brain = AIController->GetBrainComponent())
 		{
 			Brain->PauseLogic(TEXT("BloodSuck"));
@@ -200,11 +203,73 @@ void UBloodSuckAbility::SetVictimFrozen(const bool bFrozen) const
 		return;
 	}
 
-	AIController->ClearFocus(EAIFocusPriority::Gameplay);
-	// Si murió mientras lo chupaban no se le reanuda el árbol.
 	if (UBrainComponent* Brain = AIController->GetBrainComponent(); Brain && Target->IsAlive())
 	{
 		Brain->ResumeLogic(TEXT("BloodSuck"));
+	}
+}
+
+void UBloodSuckAbility::TickAttachment()
+{
+	ACharacter* Self = Cast<ACharacter>(GetAvatarActorFromActorInfo());
+	AEntity* Target = Victim.Get();
+	USkeletalMeshComponent* SelfMesh = Self ? Self->GetMesh() : nullptr;
+	USkeletalMeshComponent* TargetMesh = Target ? Target->GetMesh() : nullptr;
+	if (!bAttached || !SelfMesh || !TargetMesh)
+	{
+		return;
+	}
+
+	const FVector BitePoint = TargetMesh->GetSocketLocation(VictimBiteBone) + Target->GetActorRotation().RotateVector(BiteOffset);
+	FVector Correction = BitePoint - SelfMesh->GetSocketLocation(SelfBiteBone);
+
+	const FVector VictimHip = TargetMesh->GetSocketLocation(VictimHipBone);
+	const FVector VictimBackAxis = (TargetMesh->GetSocketLocation(VictimBiteBone) - VictimHip).GetSafeNormal();
+	const FVector VictimBehind = -Target->GetActorForwardVector();
+	const FVector OutOfVictimBack = (VictimBehind - VictimBackAxis * FVector::DotProduct(VictimBehind, VictimBackAxis)).GetSafeNormal();
+	float Penetration = 0.f;
+	for (const FName& BodyBone : SelfBodyBones)
+	{
+		const FVector BodyPoint = SelfMesh->GetSocketLocation(BodyBone) + Correction;
+		Penetration = FMath::Max(Penetration, BodyClearance - FVector::DotProduct(BodyPoint - VictimHip, OutOfVictimBack));
+	}
+	Correction += OutOfVictimBack * Penetration;
+
+	const FVector AlignedWorldLocation = Self->GetActorLocation() + Correction;
+	const FVector AlignedRelativeLocation = Target->GetActorTransform().InverseTransformPositionNoScale(AlignedWorldLocation);
+
+	const float LungeElapsed = FMath::Min(GetWorld()->GetTimeSeconds() - LungeStartTime, LungeDuration);
+	const float Alpha = LungeDuration > 0.f ? FMath::InterpEaseOut(0.f, 1.f, LungeElapsed / LungeDuration, 2.f) : 1.f;
+	Self->SetActorRelativeLocation(FMath::Lerp(LungeStartLocation, AlignedRelativeLocation, Alpha));
+	Self->SetActorRelativeRotation(FQuat::Slerp(LungeStartRotation.Quaternion(), FQuat::Identity, Alpha));
+
+	AttachmentTimer = GetWorld()->GetTimerManager().SetTimerForNextTick(this, &UBloodSuckAbility::TickAttachment);
+}
+
+void UBloodSuckAbility::EmitBloodPulse() const
+{
+	AEntity* Target = Victim.Get();
+	AActor* Self = GetAvatarActorFromActorInfo();
+	if (!Target || !Self || !Target->GetMesh()) return;
+
+	const FVector BitePoint = Target->GetMesh()->GetSocketLocation(VictimBiteBone);
+
+	if (UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Target); TargetASC && BleedCueTag.IsValid())
+	{
+		FGameplayCueParameters CueParameters;
+		CueParameters.Location = BitePoint;
+		CueParameters.Normal = (FVector::UpVector - Target->GetActorForwardVector() * 0.5f).GetSafeNormal();
+		CueParameters.Instigator = Self;
+		CueParameters.EffectCauser = Self;
+		TargetASC->ExecuteGameplayCue(BleedCueTag, CueParameters);
+	}
+
+	UOrbsPoolManager* OrbPool = GetWorld()->GetSubsystem<UOrbsPoolManager>();
+	if (!OrbPool || !BloodOrbClass) return;
+
+	if (AOrbBase* Orb = Cast<AOrbBase>(OrbPool->SpawnOrbFromPool(BloodOrbClass, BitePoint, FRotator::ZeroRotator, Target)))
+	{
+		Orb->LaunchToTarget(Self);
 	}
 }
 

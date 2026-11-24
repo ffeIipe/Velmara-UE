@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -24,22 +22,24 @@ public:
     
     virtual void BeginPlay() override;
     
-    // En runtime, si el dueño tiene UWeaponUpgradeComponent, apunta a una copia sin las ramas de combo bloqueadas.
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
     USwordData* SwordData;
 
-    // Data Asset original (sin filtrar por los combos desbloqueados).
     UFUNCTION(BlueprintPure, Category = "Combat")
     USwordData* GetBaseSwordData() const { return BaseSwordData ? BaseSwordData.Get() : SwordData; }
 
-    // Regenera SwordData a partir del original quitando las ramas que el dueño todavía no desbloqueó.
     UFUNCTION(BlueprintCallable, Category = "Combat")
     void RefreshComboUnlocks();
 
     UPROPERTY()
     TArray<AActor*> IgnoreActors;
 
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat")
+    FVector TraceHalfExtent = FVector(20.f, 20.f, 20.f);
+
     virtual void Equip() override;
+
+    virtual FName GetEquipSocketName() const override;
 
     virtual void Holster() override;
     
@@ -55,7 +55,10 @@ protected:
        bool bFromSweep,
        const FHitResult& SweepResult);
 
-private:
+    void ApplyJuggle(AActor* Target);
+
+    void TraceAndApplyHits(UPrimitiveComponent* OverlappedComponent, const USceneComponent* TraceStart, const USceneComponent* TraceEnd);
+
     UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
     UBoxComponent* WeaponDamageBox;
 
@@ -65,8 +68,11 @@ private:
     UPROPERTY(VisibleAnywhere)
     USceneComponent* BoxTraceEnd;
 
+public:
     virtual void ClearIgnoreActors() override;
     virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled) override;
+
+private:
 
     UFUNCTION()
     void HandleCombosChanged();

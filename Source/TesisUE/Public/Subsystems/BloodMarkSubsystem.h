@@ -7,14 +7,12 @@
 class UMaterialInterface;
 class UMeshComponent;
 
-// Marca de sangre del pulso vampiro: los enemigos marcados (State.BloodMarked) reciben más daño.
 UCLASS()
 class TESISUE_API UBloodMarkSubsystem : public UWorldSubsystem
 {
 	GENERATED_BODY()
 
 public:
-	// Marca a los enemigos vivos del jugador dentro del radio. Volver a marcar renueva la duración.
 	UFUNCTION(BlueprintCallable)
 	void MarkEnemiesInRange(const FVector& Origin, float Radius, float Duration, UMaterialInterface* OverlayMaterial);
 

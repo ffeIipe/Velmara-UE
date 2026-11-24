@@ -7,16 +7,14 @@
 
 class UAttributeTreeComponent;
 class UAttributeTreeMenuWidget;
+class UBorder;
 class UButton;
 class UHorizontalBox;
 class UImage;
 class USizeBox;
 class UTextBlock;
+class UTexture2D;
 
-/*
- * Fila del menú: muestra una rama del árbol (nombre, niveles I..V conectados, bonus actual/siguiente) y el botón de mejora.
- * Construye su layout por código.
- */
 UCLASS()
 class TESISUE_API UAttributeTreeRowWidget : public UUserWidget
 {
@@ -29,22 +27,59 @@ public:
 
 	FGameplayTag GetUpgradeTag() const { return UpgradeTag; }
 
+	UWidget* GetFocusTarget() const;
+
 protected:
 	virtual void NativeOnInitialized() override;
+	virtual void NativeOnAddedToFocusPath(const FFocusEvent& InFocusEvent) override;
+	virtual void NativeOnRemovedFromFocusPath(const FFocusEvent& InFocusEvent) override;
 
 private:
 	void BuildLayout();
 
 	void RebuildLevelPips(int32 CurrentLevel, int32 MaxLevel, bool bCanAffordNext);
 
+	void RefreshVisualState();
+
+	UTexture2D* ResolveFallbackIcon() const;
+
 	UFUNCTION()
 	void HandleUpgradeClicked();
+
+	UFUNCTION()
+	void HandleRowHovered();
+
+	UFUNCTION()
+	void HandleRowUnhovered();
 
 	TWeakObjectPtr<UAttributeTreeComponent> AttributeTree;
 
 	TWeakObjectPtr<UAttributeTreeMenuWidget> OwnerMenu;
 
 	FGameplayTag UpgradeTag;
+
+	bool bIsRowHovered = false;
+
+	bool bIsRowFocused = false;
+
+	bool bIsRowEnabled = true;
+
+	bool bIsMaxed = false;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UButton> RowButton;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UBorder> FillBorder;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UImage> HoverWashImage;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UImage> FrameBorderImage;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UImage> FocusStarImage;
 
 	UPROPERTY(Transient)
 	TObjectPtr<USizeBox> IconBox;
@@ -56,23 +91,23 @@ private:
 	TObjectPtr<UTextBlock> NameText;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UTextBlock> LevelText;
+	TObjectPtr<UTextBlock> CurrentValueText;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UTextBlock> DescriptionText;
+	TObjectPtr<UTextBlock> ArrowText;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTextBlock> NextValueText;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UHorizontalBox> PipsBox;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UTextBlock> StatsText;
+	TObjectPtr<UImage> CostBloodIcon;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UButton> UpgradeButton;
+	TObjectPtr<UTextBlock> CostText;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UTextBlock> ButtonLabelText;
-
-	UPROPERTY(Transient)
-	TObjectPtr<UTextBlock> ButtonCostText;
+	TObjectPtr<UImage> ChevronImage;
 };

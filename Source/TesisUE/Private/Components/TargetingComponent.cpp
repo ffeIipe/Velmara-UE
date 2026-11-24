@@ -1,11 +1,12 @@
 #include "Components/TargetingComponent.h"
 #include "Curves/CurveFloat.h"
 #include "Entities/Entity.h"
+#include "Features/TotemSystem/Core/TotemChargeComponent.h"
 #include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
-#include "DrawDebugHelpers.h" // Necesario para los debugs visuales de C++
+#include "DrawDebugHelpers.h"
 
 UTargetingComponent::UTargetingComponent()
 {
@@ -27,6 +28,7 @@ void UTargetingComponent::BeginPlay()
     if (OwnerCharacter)
     {
         OwnerController = OwnerCharacter->GetController();
+        OwnerCharacter->ReceiveControllerChangedDelegate.AddDynamic(this, &UTargetingComponent::HandleOwnerControllerChanged);
     }
     else
     {
@@ -34,9 +36,36 @@ void UTargetingComponent::BeginPlay()
     }
 }
 
+void UTargetingComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+    if (OwnerCharacter)
+    {
+        OwnerCharacter->ReceiveControllerChangedDelegate.RemoveDynamic(this, &UTargetingComponent::HandleOwnerControllerChanged);
+    }
+
+    Super::EndPlay(EndPlayReason);
+}
+
+void UTargetingComponent::RefreshOwnerController()
+{
+    if (!OwnerCharacter)
+    {
+        OwnerCharacter = Cast<ACharacter>(GetOwner());
+    }
+    OwnerController = OwnerCharacter ? OwnerCharacter->GetController() : nullptr;
+}
+
+void UTargetingComponent::HandleOwnerControllerChanged(APawn* Pawn, AController* OldController, AController* NewController)
+{
+    OwnerController = NewController;
+    if (bIsLocking && (!NewController || !NewController->IsPlayerController()))
+    {
+        DisableLock();
+    }
+}
+
 void UTargetingComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
-    // CRÍTICA RESUELTA: Había dos Super::TickComponent aquí.
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
     
     if (!CurrentTarget || !OwnerCharacter)
@@ -74,6 +103,7 @@ void UTargetingComponent::HandleTargetDeath(AEntity* DeadEntity)
 void UTargetingComponent::EnableLock(const float LockRange)
 {
     UE_LOG(LogTemp, Log, TEXT("[UTargetingComponent] EnableLock llamado con rango: %f"), LockRange);
+    RefreshOwnerController();
     ActiveLockRange = LockRange;
     CombatTargets = GetTargets(ActiveLockRange);
     CurrentTarget = SelectNearestTarget(CombatTargets);
@@ -112,6 +142,11 @@ void UTargetingComponent::DisableLock()
         World->GetTimerManager().ClearTimer(TargetRefreshTimerHandle);
     }
     
+    if (AEntity* OldTarget = Cast<AEntity>(CurrentTarget))
+    {
+        OldTarget->OnDead.RemoveDynamic(this, &UTargetingComponent::HandleTargetDeath);
+    }
+
     CurrentTarget = nullptr;
     CombatTargets.Empty();
 }
@@ -215,6 +250,8 @@ AActor* UTargetingComponent::SelectNearestTarget(TArray<AActor*> Targets)
 
 void UTargetingComponent::RotateTowardsTarget(AActor* Target)
 {
+    RefreshOwnerController();
+
     if (!OwnerController || !OwnerCharacter || !Target)
     {
         if (bIsLocking)
@@ -244,10 +281,6 @@ TArray<AActor*> UTargetingComponent::GetTargets(const float Radius) const
 
     TArray<AActor*> Hits;
     
-    // DEBUG VISUAL: Dibuja la esfera para que confirmes que el tamaño de búsqueda es correcto
-    DrawDebugSphere(GetWorld(), GetOwner()->GetActorLocation(), Radius, 24, FColor::Red, false, 2.0f);
-
-    // CRÍTICA RESUELTA: TSubclassOf<AEntity>() instanciaba a NULL. Se cambió a AEntity::StaticClass()
     UKismetSystemLibrary::SphereOverlapActors(
         GetWorld(),
         GetOwner()->GetActorLocation(),
@@ -281,7 +314,7 @@ TArray<AActor*> UTargetingComponent::GetTargets(const float Radius) const
                 bIsAlive ? TEXT("True") : TEXT("False"), 
                 bIsHostile ? TEXT("True") : TEXT("False"));
 
-            if (bIsAlive && bIsHostile)
+            if (bIsAlive && bIsHostile && !TargetEntity->IsHidden() && !TargetEntity->FindComponentByClass<UTotemChargeComponent>())
             {
                 ValidTargets.Add(TargetEntity);
             }
@@ -294,6 +327,53 @@ TArray<AActor*> UTargetingComponent::GetTargets(const float Radius) const
     
     UE_LOG(LogTemp, Warning, TEXT("[UTargetingComponent] GetTargets: Total de targets válidos retornados: %d"), ValidTargets.Num());
     return ValidTargets;
+}
+
+AActor* UTargetingComponent::FindSoftLockTarget(const float Radius) const
+{
+    const APawn* OwnerPawn = Cast<APawn>(GetOwner());
+    if (!OwnerPawn) return nullptr;
+
+    const FVector Origin = OwnerPawn->GetActorLocation();
+    const FVector AimDirection = FRotator(0.f, OwnerPawn->GetControlRotation().Yaw, 0.f).Vector();
+
+    AActor* BestTarget = nullptr;
+    float BestAngle = SoftLockHalfAngle;
+    float BestDistSq = TNumericLimits<float>::Max();
+
+    for (AActor* Candidate : GetTargets(Radius))
+    {
+        FVector ToCandidate = Candidate->GetActorLocation() - Origin;
+        const float DistSq = ToCandidate.SizeSquared();
+        ToCandidate.Z = 0.f;
+        if (!ToCandidate.Normalize()) continue;
+
+        const float Angle = FMath::RadiansToDegrees(FMath::Acos(FMath::Clamp(FVector::DotProduct(AimDirection, ToCandidate), -1.f, 1.f)));
+        if (Angle > SoftLockHalfAngle) continue;
+
+        const bool bClearlyBetterAngle = !BestTarget || Angle < BestAngle - SoftLockAngleTieTolerance;
+        const bool bTiedAngleButCloser = BestTarget && FMath::Abs(Angle - BestAngle) <= SoftLockAngleTieTolerance && DistSq < BestDistSq;
+        if (bClearlyBetterAngle || bTiedAngleButCloser)
+        {
+            BestTarget = Candidate;
+            BestAngle = Angle;
+            BestDistSq = DistSq;
+        }
+    }
+
+    if (bDebugSoftLock)
+    {
+        const float HalfAngleRad = FMath::DegreesToRadians(SoftLockHalfAngle);
+        const FColor ConeColor = BestTarget ? FColor::Green : FColor::Red;
+        DrawDebugCone(GetWorld(), Origin, AimDirection, Radius, HalfAngleRad, KINDA_SMALL_NUMBER, 24, ConeColor, false, 2.f, 0, 2.f);
+        if (BestTarget)
+        {
+            DrawDebugLine(GetWorld(), Origin, BestTarget->GetActorLocation(), FColor::Green, false, 2.f, 0, 3.f);
+            DrawDebugSphere(GetWorld(), BestTarget->GetActorLocation(), 40.f, 12, FColor::Green, false, 2.f);
+        }
+    }
+
+    return BestTarget;
 }
 
 void UTargetingComponent::RemoveCombatTarget()
@@ -312,8 +392,8 @@ AActor* UTargetingComponent::SearchCombatTarget(const FVector& Start, const FVec
     TArray<AActor*> ActorsToIgnore;
     ActorsToIgnore.Add(GetOwner());
 
-    FHitResult ResultHit;
-    const bool bHit = UKismetSystemLibrary::SphereTraceSingleForObjects(
+    TArray<FHitResult> ResultHits;
+    UKismetSystemLibrary::SphereTraceMultiForObjects(
         GetWorld(),
         Start,
         End,
@@ -321,17 +401,30 @@ AActor* UTargetingComponent::SearchCombatTarget(const FVector& Start, const FVec
         ObjectTypes,
         false,
         ActorsToIgnore,
-        EDrawDebugTrace::ForDuration, // Si quieres ver este debug, tienes que asegurarte de ver los canales en pantalla
-        ResultHit,
+        EDrawDebugTrace::ForDuration,
+        ResultHits,
         true
     );
 
-    if (bHit)
+    if (AActor* HitActor = GetFirstNonTotemHitActor(ResultHits))
     {
-        UE_LOG(LogTemp, Log, TEXT("[UTargetingComponent] SearchCombatTarget: Impacto con %s"), *ResultHit.GetActor()->GetName());
-        return ResultHit.GetActor();
+        UE_LOG(LogTemp, Log, TEXT("[UTargetingComponent] SearchCombatTarget: Impacto con %s"), *HitActor->GetName());
+        return HitActor;
     }
 
     UE_LOG(LogTemp, Warning, TEXT("[UTargetingComponent] SearchCombatTarget: No se impactó nada."));
+    return nullptr;
+}
+
+AActor* UTargetingComponent::GetFirstNonTotemHitActor(const TArray<FHitResult>& Hits)
+{
+    for (const FHitResult& Hit : Hits)
+    {
+        AActor* HitActor = Hit.GetActor();
+        if (HitActor && !HitActor->FindComponentByClass<UTotemChargeComponent>())
+        {
+            return HitActor;
+        }
+    }
     return nullptr;
 }

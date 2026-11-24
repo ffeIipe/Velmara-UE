@@ -4,11 +4,6 @@
 #include "BehaviorTree/BTTaskNode.h"
 #include "BTTask_FindKiteLocation.generated.h"
 
-/*
- * Para enemigos a distancia: busca en el NavMesh un punto a PreferredDistance del objetivo y lo escribe en OutLocationKey.
- * Si el objetivo está más cerca que RetreatDistance se aleja en línea (abriéndose a los costados si hay pared); si no,
- * se desplaza de costado alrededor del objetivo para no quedarse quieto. Prefiere puntos con línea de visión al objetivo.
- */
 UCLASS()
 class TESISUE_API UBTTask_FindKiteLocation : public UBTTaskNode
 {
@@ -34,7 +29,6 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Kite", meta = (ClampMin = "0"))
 	float RetreatDistance = 650.f;
 
-	// Grados que se abre al costado cuando no tiene que huir.
 	UPROPERTY(EditAnywhere, Category = "Kite")
 	FVector2D StrafeAngle = FVector2D(25.f, 60.f);
 

@@ -1,5 +1,7 @@
 #include "Features/BossSystem/Actors/BossLightShaft.h"
 
+#include "AbilitySystemBlueprintLibrary.h"
+#include "AbilitySystemComponent.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
@@ -15,7 +17,9 @@
 #include "Features/BossSystem/Subsystems/SunlightExposureSubsystem.h"
 #include "GenericPool/Core/ActorPoolSubsystem.h"
 #include "Kismet/GameplayStatics.h"
+#include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
+#include "Player/CustomPlayerController.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -23,7 +27,6 @@
 
 namespace BossLightShaft
 {
-	// Parámetro escalar opcional del BeamMaterial (0-1) que sigue la intensidad de la luz.
 	const FName BeamIntensityParam(TEXT("Intensity"));
 }
 
@@ -43,9 +46,7 @@ ABossLightShaft::ABossLightShaft()
 	Light->IntensityUnits = ELightUnits::Candelas;
 	Light->Intensity = 0.f;
 	Light->SetCastShadows(true);
-	// Con Exponential Height Fog + Volumetric Fog en el nivel se ve la columna de luz sin necesidad de mesh.
 	Light->VolumetricScatteringIntensity = 4.f;
-	// El hueco no ilumina: de la luz se encarga la Directional Light del nivel. Activalo en un Blueprint hijo si hace falta.
 	Light->SetVisibility(false);
 
 	BeamMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BeamMesh"));
@@ -98,6 +99,9 @@ void ABossLightShaft::OpenShaft(AActor* InBoss, const FVector& InTop, const FVec
 	GetWorldTimerManager().ClearTimer(DamageTimer);
 	ClearExposure();
 
+	bFullArenaShaft = false;
+	ActiveTelegraphDuration = TelegraphDuration;
+
 	Boss = InBoss;
 	BreakPoint = InBreakPoint;
 	Top = InTop;
@@ -122,9 +126,52 @@ void ABossLightShaft::OpenShaft(AActor* InBoss, const FVector& InTop, const FVec
 
 	OnTelegraphStarted();
 
-	if (TelegraphDuration > 0.f)
+	if (ActiveTelegraphDuration > 0.f)
 	{
-		GetWorldTimerManager().SetTimer(PhaseTimer, this, &ABossLightShaft::BeginOpenPhase, TelegraphDuration, false);
+		GetWorldTimerManager().SetTimer(PhaseTimer, this, &ABossLightShaft::BeginOpenPhase, ActiveTelegraphDuration, false);
+	}
+	else
+	{
+		BeginOpenPhase();
+	}
+}
+
+void ABossLightShaft::OpenFullArenaShaft(const FVector& InTop, const FVector& InFloor, const float InRadius, AActor* InBoss, const FBossDamageParams& InDamageParams, const float InTelegraphDurationOverride)
+{
+	GetWorldTimerManager().ClearTimer(PhaseTimer);
+	GetWorldTimerManager().ClearTimer(DamageTimer);
+	ClearExposure();
+
+	bFullArenaShaft = true;
+	ActiveTelegraphDuration = InTelegraphDurationOverride >= 0.f ? InTelegraphDurationOverride : TelegraphDuration;
+
+	Boss = InBoss;
+	BreakPoint = nullptr;
+	Top = InTop;
+	Floor = InFloor;
+	Radius = FMath::Max(InRadius, 50.f);
+	DamageParams = InDamageParams;
+
+	SetActorLocationAndRotation(Top, FRotator::ZeroRotator);
+	LayoutComponents();
+
+	Phase = EShaftPhase::Telegraph;
+	PhaseElapsed = 0.f;
+	SetLightAlpha(0.f);
+	SetActorTickEnabled(true);
+
+	DustEffect->Activate(true);
+
+	if (TelegraphSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, TelegraphSound, Floor);
+	}
+
+	OnTelegraphStarted();
+
+	if (ActiveTelegraphDuration > 0.f)
+	{
+		GetWorldTimerManager().SetTimer(PhaseTimer, this, &ABossLightShaft::BeginOpenPhase, ActiveTelegraphDuration, false);
 	}
 	else
 	{
@@ -138,17 +185,28 @@ void ABossLightShaft::BeginOpenPhase()
 
 	Phase = EShaftPhase::Open;
 	PhaseElapsed = 0.f;
+	SetLightAlpha(ActiveTelegraphDuration > 0.f ? TelegraphIntensityFraction : 0.f);
 	SetActorTickEnabled(true);
 
 	DustEffect->Deactivate();
 
-	// El techo cae recién ahora: durante el aviso solo se filtra un poco de luz.
 	if (ABossCeilingBreakPoint* LinkedPoint = BreakPoint.Get())
 	{
 		LinkedPoint->Break();
 	}
 
-	ApplyImpact();
+	if (!(bFullArenaShaft && bSkipImpactDamageInFullArena))
+	{
+		ApplyImpact();
+	}
+
+	if (const UWorld* World = GetWorld())
+	{
+		if (USunlightExposureSubsystem* Exposure = World->GetSubsystem<USunlightExposureSubsystem>())
+		{
+			Exposure->RegisterSunSource(this);
+		}
+	}
 
 	GetWorldTimerManager().SetTimer(DamageTimer, this, &ABossLightShaft::DamageTick, DamageTickInterval, true, DamageTickInterval);
 
@@ -168,6 +226,7 @@ void ABossLightShaft::CloseShaft()
 	GetWorldTimerManager().ClearTimer(DamageTimer);
 	ClearExposure();
 
+	ClosingStartAlpha = CurrentLightAlpha;
 	Phase = EShaftPhase::Closing;
 	PhaseElapsed = 0.f;
 	SetActorTickEnabled(true);
@@ -202,16 +261,17 @@ void ABossLightShaft::Tick(const float DeltaSeconds)
 	{
 	case EShaftPhase::Telegraph:
 		{
-			// Parpadeo tenue: avisa dónde va a caer el techo.
-			const float FadeIn = FMath::Clamp(PhaseElapsed / 0.3f, 0.f, 1.f);
+			const float FadeInDuration = FMath::Max(ActiveTelegraphDuration > 0.f ? FMath::Min(0.3f, ActiveTelegraphDuration) : 0.3f, KINDA_SMALL_NUMBER);
+			const float FadeIn = FMath::Clamp(PhaseElapsed / FadeInDuration, 0.f, 1.f);
 			const float Flicker = 0.65f + 0.35f * FMath::Sin(PhaseElapsed * 30.f);
 			SetLightAlpha(TelegraphIntensityFraction * FadeIn * Flicker);
 			break;
 		}
 	case EShaftPhase::Open:
 		{
+			const float StartAlpha = ActiveTelegraphDuration > 0.f ? TelegraphIntensityFraction : 0.f;
 			const float Alpha = FMath::Clamp(PhaseElapsed / LightRampDuration, 0.f, 1.f);
-			SetLightAlpha(FMath::Lerp(TelegraphIntensityFraction, 1.f, Alpha));
+			SetLightAlpha(FMath::Lerp(StartAlpha, 1.f, Alpha));
 			if (Alpha >= 1.f && !bDrawDebug)
 			{
 				SetActorTickEnabled(false);
@@ -221,7 +281,7 @@ void ABossLightShaft::Tick(const float DeltaSeconds)
 	case EShaftPhase::Closing:
 		{
 			const float Alpha = FMath::Clamp(PhaseElapsed / CloseDuration, 0.f, 1.f);
-			SetLightAlpha(1.f - Alpha);
+			SetLightAlpha(ClosingStartAlpha * (1.f - Alpha));
 			if (Alpha >= 1.f)
 			{
 				FinishClose();
@@ -275,6 +335,7 @@ void ABossLightShaft::ApplyImpact()
 
 	for (AActor* Candidate : Candidates)
 	{
+		if (!IsValid(Candidate) || !Candidate->CanBeDamaged()) continue;
 		if (!IsPointInsideShaft(Candidate->GetActorLocation())) continue;
 		if (!UBossSystemLibrary::IsValidBossTarget(BossActor, Candidate, Params.bOnlyPlayerControlled)) continue;
 		if (UBossSystemLibrary::IsImmuneToBossHit(Candidate, Params.ImmunityTags)) continue;
@@ -284,11 +345,38 @@ void ABossLightShaft::ApplyImpact()
 	}
 }
 
+bool ABossLightShaft::IsPossessedMinionCandidate(const AActor* Candidate) const
+{
+	if (!Candidate) return false;
+
+	if (const APawn* CandidatePawn = Cast<APawn>(Candidate))
+	{
+		if (const ACustomPlayerController* PlayerController = Cast<ACustomPlayerController>(CandidatePawn->GetController()))
+		{
+			if (PlayerController->IsPossessedHost(Candidate))
+			{
+				return true;
+			}
+		}
+	}
+
+	if (const UAbilitySystemComponent* ASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(const_cast<AActor*>(Candidate)))
+	{
+		const FGameplayTag PossessedTag = FGameplayTag::RequestGameplayTag(FName("Character.Possessed"), false);
+		if (PossessedTag.IsValid() && ASC->HasMatchingGameplayTag(PossessedTag))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void ABossLightShaft::DamageTick()
 {
 	if (Phase != EShaftPhase::Open) return;
 
-	USunlightExposureSubsystem* Exposure = GetWorld()->GetSubsystem<USunlightExposureSubsystem>();
+	USunlightExposureSubsystem* Exposure = GetWorld() ? GetWorld()->GetSubsystem<USunlightExposureSubsystem>() : nullptr;
 	const AActor* BossActor = Boss.Get();
 
 	TArray<AActor*> Candidates;
@@ -298,6 +386,9 @@ void ABossLightShaft::DamageTick()
 	for (AActor* Candidate : Candidates)
 	{
 		if (!IsValid(Candidate) || Candidate == BossActor || Candidate->IsHidden()) continue;
+		if (!Candidate->CanBeDamaged()) continue;
+		if (IsPossessedMinionCandidate(Candidate)) continue;
+		if (Exposure && Exposure->IsSunProtected(Candidate)) continue;
 		if (const AEntity* Entity = Cast<AEntity>(Candidate); Entity && !Entity->IsAlive()) continue;
 		if (!IsPointInsideShaft(Candidate->GetActorLocation())) continue;
 		if (bRequireLineOfSight && !HasLineOfSight(Candidate)) continue;
@@ -337,8 +428,11 @@ void ABossLightShaft::DamageTick()
 
 		if (Mode != ELightShaftDamageMode::SunBurningEvent && DirectParams.Damage > 0.f)
 		{
-			// Daño ambiental: se lo aplica el propio objetivo, igual que el sol.
-			UBossSystemLibrary::ApplyBossDamage(nullptr, this, Target, DirectParams, 1.f, FHitResult());
+			const bool bBlockedBySunState = Exposure && (Exposure->IsSunProtected(Target) || Exposure->IsUnderSunGrace(Target));
+			if (!bBlockedBySunState)
+			{
+				UBossSystemLibrary::ApplyBossDamage(nullptr, this, Target, DirectParams, 1.f, FHitResult());
+			}
 		}
 	}
 
@@ -390,7 +484,6 @@ bool ABossLightShaft::IsPointInsideShaft(const FVector& Point) const
 
 bool ABossLightShaft::HasLineOfSight(const AActor* Target) const
 {
-	// Rayo vertical desde el hueco hasta el objetivo: cualquier cosa encima lo cubre del sol.
 	const FVector TargetLocation = Target->GetActorLocation();
 	const FVector Start(TargetLocation.X, TargetLocation.Y, Top.Z - 30.f);
 	const FVector End = TargetLocation + FVector(0.f, 0.f, 40.f);
@@ -404,7 +497,6 @@ bool ABossLightShaft::HasLineOfSight(const AActor* Target) const
 		Params.AddIgnoredActor(BossActor);
 	}
 
-	// Las armas e items pegados al objetivo no lo cubren.
 	TArray<AActor*> AttachedActors;
 	Target->GetAttachedActors(AttachedActors, true, true);
 	Params.AddIgnoredActors(AttachedActors);
@@ -424,15 +516,27 @@ void ABossLightShaft::LayoutComponents()
 {
 	const float Height = FMath::Max(Top.Z - Floor.Z, 100.f);
 
-	const float ConeAngle = FMath::Clamp(FMath::RadiansToDegrees(FMath::Atan(Radius / Height)) * 1.15f, 2.f, 80.f);
-	Light->SetOuterConeAngle(ConeAngle);
-	Light->SetInnerConeAngle(ConeAngle * 0.75f);
-	Light->SetAttenuationRadius(Height * 1.25f + Radius);
+	if (bFullArenaShaft)
+	{
+		Light->SetOuterConeAngle(85.f);
+		Light->SetInnerConeAngle(70.f);
+		Light->SetAttenuationRadius(FMath::Max(Height + Radius, Radius * 2.5f));
+	}
+	else
+	{
+		const float ConeAngle = FMath::Clamp(FMath::RadiansToDegrees(FMath::Atan(Radius / Height)) * 1.15f, 2.f, 80.f);
+		Light->SetOuterConeAngle(ConeAngle);
+		Light->SetInnerConeAngle(ConeAngle * 0.75f);
+		Light->SetAttenuationRadius(Height * 1.25f + Radius);
+	}
 	Light->SetLightColor(LightColor);
 
-	if (BeamMaterial)
+	if (bFullArenaShaft && bHideBeamMeshInFullArena)
 	{
-		// El cilindro básico mide 100 uu con el pivote al centro.
+		BeamMesh->SetVisibility(false);
+	}
+	else if (BeamMaterial)
+	{
 		const UMaterialInstanceDynamic* CurrentInstance = Cast<UMaterialInstanceDynamic>(BeamMesh->GetMaterial(0));
 		if (!CurrentInstance || CurrentInstance->Parent != BeamMaterial)
 		{
@@ -447,7 +551,11 @@ void ABossLightShaft::LayoutComponents()
 		BeamMesh->SetVisibility(false);
 	}
 
-	if (GroundDecalMaterial)
+	if (bFullArenaShaft && bHideGroundDecalInFullArena)
+	{
+		GroundDecal->SetVisibility(false);
+	}
+	else if (GroundDecalMaterial)
 	{
 		GroundDecal->SetDecalMaterial(GroundDecalMaterial);
 		GroundDecal->DecalSize = FVector(128.f, Radius, Radius);
@@ -463,13 +571,16 @@ void ABossLightShaft::LayoutComponents()
 
 void ABossLightShaft::SetLightAlpha(const float Alpha)
 {
-	Light->SetIntensity(LightIntensity * Alpha);
+	CurrentLightAlpha = FMath::Clamp(Alpha, 0.f, 1.f);
+
+	Light->SetIntensity(GetEffectiveLightIntensity() * CurrentLightAlpha);
+	Light->SetVisibility(CurrentLightAlpha > KINDA_SMALL_NUMBER);
 
 	if (BeamMesh->IsVisible())
 	{
 		if (UMaterialInstanceDynamic* BeamInstance = Cast<UMaterialInstanceDynamic>(BeamMesh->GetMaterial(0)))
 		{
-			BeamInstance->SetScalarParameterValue(BossLightShaft::BeamIntensityParam, Alpha);
+			BeamInstance->SetScalarParameterValue(BossLightShaft::BeamIntensityParam, CurrentLightAlpha);
 		}
 	}
 }
@@ -481,6 +592,7 @@ void ABossLightShaft::ClearExposure()
 		if (USunlightExposureSubsystem* Exposure = World->GetSubsystem<USunlightExposureSubsystem>())
 		{
 			Exposure->ClearSource(this);
+			Exposure->UnregisterSunSource(this);
 		}
 	}
 
@@ -491,6 +603,10 @@ void ABossLightShaft::OnPoolActivate_Implementation()
 {
 	Phase = EShaftPhase::Inactive;
 	PhaseElapsed = 0.f;
+	CurrentLightAlpha = 0.f;
+	ClosingStartAlpha = 1.f;
+	bFullArenaShaft = false;
+	ActiveTelegraphDuration = TelegraphDuration;
 }
 
 void ABossLightShaft::OnPoolDeactivate_Implementation()
@@ -500,10 +616,16 @@ void ABossLightShaft::OnPoolDeactivate_Implementation()
 	ClearExposure();
 
 	Phase = EShaftPhase::Inactive;
+	CurrentLightAlpha = 0.f;
+	ClosingStartAlpha = 1.f;
+	bFullArenaShaft = false;
+	ActiveTelegraphDuration = TelegraphDuration;
 	Boss.Reset();
 	BreakPoint.Reset();
+	DamageParams = FBossDamageParams();
 
 	Light->SetIntensity(0.f);
+	Light->SetVisibility(false);
 	DustEffect->DeactivateImmediate();
 	BeamMesh->SetVisibility(false);
 	GroundDecal->SetVisibility(false);

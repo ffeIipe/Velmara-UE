@@ -11,8 +11,6 @@ UWeaponUpgradeComponent::UWeaponUpgradeComponent()
 	MenuWidgetClass = UWeaponUpgradeMenuWidget::StaticClass();
 }
 
-/* MEJORAS */
-
 EWeaponUpgradeResult UWeaponUpgradeComponent::TryUnlockCombo(UWeaponData* Weapon, const FGameplayTag UnlockTag)
 {
 	FWeaponComboUpgrade Upgrade;
@@ -61,8 +59,6 @@ void UWeaponUpgradeComponent::RestoreUnlockedCombos(const FGameplayTagContainer&
 	OnCombosChanged.Broadcast();
 }
 
-/* CONSULTAS */
-
 bool UWeaponUpgradeComponent::IsComboUnlocked(const FGameplayTag UnlockTag) const
 {
 	return UnlockTag.IsValid() && UnlockedCombos.HasTagExact(UnlockTag);
@@ -70,9 +66,7 @@ bool UWeaponUpgradeComponent::IsComboUnlocked(const FGameplayTag UnlockTag) cons
 
 bool UWeaponUpgradeComponent::IsComboNodeUnlocked(const UComboNode* Node) const
 {
-	if (!Node) return false;
-
-	return !Node->RequiredUnlockTag.IsValid() || IsComboUnlocked(Node->RequiredUnlockTag);
+	return Node != nullptr;
 }
 
 TArray<UWeaponData*> UWeaponUpgradeComponent::GetUpgradeableWeapons() const
@@ -117,7 +111,6 @@ TArray<FWeaponComboUpgrade> UWeaponUpgradeComponent::GetComboUpgrades(const UWea
 	if (!Weapon) return {};
 	if (!Weapon->ComboUpgrades.IsEmpty()) return Weapon->ComboUpgrades;
 
-	// Sin configuración: una entrada por cada RequiredUnlockTag usado en el árbol de combos.
 	TArray<FGameplayTag> UnlockTags;
 	WeaponUpgradeUtils::CollectUnlockTags(Weapon, UnlockTags);
 
@@ -173,7 +166,6 @@ FGameplayTagContainer UWeaponUpgradeComponent::GetMissingRequirements(const UWea
 		}
 	}
 
-	// Si la rama cuelga de otra rama bloqueada, no se puede ejecutar hasta desbloquear esa.
 	const FComboInputPath Path = WeaponUpgradeUtils::FindComboPath(Weapon, UnlockTag);
 	if (Path.ParentUnlockTag.IsValid() && !IsComboUnlocked(Path.ParentUnlockTag))
 	{

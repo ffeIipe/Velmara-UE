@@ -7,11 +7,8 @@
 class UAnimMontage;
 class UGameplayEffect;
 class AEntity;
+class AOrbBase;
 
-/*
- * Chupar sangre: Velmara reproduce SuckMontage y, si termina sin que la interrumpan, se aplica HealEffect a sí misma
- * (vida + energía, los valores viven en el GE). El cooldown es el CooldownGameplayEffectClass de la habilidad. Tag: Ability.BloodSuck.
- */
 UCLASS()
 class TESISUE_API UBloodSuckAbility : public UVelmaraGameplayAbility
 {
@@ -41,18 +38,37 @@ protected:
 	float GrabRange = 600.f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "BloodSuck")
-	float BiteDistance = 120.f;
+	float LungeDuration = 0.18f;
 
-	// Hueso del enemigo al que se pega el mesh de Velmara (conserva la pose a la espalda que ya tiene al engancharse).
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "BloodSuck")
-	FName AttachBone = TEXT("spine_03");
+	FName SelfBiteBone = TEXT("head");
 
-	// Distancia a la que Velmara queda pegada a la espalda del enemigo.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "BloodSuck")
-	float BackDistance = 60.f;
+	FName VictimBiteBone = TEXT("neck_01");
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "BloodSuck")
+	FVector BiteOffset = FVector::ZeroVector;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "BloodSuck")
+	FName VictimHipBone = TEXT("pelvis");
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "BloodSuck")
+	TArray<FName> SelfBodyBones = {TEXT("spine_03"), TEXT("pelvis")};
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "BloodSuck")
+	float BodyClearance = 32.f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "BloodSuck")
 	TObjectPtr<UAnimMontage> VictimReactMontage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "BloodSuck|Feedback")
+	FGameplayTag BleedCueTag;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "BloodSuck|Feedback")
+	TSubclassOf<AOrbBase> BloodOrbClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "BloodSuck|Feedback", meta = (ClampMin = "0"))
+	int32 BloodPulseCount = 6;
 
 private:
 	UPROPERTY()
@@ -60,10 +76,16 @@ private:
 
 	bool bIgnoringMoveInput = false;
 	bool bAttached = false;
-	FTransform SavedMeshTransform;
+	FVector LungeStartLocation = FVector::ZeroVector;
+	FRotator LungeStartRotation = FRotator::ZeroRotator;
+	float LungeStartTime = 0.f;
+	FTimerHandle AttachmentTimer;
+	FTimerHandle BloodPulseTimer;
 
 	AEntity* FindVictim(const AEntity* Self) const;
 	void SetVictimFrozen(bool bFrozen) const;
+	void TickAttachment();
+	void EmitBloodPulse() const;
 
 	UFUNCTION()
 	void HandleMontageCompleted();

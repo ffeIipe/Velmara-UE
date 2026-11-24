@@ -9,7 +9,6 @@ void UUpgradeMenuWidgetBase::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
 
-	// Necesario para recibir Esc / la tecla de cierre.
 	SetIsFocusable(true);
 }
 
@@ -27,6 +26,12 @@ void UUpgradeMenuWidgetBase::SetUpgradeComponent(UUpgradeComponentBase* InUpgrad
 	BindToUpgradeComponent();
 
 	OnUpgradeComponentSet();
+}
+
+void UUpgradeMenuWidgetBase::SetEmbeddedMode(const bool bInEmbedded)
+{
+	bEmbeddedMode = bInEmbedded;
+	OnEmbeddedModeChanged();
 }
 
 void UUpgradeMenuWidgetBase::BindToUpgradeComponent()
@@ -52,9 +57,8 @@ void UUpgradeMenuWidgetBase::HandleCurrencyChanged(int32 NewCurrencyAmount)
 
 FReply UUpgradeMenuWidgetBase::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
 {
-	if (IsCloseKey(InKeyEvent.GetKey()))
+	if (!bEmbeddedMode && IsCloseKey(InKeyEvent.GetKey()))
 	{
-		// Ignoramos la repetición por mantener la tecla para no cerrar/abrir en bucle.
 		if (!InKeyEvent.IsRepeat())
 		{
 			RequestClose();
@@ -67,7 +71,11 @@ FReply UUpgradeMenuWidgetBase::NativeOnKeyDown(const FGeometry& InGeometry, cons
 
 FReply UUpgradeMenuWidgetBase::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
-	// Clickear el fondo no debe hacer perder el foco del teclado (si no, Esc dejaría de cerrar el menú).
+	if (bEmbeddedMode)
+	{
+		return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
+	}
+
 	return FReply::Handled().SetUserFocus(TakeWidget(), EFocusCause::Mouse);
 }
 

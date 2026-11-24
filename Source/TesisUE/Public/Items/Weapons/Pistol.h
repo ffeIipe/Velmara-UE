@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -17,6 +15,9 @@ class TESISUE_API APistol : public AWeapon
 	GENERATED_BODY()
 public:
 	virtual void AttachMeshToSocket(USceneComponent* InParent, FName SocketInName) override;
+
+	UFUNCTION(BlueprintPure, Category = "Weapon Properties")
+	UPistolData* GetPistolData() const { return PistolData; }
 	
 protected:
 	APistol();
@@ -29,7 +30,6 @@ protected:
 	FOnFire OnFire;
     
 private:
-	//--- Basic Functions ---
 	void Fire();
 
 	void EnableFire();
@@ -43,7 +43,6 @@ private:
 	UFUNCTION()
 	void PlayEffects();
 
-	// --- Stats ---
 	UPROPERTY()
 	int32 CurrentAmmo;
 

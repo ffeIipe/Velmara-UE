@@ -28,7 +28,6 @@ namespace BossCombat
 	constexpr uint8 WindowActive = 1;
 	constexpr uint8 WindowDone = 2;
 
-	// Duración de una acción cuyo montaje no se pudo reproducir (para que igual ocurra su evento).
 	constexpr float NoMontageDuration = 0.6f;
 
 	const FName WarpTargetName(TEXT("BossAttackTarget"));
@@ -38,7 +37,6 @@ UBossCombatComponent::UBossCombatComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.bStartWithTickEnabled = false;
-	// Después de la animación y el movimiento, para barrer el arma en su posición final del frame.
 	PrimaryComponentTick.TickGroup = TG_PostPhysics;
 
 	TargetObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
@@ -142,7 +140,6 @@ bool UBossCombatComponent::StartAttack(const int32 AttackIndex, AActor* Target)
 
 	const float PlayRate = Attack.PlayRate * (1.f + PlayRateBonusPerStage * CurrentStage);
 
-	// Un ataque sin animación sería un golpe invisible: si el montaje no corre, no se ataca.
 	if (!BeginAction(Attack.Montage, PlayRate, Target, false)) return false;
 
 	CurrentAction.AttackIndex = AttackIndex;
@@ -151,19 +148,18 @@ bool UBossCombatComponent::StartAttack(const int32 AttackIndex, AActor* Target)
 	CurrentAction.RecoveryAfter = Attack.RecoveryTime * FMath::Max(0.1f, 1.f - RecoveryReductionPerStage * CurrentStage);
 	CurrentAction.TimedWindowStates.Init(BossCombat::WindowPending, Attack.HitWindows.Num());
 
-	// Motion Warping en la ventana de seguimiento: el boss se orienta (y se acerca) de forma suave en vez de girar a mano.
+	const bool bIsProjectileAttack = Attack.HitWindows.ContainsByPredicate([](const FBossHitWindow& Window)
+	{
+		return Window.Shape == EBossHitShape::Projectile;
+	});
+
 	UMotionWarpingComponent* Warping = OwnerCharacter ? OwnerCharacter->FindComponentByClass<UMotionWarpingComponent>() : nullptr;
 	if (Warping && Target && Attack.TrackingEndTime > 0.f)
 	{
 		CurrentAction.bWarping = true;
-		// Los ataques a distancia solo giran: acercarse arruinaría la distancia del disparo.
-		CurrentAction.bWarpTranslation = !Attack.HitWindows.ContainsByPredicate([](const FBossHitWindow& Window)
-		{
-			return Window.Shape == EBossHitShape::Projectile;
-		});
+		CurrentAction.bWarpTranslation = !bIsProjectileAttack;
 
 		UpdateWarpTarget(Target);
-		// Ventana en segundos del montaje; SkewWarp sigue al target cada tick mientras lo actualizamos.
 		URootMotionModifier_SkewWarp::AddRootMotionModifierSkewWarp(Warping, Attack.Montage, 0.f,
 			Attack.TrackingEndTime * Attack.Montage->GetPlayLength(), BossCombat::WarpTargetName, EWarpPointAnimProvider::None,
 			FTransform::Identity, NAME_None, CurrentAction.bWarpTranslation, true, true);
@@ -191,7 +187,17 @@ bool UBossCombatComponent::StartAttack(const int32 AttackIndex, AActor* Target)
 		UGameplayStatics::PlaySoundAtLocation(this, Attack.TelegraphSound, GetOwner()->GetActorLocation());
 	}
 
-	OnAttackStarted.Broadcast(Attack.AttackName, TimeUntilFirstHit);
+	const FName AttackName = Attack.AttackName;
+	if (Attack.bShowGroundTelegraph || bIsProjectileAttack)
+	{
+		if (const AActor* Owner = GetOwner())
+		{
+			const FVector TelegraphLocation = Owner->GetActorTransform().TransformPosition(Attack.TelegraphOffset);
+			OnAttackTelegraphStarted.Broadcast(AttackName, TelegraphLocation, Attack.TelegraphRadius, bIsProjectileAttack);
+		}
+	}
+
+	OnAttackStarted.Broadcast(AttackName, TimeUntilFirstHit);
 	return true;
 }
 
@@ -277,7 +283,6 @@ void UBossCombatComponent::CancelCurrentAction()
 
 void UBossCombatComponent::HandleMontageEnded(UAnimMontage* Montage, const bool bInterrupted, const int32 ActionId)
 {
-	// Montajes de acciones anteriores (canceladas o reemplazadas) llegan tarde y se ignoran.
 	if (!CurrentAction.bActive || CurrentAction.Id != ActionId) return;
 
 	FinishAction(bInterrupted);
@@ -317,7 +322,6 @@ void UBossCombatComponent::FinishAction(const bool bInterrupted)
 	}
 	ActiveTelegraphDecal = nullptr;
 
-	// Los callbacks pueden arrancar otra acción, por eso van al final.
 	if (bWasAttack)
 	{
 		OnAttackEnded.Broadcast(AttackName, bInterrupted);
@@ -382,7 +386,6 @@ void UBossCombatComponent::TickComponent(const float DeltaTime, const ELevelTick
 
 	if (UAnimMontage* Montage = CurrentAction.Montage.Get())
 	{
-		// Si el montaje se cortó sin avisar (ej. cambio de AnimInstance), la acción no puede quedar colgada.
 		if (const UAnimInstance* AnimInstance = GetAnimInstance(); !AnimInstance || !AnimInstance->Montage_IsActive(Montage))
 		{
 			FinishAction(false);
@@ -426,7 +429,6 @@ void UBossCombatComponent::UpdateTimedWindows(const float Progress)
 		const FBossHitWindow& Definition = Definitions[Index];
 		uint8& State = CurrentAction.TimedWindowStates[Index];
 
-		// Primero se cierran las que venían activas: una ventana que abre este frame se procesa al menos una vez.
 		if (State == BossCombat::WindowActive && Progress > Definition.EndTime)
 		{
 			CurrentAction.Windows.RemoveAll([Index](const FActiveHitWindow& Window) { return Window.TimedIndex == Index; });
@@ -540,7 +542,6 @@ void UBossCombatComponent::ProcessActiveWindows(const float DeltaTime)
 		bHasPrevWeaponSamples = false;
 	}
 
-	// Aplicar daño ejecuta el ReceiveDamage del objetivo, que podría cancelar esta acción: se valida después de cada golpe.
 	const int32 ActionId = CurrentAction.Id;
 	auto IsStillValid = [this, ActionId](const int32 WindowIndex)
 	{
@@ -600,7 +601,6 @@ void UBossCombatComponent::TryHitTarget(FActiveHitWindow& Window, AActor* Target
 
 	const FName AttackName = GetCurrentAttackName();
 
-	// Un golpe esquivado no vuelve a buscar al objetivo cuando termina el dodge.
 	if (UBossSystemLibrary::IsImmuneToBossHit(Target, DamageParams.ImmunityTags))
 	{
 		OnAttackEvaded.Broadcast(Target, AttackName);
@@ -646,7 +646,6 @@ void UBossCombatComponent::FireProjectiles(const FBossHitWindow& Window)
 	FVector AimDirection = Owner->GetActorForwardVector();
 	if (const AActor* Target = CurrentAction.Target.Get())
 	{
-		// Apunta al centro del objetivo en 3D: sube o baja si está a otra altura.
 		AimDirection = Target->GetActorLocation() - SpawnLocation;
 	}
 	AimDirection = AimDirection.GetSafeNormal();
@@ -694,7 +693,6 @@ bool UBossCombatComponent::GetWeaponSegment(FVector& OutStart, FVector& OutEnd) 
 
 		if (const UStaticMesh* Mesh = WeaponMesh->GetStaticMesh())
 		{
-			// Sin sockets: el eje más largo del bounding box local es el largo del arma.
 			const FBox Box = Mesh->GetBoundingBox();
 			const FVector Center = Box.GetCenter();
 			const FVector Extent = Box.GetExtent();
@@ -768,7 +766,6 @@ void UBossCombatComponent::UpdateWarpTarget(const AActor* Target) const
 	const FVector Direction = ToTarget.GetSafeNormal2D();
 	if (Direction.IsNearlyZero()) return;
 
-	// Termina el acercamiento a WarpStopDistance del objetivo (nunca retrocede). Z se ignora en el warp.
 	const float Approach = FMath::Max(static_cast<float>(ToTarget.Size2D()) - WarpStopDistance, 0.f);
 	Warping->AddOrUpdateWarpTargetFromLocationAndRotation(BossCombat::WarpTargetName, Origin + Direction * Approach, Direction.Rotation());
 }

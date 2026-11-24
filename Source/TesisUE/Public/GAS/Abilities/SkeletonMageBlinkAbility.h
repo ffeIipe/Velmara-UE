@@ -7,11 +7,6 @@
 class UNiagaraSystem;
 class USoundBase;
 
-/*
- * Escape del SkeletonMage: si el objetivo está a menos de TriggerRange, el mago se deshace (oculto y sin colisión) y a los
- * VanishDuration reaparece en un punto del navmesh entre Min/MaxDistanceFromTarget del objetivo, mirándolo.
- * Solo se puede activar con el objetivo cerca, así que el BT puede intentarla siempre. Tag: Ability.Blink.
- */
 UCLASS()
 class TESISUE_API USkeletonMageBlinkAbility : public UVelmaraGameplayAbility
 {

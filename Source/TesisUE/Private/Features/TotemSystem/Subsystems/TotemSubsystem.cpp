@@ -21,7 +21,6 @@ void UTotemSubsystem::NotifyEntityDied(AActor* DeadActor)
 
 	Totems.RemoveAll([](const TWeakObjectPtr<UTotemChargeComponent>& Totem) { return !Totem.IsValid(); });
 
-	// Copia: los eventos del tótem pueden registrar o desregistrar tótems desde Blueprint.
 	const TArray<TWeakObjectPtr<UTotemChargeComponent>> TotemsSnapshot = Totems;
 
 	for (const TWeakObjectPtr<UTotemChargeComponent>& Totem : TotemsSnapshot)

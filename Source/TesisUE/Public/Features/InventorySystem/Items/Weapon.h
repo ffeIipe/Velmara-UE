@@ -17,11 +17,13 @@ class TESISUE_API AWeapon : public AItem, public IWeaponInterface
 public:
 	virtual void OnEnteredInventory_Implementation(AActor* NewOwner) override;
 
-	virtual void OnRemovedFromInventory_Implementation() override; //TODO:
+	virtual void OnRemovedFromInventory_Implementation() override;
 
 	virtual void Equip(); 
 
 	virtual void Holster();
+
+	virtual FName GetEquipSocketName() const { return FName("RightHandSword"); }
 
 	virtual void EnableVisuals() override { Super::EnableVisuals(); }
 	virtual void DisableVisuals() override { Super::DisableVisuals(); }

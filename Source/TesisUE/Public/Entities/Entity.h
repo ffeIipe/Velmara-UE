@@ -18,6 +18,9 @@ class UTargetingComponent;
 class UCameraComponent;
 class UMotionWarpingComponent;
 struct FHitReactDefinition;
+struct FWeaponKnockback;
+class UWeaponData;
+class UCurveFloat;
 struct FInputActionValue;
 class UVelmaraAttributeSet;
 class UInputMappingContext;
@@ -114,7 +117,6 @@ public:
 	UPROPERTY(BlueprintAssignable, BlueprintCallable)
 	FOnEntityDead OnDead;
 
-	// Avisa a los sistemas del mundo (tótems, tumbas del SkeletonMage) que la entidad acaba de morir. Lo llama el AttributeSet una vez por muerte.
 	void NotifyDeathToWorld();
 
 	UFUNCTION(BlueprintCallable, Category = "Entity Flag")
@@ -160,6 +162,70 @@ public:
 
 	UPROPERTY()
 	FTimerHandle HitFlashTimerHandle;
+
+	float HitFlashPeakAmount = 0.f;
+
+	float HitFlashDuration = 0.1f;
+
+	float HitFlashElapsed = 0.f;
+
+	void UpdateHitFlash();
+
+	void SetHitFlashAmount(float Amount);
+
+	void ApplyKnockback(const FVector& AttackerLocation, const FWeaponKnockback& Knockback);
+
+	UFUNCTION(BlueprintCallable, Category = "Combat|Juggle")
+	void StartJuggle(float HoverDuration = -1.f);
+
+	UFUNCTION(BlueprintCallable, Category = "Combat|Juggle")
+	void EndJuggle();
+
+	UFUNCTION(BlueprintPure, Category = "Combat|Juggle")
+	bool IsJuggled() const { return bJuggled; }
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Combat|Juggle", meta = (ClampMin = "0.1", Units = "s"))
+	float DefaultJuggleDuration = 2.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Combat|Juggle", meta = (ClampMin = "0.05", Units = "s"))
+	float AirHitStunDuration = 0.5f;
+
+	void OnDamageReceived();
+
+	FTimerHandle JuggleTimerHandle;
+
+	bool bJuggled = false;
+
+	float JuggleRemaining = 0.f;
+
+	float JuggleSavedGravityScale = 1.f;
+
+	void UpdateJuggle();
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Combat")
+	bool bKnockbackResistant = false;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Overlay")
+	TObjectPtr<UWeaponData> InnateWeaponOverlay;
+
+	FTimerHandle KnockbackTimerHandle;
+
+	FVector KnockbackDirection = FVector::ZeroVector;
+
+	float KnockbackDistance = 0.f;
+
+	float KnockbackDuration = 0.15f;
+
+	float KnockbackElapsed = 0.f;
+
+	UPROPERTY()
+	TObjectPtr<UCurveFloat> KnockbackCurve;
+
+	void UpdateKnockback();
+
+	void StopKnockback();
+
+	float EvaluateKnockbackProgress(float Alpha) const;
 	
 	UPROPERTY()
 	TArray<UMaterialInstanceDynamic*> DissolveMaterials;
@@ -180,7 +246,6 @@ public:
 	void SetTeamId(int NewTeamIndex);
 	
 protected:
-	// Orbes que salen al morir (si no lo controla el jugador) y viajan al jugador: vida, energía, etc.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Orbs")
 	TArray<FEntityOrbDrop> DeathOrbDrops;
 
