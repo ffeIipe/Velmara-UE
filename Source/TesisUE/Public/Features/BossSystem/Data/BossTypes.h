@@ -35,7 +35,8 @@ enum class EBossBrainState : uint8
 	Summoning,
 	BreakingCeiling,
 	Evading,
-	Dead
+	Dead,
+	Staggered UMETA(DisplayName = "Staggered")
 };
 
 USTRUCT(BlueprintType)
@@ -192,4 +193,13 @@ struct FBossCeilingStage
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage", meta = (EditCondition = "bSummonMinions", ClampMin = "0"))
 	int32 MinionCountOverride = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Ceiling")
+	bool bFullArenaCollapse = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Ceiling")
+	bool bActivateSolarShield = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Ceiling", meta = (ClampMin = "0.0"))
+	float SolarShieldAmountOverride = 0.f;
 };

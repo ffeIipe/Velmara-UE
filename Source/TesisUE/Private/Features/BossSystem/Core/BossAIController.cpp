@@ -1,11 +1,16 @@
 #include "Features/BossSystem/Core/BossAIController.h"
 
+#include "AbilitySystemComponent.h"
+#include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Engine/World.h"
 #include "Entities/Entity.h"
 #include "Features/BossSystem/Components/BossCeilingBreakComponent.h"
 #include "Features/BossSystem/Components/BossCombatComponent.h"
 #include "Features/BossSystem/Components/BossSummonComponent.h"
 #include "Features/BossSystem/Core/BossEnemy.h"
+#include "GAS/VelmaraGameplayTags.h"
 #include "Kismet/GameplayStatics.h"
 #include "Navigation/PathFollowingComponent.h"
 
@@ -22,6 +27,8 @@ void ABossAIController::OnPossess(APawn* InPawn)
 
 	Boss = Cast<ABossEnemy>(InPawn);
 	BrainState = EBossBrainState::Inactive;
+	StaggerUntil = 0.0;
+	bStaggerTagApplied = false;
 
 	if (const ABossEnemy* BossPawn = Boss.Get())
 	{
@@ -36,6 +43,8 @@ void ABossAIController::OnPossess(APawn* InPawn)
 
 void ABossAIController::OnUnPossess()
 {
+	ClearStaggerState();
+
 	if (const ABossEnemy* BossPawn = Boss.Get())
 	{
 		if (UBossCombatComponent* Combat = BossPawn->GetCombatComponent())
@@ -63,6 +72,25 @@ void ABossAIController::Tick(const float DeltaSeconds)
 		return;
 	}
 
+	const UBossCeilingBreakComponent* Ceiling = BossPawn->GetCeilingBreakComponent();
+	const bool bStagePending = Ceiling && Ceiling->HasPendingStage();
+	const double Now = GetWorld()->GetTimeSeconds();
+
+	if (BrainState == EBossBrainState::Staggered)
+	{
+		if (bStagePending || Now >= StaggerUntil)
+		{
+			ClearStaggerState();
+			RecoverUntil = 0.0;
+			NextDecisionTime = 0.0;
+			BrainState = EBossBrainState::Recovering;
+		}
+		else
+		{
+			return;
+		}
+	}
+
 	UBossCombatComponent* Combat = BossPawn->GetCombatComponent();
 	AActor* Target = ResolveTarget();
 	CombatTarget = Target;
@@ -84,17 +112,12 @@ void ABossAIController::Tick(const float DeltaSeconds)
 		BossPawn->StartEncounter();
 	}
 
-	const UBossCeilingBreakComponent* Ceiling = BossPawn->GetCeilingBreakComponent();
-	const bool bStagePending = Ceiling && Ceiling->HasPendingStage();
-
 	if (bStagePending && Ceiling->bInterruptAttacks && Combat->IsAttacking())
 	{
 		Combat->CancelCurrentAction();
 	}
 
 	if (Combat->IsBusy()) return;
-
-	const double Now = GetWorld()->GetTimeSeconds();
 
 	if (Now < RecoverUntil && !bStagePending)
 	{
@@ -131,9 +154,20 @@ void ABossAIController::RunDecision(AActor* Target)
 		}
 	}
 
+	UBossSummonComponent* Summon = BossPawn->GetSummonComponent();
+	if (Summon && Summon->NeedsEmergencySummon())
+	{
+		StopMovement();
+		if (Summon->StartEmergencySummon(Target))
+		{
+			BrainState = EBossBrainState::Summoning;
+			return;
+		}
+	}
+
 	if (bWantsToEvade && TryEvade()) return;
 
-	if (UBossSummonComponent* Summon = BossPawn->GetSummonComponent(); Summon && Summon->CanSummon())
+	if (Summon && Summon->CanSummon())
 	{
 		StopMovement();
 		if (Summon->StartSummon(Target))
@@ -204,10 +238,70 @@ bool ABossAIController::TryEvade()
 	return true;
 }
 
+void ABossAIController::TriggerStagger(const float Duration, UAnimMontage* OptionalMontage)
+{
+	ABossEnemy* BossPawn = Boss.Get();
+	if (!BossPawn || BrainState == EBossBrainState::Dead || BrainState == EBossBrainState::BreakingCeiling || BossPawn->IsDefeated() || !BossPawn->IsAlive() || Duration <= 0.f) return;
+
+	if (UBossCombatComponent* Combat = BossPawn->GetCombatComponent())
+	{
+		Combat->CancelCurrentAction();
+	}
+
+	StopMovement();
+	bWantsToEvade = false;
+
+	const double Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
+	StaggerUntil = Now + Duration;
+	BrainState = EBossBrainState::Staggered;
+
+	if (!bStaggerTagApplied)
+	{
+		if (UAbilitySystemComponent* ASC = BossPawn->GetAbilitySystemComponent())
+		{
+			const FGameplayTag StunnedTag = FVelmaraGameplayTags::Get().State_Stunned;
+			if (StunnedTag.IsValid())
+			{
+				ASC->AddLooseGameplayTag(StunnedTag);
+				bStaggerTagApplied = true;
+			}
+		}
+	}
+
+	if (OptionalMontage)
+	{
+		if (UAnimInstance* AnimInstance = BossPawn->GetMesh() ? BossPawn->GetMesh()->GetAnimInstance() : nullptr)
+		{
+			AnimInstance->Montage_Play(OptionalMontage);
+		}
+	}
+}
+
+void ABossAIController::ClearStaggerState()
+{
+	if (bStaggerTagApplied)
+	{
+		if (ABossEnemy* BossPawn = Boss.Get())
+		{
+			if (UAbilitySystemComponent* ASC = BossPawn->GetAbilitySystemComponent())
+			{
+				const FGameplayTag StunnedTag = FVelmaraGameplayTags::Get().State_Stunned;
+				if (StunnedTag.IsValid())
+				{
+					ASC->RemoveLooseGameplayTag(StunnedTag);
+				}
+			}
+		}
+	}
+
+	bStaggerTagApplied = false;
+	StaggerUntil = 0.0;
+}
+
 void ABossAIController::NotifyBossDamaged(AActor* DamageInstigator)
 {
 	const ABossEnemy* BossPawn = Boss.Get();
-	if (!BossPawn || BrainState == EBossBrainState::Dead) return;
+	if (!BossPawn || BrainState == EBossBrainState::Dead || BrainState == EBossBrainState::Staggered) return;
 
 	const double Now = GetWorld()->GetTimeSeconds();
 	const float HitWindow = BossPawn->EvadeHitWindow;
@@ -226,7 +320,7 @@ void ABossAIController::NotifyBossDamaged(AActor* DamageInstigator)
 
 void ABossAIController::HandleActionFinished(const bool bInterrupted)
 {
-	if (BrainState == EBossBrainState::Dead) return;
+	if (BrainState == EBossBrainState::Dead || BrainState == EBossBrainState::Staggered) return;
 
 	const ABossEnemy* BossPawn = Boss.Get();
 	const UBossCombatComponent* Combat = BossPawn ? BossPawn->GetCombatComponent() : nullptr;
@@ -240,6 +334,7 @@ void ABossAIController::HandleBossDeath()
 {
 	if (BrainState == EBossBrainState::Dead) return;
 
+	ClearStaggerState();
 	BrainState = EBossBrainState::Dead;
 	bWantsToEvade = false;
 

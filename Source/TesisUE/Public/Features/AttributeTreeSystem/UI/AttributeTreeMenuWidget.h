@@ -7,8 +7,13 @@
 
 class UAttributeTreeComponent;
 class UAttributeTreeRowWidget;
+class UBorder;
+class USizeBox;
 class UTextBlock;
 class UVerticalBox;
+
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnAttributeRowSelectedSignature, FGameplayTag);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnAttributeFeedbackSignature, const FText&, bool);
 
 UCLASS()
 class TESISUE_API UAttributeTreeMenuWidget : public UUpgradeMenuWidgetBase
@@ -21,7 +26,15 @@ public:
 
 	virtual void RefreshMenu() override;
 
+	virtual UWidget* GetFirstFocusableWidget() const override;
+
 	void ShowUpgradeResult(EAttributeUpgradeResult Result, const FGameplayTag& UpgradeTag);
+
+	void NotifyRowSelected(const FGameplayTag& UpgradeTag);
+
+	FOnAttributeRowSelectedSignature OnRowSelected;
+
+	FOnAttributeFeedbackSignature OnFeedbackMessage;
 
 protected:
 	virtual void NativeOnInitialized() override;
@@ -32,6 +45,8 @@ protected:
 
 	virtual void OnUpgradeComponentSet() override;
 
+	virtual void OnEmbeddedModeChanged() override;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Attribute Tree")
 	TSubclassOf<UAttributeTreeRowWidget> RowWidgetClass;
 
@@ -40,11 +55,28 @@ private:
 
 	void RebuildRows();
 
+	void UpdateStandaloneChromeVisibility();
+
 	UFUNCTION()
 	void HandleCloseClicked();
 
 	UFUNCTION()
 	void HandleAttributeUpgraded(FGameplayTag UpgradeTag, int32 NewLevel);
+
+	UPROPERTY(Transient)
+	TObjectPtr<UBorder> RootDimmer;
+
+	UPROPERTY(Transient)
+	TObjectPtr<USizeBox> PanelSizeBox;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UBorder> PanelBorder;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UVerticalBox> StandaloneHeaderBox;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UWidget> StandaloneFooterBox;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UTextBlock> CurrencyText;

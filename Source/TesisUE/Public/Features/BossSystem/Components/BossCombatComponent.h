@@ -16,6 +16,7 @@ class UMaterialInterface;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBossAttackStarted, FName, AttackName, float, TimeUntilFirstHit);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBossAttackEnded, FName, AttackName, bool, bInterrupted);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBossAttackTarget, AActor*, Target, FName, AttackName);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnBossAttackTelegraph, FName, AttackName, FVector, TelegraphLocation, float, TelegraphRadius, bool, bIsProjectile);
 
 DECLARE_DELEGATE_OneParam(FBossActionFinished, bool);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnBossActionFinishedNative, bool);
@@ -38,13 +39,13 @@ public:
 	float DefaultNotifyDamage = 15.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Stages", meta = (ClampMin = "0"))
-	float DamageBonusPerStage = 0.15f;
+	float DamageBonusPerStage = 0.12f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Stages", meta = (ClampMin = "0"))
-	float PlayRateBonusPerStage = 0.05f;
+	float PlayRateBonusPerStage = 0.06f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Stages", meta = (ClampMin = "0", ClampMax = "0.9"))
-	float RecoveryReductionPerStage = 0.12f;
+	float RecoveryReductionPerStage = 0.10f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Weapon", meta = (ClampMin = "1"))
 	float WeaponTraceRadius = 35.f;
@@ -102,6 +103,9 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Boss|Events")
 	FOnBossAttackTarget OnAttackEvaded;
+
+	UPROPERTY(BlueprintAssignable, Category = "Boss Combat|Events")
+	FOnBossAttackTelegraph OnAttackTelegraphStarted;
 
 	FOnBossActionFinishedNative OnActionFinished;
 

@@ -28,6 +28,15 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Ceiling", meta = (ClampMin = "0.1"))
 	float SettleTime = 4.f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ceiling Break")
+	bool bBlockSunlightWhenSettled = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ceiling Break")
+	bool bEnableShadowCoverOnBreak = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ceiling Break")
+	TArray<TObjectPtr<AActor>> ShadowCoverActorsToEnable;
+
 	UFUNCTION(BlueprintCallable, Category = "Boss|Ceiling")
 	void Break();
 
@@ -61,6 +70,7 @@ private:
 
 	void Shatter();
 	void Settle();
+	void SetShadowCoverEnabled(bool bEnabled);
 
 	bool bBroken = false;
 	bool bShattered = false;

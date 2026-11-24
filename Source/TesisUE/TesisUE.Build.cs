@@ -5,8 +5,10 @@ public class TesisUE : ModuleRules
 	public TesisUE(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core",
+
+		PublicDependencyModuleNames.AddRange(new string[]
+		{
+			"Core",
 			"CoreUObject",
 			"Engine",
 			"InputCore",
@@ -23,29 +25,37 @@ public class TesisUE : ModuleRules
 			"MotionTrajectory",
 			"PoseSearch",
 			"NetCore",
-			"AnimGraphRuntime", 
+			"AnimGraphRuntime",
 			"AIModule",
 			"NavigationSystem",
-			"UMG"
+			"UMG",
+			"Slate",
+			"SlateCore",
+			"CommonUI",
+			"CommonInput",
+			"AudioModulation"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[]
 		{
-			"AnimGraphRuntime",
 			"DeveloperSettings",
 			"GeometryCollectionEngine",
 			"ChaosSolverEngine",
-			"StageZero"
+			"StageZero",
+			"ApplicationCore",
+			"MoviePlayer"
 		});
 
 		if (Target.bBuildEditor)
 		{
-			PrivateDependencyModuleNames.AddRange(new string[] { "FractureEngine", "DataflowCore", "AssetRegistry" });
+			PrivateDependencyModuleNames.AddRange(new string[]
+			{
+				"FractureEngine",
+				"DataflowCore",
+				"AssetRegistry"
+			});
 		}
 
-        bUseUnity = true;
-		
-		PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
-
-    }
+		bUseUnity = true;
+	}
 }

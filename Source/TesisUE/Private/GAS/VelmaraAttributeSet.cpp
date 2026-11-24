@@ -3,10 +3,14 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Net/UnrealNetwork.h"
 #include "GameplayEffectExtension.h"
+#include "Engine/World.h"
 #include "Entities/Entity.h"
+#include "Features/BossSystem/Core/BossEnemy.h"
+#include "Features/BossSystem/Subsystems/SunlightExposureSubsystem.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Interfaces/Damageable.h"
 #include "GAS/VelmaraGameplayTags.h"
+#include "Player/CustomPlayerController.h"
 
 UVelmaraAttributeSet::UVelmaraAttributeSet()
 {
@@ -71,9 +75,44 @@ bool UVelmaraAttributeSet::PreGameplayEffectExecute(FGameplayEffectModCallbackDa
 
 	if (Data.EvaluatedData.Attribute == GetDamageIncomingAttribute())
 	{
+		const UAbilitySystemComponent* OwningASC = GetOwningAbilitySystemComponent();
+		const AEntity* Victim = Cast<AEntity>(OwningASC ? OwningASC->GetAvatarActor() : nullptr);
+
+		if (Victim)
+		{
+			if (!Victim->CanBeDamaged()) return false;
+
+			UWorld* World = Victim->GetWorld();
+			const ACustomPlayerController* PC = World ? Cast<ACustomPlayerController>(World->GetFirstPlayerController()) : nullptr;
+
+			if (PC && PC->GetOriginalBody() == Victim && PC->IsPossessing()) return false;
+
+			FGameplayTagContainer AllAssetTags;
+			Data.EffectSpec.GetAllAssetTags(AllAssetTags);
+
+			const FGameplayTag SunSetByCallerTag = FGameplayTag::RequestGameplayTag(FName("Data.Damage.Sun"), false);
+			const FGameplayTag SunDamageTypeTag = FGameplayTag::RequestGameplayTag(FName("Damage.Environmental.Sun"), false);
+			const bool bIsSunDamage =
+				(SunSetByCallerTag.IsValid() && Data.EffectSpec.GetSetByCallerMagnitude(SunSetByCallerTag, false, 0.f) > 0.f) ||
+				(SunDamageTypeTag.IsValid() && AllAssetTags.HasTag(SunDamageTypeTag));
+
+			if (bIsSunDamage)
+			{
+				if (const USunlightExposureSubsystem* Exposure = World ? World->GetSubsystem<USunlightExposureSubsystem>() : nullptr)
+				{
+					if (Exposure->IsSunProtected(Victim) || Exposure->IsUnderSunGrace(Victim)) return false;
+				}
+
+				const FGameplayTag PossessedTag = FGameplayTag::RequestGameplayTag(FName("Character.Possessed"), false);
+				if ((PC && PC->IsPossessedHost(Victim)) || (OwningASC && PossessedTag.IsValid() && OwningASC->HasMatchingGameplayTag(PossessedTag)))
+				{
+					return false;
+				}
+			}
+		}
+
 		const UAbilitySystemComponent* SourceASC = Data.EffectSpec.GetContext().GetOriginalInstigatorAbilitySystemComponent();
 		const AEntity* Attacker = SourceASC ? Cast<AEntity>(SourceASC->GetAvatarActor()) : nullptr;
-		const AEntity* Victim = Cast<AEntity>(GetOwningAbilitySystemComponent() ? GetOwningAbilitySystemComponent()->GetAvatarActor() : nullptr);
 
 		if (Attacker && Victim && Attacker != Victim && !Attacker->IsHostile(Victim)) return false;
 	}
@@ -96,21 +135,54 @@ void UVelmaraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCal
             const bool bWasAlive = GetHealth() > 0.0f;
 
             const float CurrentShield = GetShield();
-            const float DamageToShield = FMath::Min(CurrentShield, LocalDamageDone);
+            float DamageToShield = FMath::Min(CurrentShield, LocalDamageDone);
+            float DamageToHealth = LocalDamageDone - DamageToShield;
+            bool bHitByPossessedMinion = false;
+
+            AEntity* DamagedEntity = Cast<AEntity>(GetOwningActor());
+            ABossEnemy* BossVictim = Cast<ABossEnemy>(DamagedEntity);
+            AActor* AttackerActor = nullptr;
+
+            if (BossVictim)
+            {
+                const FGameplayEffectContextHandle& Context = Data.EffectSpec.GetContext();
+                UAbilitySystemComponent* SourceASC = Context.GetOriginalInstigatorAbilitySystemComponent();
+                if (!SourceASC)
+                {
+                    SourceASC = Context.GetInstigatorAbilitySystemComponent();
+                }
+                AttackerActor = SourceASC ? SourceASC->GetAvatarActor() : Context.GetEffectCauser();
+                const AActor* InstigatorActor = Context.GetInstigator();
+
+                BossVictim->ResolveIncomingDamage(LocalDamageDone, CurrentShield, AttackerActor, InstigatorActor, SourceASC,
+                    DamageToShield, DamageToHealth, bHitByPossessedMinion);
+            }
 
             if (DamageToShield > 0.0f)
             {
-                SetShield(CurrentShield - DamageToShield);
+                SetShield(FMath::Max(0.0f, CurrentShield - DamageToShield));
             }
 
-            const float DamageToHealth = LocalDamageDone - DamageToShield;
             if (DamageToHealth > 0.0f)
             {
                 const float CurrentHealth = GetHealth();
                 SetHealth(FMath::Clamp(CurrentHealth - DamageToHealth, 0.0f, GetMaxHealth()));
             }
 
-            if (AEntity* DamagedEntity = Cast<AEntity>(GetOwningActor()))
+            if (BossVictim)
+            {
+                if (bHitByPossessedMinion)
+                {
+                    BossVictim->NotifyHitByPossessedMinion(AttackerActor, DamageToShield, DamageToHealth);
+                }
+
+                if (CurrentShield > 0.0f && GetShield() <= 0.0f)
+                {
+                    BossVictim->HandleSolarShieldBroken(AttackerActor);
+                }
+            }
+
+            if (DamagedEntity)
             {
                 if (GetHealth() <= 0.0f)
                 {
@@ -121,6 +193,8 @@ void UVelmaraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCal
                     DamagedEntity->OnDamageReceived();
                 }
             }
+
+            const float EffectiveTotalDamage = DamageToShield + DamageToHealth;
 
             if (GetHealth() <= 0.0f)
             {
@@ -153,7 +227,7 @@ void UVelmaraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCal
                 FGameplayEventData DamagePayload;
                 DamagePayload.EventTag = FGameplayTag::RequestGameplayTag(FName("Event.Hit"));
                 DamagePayload.Instigator = Data.EffectSpec.GetContext().GetInstigator();
-                DamagePayload.EventMagnitude = LocalDamageDone; 
+                DamagePayload.EventMagnitude = EffectiveTotalDamage;
                 DamagePayload.Target = GetOwningActor();
 
                 Data.EffectSpec.GetAllAssetTags(DamagePayload.InstigatorTags);

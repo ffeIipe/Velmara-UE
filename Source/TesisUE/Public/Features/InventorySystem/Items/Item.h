@@ -61,6 +61,9 @@ public:
 
 	virtual void OnPostGameLoaded_Implementation() override;
 
+	UFUNCTION(BlueprintPure, Category = "Item Properties")
+	const FUIItemProperties& GetUIItemProperties() const { return UIItemProperties; }
+
 protected:
 	virtual void DisableCollision();
 

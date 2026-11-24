@@ -28,6 +28,12 @@ void UUpgradeMenuWidgetBase::SetUpgradeComponent(UUpgradeComponentBase* InUpgrad
 	OnUpgradeComponentSet();
 }
 
+void UUpgradeMenuWidgetBase::SetEmbeddedMode(const bool bInEmbedded)
+{
+	bEmbeddedMode = bInEmbedded;
+	OnEmbeddedModeChanged();
+}
+
 void UUpgradeMenuWidgetBase::BindToUpgradeComponent()
 {
 	if (UUpgradeComponentBase* Component = UpgradeComponent.Get())
@@ -51,7 +57,7 @@ void UUpgradeMenuWidgetBase::HandleCurrencyChanged(int32 NewCurrencyAmount)
 
 FReply UUpgradeMenuWidgetBase::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
 {
-	if (IsCloseKey(InKeyEvent.GetKey()))
+	if (!bEmbeddedMode && IsCloseKey(InKeyEvent.GetKey()))
 	{
 		if (!InKeyEvent.IsRepeat())
 		{
@@ -65,6 +71,11 @@ FReply UUpgradeMenuWidgetBase::NativeOnKeyDown(const FGeometry& InGeometry, cons
 
 FReply UUpgradeMenuWidgetBase::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
+	if (bEmbeddedMode)
+	{
+		return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
+	}
+
 	return FReply::Handled().SetUserFocus(TakeWidget(), EFocusCause::Mouse);
 }
 
