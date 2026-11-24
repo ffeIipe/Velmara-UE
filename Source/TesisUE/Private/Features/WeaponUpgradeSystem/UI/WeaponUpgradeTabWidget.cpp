@@ -4,11 +4,13 @@
 #include "Blueprint/WidgetTree.h"
 #include "Components/Button.h"
 #include "Components/ButtonSlot.h"
+#include "Components/Image.h"
 #include "Components/SizeBox.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
 #include "Features/WeaponUpgradeSystem/UI/WeaponUpgradeMenuWidget.h"
+#include "UI/Style/VelmaraUITheme.h"
 
 void UWeaponUpgradeTabWidget::NativeOnInitialized()
 {
@@ -25,29 +27,54 @@ void UWeaponUpgradeTabWidget::BuildLayout()
 	using namespace UpgradeUIStyle;
 
 	USizeBox* TabSize = Make<USizeBox>(WidgetTree);
-	TabSize->SetMinDesiredWidth(190.f);
-	TabSize->SetHeightOverride(58.f);
+	TabSize->SetMinDesiredWidth(148.f);
+	TabSize->SetHeightOverride(52.f);
 	WidgetTree->RootWidget = TabSize;
 
 	TabButton = Make<UButton>(WidgetTree);
+	TabButton->SetStyle(MakeTransparentButtonStyle());
 	TabButton->OnClicked.AddDynamic(this, &UWeaponUpgradeTabWidget::HandleClicked);
+	TabButton->OnHovered.AddDynamic(this, &UWeaponUpgradeTabWidget::HandleHovered);
+	TabButton->OnUnhovered.AddDynamic(this, &UWeaponUpgradeTabWidget::HandleUnhovered);
 	TabSize->SetContent(TabButton);
 
 	UVerticalBox* Content = Make<UVerticalBox>(WidgetTree);
 
-	LabelText = MakeText(WidgetTree, FText::GetEmpty(), 16, Colors::TextPrimary(), true);
+	LabelText = MakeDisplayText(WidgetTree, FText::GetEmpty(), 14, FVelmaraUITheme::BoneMuted(), 160);
 	LabelText->SetJustification(ETextJustify::Center);
-	Content->AddChildToVerticalBox(LabelText)->SetHorizontalAlignment(HAlign_Center);
+	if (UVerticalBoxSlot* LSlot = Content->AddChildToVerticalBox(LabelText))
+	{
+		LSlot->SetHorizontalAlignment(HAlign_Center);
+	}
 
-	ProgressText = MakeText(WidgetTree, FText::GetEmpty(), 12, Colors::TextSecondary());
+	ProgressText = MakeText(WidgetTree, FText::GetEmpty(), 11, FVelmaraUITheme::BoneMuted(0.65f));
 	ProgressText->SetJustification(ETextJustify::Center);
-	Content->AddChildToVerticalBox(ProgressText)->SetHorizontalAlignment(HAlign_Center);
+	if (UVerticalBoxSlot* PSlot = Content->AddChildToVerticalBox(ProgressText))
+	{
+		PSlot->SetHorizontalAlignment(HAlign_Center);
+		PSlot->SetPadding(FMargin(0.f, 2.f, 0.f, 4.f));
+	}
+
+	USizeBox* LineSize = Make<USizeBox>(WidgetTree);
+	LineSize->SetWidthOverride(120.f);
+	LineSize->SetHeightOverride(10.f);
+	ActiveLineImage = Make<UImage>(WidgetTree);
+	ActiveLineImage->SetBrush(FVelmaraUITheme::MakeImageBrush(
+		FVelmaraUITheme::LoadTexture(VelmaraUIPaths::OrnTabActiveLine),
+		FVector2D(120.f, 10.f),
+		FVelmaraUITheme::BloodBright()));
+	ActiveLineImage->SetVisibility(ESlateVisibility::Hidden);
+	LineSize->SetContent(ActiveLineImage);
+	if (UVerticalBoxSlot* LineSlot = Content->AddChildToVerticalBox(LineSize))
+	{
+		LineSlot->SetHorizontalAlignment(HAlign_Center);
+	}
 
 	if (UButtonSlot* ContentSlot = Cast<UButtonSlot>(TabButton->SetContent(Content)))
 	{
 		ContentSlot->SetHorizontalAlignment(HAlign_Center);
 		ContentSlot->SetVerticalAlignment(VAlign_Center);
-		ContentSlot->SetPadding(FMargin(16.f, 4.f));
+		ContentSlot->SetPadding(FMargin(14.f, 4.f));
 	}
 
 	SetSelected(false);
@@ -60,7 +87,7 @@ void UWeaponUpgradeTabWidget::Setup(UWeaponUpgradeMenuWidget* InOwnerMenu, const
 
 	if (LabelText)
 	{
-		LabelText->SetText(Label);
+		LabelText->SetText(Label.ToUpper());
 	}
 }
 
@@ -74,22 +101,40 @@ void UWeaponUpgradeTabWidget::SetProgressText(const FText& Progress)
 
 void UWeaponUpgradeTabWidget::SetSelected(const bool bInSelected)
 {
-	using namespace UpgradeUIStyle;
-
 	bSelected = bInSelected;
-	if (!TabButton) return;
+	RefreshVisualState();
+}
+
+void UWeaponUpgradeTabWidget::RefreshVisualState()
+{
+	if (!LabelText || !ProgressText) return;
 
 	if (bSelected)
 	{
-		TabButton->SetStyle(MakeButtonStyle(Colors::Blood(), Colors::BloodHovered(), Colors::BloodPressed()));
-		LabelText->SetColorAndOpacity(FSlateColor(Colors::TextOnBlood()));
-		ProgressText->SetColorAndOpacity(FSlateColor(Colors::TextOnBlood()));
+		LabelText->SetColorAndOpacity(FSlateColor(FVelmaraUITheme::BloodBright()));
+		ProgressText->SetColorAndOpacity(FSlateColor(FVelmaraUITheme::Bone(0.85f)));
+		if (ActiveLineImage)
+		{
+			ActiveLineImage->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		}
+	}
+	else if (bHovered)
+	{
+		LabelText->SetColorAndOpacity(FSlateColor(FVelmaraUITheme::Bone()));
+		ProgressText->SetColorAndOpacity(FSlateColor(FVelmaraUITheme::BoneMuted()));
+		if (ActiveLineImage)
+		{
+			ActiveLineImage->SetVisibility(ESlateVisibility::Hidden);
+		}
 	}
 	else
 	{
-		TabButton->SetStyle(MakeButtonStyle(Colors::BloodRow(), Colors::RowHovered(), Colors::BloodPressed(), Colors::BloodDim(), 1.f));
-		LabelText->SetColorAndOpacity(FSlateColor(Colors::TextPrimary()));
-		ProgressText->SetColorAndOpacity(FSlateColor(Colors::TextSecondary()));
+		LabelText->SetColorAndOpacity(FSlateColor(FVelmaraUITheme::BoneMuted(0.68f)));
+		ProgressText->SetColorAndOpacity(FSlateColor(FVelmaraUITheme::BoneMuted(0.45f)));
+		if (ActiveLineImage)
+		{
+			ActiveLineImage->SetVisibility(ESlateVisibility::Hidden);
+		}
 	}
 }
 
@@ -99,4 +144,16 @@ void UWeaponUpgradeTabWidget::HandleClicked()
 	{
 		Menu->SelectWeapon(WeaponIndex);
 	}
+}
+
+void UWeaponUpgradeTabWidget::HandleHovered()
+{
+	bHovered = true;
+	RefreshVisualState();
+}
+
+void UWeaponUpgradeTabWidget::HandleUnhovered()
+{
+	bHovered = false;
+	RefreshVisualState();
 }

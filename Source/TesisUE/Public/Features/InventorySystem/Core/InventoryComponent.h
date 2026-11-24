@@ -77,6 +77,8 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Inventory|Widget")
     void HideInventory();
 
+    void NotifyInventoryClosed();
+
     UFUNCTION(BlueprintPure, Category = "Inventory|Widget")
     bool IsInventoryOpen() const { return bIsInventoryOpen; }
     

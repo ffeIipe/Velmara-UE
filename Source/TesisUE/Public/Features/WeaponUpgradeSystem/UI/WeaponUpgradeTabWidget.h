@@ -5,6 +5,7 @@
 #include "WeaponUpgradeTabWidget.generated.h"
 
 class UButton;
+class UImage;
 class UTextBlock;
 class UWeaponUpgradeMenuWidget;
 
@@ -26,14 +27,24 @@ protected:
 private:
 	void BuildLayout();
 
+	void RefreshVisualState();
+
 	UFUNCTION()
 	void HandleClicked();
+
+	UFUNCTION()
+	void HandleHovered();
+
+	UFUNCTION()
+	void HandleUnhovered();
 
 	TWeakObjectPtr<UWeaponUpgradeMenuWidget> OwnerMenu;
 
 	int32 WeaponIndex = INDEX_NONE;
 
 	bool bSelected = false;
+
+	bool bHovered = false;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UButton> TabButton;
@@ -43,4 +54,7 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UTextBlock> ProgressText;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UImage> ActiveLineImage;
 };

@@ -19,7 +19,15 @@ public:
 	UUpgradeComponentBase* GetUpgradeComponent() const { return UpgradeComponent.Get(); }
 
 	UFUNCTION(BlueprintCallable, Category = "Upgrades")
+	void SetEmbeddedMode(bool bInEmbedded);
+
+	UFUNCTION(BlueprintPure, Category = "Upgrades")
+	bool IsEmbeddedMode() const { return bEmbeddedMode; }
+
+	UFUNCTION(BlueprintCallable, Category = "Upgrades")
 	virtual void RefreshMenu() {}
+
+	virtual UWidget* GetFirstFocusableWidget() const { return nullptr; }
 
 protected:
 	virtual void NativeOnInitialized() override;
@@ -36,7 +44,11 @@ protected:
 
 	virtual void OnUpgradeComponentSet() { RefreshMenu(); }
 
+	virtual void OnEmbeddedModeChanged() {}
+
 	void RequestClose();
+
+	bool bEmbeddedMode = false;
 
 private:
 	bool IsCloseKey(const FKey& Key) const;

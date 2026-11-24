@@ -2,13 +2,17 @@
 
 #include "Blueprint/UserWidget.h"
 #include "Engine/GameInstance.h"
+#include "Features/AttributeTreeSystem/Core/AttributeTreeComponent.h"
+#include "Features/AttributeTreeSystem/UI/AttributeTreeMenuWidget.h"
 #include "Features/CurrencySystem/Data/CurrencyTags.h"
 #include "Features/CurrencySystem/Interfaces/CurrencyProvider.h"
 #include "Features/UpgradeSystem/UI/UpgradeMenuWidgetBase.h"
+#include "Features/WeaponUpgradeSystem/UI/WeaponUpgradeMenuWidget.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerState.h"
 #include "Kismet/GameplayStatics.h"
+#include "UI/Widgets/Menus/VelmaraBloodAltarMenuWidget.h"
 
 #define LOCTEXT_NAMESPACE "Upgrades"
 
@@ -46,6 +50,22 @@ void UUpgradeComponentBase::OpenMenu()
 	APlayerController* PlayerController = GetOwningPlayerController();
 	if (!PlayerController || !PlayerController->IsLocalController()) return;
 
+	const bool bUseUnifiedAltar =
+		MenuWidgetClass == UAttributeTreeMenuWidget::StaticClass() ||
+		MenuWidgetClass == UWeaponUpgradeMenuWidget::StaticClass();
+
+	if (bUseUnifiedAltar)
+	{
+		const EVelmaraBloodAltarTab InitialTab = IsA<UAttributeTreeComponent>()
+			? EVelmaraBloodAltarTab::Attributes
+			: EVelmaraBloodAltarTab::WeaponUpgrades;
+
+		if (UVelmaraBloodAltarMenuWidget::OpenBloodAltar(PlayerController, GetOwner(), InitialTab))
+		{
+			return;
+		}
+	}
+
 	TInlineComponentArray<UUpgradeComponentBase*> UpgradeComponents(GetOwner());
 	for (UUpgradeComponentBase* Other : UpgradeComponents)
 	{
@@ -81,6 +101,12 @@ void UUpgradeComponentBase::OpenMenu()
 
 void UUpgradeComponentBase::CloseMenu()
 {
+	if (UVelmaraBloodAltarMenuWidget::IsActiveForComponent(this))
+	{
+		UVelmaraBloodAltarMenuWidget::CloseActiveAltar(this);
+		return;
+	}
+
 	if (!IsMenuOpen()) return;
 
 	MenuInstance->RemoveFromParent();
@@ -102,6 +128,11 @@ void UUpgradeComponentBase::CloseMenu()
 
 bool UUpgradeComponentBase::IsMenuOpen() const
 {
+	if (UVelmaraBloodAltarMenuWidget::IsActiveForComponent(this))
+	{
+		return true;
+	}
+
 	return MenuInstance && MenuInstance->IsInViewport();
 }
 

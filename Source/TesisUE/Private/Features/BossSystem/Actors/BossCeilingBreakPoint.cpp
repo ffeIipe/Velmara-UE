@@ -51,6 +51,8 @@ void ABossCeilingBreakPoint::BeginPlay()
 	{
 		Rock->SetAnchoredByBox(Rock->Bounds.GetBox().ExpandBy(500.f), true);
 	}
+
+	SetShadowCoverEnabled(false);
 }
 
 void ABossCeilingBreakPoint::Break()
@@ -68,11 +70,20 @@ void ABossCeilingBreakPoint::Break()
 		}
 	}
 
+	if (bEnableShadowCoverOnBreak)
+	{
+		SetShadowCoverEnabled(true);
+	}
+
 	if (Rock && Rock->GetRestCollection())
 	{
 		Rock->OnChaosPhysicsCollision.AddUniqueDynamic(this, &ABossCeilingBreakPoint::HandleRockCollision);
 		Rock->RemoveAllAnchors();
 		GetWorldTimerManager().SetTimer(SettleTimer, this, &ABossCeilingBreakPoint::Shatter, BossCeilingRock::MaxFallTime, false);
+	}
+	else if (!bEnableShadowCoverOnBreak)
+	{
+		SetShadowCoverEnabled(true);
 	}
 
 	OnCeilingBroken();
@@ -97,13 +108,38 @@ void ABossCeilingBreakPoint::Shatter()
 
 void ABossCeilingBreakPoint::Settle()
 {
-	Rock->ApplyKinematicField(Rock->Bounds.SphereRadius * 4.f + 1000.f, Rock->Bounds.Origin);
-	Rock->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+	if (Rock)
+	{
+		if (Rock->GetRestCollection())
+		{
+			Rock->ApplyKinematicField(Rock->Bounds.SphereRadius * 4.f + 1000.f, Rock->Bounds.Origin);
+		}
+		Rock->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+		if (bBlockSunlightWhenSettled)
+		{
+			Rock->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+		}
+	}
+
+	SetShadowCoverEnabled(true);
 }
 
 void ABossCeilingBreakPoint::ResetPoint()
 {
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(SettleTimer);
+	}
+
 	bBroken = false;
+	bShattered = false;
+
+	if (Rock)
+	{
+		Rock->OnChaosPhysicsCollision.RemoveDynamic(this, &ABossCeilingBreakPoint::HandleRockCollision);
+		Rock->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+		Rock->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
+	}
 
 	for (AActor* Piece : CeilingPiecesToHide)
 	{
@@ -111,6 +147,20 @@ void ABossCeilingBreakPoint::ResetPoint()
 		{
 			Piece->SetActorHiddenInGame(false);
 			Piece->SetActorEnableCollision(true);
+		}
+	}
+
+	SetShadowCoverEnabled(false);
+}
+
+void ABossCeilingBreakPoint::SetShadowCoverEnabled(const bool bEnabled)
+{
+	for (AActor* CoverActor : ShadowCoverActorsToEnable)
+	{
+		if (IsValid(CoverActor))
+		{
+			CoverActor->SetActorHiddenInGame(!bEnabled);
+			CoverActor->SetActorEnableCollision(bEnabled);
 		}
 	}
 }

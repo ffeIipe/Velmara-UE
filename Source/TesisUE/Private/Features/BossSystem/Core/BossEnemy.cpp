@@ -1,8 +1,11 @@
 #include "Features/BossSystem/Core/BossEnemy.h"
 
 #include "AbilitySystemComponent.h"
+#include "AbilitySystemInterface.h"
 #include "GameplayEffect.h"
 #include "GenericTeamAgentInterface.h"
+#include "NiagaraComponent.h"
+#include "NiagaraSystem.h"
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
 #include "Animation/AnimSequenceBase.h"
@@ -12,6 +15,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/World.h"
 #include "Features/BossSystem/Actors/BossProjectile.h"
 #include "Features/BossSystem/Components/BossCeilingBreakComponent.h"
 #include "Features/BossSystem/Components/BossCombatComponent.h"
@@ -22,7 +26,9 @@
 #include "GAS/VelmaraGameplayTags.h"
 #include "HUD/PaladinBossHealthBar.h"
 #include "Kismet/GameplayStatics.h"
-#include "Engine/World.h"
+#include "Materials/MaterialInterface.h"
+#include "Player/CustomPlayerController.h"
+#include "Sound/SoundBase.h"
 #include "TimerManager.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -102,6 +108,10 @@ ABossEnemy::ABossEnemy()
 	WeaponMesh->SetGenerateOverlapEvents(false);
 	WeaponMesh->CanCharacterStepUpOn = ECB_No;
 
+	SolarShieldAuraComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("SolarShieldAura"));
+	SolarShieldAuraComponent->SetupAttachment(GetMesh());
+	SolarShieldAuraComponent->bAutoActivate = false;
+
 	AIControllerClass = ABossAIController::StaticClass();
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
@@ -155,6 +165,18 @@ void ABossEnemy::SetupDefaultAssets()
 		CombatComponent->DamageParams.DamageEffectClass = DamageEffectFinder.Class;
 	}
 
+	static ConstructorHelpers::FObjectFinder<UNiagaraSystem> SolarAuraFinder(TEXT("/Game/VFX/Aura/NS_BossAura.NS_BossAura"));
+	if (SolarAuraFinder.Succeeded())
+	{
+		SolarShieldAuraSystem = SolarAuraFinder.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<UMaterialInterface> SolarOverlayFinder(TEXT("/Game/VFX/Aura/MI_BossAuraShield.MI_BossAuraShield"));
+	if (SolarOverlayFinder.Succeeded())
+	{
+		SolarShieldOverlayMaterial = SolarOverlayFinder.Object;
+	}
+
 	CombatComponent->ProjectileClass = ABossProjectile::StaticClass();
 
 	const FGameplayTag ImpactTag = FGameplayTag::RequestGameplayTag(FName("Damage.Impact"), false);
@@ -167,45 +189,43 @@ void ABossEnemy::SetupDefaultAssets()
 	{
 		FBossAttackDefinition Definition = Attack("SingleAttack", TEXT("BossSingleAttack_Montage"), EBossAttackRange::Short, 0.f, 300.f, 14.f, 2.5f,
 			{ Weapon(0.2f, 0.65f) });
+		Definition.MinStage = 0;
 		Definition.Weight = 1.2f;
-		Definition.RecoveryTime = 0.7f;
+		Definition.RecoveryTime = 0.75f;
 		Attacks.Add(Definition);
 	}
 	{
 		FBossAttackDefinition Definition = Attack("DoubleAttack", TEXT("BossDoubleAttack2_Montage"), EBossAttackRange::Short, 0.f, 300.f, 12.f, 4.f,
-			{ Weapon(0.15f, 0.8f, true) });
+			{ Weapon(0.15f, 0.8f, true, 0.4f) });
+		Definition.MinStage = 0;
 		Definition.TrackingEndTime = 0.2f;
+		Definition.RecoveryTime = 0.8f;
 		Attacks.Add(Definition);
 	}
 	{
 		FBossAttackDefinition Definition = Attack("BackDoubleAttack", TEXT("BossBackDoubleAttack_Montage"), EBossAttackRange::Short, 0.f, 300.f, 12.f, 5.f,
-			{ Weapon(0.15f, 0.8f, true) });
+			{ Weapon(0.15f, 0.8f, true, 0.4f) });
+		Definition.MinStage = 0;
 		Definition.Weight = 0.8f;
+		Definition.RecoveryTime = 0.8f;
 		Attacks.Add(Definition);
 	}
 	{
 		FBossAttackDefinition Definition = Attack("SpinAttack", TEXT("BossSpinAttack_Montage"), EBossAttackRange::Short, 0.f, 350.f, 16.f, 7.f,
 			{ Weapon(0.15f, 0.85f, true, 0.5f) });
+		Definition.MinStage = 0;
 		Definition.MaxAngle = 180.f;
 		Definition.TrackingEndTime = 0.1f;
 		Definition.bShowGroundTelegraph = true;
 		Definition.TelegraphRadius = 330.f;
 		Definition.TelegraphOffset = FVector::ZeroVector;
-		Definition.RecoveryTime = 0.9f;
+		Definition.RecoveryTime = 0.95f;
 		Attacks.Add(Definition);
 	}
 	{
-		FBossAttackDefinition Definition = Attack("TripleHeavyAttack", TEXT("BossTripleHeavyAttack_Montage"), EBossAttackRange::Short, 0.f, 320.f, 18.f, 8.f,
-			{ Weapon(0.12f, 0.88f, true, 0.45f) });
-		Definition.DamageTypeTag = ImpactTag;
-		Definition.TrackingEndTime = 0.15f;
-		Definition.RecoveryTime = 1.1f;
-		Definition.MinStage = 1;
-		Attacks.Add(Definition);
-	}
-	{
-		FBossAttackDefinition Definition = Attack("TurningAttack", TEXT("BossTurningAttack1_Montage"), EBossAttackRange::Short, 0.f, 350.f, 15.f, 4.f,
+		FBossAttackDefinition Definition = Attack("TurningAttack", TEXT("BossTurningAttack1_Montage"), EBossAttackRange::Short, 0.f, 340.f, 15.f, 4.f,
 			{ Weapon(0.15f, 0.75f) });
+		Definition.MinStage = 0;
 		Definition.MinAngle = 100.f;
 		Definition.MaxAngle = 180.f;
 		Definition.TrackingEndTime = 0.f;
@@ -213,18 +233,19 @@ void ABossEnemy::SetupDefaultAssets()
 		Attacks.Add(Definition);
 	}
 	{
-		FBossAttackDefinition Definition = Attack("TurningSingleAttack", TEXT("BossTurningAttackSingle_Montage"), EBossAttackRange::Short, 0.f, 330.f, 14.f, 3.5f,
+		FBossAttackDefinition Definition = Attack("TurningSingleAttack", TEXT("BossTurningAttackSingle_Montage"), EBossAttackRange::Short, 0.f, 340.f, 14.f, 3.5f,
 			{ Weapon(0.15f, 0.65f) });
+		Definition.MinStage = 0;
 		Definition.MinAngle = 100.f;
 		Definition.MaxAngle = 180.f;
 		Definition.TrackingEndTime = 0.f;
 		Definition.Weight = 2.f;
 		Attacks.Add(Definition);
 	}
-
 	{
-		FBossAttackDefinition Definition = Attack("SpearStab", TEXT("BossSpearStab_Montage"), EBossAttackRange::Medium, 250.f, 650.f, 18.f, 4.f,
+		FBossAttackDefinition Definition = Attack("SpearStab", TEXT("BossSpearStab_Montage"), EBossAttackRange::Medium, 250.f, 600.f, 17.f, 4.5f,
 			{ Weapon(0.25f, 0.6f) });
+		Definition.MinStage = 0;
 		Definition.DamageTypeTag = PunctureTag;
 		Definition.MaxAngle = 45.f;
 		Definition.TrackingEndTime = 0.3f;
@@ -232,72 +253,66 @@ void ABossEnemy::SetupDefaultAssets()
 		Attacks.Add(Definition);
 	}
 	{
-		FBossAttackDefinition Definition = Attack("SpearCombo", TEXT("BossSpearComboAttack_Montage"), EBossAttackRange::Medium, 250.f, 650.f, 12.f, 7.f,
-			{ Weapon(0.15f, 0.85f, true, 0.35f) });
-		Definition.DamageTypeTag = PunctureTag;
-		Definition.MaxAngle = 45.f;
-		Definition.TrackingEndTime = 0.2f;
-		Definition.MinStage = 1;
-		Attacks.Add(Definition);
-	}
-	{
-		FBossAttackDefinition Definition = Attack("LongAttack", TEXT("BossLongAttack_Montage"), EBossAttackRange::Medium, 300.f, 800.f, 18.f, 5.f,
-			{ Weapon(0.2f, 0.75f) });
-		Definition.MaxAngle = 50.f;
-		Attacks.Add(Definition);
-	}
-	{
-		FBossAttackDefinition Definition = Attack("LongCombo", TEXT("BossLongComboAttack_Montage"), EBossAttackRange::Medium, 300.f, 800.f, 13.f, 9.f,
-			{ Weapon(0.15f, 0.88f, true) });
-		Definition.MaxAngle = 50.f;
-		Definition.MinStage = 1;
-		Definition.RecoveryTime = 1.f;
-		Attacks.Add(Definition);
-	}
-	{
-		FBossAttackDefinition Definition = Attack("DodgeAttack", TEXT("BossDodgeAttack_Montage"), EBossAttackRange::Medium, 150.f, 600.f, 15.f, 6.f,
+		FBossAttackDefinition Definition = Attack("DodgeAttack", TEXT("BossDodgeAttack_Montage"), EBossAttackRange::Medium, 150.f, 550.f, 15.f, 6.f,
 			{ Weapon(0.3f, 0.85f) });
+		Definition.MinStage = 0;
 		Definition.TrackingEndTime = 0.35f;
 		Definition.Weight = 0.7f;
 		Attacks.Add(Definition);
 	}
 	{
-		FBossAttackDefinition Definition = Attack("DodgeLeftAttack", TEXT("BossDogeLAttack_Montage"), EBossAttackRange::Medium, 150.f, 600.f, 15.f, 6.f,
+		FBossAttackDefinition Definition = Attack("DodgeLeftAttack", TEXT("BossDogeLAttack_Montage"), EBossAttackRange::Medium, 150.f, 550.f, 15.f, 6.f,
 			{ Weapon(0.3f, 0.85f) });
+		Definition.MinStage = 0;
 		Definition.TrackingEndTime = 0.35f;
 		Definition.Weight = 0.6f;
 		Attacks.Add(Definition);
 	}
 	{
-		FBossAttackDefinition Definition = Attack("DodgeRightAttack", TEXT("BossDogeRAttack_Montage"), EBossAttackRange::Medium, 150.f, 600.f, 15.f, 6.f,
+		FBossAttackDefinition Definition = Attack("DodgeRightAttack", TEXT("BossDogeRAttack_Montage"), EBossAttackRange::Medium, 150.f, 550.f, 15.f, 6.f,
 			{ Weapon(0.3f, 0.85f) });
+		Definition.MinStage = 0;
 		Definition.TrackingEndTime = 0.35f;
 		Definition.Weight = 0.6f;
 		Attacks.Add(Definition);
 	}
-
 	{
-		FBossAttackDefinition Definition = Attack("AirSlash", TEXT("BossAirSlashAttack_Montage"), EBossAttackRange::Long, 750.f, 2600.f, 16.f, 5.f,
-			{ Projectile(0.4f) });
-		Definition.DamageTypeTag = SlashTag;
-		Definition.MaxAngle = 60.f;
-		Definition.TrackingEndTime = 0.38f;
-		Attacks.Add(Definition);
-	}
-	{
-		FBossAttackDefinition Definition = Attack("AirSlashCombo", TEXT("BossAiSlashAttackCombo_Montage"), EBossAttackRange::Long, 900.f, 2600.f, 12.f, 9.f,
-			{ Projectile(0.3f), Projectile(0.5f, 3, 30.f), Projectile(0.7f) });
-		Definition.DamageTypeTag = SlashTag;
-		Definition.MaxAngle = 60.f;
-		Definition.TrackingEndTime = 0.68f;
-		Definition.TrackingSpeed = 120.f;
+		FBossAttackDefinition Definition = Attack("TripleHeavyAttack", TEXT("BossTripleHeavyAttack_Montage"), EBossAttackRange::Short, 0.f, 320.f, 18.f, 8.f,
+			{ Weapon(0.12f, 0.88f, true, 0.45f) });
 		Definition.MinStage = 1;
+		Definition.DamageTypeTag = ImpactTag;
+		Definition.TrackingEndTime = 0.15f;
+		Definition.RecoveryTime = 1.1f;
+		Attacks.Add(Definition);
+	}
+	{
+		FBossAttackDefinition Definition = Attack("SpearCombo", TEXT("BossSpearComboAttack_Montage"), EBossAttackRange::Medium, 250.f, 650.f, 13.f, 7.f,
+			{ Weapon(0.15f, 0.85f, true, 0.35f) });
+		Definition.MinStage = 1;
+		Definition.DamageTypeTag = PunctureTag;
+		Definition.MaxAngle = 45.f;
+		Definition.TrackingEndTime = 0.2f;
+		Attacks.Add(Definition);
+	}
+	{
+		FBossAttackDefinition Definition = Attack("LongAttack", TEXT("BossLongAttack_Montage"), EBossAttackRange::Medium, 300.f, 800.f, 18.f, 5.f,
+			{ Weapon(0.2f, 0.75f) });
+		Definition.MinStage = 1;
+		Definition.MaxAngle = 50.f;
+		Attacks.Add(Definition);
+	}
+	{
+		FBossAttackDefinition Definition = Attack("LongCombo", TEXT("BossLongComboAttack_Montage"), EBossAttackRange::Medium, 300.f, 800.f, 13.f, 9.f,
+			{ Weapon(0.15f, 0.88f, true, 0.4f) });
+		Definition.MinStage = 1;
+		Definition.MaxAngle = 50.f;
 		Definition.RecoveryTime = 1.f;
 		Attacks.Add(Definition);
 	}
 	{
 		FBossAttackDefinition Definition = Attack("JumpingSlam", TEXT("BossJumpingAttack_Montage"), EBossAttackRange::Long, 650.f, 1500.f, 24.f, 10.f,
 			{ Weapon(0.4f, 0.7f), Sphere(0.5f, 0.62f, FVector(150.f, 0.f, -40.f), 330.f) });
+		Definition.MinStage = 1;
 		Definition.DamageTypeTag = ImpactTag;
 		Definition.MaxAngle = 40.f;
 		Definition.TrackingEndTime = 0.3f;
@@ -305,6 +320,26 @@ void ABossEnemy::SetupDefaultAssets()
 		Definition.TelegraphRadius = 330.f;
 		Definition.TelegraphOffset = FVector(150.f, 0.f, 0.f);
 		Definition.RecoveryTime = 1.2f;
+		Attacks.Add(Definition);
+	}
+	{
+		FBossAttackDefinition Definition = Attack("AirSlash", TEXT("BossAirSlashAttack_Montage"), EBossAttackRange::Long, 750.f, 2600.f, 16.f, 5.5f,
+			{ Projectile(0.4f, 1) });
+		Definition.MinStage = 2;
+		Definition.DamageTypeTag = SlashTag;
+		Definition.MaxAngle = 60.f;
+		Definition.TrackingEndTime = 0.38f;
+		Attacks.Add(Definition);
+	}
+	{
+		FBossAttackDefinition Definition = Attack("AirSlashCombo", TEXT("BossAiSlashAttackCombo_Montage"), EBossAttackRange::Long, 900.f, 2600.f, 12.f, 9.5f,
+			{ Projectile(0.3f, 1), Projectile(0.5f, 3, 30.f), Projectile(0.7f, 1) });
+		Definition.MinStage = 2;
+		Definition.DamageTypeTag = SlashTag;
+		Definition.MaxAngle = 60.f;
+		Definition.TrackingEndTime = 0.68f;
+		Definition.TrackingSpeed = 120.f;
+		Definition.RecoveryTime = 1.05f;
 		Attacks.Add(Definition);
 	}
 
@@ -337,10 +372,20 @@ void ABossEnemy::BeginPlay()
 
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UVelmaraAttributeSet::GetHealthAttribute())
 			.AddUObject(this, &ABossEnemy::HandleHealthChanged);
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UVelmaraAttributeSet::GetMaxHealthAttribute())
+			.AddUObject(this, &ABossEnemy::HandleHealthBarAttributeChanged);
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UVelmaraAttributeSet::GetShieldAttribute())
+			.AddUObject(this, &ABossEnemy::HandleHealthBarAttributeChanged);
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UVelmaraAttributeSet::GetMaxShieldAttribute())
+			.AddUObject(this, &ABossEnemy::HandleHealthBarAttributeChanged);
 	}
 
 	CombatComponent->SetWeaponComponent(WeaponMesh);
 	CeilingBreakComponent->OnStageChanged.AddUniqueDynamic(this, &ABossEnemy::HandleStageChanged);
+	if (SummonComponent)
+	{
+		SummonComponent->SetCurrentStage(CombatComponent ? CombatComponent->GetStage() : 0);
+	}
 
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 }
@@ -413,7 +458,18 @@ void ABossEnemy::MortalDamage_Implementation(const FGameplayEventData DeathPaylo
 	if (bDefeated) return;
 
 	bDefeated = true;
+	bSolarShieldActive = false;
 	LastDamageCauser = const_cast<AActor*>(DeathPayload.Instigator.Get());
+
+	if (SolarShieldAuraComponent)
+	{
+		SolarShieldAuraComponent->Deactivate();
+	}
+
+	if (bApplyShieldOverlayMaterial && GetMesh())
+	{
+		GetMesh()->SetOverlayMaterial(nullptr);
+	}
 
 	if (AbilitySystemComponent && !AbilitySystemComponent->HasMatchingGameplayTag(FVelmaraGameplayTags::Get().State_Dead))
 	{
@@ -463,6 +519,231 @@ float ABossEnemy::GetHealthPercent() const
 	return FMath::Clamp(AbilitySystemComponent->GetNumericAttribute(UVelmaraAttributeSet::GetHealthAttribute()) / MaxHealth, 0.f, 1.f);
 }
 
+float ABossEnemy::GetShieldPercent() const
+{
+	if (!AbilitySystemComponent) return 0.f;
+
+	const float MaxShield = AbilitySystemComponent->GetNumericAttribute(UVelmaraAttributeSet::GetMaxShieldAttribute());
+	if (MaxShield <= 0.f) return 0.f;
+
+	return FMath::Clamp(AbilitySystemComponent->GetNumericAttribute(UVelmaraAttributeSet::GetShieldAttribute()) / MaxShield, 0.f, 1.f);
+}
+
+void ABossEnemy::ActivateSolarShield(const float ShieldAmount)
+{
+	if (bDefeated) return;
+
+	const float FinalAmount = ShieldAmount > 0.f ? ShieldAmount : Stage3ShieldAmount;
+	if (FinalAmount <= 0.f) return;
+
+	if (AbilitySystemComponent)
+	{
+		AbilitySystemComponent->SetNumericAttributeBase(UVelmaraAttributeSet::GetMaxShieldAttribute(), FinalAmount);
+		AbilitySystemComponent->SetNumericAttributeBase(UVelmaraAttributeSet::GetShieldAttribute(), FinalAmount);
+	}
+
+	bSolarShieldActive = true;
+
+	if (SolarShieldAuraComponent && SolarShieldAuraSystem)
+	{
+		SolarShieldAuraComponent->SetAsset(SolarShieldAuraSystem);
+		SolarShieldAuraComponent->Activate(true);
+	}
+
+	if (bApplyShieldOverlayMaterial && SolarShieldOverlayMaterial && GetMesh())
+	{
+		GetMesh()->SetOverlayMaterial(SolarShieldOverlayMaterial);
+	}
+
+	if (SolarShieldActivateSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, SolarShieldActivateSound, GetActorLocation());
+	}
+
+	UpdateHealthBar();
+	OnSolarShieldActivated.Broadcast(FinalAmount);
+	BP_OnSolarShieldActivated(FinalAmount);
+}
+
+bool ABossEnemy::IsPossessedMinionAttacker(const AActor* AttackerActor, const AActor* InstigatorActor,
+	const UAbilitySystemComponent* SourceASC) const
+{
+	if (AttackerActor == this || (!AttackerActor && InstigatorActor == this)) return false;
+
+	const ACustomPlayerController* PC = Cast<ACustomPlayerController>(InstigatorActor);
+	if (!PC)
+	{
+		if (const APawn* AttackerPawn = Cast<APawn>(AttackerActor))
+		{
+			PC = Cast<ACustomPlayerController>(AttackerPawn->GetController());
+		}
+	}
+	if (!PC)
+	{
+		if (const APawn* InstigatorPawn = Cast<APawn>(InstigatorActor))
+		{
+			PC = Cast<ACustomPlayerController>(InstigatorPawn->GetController());
+		}
+	}
+	if (!PC && GetWorld())
+	{
+		PC = Cast<ACustomPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
+	}
+
+	if (PC && (PC->IsPossessedHost(AttackerActor) || (InstigatorActor != this && PC->IsPossessedHost(InstigatorActor))))
+	{
+		return true;
+	}
+
+	const FGameplayTag PossessedTag = FGameplayTag::RequestGameplayTag(FName("Character.Possessed"), false);
+	if (PossessedTag.IsValid())
+	{
+		if (SourceASC && SourceASC->HasMatchingGameplayTag(PossessedTag))
+		{
+			return true;
+		}
+
+		if (const AActor* Candidate = AttackerActor)
+		{
+			if (const IAbilitySystemInterface* AbilityInterface = Cast<IAbilitySystemInterface>(Candidate))
+			{
+				if (const UAbilitySystemComponent* CandidateASC = AbilityInterface->GetAbilitySystemComponent())
+				{
+					if (CandidateASC->HasMatchingGameplayTag(PossessedTag))
+					{
+						return true;
+					}
+				}
+			}
+			else if (const UAbilitySystemComponent* CandidateASC = Candidate->FindComponentByClass<UAbilitySystemComponent>())
+			{
+				if (CandidateASC->HasMatchingGameplayTag(PossessedTag))
+				{
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
+void ABossEnemy::ResolveIncomingDamage(const float RawDamage, const float CurrentShield, const AActor* AttackerActor,
+	const AActor* InstigatorActor, const UAbilitySystemComponent* SourceASC, float& OutDamageToShield,
+	float& OutDamageToHealth, bool& bOutHitByPossessedMinion) const
+{
+	bOutHitByPossessedMinion = IsPossessedMinionAttacker(AttackerActor, InstigatorActor, SourceASC);
+
+	const float ShieldMultiplier = bOutHitByPossessedMinion
+		? PossessedMinionShieldMultiplier
+		: (bSolarShieldActive ? UnpossessedSolarShieldMultiplier : 1.0f);
+	const float HealthMultiplier = bOutHitByPossessedMinion ? PossessedMinionHealthMultiplier : 1.0f;
+
+	if (CurrentShield > 0.f)
+	{
+		const float EffectiveShieldDamage = RawDamage * ShieldMultiplier;
+		if (EffectiveShieldDamage <= CurrentShield)
+		{
+			OutDamageToShield = EffectiveShieldDamage;
+			OutDamageToHealth = 0.f;
+		}
+		else
+		{
+			OutDamageToShield = CurrentShield;
+			const float RawConsumedByShield = ShieldMultiplier > KINDA_SMALL_NUMBER ? (CurrentShield / ShieldMultiplier) : RawDamage;
+			const float RemainingRaw = FMath::Max(0.f, RawDamage - RawConsumedByShield);
+			OutDamageToHealth = RemainingRaw * HealthMultiplier;
+		}
+	}
+	else
+	{
+		OutDamageToShield = 0.f;
+		OutDamageToHealth = RawDamage * HealthMultiplier;
+	}
+}
+
+void ABossEnemy::NotifyHitByPossessedMinion(AActor* MinionActor, const float ShieldDamage, const float HealthDamage)
+{
+	if (UWorld* World = GetWorld())
+	{
+		const double Now = World->GetTimeSeconds();
+		if (PossessedMinionHitEnergyGain > 0.f && (Now - LastPossessedMinionEnergyGainTime) >= PossessedMinionEnergyGainCooldown)
+		{
+			ACustomPlayerController* PC = nullptr;
+			if (const APawn* MinionPawn = Cast<APawn>(MinionActor))
+			{
+				PC = Cast<ACustomPlayerController>(MinionPawn->GetController());
+			}
+			if (!PC)
+			{
+				PC = Cast<ACustomPlayerController>(UGameplayStatics::GetPlayerController(World, 0));
+			}
+
+			if (PC)
+			{
+				PC->RestoreOriginalBodyEnergy(PossessedMinionHitEnergyGain);
+				LastPossessedMinionEnergyGainTime = Now;
+			}
+		}
+	}
+
+	OnHitByPossessedMinion.Broadcast(MinionActor, ShieldDamage, HealthDamage);
+	BP_OnHitByPossessedMinion(MinionActor, ShieldDamage, HealthDamage);
+}
+
+void ABossEnemy::HandleSolarShieldBroken(AActor* BreakerActor)
+{
+	bSolarShieldActive = false;
+
+	if (SolarShieldAuraComponent)
+	{
+		SolarShieldAuraComponent->Deactivate();
+	}
+
+	if (bApplyShieldOverlayMaterial && GetMesh())
+	{
+		GetMesh()->SetOverlayMaterial(nullptr);
+	}
+
+	if (SolarShieldBreakSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, SolarShieldBreakSound, GetActorLocation());
+	}
+
+	if (SolarShieldBreakEnergyBonus > 0.f)
+	{
+		if (UWorld* World = GetWorld())
+		{
+			ACustomPlayerController* PC = nullptr;
+			if (const APawn* BreakerPawn = Cast<APawn>(BreakerActor))
+			{
+				PC = Cast<ACustomPlayerController>(BreakerPawn->GetController());
+			}
+			if (!PC)
+			{
+				PC = Cast<ACustomPlayerController>(UGameplayStatics::GetPlayerController(World, 0));
+			}
+
+			if (PC)
+			{
+				PC->RestoreOriginalBodyEnergy(SolarShieldBreakEnergyBonus);
+			}
+		}
+	}
+
+	UpdateHealthBar();
+	OnSolarShieldBroken.Broadcast(BreakerActor);
+	BP_OnSolarShieldBroken(BreakerActor);
+
+	if (!bDefeated && IsAlive() && GetHealthPercent() > 0.f)
+	{
+		if (ABossAIController* BossController = Cast<ABossAIController>(GetController()))
+		{
+			BossController->TriggerStagger(SolarShieldBreakStaggerDuration, SolarShieldBreakStaggerMontage);
+		}
+	}
+}
+
 AActor* ABossEnemy::GetCombatTarget() const
 {
 	const ABossAIController* BossController = Cast<ABossAIController>(GetController());
@@ -479,9 +760,19 @@ void ABossEnemy::HandleHealthChanged(const FOnAttributeChangeData& Data)
 	}
 }
 
+void ABossEnemy::HandleHealthBarAttributeChanged(const FOnAttributeChangeData& Data)
+{
+	UpdateHealthBar();
+}
+
 void ABossEnemy::HandleStageChanged(const int32 NewStage)
 {
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed + WalkSpeedBonusPerStage * NewStage;
+
+	if (SummonComponent)
+	{
+		SummonComponent->SetCurrentStage(NewStage);
+	}
 
 	BP_OnStageChanged(NewStage);
 }
@@ -490,12 +781,7 @@ void ABossEnemy::UpdateHealthBar() const
 {
 	if (!HealthBarWidget || !AbilitySystemComponent) return;
 
-	const float MaxShield = AbilitySystemComponent->GetNumericAttribute(UVelmaraAttributeSet::GetMaxShieldAttribute());
-	const float ShieldPercent = MaxShield > 0.f
-		? FMath::Clamp(AbilitySystemComponent->GetNumericAttribute(UVelmaraAttributeSet::GetShieldAttribute()) / MaxShield, 0.f, 1.f)
-		: 0.f;
-
-	HealthBarWidget->ReceivePercentagesFromBoss(GetHealthPercent(), ShieldPercent);
+	HealthBarWidget->ReceivePercentagesFromBoss(GetHealthPercent(), GetShieldPercent());
 }
 
 void ABossEnemy::HideHealthBar()

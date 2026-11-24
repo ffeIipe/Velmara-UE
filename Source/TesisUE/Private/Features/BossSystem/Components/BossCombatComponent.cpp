@@ -148,14 +148,16 @@ bool UBossCombatComponent::StartAttack(const int32 AttackIndex, AActor* Target)
 	CurrentAction.RecoveryAfter = Attack.RecoveryTime * FMath::Max(0.1f, 1.f - RecoveryReductionPerStage * CurrentStage);
 	CurrentAction.TimedWindowStates.Init(BossCombat::WindowPending, Attack.HitWindows.Num());
 
+	const bool bIsProjectileAttack = Attack.HitWindows.ContainsByPredicate([](const FBossHitWindow& Window)
+	{
+		return Window.Shape == EBossHitShape::Projectile;
+	});
+
 	UMotionWarpingComponent* Warping = OwnerCharacter ? OwnerCharacter->FindComponentByClass<UMotionWarpingComponent>() : nullptr;
 	if (Warping && Target && Attack.TrackingEndTime > 0.f)
 	{
 		CurrentAction.bWarping = true;
-		CurrentAction.bWarpTranslation = !Attack.HitWindows.ContainsByPredicate([](const FBossHitWindow& Window)
-		{
-			return Window.Shape == EBossHitShape::Projectile;
-		});
+		CurrentAction.bWarpTranslation = !bIsProjectileAttack;
 
 		UpdateWarpTarget(Target);
 		URootMotionModifier_SkewWarp::AddRootMotionModifierSkewWarp(Warping, Attack.Montage, 0.f,
@@ -185,7 +187,17 @@ bool UBossCombatComponent::StartAttack(const int32 AttackIndex, AActor* Target)
 		UGameplayStatics::PlaySoundAtLocation(this, Attack.TelegraphSound, GetOwner()->GetActorLocation());
 	}
 
-	OnAttackStarted.Broadcast(Attack.AttackName, TimeUntilFirstHit);
+	const FName AttackName = Attack.AttackName;
+	if (Attack.bShowGroundTelegraph || bIsProjectileAttack)
+	{
+		if (const AActor* Owner = GetOwner())
+		{
+			const FVector TelegraphLocation = Owner->GetActorTransform().TransformPosition(Attack.TelegraphOffset);
+			OnAttackTelegraphStarted.Broadcast(AttackName, TelegraphLocation, Attack.TelegraphRadius, bIsProjectileAttack);
+		}
+	}
+
+	OnAttackStarted.Broadcast(AttackName, TimeUntilFirstHit);
 	return true;
 }
 

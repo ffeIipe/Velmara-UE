@@ -6,6 +6,7 @@
 #include "BossAIController.generated.h"
 
 class ABossEnemy;
+class UAnimMontage;
 
 UCLASS()
 class TESISUE_API ABossAIController : public ACustomAIController
@@ -26,6 +27,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Boss|AI")
 	void SetCombatTarget(AActor* NewTarget) { ForcedTarget = NewTarget; }
 
+	UFUNCTION(BlueprintCallable, Category = "Boss|AI")
+	void TriggerStagger(float Duration, UAnimMontage* OptionalMontage = nullptr);
+
+	UFUNCTION(BlueprintPure, Category = "Boss|AI")
+	bool IsStaggered() const { return BrainState == EBossBrainState::Staggered; }
+
 	void NotifyBossDamaged(AActor* DamageInstigator);
 
 	void HandleBossDeath();
@@ -43,6 +50,7 @@ private:
 	bool TryEvade();
 	void ChaseTarget(AActor* Target);
 	void HandleActionFinished(bool bInterrupted);
+	void ClearStaggerState();
 
 	TWeakObjectPtr<ABossEnemy> Boss;
 	TWeakObjectPtr<AActor> CombatTarget;
@@ -53,9 +61,11 @@ private:
 	double RecoverUntil = 0.0;
 	double NextDecisionTime = 0.0;
 	double NextEvadeTime = 0.0;
+	double StaggerUntil = 0.0;
 
 	TArray<double> RecentHitTimes;
 	bool bWantsToEvade = false;
+	bool bStaggerTagApplied = false;
 
 	FDelegateHandle ActionFinishedHandle;
 };

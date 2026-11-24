@@ -7,12 +7,15 @@
 #include "Components/ButtonSlot.h"
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
+#include "Components/Image.h"
+#include "Components/ScrollBox.h"
 #include "Components/SizeBox.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
 #include "Features/AttributeTreeSystem/Core/AttributeTreeComponent.h"
 #include "Features/AttributeTreeSystem/UI/AttributeTreeRowWidget.h"
+#include "UI/Style/VelmaraUITheme.h"
 
 #define LOCTEXT_NAMESPACE "AttributeTree"
 
@@ -36,73 +39,146 @@ UAttributeTreeComponent* UAttributeTreeMenuWidget::GetAttributeTree() const
 	return Cast<UAttributeTreeComponent>(GetUpgradeComponent());
 }
 
+UWidget* UAttributeTreeMenuWidget::GetFirstFocusableWidget() const
+{
+	for (const UAttributeTreeRowWidget* Row : Rows)
+	{
+		if (Row && Row->GetFocusTarget())
+		{
+			return Row->GetFocusTarget();
+		}
+	}
+	return nullptr;
+}
+
 void UAttributeTreeMenuWidget::BuildLayout()
 {
 	using namespace UpgradeUIStyle;
 
-	UBorder* Dimmer = Make<UBorder>(WidgetTree);
-	Dimmer->SetBrush(MakeRoundedBrush(Colors::Overlay(), 0.f));
-	Dimmer->SetPadding(FMargin(24.f));
-	Dimmer->SetHorizontalAlignment(HAlign_Center);
-	Dimmer->SetVerticalAlignment(VAlign_Center);
-	WidgetTree->RootWidget = Dimmer;
+	RootDimmer = Make<UBorder>(WidgetTree);
+	RootDimmer->SetBrush(MakeSharpBrush(Colors::Overlay()));
+	RootDimmer->SetPadding(FMargin(24.f));
+	RootDimmer->SetHorizontalAlignment(HAlign_Center);
+	RootDimmer->SetVerticalAlignment(VAlign_Center);
+	WidgetTree->RootWidget = RootDimmer;
 
-	USizeBox* PanelSize = Make<USizeBox>(WidgetTree);
-	PanelSize->SetWidthOverride(820.f);
-	Dimmer->SetContent(PanelSize);
+	PanelSizeBox = Make<USizeBox>(WidgetTree);
+	PanelSizeBox->SetWidthOverride(920.f);
+	RootDimmer->SetContent(PanelSizeBox);
 
-	UBorder* Panel = Make<UBorder>(WidgetTree);
-	Panel->SetBrush(MakeRoundedBrush(Colors::Panel(), 14.f, Colors::PanelOutline(), 1.5f));
-	Panel->SetPadding(FMargin(32.f, 28.f));
-	PanelSize->SetContent(Panel);
+	PanelBorder = Make<UBorder>(WidgetTree);
+	PanelBorder->SetBrush(MakeSharpBrush(Colors::Panel(), Colors::PanelOutline(), 1.f));
+	PanelBorder->SetPadding(FMargin(32.f, 28.f));
+	PanelSizeBox->SetContent(PanelBorder);
 
 	UVerticalBox* Main = Make<UVerticalBox>(WidgetTree);
-	Panel->SetContent(Main);
+	PanelBorder->SetContent(Main);
 
-	Main->AddChildToVerticalBox(MakeText(WidgetTree, LOCTEXT("MenuTitle", "ÁRBOL DE ATRIBUTOS"), 30, Colors::Gold(), true));
+	StandaloneHeaderBox = Make<UVerticalBox>(WidgetTree);
+	Main->AddChildToVerticalBox(StandaloneHeaderBox);
 
-	Main->AddChildToVerticalBox(MakeText(WidgetTree, LOCTEXT("MenuSubtitle", "Mejorá cada atributo del Nivel I al Nivel V."), 14, Colors::TextSecondary()))
-	    ->SetPadding(FMargin(0.f, 2.f, 0.f, 0.f));
+	StandaloneHeaderBox->AddChildToVerticalBox(MakeDisplayText(WidgetTree, LOCTEXT("MenuTitle", "ÁRBOL DE ATRIBUTOS"), 30, FVelmaraUITheme::Bone(), 200));
+
+	USizeBox* HeaderSepSize = Make<USizeBox>(WidgetTree);
+	HeaderSepSize->SetHeightOverride(18.f);
+	UImage* HeaderSep = Make<UImage>(WidgetTree);
+	HeaderSep->SetBrush(FVelmaraUITheme::MakeImageBrush(
+		FVelmaraUITheme::LoadTexture(VelmaraUIPaths::OrnSepStar),
+		FVector2D(420.f, 18.f),
+		FVelmaraUITheme::Bone(0.8f)));
+	HeaderSepSize->SetContent(HeaderSep);
+	StandaloneHeaderBox->AddChildToVerticalBox(HeaderSepSize)->SetPadding(FMargin(0.f, 6.f, 0.f, 10.f));
+
+	StandaloneHeaderBox->AddChildToVerticalBox(MakeText(WidgetTree, LOCTEXT("MenuSubtitle", "Fortalece tu sangre del Nivel I al Nivel V."), 15, Colors::TextSecondary()));
 
 	UBorder* CurrencyBar = Make<UBorder>(WidgetTree);
-	CurrencyBar->SetBrush(MakeRoundedBrush(Colors::Row(), 8.f, Colors::RowOutline(), 1.f));
+	CurrencyBar->SetBrush(FVelmaraUITheme::MakeOptionRowBrush(FVelmaraUITheme::Ash()));
 	CurrencyBar->SetPadding(FMargin(16.f, 10.f));
-	CurrencyText = MakeText(WidgetTree, FText::GetEmpty(), 17, Colors::TextPrimary(), true);
+	CurrencyText = MakeDisplayText(WidgetTree, FText::GetEmpty(), 16, Colors::TextPrimary(), 120);
 	CurrencyBar->SetContent(CurrencyText);
-	Main->AddChildToVerticalBox(CurrencyBar)->SetPadding(FMargin(0.f, 18.f, 0.f, 16.f));
+	StandaloneHeaderBox->AddChildToVerticalBox(CurrencyBar)->SetPadding(FMargin(0.f, 14.f, 0.f, 18.f));
+
+	UScrollBox* RowsScroll = Make<UScrollBox>(WidgetTree);
+	RowsScroll->SetConsumeMouseWheel(EConsumeMouseWheel::WhenScrollingPossible);
+	if (UVerticalBoxSlot* ScrollSlot = Main->AddChildToVerticalBox(RowsScroll))
+	{
+		ScrollSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+	}
 
 	RowsContainer = Make<UVerticalBox>(WidgetTree);
-	Main->AddChildToVerticalBox(RowsContainer);
+	RowsScroll->AddChild(RowsContainer);
 
 	FeedbackText = MakeText(WidgetTree, FText::GetEmpty(), 14, Colors::TextSecondary(), true);
 	FeedbackText->SetJustification(ETextJustify::Center);
-	UVerticalBoxSlot* FeedbackSlot = Main->AddChildToVerticalBox(FeedbackText);
-	FeedbackSlot->SetPadding(FMargin(0.f, 6.f, 0.f, 0.f));
-	FeedbackSlot->SetHorizontalAlignment(HAlign_Center);
+	if (UVerticalBoxSlot* FeedbackSlot = Main->AddChildToVerticalBox(FeedbackText))
+	{
+		FeedbackSlot->SetPadding(FMargin(0.f, 8.f, 0.f, 0.f));
+		FeedbackSlot->SetHorizontalAlignment(HAlign_Center);
+	}
 
 	UHorizontalBox* Footer = Make<UHorizontalBox>(WidgetTree);
+	StandaloneFooterBox = Footer;
 	Main->AddChildToVerticalBox(Footer)->SetPadding(FMargin(0.f, 16.f, 0.f, 0.f));
 
-	UHorizontalBoxSlot* HintSlot = Footer->AddChildToHorizontalBox(MakeText(WidgetTree, LOCTEXT("MenuHint", "Esc para cerrar"), 13, Colors::TextSecondary()));
+	UHorizontalBoxSlot* HintSlot = Footer->AddChildToHorizontalBox(MakeText(WidgetTree, LOCTEXT("MenuHint", "Esc / B para cerrar"), 14, Colors::TextSecondary()));
 	HintSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 	HintSlot->SetVerticalAlignment(VAlign_Center);
 
 	USizeBox* CloseSize = Make<USizeBox>(WidgetTree);
-	CloseSize->SetWidthOverride(140.f);
+	CloseSize->SetWidthOverride(150.f);
 	CloseSize->SetHeightOverride(42.f);
 
 	UButton* CloseButton = Make<UButton>(WidgetTree);
-	CloseButton->SetStyle(MakeButtonStyle(Colors::Row(), Colors::RowHovered(), Colors::Locked(), Colors::GoldDim(), 1.f));
+	CloseButton->SetStyle(MakeButtonStyle(Colors::Row(), Colors::RowHovered(), Colors::Locked(), FVelmaraUITheme::Ash(), 1.f));
 	CloseButton->OnClicked.AddDynamic(this, &UAttributeTreeMenuWidget::HandleCloseClicked);
 	CloseSize->SetContent(CloseButton);
 
-	if (UButtonSlot* CloseContentSlot = Cast<UButtonSlot>(CloseButton->SetContent(MakeText(WidgetTree, LOCTEXT("MenuClose", "Cerrar"), 15, Colors::TextPrimary(), true))))
+	if (UButtonSlot* CloseContentSlot = Cast<UButtonSlot>(CloseButton->SetContent(MakeDisplayText(WidgetTree, LOCTEXT("MenuClose", "CERRAR"), 15, Colors::TextPrimary(), 140))))
 	{
 		CloseContentSlot->SetHorizontalAlignment(HAlign_Center);
 		CloseContentSlot->SetVerticalAlignment(VAlign_Center);
 	}
 
 	Footer->AddChildToHorizontalBox(CloseSize)->SetVerticalAlignment(VAlign_Center);
+
+	UpdateStandaloneChromeVisibility();
+}
+
+void UAttributeTreeMenuWidget::OnEmbeddedModeChanged()
+{
+	UpdateStandaloneChromeVisibility();
+}
+
+void UAttributeTreeMenuWidget::UpdateStandaloneChromeVisibility()
+{
+	if (!RootDimmer || !PanelBorder || !PanelSizeBox) return;
+
+	if (bEmbeddedMode)
+	{
+		RootDimmer->SetBrush(UpgradeUIStyle::MakeTransparentBrush());
+		RootDimmer->SetPadding(FMargin(0.f));
+		RootDimmer->SetHorizontalAlignment(HAlign_Fill);
+		RootDimmer->SetVerticalAlignment(VAlign_Fill);
+		PanelSizeBox->ClearWidthOverride();
+		PanelBorder->SetBrush(UpgradeUIStyle::MakeTransparentBrush());
+		PanelBorder->SetPadding(FMargin(0.f));
+		if (StandaloneHeaderBox) StandaloneHeaderBox->SetVisibility(ESlateVisibility::Collapsed);
+		if (StandaloneFooterBox) StandaloneFooterBox->SetVisibility(ESlateVisibility::Collapsed);
+		if (FeedbackText) FeedbackText->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	else
+	{
+		RootDimmer->SetBrush(UpgradeUIStyle::MakeSharpBrush(UpgradeUIStyle::Colors::Overlay()));
+		RootDimmer->SetPadding(FMargin(24.f));
+		RootDimmer->SetHorizontalAlignment(HAlign_Center);
+		RootDimmer->SetVerticalAlignment(VAlign_Center);
+		PanelSizeBox->SetWidthOverride(920.f);
+		PanelBorder->SetBrush(UpgradeUIStyle::MakeSharpBrush(UpgradeUIStyle::Colors::Panel(), UpgradeUIStyle::Colors::PanelOutline(), 1.f));
+		PanelBorder->SetPadding(FMargin(32.f, 28.f));
+		if (StandaloneHeaderBox) StandaloneHeaderBox->SetVisibility(ESlateVisibility::Visible);
+		if (StandaloneFooterBox) StandaloneFooterBox->SetVisibility(ESlateVisibility::Visible);
+		if (FeedbackText) FeedbackText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	}
 }
 
 void UAttributeTreeMenuWidget::OnUpgradeComponentSet()
@@ -114,6 +190,11 @@ void UAttributeTreeMenuWidget::OnUpgradeComponentSet()
 
 	RebuildRows();
 	RefreshMenu();
+
+	if (Rows.Num() > 0 && Rows[0])
+	{
+		NotifyRowSelected(Rows[0]->GetUpgradeTag());
+	}
 }
 
 void UAttributeTreeMenuWidget::BindToUpgradeComponent()
@@ -172,17 +253,17 @@ void UAttributeTreeMenuWidget::RefreshMenu()
 	{
 		if (Tree->HasCurrencyProvider())
 		{
-			CurrencyText->SetText(FText::Format(LOCTEXT("MenuCurrency", "{0} disponible: {1}"),
-				Tree->GetCurrencyDisplayName(), FText::AsNumber(Tree->GetCurrencyAmount())));
+			CurrencyText->SetText(FText::Format(LOCTEXT("MenuCurrency", "{0} DISPONIBLE: {1}"),
+				Tree->GetCurrencyDisplayName().ToUpper(), FVelmaraUITheme::FormatGroupedNumber(Tree->GetCurrencyAmount())));
 		}
 		else if (Tree->AreUpgradesFree())
 		{
-			CurrencyText->SetText(FText::Format(LOCTEXT("MenuCurrencyFree", "Sin proveedor de {0}: modo prueba, las mejoras son gratis"),
-				Tree->GetCurrencyDisplayName()));
+			CurrencyText->SetText(FText::Format(LOCTEXT("MenuCurrencyFree", "MODO PRUEBA: MEJORAS DE {0} GRATUITAS"),
+				Tree->GetCurrencyDisplayName().ToUpper()));
 		}
 		else
 		{
-			CurrencyText->SetText(FText::Format(LOCTEXT("MenuCurrencyNone", "Sin proveedor de {0} disponible"), Tree->GetCurrencyDisplayName()));
+			CurrencyText->SetText(FText::Format(LOCTEXT("MenuCurrencyNone", "SIN PROVEEDOR DE {0} DISPONIBLE"), Tree->GetCurrencyDisplayName().ToUpper()));
 		}
 	}
 
@@ -201,54 +282,59 @@ void UAttributeTreeMenuWidget::RefreshMenu()
 	}
 }
 
+void UAttributeTreeMenuWidget::NotifyRowSelected(const FGameplayTag& UpgradeTag)
+{
+	OnRowSelected.Broadcast(UpgradeTag);
+}
+
 void UAttributeTreeMenuWidget::ShowUpgradeResult(const EAttributeUpgradeResult Result, const FGameplayTag& UpgradeTag)
 {
 	using namespace UpgradeUIStyle;
 
+	const UAttributeTreeComponent* Tree = GetAttributeTree();
+	FAttributeUpgradeDefinition Definition;
+	if (Tree)
+	{
+		Tree->GetUpgradeDefinition(UpgradeTag, Definition);
+	}
+
+	const FText CurrencyName = Tree ? Tree->GetCurrencyDisplayName() : FText::GetEmpty();
+	FText Message;
+	bool bIsError = true;
+
+	switch (Result)
+	{
+	case EAttributeUpgradeResult::Success:
+		Message = FText::Format(LOCTEXT("MenuResultSuccess", "Mejora consagrada: {0}  »  Nivel {1}"), Definition.DisplayName,
+			FText::FromString(AttributeTreeUtils::ToRoman(Tree ? Tree->GetUpgradeLevel(UpgradeTag) : 0)));
+		bIsError = false;
+		break;
+	case EAttributeUpgradeResult::NotEnoughCurrency:
+		Message = FText::Format(LOCTEXT("MenuResultNoCurrency", "No tienes suficiente {0} para esta mejora."), CurrencyName);
+		break;
+	case EAttributeUpgradeResult::MaxLevelReached:
+		Message = LOCTEXT("MenuResultMax", "Este atributo ya alcanzó su nivel máximo.");
+		break;
+	case EAttributeUpgradeResult::NoCurrencySystem:
+		Message = FText::Format(LOCTEXT("MenuResultNoCurrencySystem", "No hay un proveedor de {0} disponible."), CurrencyName);
+		break;
+	case EAttributeUpgradeResult::NoAbilitySystem:
+		Message = LOCTEXT("MenuResultNoASC", "El personaje no tiene un AbilitySystemComponent.");
+		break;
+	default:
+		Message = LOCTEXT("MenuResultInvalid", "La mejora no está configurada correctamente.");
+		break;
+	}
+
 	if (FeedbackText)
 	{
-		const UAttributeTreeComponent* Tree = GetAttributeTree();
-		FAttributeUpgradeDefinition Definition;
-		if (Tree)
-		{
-			Tree->GetUpgradeDefinition(UpgradeTag, Definition);
-		}
-
-		const FText CurrencyName = Tree ? Tree->GetCurrencyDisplayName() : FText::GetEmpty();
-		FText Message;
-		bool bIsError = true;
-
-		switch (Result)
-		{
-		case EAttributeUpgradeResult::Success:
-			Message = FText::Format(LOCTEXT("MenuResultSuccess", "Mejora aplicada: {0} » Nivel {1}"), Definition.DisplayName,
-				FText::FromString(AttributeTreeUtils::ToRoman(Tree ? Tree->GetUpgradeLevel(UpgradeTag) : 0)));
-			bIsError = false;
-			break;
-		case EAttributeUpgradeResult::NotEnoughCurrency:
-			Message = FText::Format(LOCTEXT("MenuResultNoCurrency", "No tenés suficiente {0} para esta mejora."), CurrencyName);
-			break;
-		case EAttributeUpgradeResult::MaxLevelReached:
-			Message = LOCTEXT("MenuResultMax", "Esta rama ya está en el nivel máximo.");
-			break;
-		case EAttributeUpgradeResult::NoCurrencySystem:
-			Message = FText::Format(LOCTEXT("MenuResultNoCurrencySystem", "No hay un proveedor de {0} disponible."), CurrencyName);
-			break;
-		case EAttributeUpgradeResult::NoAbilitySystem:
-			Message = LOCTEXT("MenuResultNoASC", "El personaje no tiene un AbilitySystemComponent.");
-			break;
-		default:
-			Message = LOCTEXT("MenuResultInvalid", "La mejora no está configurada correctamente.");
-			break;
-		}
-
 		FeedbackText->SetText(Message);
 		FeedbackText->SetColorAndOpacity(FSlateColor(bIsError ? Colors::Error() : Colors::Success()));
 	}
 
+	OnFeedbackMessage.Broadcast(Message, bIsError);
+	OnRowSelected.Broadcast(UpgradeTag);
 	RefreshMenu();
-
-	SetFocus();
 }
 
 void UAttributeTreeMenuWidget::HandleCloseClicked()
@@ -259,6 +345,7 @@ void UAttributeTreeMenuWidget::HandleCloseClicked()
 void UAttributeTreeMenuWidget::HandleAttributeUpgraded(FGameplayTag UpgradeTag, int32 NewLevel)
 {
 	RefreshMenu();
+	OnRowSelected.Broadcast(UpgradeTag);
 }
 
 #undef LOCTEXT_NAMESPACE

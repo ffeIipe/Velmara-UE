@@ -36,11 +36,17 @@ public:
 	void OpenShaft(AActor* InBoss, const FVector& InTop, const FVector& InFloor, float InRadius, const FBossDamageParams& InDamageParams,
 		ABossCeilingBreakPoint* InBreakPoint = nullptr);
 
+	UFUNCTION(BlueprintCallable, Category = "Boss Light Shaft")
+	void OpenFullArenaShaft(const FVector& InTop, const FVector& InFloor, float InRadius, AActor* InBoss, const FBossDamageParams& InDamageParams, float InTelegraphDurationOverride = -1.f);
+
 	UFUNCTION(BlueprintCallable, Category = "Boss|Light Shaft")
 	void CloseShaft();
 
 	UFUNCTION(BlueprintPure, Category = "Boss|Light Shaft")
 	bool IsShaftOpen() const { return Phase == EShaftPhase::Open; }
+
+	UFUNCTION(BlueprintPure, Category = "Boss Light Shaft")
+	bool IsFullArenaShaft() const { return bFullArenaShaft; }
 
 	UFUNCTION(BlueprintPure, Category = "Boss|Light Shaft")
 	bool IsPointInsideShaft(const FVector& Point) const;
@@ -50,6 +56,18 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Boss|Light Shaft")
 	FVector GetFloorLocation() const { return Floor; }
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Light Shaft|Full Arena", meta = (ClampMin = "0.0"))
+	float FullArenaLightIntensity = 120000.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Light Shaft|Full Arena")
+	bool bHideBeamMeshInFullArena = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Light Shaft|Full Arena")
+	bool bHideGroundDecalInFullArena = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Light Shaft|Full Arena")
+	bool bSkipImpactDamageInFullArena = true;
 
 	virtual void OnPoolActivate_Implementation() override;
 
@@ -171,9 +189,15 @@ private:
 	void ClearExposure();
 	void GatherCandidates(TArray<AActor*>& OutCandidates) const;
 	bool HasLineOfSight(const AActor* Target) const;
+	bool IsPossessedMinionCandidate(const AActor* Candidate) const;
+	float GetEffectiveLightIntensity() const { return bFullArenaShaft ? FullArenaLightIntensity : LightIntensity; }
 
 	EShaftPhase Phase = EShaftPhase::Inactive;
 	float PhaseElapsed = 0.f;
+	float CurrentLightAlpha = 0.f;
+	float ClosingStartAlpha = 1.f;
+	bool bFullArenaShaft = false;
+	float ActiveTelegraphDuration = 1.6f;
 
 	FVector Top = FVector::ZeroVector;
 	FVector Floor = FVector::ZeroVector;

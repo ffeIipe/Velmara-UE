@@ -13,6 +13,7 @@ class UNiagaraSystem;
 class USoundBase;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBossStageChanged, int32, NewStage);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnBossFullArenaCollapsed);
 
 UCLASS(ClassGroup = (Boss), meta = (BlueprintSpawnableComponent))
 class TESISUE_API UBossCeilingBreakComponent : public UActorComponent
@@ -50,7 +51,7 @@ public:
 	TSubclassOf<ABossLightShaft> LightShaftClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Ceiling|Shafts", meta = (ClampMin = "50"))
-	float ShaftRadius = 230.f;
+	float ShaftRadius = 250.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Ceiling|Shafts", meta = (ClampMin = "0"))
 	float ShaftStagger = 0.35f;
@@ -100,8 +101,23 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Ceiling|Feedback")
 	TObjectPtr<UNiagaraSystem> BreakEffect;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Ceiling|Full Collapse", meta = (ClampMin = "0.0"))
+	float FullCollapseShaftRadius = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Ceiling|Full Collapse", meta = (ClampMin = "0.0"))
+	float FullCollapseBreakPointStagger = 0.12f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Ceiling|Full Collapse")
+	bool bClosePreviousShaftsOnFullCollapse = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Ceiling|Full Collapse")
+	TArray<TObjectPtr<AActor>> ExtraCeilingPiecesToHideOnFullCollapse;
+
 	UPROPERTY(BlueprintAssignable, Category = "Boss|Ceiling")
 	FOnBossStageChanged OnStageChanged;
+
+	UPROPERTY(BlueprintAssignable, Category = "Boss Ceiling|Events")
+	FOnBossFullArenaCollapsed OnFullArenaCollapsed;
 
 	UFUNCTION(BlueprintCallable, Category = "Boss|Ceiling")
 	void EvaluateHealth(float HealthPercent);
@@ -132,6 +148,8 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
 private:
 	struct FShaftRequest
 	{
@@ -144,6 +162,8 @@ private:
 	void HandleBreakEvent(int32 StageIndex, TWeakObjectPtr<AActor> Target);
 	void HandleBreakFinished(bool bInterrupted);
 	void OpenShaft(FShaftRequest Request);
+	void ExecuteFullArenaCollapse();
+	void BreakPointDeferred(TWeakObjectPtr<ABossCeilingBreakPoint> Point);
 	void ApplyShockwave() const;
 
 	void BuildShaftRequests(int32 StageIndex, const AActor* Target, TArray<FShaftRequest>& OutRequests);
@@ -151,11 +171,13 @@ private:
 	bool ResolveShaftFromCeiling(const FVector& CeilingPoint, FShaftRequest& OutRequest) const;
 	bool FindRandomGroundPoint(const TArray<FShaftRequest>& Existing, FVector& OutPoint) const;
 	bool IsFarFromExisting(const FVector& Point, const TArray<FShaftRequest>& Existing) const;
+	FVector ResolveArenaCenter() const;
 	FBossDamageParams GetShaftDamageParams() const;
 
 	TArray<int32> PendingStages;
 	TArray<TWeakObjectPtr<ABossLightShaft>> ActiveShafts;
 	TArray<FTimerHandle> ShaftTimers;
+	TArray<FTimerHandle> CollapseTimers;
 
 	FVector SpawnOrigin = FVector::ZeroVector;
 	int32 NextStageToQueue = 0;

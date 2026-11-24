@@ -2,7 +2,11 @@
 
 #include "Components/StaticMeshComponent.h"
 #include "Engine/CollisionProfile.h"
+#include "Features/AttributeTreeSystem/Core/AttributeTreeComponent.h"
 #include "Features/WeaponUpgradeSystem/Core/WeaponUpgradeComponent.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerController.h"
+#include "UI/Widgets/Menus/VelmaraBloodAltarMenuWidget.h"
 
 #define LOCTEXT_NAMESPACE "WeaponUpgrade"
 
@@ -21,15 +25,47 @@ ABloodAltar::ABloodAltar()
 bool ABloodAltar::ExecuteInteraction_Implementation(AActor* Interactor)
 {
 	UWeaponUpgradeComponent* WeaponUpgrades = Interactor ? Interactor->FindComponentByClass<UWeaponUpgradeComponent>() : nullptr;
-	if (!WeaponUpgrades)
+	UAttributeTreeComponent* AttributeTree = Interactor ? Interactor->FindComponentByClass<UAttributeTreeComponent>() : nullptr;
+
+	if (!WeaponUpgrades && !AttributeTree)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("BloodAltar: %s no tiene UWeaponUpgradeComponent."), *GetNameSafe(Interactor));
+		UE_LOG(LogTemp, Warning, TEXT("BloodAltar: %s no tiene componentes de mejora."), *GetNameSafe(Interactor));
 		return false;
 	}
 
-	WeaponUpgrades->ToggleMenu();
-	OnAltarUsed(Interactor, WeaponUpgrades->IsMenuOpen());
+	if (const APawn* InteractorPawn = Cast<APawn>(Interactor))
+	{
+		if (APlayerController* PC = InteractorPawn->GetController<APlayerController>())
+		{
+			if (UVelmaraBloodAltarMenuWidget::GetActiveAltar(PC))
+			{
+				UVelmaraBloodAltarMenuWidget::CloseActiveAltar(PC);
+				OnAltarUsed(Interactor, false);
+				return true;
+			}
 
+			const EVelmaraBloodAltarTab InitialTab = AttributeTree
+				? EVelmaraBloodAltarTab::Attributes
+				: EVelmaraBloodAltarTab::WeaponUpgrades;
+
+			UVelmaraBloodAltarMenuWidget* Opened = UVelmaraBloodAltarMenuWidget::OpenBloodAltar(PC, Interactor, InitialTab);
+			if (Opened)
+			{
+				OnAltarUsed(Interactor, true);
+				return true;
+			}
+		}
+	}
+
+	if (WeaponUpgrades)
+	{
+		WeaponUpgrades->ToggleMenu();
+		OnAltarUsed(Interactor, WeaponUpgrades->IsMenuOpen());
+		return true;
+	}
+
+	AttributeTree->ToggleMenu();
+	OnAltarUsed(Interactor, AttributeTree->IsMenuOpen());
 	return true;
 }
 
