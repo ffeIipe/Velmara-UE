@@ -8,7 +8,9 @@
 #include "GameFramework/GameUserSettings.h"
 #include "GameFramework/PlayerController.h"
 #include "GAS/VelmaraGameplayTags.h"
+#if !WITH_EDITOR
 #include "Internationalization/Internationalization.h"
+#endif
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundClass.h"
 #include "SoundControlBus.h"
@@ -335,13 +337,31 @@ void UVelmaraGameInstance::ApplyControlAndGameplaySettings() const
 	}
 }
 
-void UVelmaraGameInstance::ApplyLanguageSetting() const
+FString UVelmaraGameInstance::NormalizeLanguageCode(const FString& RawLanguageCode)
 {
-	if (!CurrentSettings || CurrentSettings->LanguageCode.IsEmpty())
+	const FString Trimmed = RawLanguageCode.TrimStartAndEnd();
+	if (Trimmed.StartsWith(TEXT("en"), ESearchCase::IgnoreCase))
 	{
-		return;
+		return TEXT("en");
 	}
-	FInternationalization::Get().SetCurrentCulture(CurrentSettings->LanguageCode);
+	return TEXT("es");
+}
+
+void UVelmaraGameInstance::ApplyLanguageSetting()
+{
+	const FString TargetCode = NormalizeLanguageCode(CurrentSettings ? CurrentSettings->LanguageCode : TEXT("es"));
+	if (CurrentSettings)
+	{
+		CurrentSettings->LanguageCode = TargetCode;
+	}
+	ActiveGameLanguageCode = TargetCode;
+	OnGameLanguageChanged.Broadcast(ActiveGameLanguageCode);
+#if !WITH_EDITOR
+	if (bEnableGameLocalizationRuntime)
+	{
+		FInternationalization::Get().SetCurrentLanguage(ActiveGameLanguageCode);
+	}
+#endif
 }
 
 void UVelmaraGameInstance::ApplyStagedGraphicsSettings(const FVelmaraGraphicsSettingsSnapshot& Snapshot)
@@ -676,9 +696,9 @@ void UVelmaraGameInstance::SetSubtitleSizeIndex(int32 NewSizeIndex)
 
 void UVelmaraGameInstance::SetLanguageCode(const FString& NewLanguageCode)
 {
-	if (CurrentSettings && !NewLanguageCode.IsEmpty())
+	if (CurrentSettings)
 	{
-		CurrentSettings->LanguageCode = NewLanguageCode;
+		CurrentSettings->LanguageCode = NormalizeLanguageCode(NewLanguageCode);
 		ApplyLanguageSetting();
 		SaveGameSettings();
 		OnSettingsChanged.Broadcast();
@@ -812,7 +832,12 @@ int32 UVelmaraGameInstance::GetSubtitleSizeIndex() const
 
 FString UVelmaraGameInstance::GetLanguageCode() const
 {
-	return CurrentSettings ? CurrentSettings->LanguageCode : TEXT("es");
+	return NormalizeLanguageCode(CurrentSettings ? CurrentSettings->LanguageCode : ActiveGameLanguageCode);
+}
+
+FString UVelmaraGameInstance::GetActiveGameLanguageCode() const
+{
+	return NormalizeLanguageCode(CurrentSettings ? CurrentSettings->LanguageCode : ActiveGameLanguageCode);
 }
 
 void UVelmaraGameInstance::ShowLoadingScreen()

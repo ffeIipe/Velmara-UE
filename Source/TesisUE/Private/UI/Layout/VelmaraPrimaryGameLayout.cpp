@@ -13,8 +13,10 @@
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
+#include "Input/CommonUIActionRouterBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "UI/Style/VelmaraUITheme.h"
+#include "UI/Widgets/HUD/VelmaraTutorialToastWidget.h"
 
 TMap<TWeakObjectPtr<ULocalPlayer>, TWeakObjectPtr<UVelmaraPrimaryGameLayout>> UVelmaraPrimaryGameLayout::ActiveLayouts;
 
@@ -77,7 +79,7 @@ UVelmaraPrimaryGameLayout* UVelmaraPrimaryGameLayout::GetOrCreate(APlayerControl
 	if (NewLayout)
 	{
 		ActiveLayouts.Add(LP, NewLayout);
-		NewLayout->AddToPlayerScreen(0);
+		NewLayout->AddToViewport(20);
 	}
 	return NewLayout;
 }
@@ -94,6 +96,7 @@ TSharedRef<SWidget> UVelmaraPrimaryGameLayout::RebuildWidget()
 void UVelmaraPrimaryGameLayout::BuildLayoutTree()
 {
 	UOverlay* RootOverlay = WidgetTree->ConstructWidget<UOverlay>(UOverlay::StaticClass(), TEXT("PrimaryLayoutRoot"));
+	RootOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	WidgetTree->RootWidget = RootOverlay;
 
 	HUDLayer = WidgetTree->ConstructWidget<UOverlay>(UOverlay::StaticClass(), TEXT("HUDLayer"));
@@ -154,7 +157,7 @@ void UVelmaraPrimaryGameLayout::BuildLayoutTree()
 	}
 
 	MenuStack = WidgetTree->ConstructWidget<UCommonActivatableWidgetStack>(UCommonActivatableWidgetStack::StaticClass(), TEXT("MenuStack"));
-	MenuStack->SetTransitionDuration(0.10f);
+	MenuStack->SetTransitionDuration(0.0f);
 	if (UOverlaySlot* MenuSlot = RootOverlay->AddChildToOverlay(MenuStack))
 	{
 		MenuSlot->SetHorizontalAlignment(HAlign_Fill);
@@ -162,7 +165,7 @@ void UVelmaraPrimaryGameLayout::BuildLayoutTree()
 	}
 
 	ModalStack = WidgetTree->ConstructWidget<UCommonActivatableWidgetStack>(UCommonActivatableWidgetStack::StaticClass(), TEXT("ModalStack"));
-	ModalStack->SetTransitionDuration(0.08f);
+	ModalStack->SetTransitionDuration(0.0f);
 	if (UOverlaySlot* ModalSlot = RootOverlay->AddChildToOverlay(ModalStack))
 	{
 		ModalSlot->SetHorizontalAlignment(HAlign_Fill);
@@ -257,14 +260,30 @@ void UVelmaraPrimaryGameLayout::ClearMenuStack()
 	RefreshInputMode();
 }
 
+bool UVelmaraPrimaryGameLayout::IsInteractiveMenuWidget(const UCommonActivatableWidget* Widget) const
+{
+	if (!Widget || Widget->IsA<UVelmaraLegacyPromptBridgeWidget>())
+	{
+		return false;
+	}
+
+	const TOptional<FUIInputConfig> DesiredConfig = Widget->GetDesiredInputConfig();
+	if (DesiredConfig.IsSet())
+	{
+		return DesiredConfig->GetInputMode() != ECommonInputMode::Game;
+	}
+
+	return Widget->SupportsActivationFocus();
+}
+
 bool UVelmaraPrimaryGameLayout::HasActiveMenu() const
 {
-	return MenuStack && MenuStack->GetActiveWidget() != nullptr;
+	return MenuStack && IsInteractiveMenuWidget(MenuStack->GetActiveWidget());
 }
 
 bool UVelmaraPrimaryGameLayout::HasActiveModal() const
 {
-	return ModalStack && ModalStack->GetActiveWidget() != nullptr;
+	return ModalStack && IsInteractiveMenuWidget(ModalStack->GetActiveWidget());
 }
 
 bool UVelmaraPrimaryGameLayout::HasActiveMenuOrModal() const
@@ -334,27 +353,38 @@ void UVelmaraPrimaryGameLayout::RefreshInputMode()
 		return;
 	}
 
-	if (HasActiveMenuOrModal())
+	UCommonActivatableWidget* TopWidget = nullptr;
+	if (ModalStack && IsInteractiveMenuWidget(ModalStack->GetActiveWidget()))
 	{
+		TopWidget = ModalStack->GetActiveWidget();
+	}
+	else if (MenuStack && IsInteractiveMenuWidget(MenuStack->GetActiveWidget()))
+	{
+		TopWidget = MenuStack->GetActiveWidget();
+	}
+
+	UCommonUIActionRouterBase* ActionRouter = UCommonUIActionRouterBase::Get(*this);
+
+	if (TopWidget != nullptr)
+	{
+		if (ActionRouter)
+		{
+			ActionRouter->SetActiveUIInputConfig(FUIInputConfig(ECommonInputMode::Menu, EMouseCaptureMode::NoCapture, false), TopWidget);
+		}
 		PC->SetShowMouseCursor(true);
 		FInputModeGameAndUI InputMode;
 		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 		InputMode.SetHideCursorDuringCapture(false);
-		if (UCommonActivatableWidget* TopWidget = ModalStack && ModalStack->GetActiveWidget() ? ModalStack->GetActiveWidget() : (MenuStack ? MenuStack->GetActiveWidget() : nullptr))
-		{
-			if (UWidget* FocusTarget = TopWidget->GetDesiredFocusTarget())
-			{
-				InputMode.SetWidgetToFocus(FocusTarget->TakeWidget());
-			}
-			else
-			{
-				InputMode.SetWidgetToFocus(TopWidget->TakeWidget());
-			}
-		}
+		UWidget* FocusTarget = TopWidget->GetDesiredFocusTarget();
+		InputMode.SetWidgetToFocus(FocusTarget ? FocusTarget->TakeWidget() : TopWidget->TakeWidget());
 		PC->SetInputMode(InputMode);
 	}
 	else
 	{
+		if (ActionRouter)
+		{
+			ActionRouter->SetActiveUIInputConfig(FUIInputConfig(ECommonInputMode::Game, EMouseCaptureMode::CapturePermanently, true), this);
+		}
 		PC->SetShowMouseCursor(false);
 		PC->SetInputMode(FInputModeGameOnly());
 	}

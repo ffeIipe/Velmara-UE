@@ -16,6 +16,7 @@ class USoundClass;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSaveDataUpdated);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSettingsChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGameLanguageChanged, const FString&, NewLanguageCode);
 
 USTRUCT(BlueprintType)
 struct TESISUE_API FVelmaraGraphicsSettingsSnapshot
@@ -297,6 +298,15 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Settings|Language")
 	FString GetLanguageCode() const;
 
+	UFUNCTION(BlueprintPure, Category = "Settings|Language")
+	FString GetActiveGameLanguageCode() const;
+
+	UPROPERTY(BlueprintAssignable, Category = "Settings|Language")
+	FOnGameLanguageChanged OnGameLanguageChanged;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Settings|Language")
+	bool bEnableGameLocalizationRuntime = false;
+
 	UFUNCTION(BlueprintCallable, Category = "Settings")
 	void SaveGameSettings();
 
@@ -349,7 +359,8 @@ public:
 private:
 	void LoadAudioAssets();
 	void ApplyControlAndGameplaySettings() const;
-	void ApplyLanguageSetting() const;
+	void ApplyLanguageSetting();
+	static FString NormalizeLanguageCode(const FString& RawLanguageCode);
 	void HandlePostLoadMapWithWorld(UWorld* LoadedWorld);
 
 	const FString SettingsSlotName = TEXT("GameSettings");
@@ -398,4 +409,6 @@ private:
 	TObjectPtr<USoundClass> UISoundClass;
 
 	FDelegateHandle PostLoadMapHandle;
+
+	FString ActiveGameLanguageCode = TEXT("es");
 };

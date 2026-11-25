@@ -122,10 +122,12 @@ TSharedRef<SWidget> UVelmaraConfirmModalWidget::RebuildWidget()
 void UVelmaraConfirmModalWidget::BuildModalTree()
 {
 	UOverlay* RootOverlay = WidgetTree->ConstructWidget<UOverlay>(UOverlay::StaticClass(), TEXT("ConfirmModalRoot"));
+	RootOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	WidgetTree->RootWidget = RootOverlay;
 
 	UBackgroundBlur* Blur = WidgetTree->ConstructWidget<UBackgroundBlur>(UBackgroundBlur::StaticClass(), TEXT("ModalBlur"));
 	Blur->SetBlurStrength(10.0f);
+	Blur->SetVisibility(ESlateVisibility::HitTestInvisible);
 	if (UOverlaySlot* BlurSlot = RootOverlay->AddChildToOverlay(Blur))
 	{
 		BlurSlot->SetHorizontalAlignment(HAlign_Fill);
@@ -141,8 +143,8 @@ void UVelmaraConfirmModalWidget::BuildModalTree()
 	}
 
 	USizeBox* DialogSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), TEXT("ModalDialogSize"));
-	DialogSize->SetWidthOverride(640.0f);
-	DialogSize->SetMinDesiredHeight(300.0f);
+	DialogSize->SetWidthOverride(760.0f);
+	DialogSize->SetMinDesiredHeight(310.0f);
 	if (UOverlaySlot* DialogSlot = RootOverlay->AddChildToOverlay(DialogSize))
 	{
 		DialogSlot->SetHorizontalAlignment(HAlign_Center);
@@ -201,30 +203,37 @@ void UVelmaraConfirmModalWidget::BuildModalTree()
 	UHorizontalBox* ButtonsRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("ModalButtonsRow"));
 	if (UVerticalBoxSlot* BtnsSlot = ContentBox->AddChildToVerticalBox(ButtonsRow))
 	{
-		BtnsSlot->SetHorizontalAlignment(HAlign_Center);
+		BtnsSlot->SetHorizontalAlignment(HAlign_Fill);
 		BtnsSlot->SetVerticalAlignment(VAlign_Bottom);
 	}
 
 	CancelButton = WidgetTree->ConstructWidget<UVelmaraButtonBase>(UVelmaraButtonBase::StaticClass(), TEXT("ModalCancelBtn"));
 	CancelButton->SetVariant(EVelmaraButtonVariant::HexAction);
-	CancelButton->SetButtonMinSize(220.0f, 52.0f);
-	CancelButton->SetFontSize(18);
+	CancelButton->SetButtonMinSize(0.0f, 52.0f);
+	CancelButton->SetFontSize(17);
 	CancelButton->SetButtonText(PendingCancelLabel.IsEmpty() ? NSLOCTEXT("VelmaraUI", "ModalCancel", "CANCELAR") : PendingCancelLabel);
 	CancelButton->OnClicked().AddUObject(this, &UVelmaraConfirmModalWidget::HandleCancelClicked);
 	if (UHorizontalBoxSlot* CancelSlot = ButtonsRow->AddChildToHorizontalBox(CancelButton))
 	{
-		CancelSlot->SetPadding(FMargin(0.0f, 0.0f, 24.0f, 0.0f));
+		CancelSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+		CancelSlot->SetHorizontalAlignment(HAlign_Fill);
+		CancelSlot->SetPadding(FMargin(0.0f, 0.0f, 20.0f, 0.0f));
 	}
 
 	ConfirmButton = WidgetTree->ConstructWidget<UVelmaraButtonBase>(UVelmaraButtonBase::StaticClass(), TEXT("ModalConfirmBtn"));
 	ConfirmButton->SetVariant(EVelmaraButtonVariant::HexAction);
-	ConfirmButton->SetButtonMinSize(220.0f, 52.0f);
-	ConfirmButton->SetFontSize(18);
+	ConfirmButton->SetButtonMinSize(0.0f, 52.0f);
+	ConfirmButton->SetFontSize(17);
 	ConfirmButton->SetButtonText(PendingConfirmLabel.IsEmpty() ? NSLOCTEXT("VelmaraUI", "ModalConfirm", "CONFIRMAR") : PendingConfirmLabel);
 	ConfirmButton->OnClicked().AddUObject(this, &UVelmaraConfirmModalWidget::HandleConfirmClicked);
-	ButtonsRow->AddChildToHorizontalBox(ConfirmButton);
+	if (UHorizontalBoxSlot* ConfirmSlot = ButtonsRow->AddChildToHorizontalBox(ConfirmButton))
+	{
+		ConfirmSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+		ConfirmSlot->SetHorizontalAlignment(HAlign_Fill);
+	}
 
 	FooterBar = WidgetTree->ConstructWidget<UVelmaraFooterBar>(UVelmaraFooterBar::StaticClass(), TEXT("ModalFooterBar"));
+	FooterBar->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	FooterBar->SetShowMotto(false);
 	FooterBar->SetActions({
 		FVelmaraFooterAction(TEXT("Confirm"), NSLOCTEXT("VelmaraUI", "FooterAccept", "ACEPTAR")),

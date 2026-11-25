@@ -87,7 +87,7 @@ void UVelmaraSettingSliderRow::BuildRowTree()
 	{
 		GridSlot->SetHorizontalAlignment(HAlign_Fill);
 		GridSlot->SetVerticalAlignment(VAlign_Fill);
-		GridSlot->SetPadding(FMargin(20.0f, 6.0f, 20.0f, 6.0f));
+		GridSlot->SetPadding(FMargin(28.0f, 6.0f, 20.0f, 6.0f));
 	}
 
 	UHorizontalBox* LeftBox = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("SliderLeftBox"));
@@ -95,17 +95,6 @@ void UVelmaraSettingSliderRow::BuildRowTree()
 	{
 		LeftCell->SetHorizontalAlignment(HAlign_Fill);
 		LeftCell->SetVerticalAlignment(VAlign_Center);
-	}
-
-	USizeBox* LeftChevSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), TEXT("SliderLeftChevSize"));
-	LeftChevSize->SetWidthOverride(10.0f);
-	LeftChevSize->SetHeightOverride(14.0f);
-	LeftDecorativeChevron = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("SliderLeftDecoChev"));
-	LeftChevSize->SetContent(LeftDecorativeChevron);
-	if (UHorizontalBoxSlot* ChevSlot = LeftBox->AddChildToHorizontalBox(LeftChevSize))
-	{
-		ChevSlot->SetVerticalAlignment(VAlign_Center);
-		ChevSlot->SetPadding(FMargin(0.0f, 0.0f, 12.0f, 0.0f));
 	}
 
 	LabelText = WidgetTree->ConstructWidget<UCommonTextBlock>(UCommonTextBlock::StaticClass(), TEXT("SliderLabel"));
@@ -192,8 +181,8 @@ void UVelmaraSettingSliderRow::BuildRowTree()
 	}
 
 	USizeBox* StarBox = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), TEXT("SliderStarBox"));
-	StarBox->SetWidthOverride(14.0f);
-	StarBox->SetHeightOverride(14.0f);
+	StarBox->SetWidthOverride(12.0f);
+	StarBox->SetHeightOverride(12.0f);
 	BottomStar = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("SliderStarImg"));
 	BottomStar->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	StarBox->SetContent(BottomStar);
@@ -320,7 +309,7 @@ void UVelmaraSettingSliderRow::UpdateVisualState()
 
 	const bool bFocused = IsVisuallyFocused();
 
-	SolidBackdrop->SetBrush(FVelmaraUITheme::MakeSolidBrush(bFocused ? FVelmaraUITheme::BloodDried(0.45f) : FVelmaraUITheme::Charcoal(0.70f)));
+	SolidBackdrop->SetBrush(FVelmaraUITheme::MakeSolidBrush(bFocused ? FVelmaraUITheme::BloodDried(0.38f) : FVelmaraUITheme::Void(0.72f)));
 	FrameBorder->SetBrush(FVelmaraUITheme::MakeOptionRowBrush(bFocused ? FVelmaraUITheme::BloodBright() : FVelmaraUITheme::Ash()));
 
 	if (FocusGradient)
@@ -328,7 +317,7 @@ void UVelmaraSettingSliderRow::UpdateVisualState()
 		if (bFocused)
 		{
 			UTexture2D* GradTex = FVelmaraUITheme::LoadTexture(VelmaraUIPaths::GradHFadeLeftToRight);
-			FocusGradient->SetBrush(FVelmaraUITheme::MakeImageBrush(GradTex, FVector2D(512.0f, 8.0f), FVelmaraUITheme::Blood(0.55f)));
+			FocusGradient->SetBrush(FVelmaraUITheme::MakeImageBrush(GradTex, FVector2D(16.0f, 8.0f), FVelmaraUITheme::Blood(0.32f)));
 			FocusGradient->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		}
 		else
@@ -340,16 +329,11 @@ void UVelmaraSettingSliderRow::UpdateVisualState()
 	LabelText->SetColorAndOpacity(FSlateColor(bFocused ? FVelmaraUITheme::Bone() : FVelmaraUITheme::BoneMuted()));
 	ValueText->SetColorAndOpacity(FSlateColor(FVelmaraUITheme::Bone()));
 
-	UTexture2D* ChevL = FVelmaraUITheme::LoadTexture(VelmaraUIPaths::OrnChevronL);
 	UTexture2D* StarTex = FVelmaraUITheme::LoadTexture(VelmaraUIPaths::OrnRowStar);
 
-	if (LeftDecorativeChevron)
-	{
-		LeftDecorativeChevron->SetBrush(FVelmaraUITheme::MakeImageBrush(ChevL, FVector2D(10.0f, 14.0f), bFocused ? FVelmaraUITheme::BloodBright() : FVelmaraUITheme::Ash()));
-	}
 	if (BottomStar)
 	{
-		BottomStar->SetBrush(FVelmaraUITheme::MakeImageBrush(StarTex, FVector2D(14.0f, 14.0f), bFocused ? FVelmaraUITheme::Bone() : FVelmaraUITheme::BoneMuted(0.75f)));
+		BottomStar->SetBrush(FVelmaraUITheme::MakeImageBrush(StarTex, FVector2D(12.0f, 12.0f), bFocused ? FVelmaraUITheme::Bone() : FVelmaraUITheme::BoneMuted(0.65f)));
 	}
 }
 

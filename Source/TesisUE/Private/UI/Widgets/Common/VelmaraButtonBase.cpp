@@ -263,7 +263,7 @@ void UVelmaraButtonBase::UpdateVisualState()
 
 	if (GradTex && GradAlpha > 0.0f)
 	{
-		BgGradient->SetBrush(FVelmaraUITheme::MakeImageBrush(GradTex, FVector2D(512.0f, 8.0f), FVelmaraUITheme::Blood(GradAlpha)));
+		BgGradient->SetBrush(FVelmaraUITheme::MakeImageBrush(GradTex, FVector2D(16.0f, 8.0f), FVelmaraUITheme::Blood(GradAlpha)));
 		BgGradient->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	}
 	else
@@ -293,7 +293,7 @@ void UVelmaraButtonBase::UpdateVisualState()
 		if (bActive)
 		{
 			UTexture2D* SideTex = FVelmaraUITheme::LoadTexture(VelmaraUIPaths::FrameSidebarActive);
-			FrameBorder->SetBrush(FVelmaraUITheme::MakeImageBrush(SideTex, FVector2D(256.0f, 48.0f), FVelmaraUITheme::BloodBright()));
+			FrameBorder->SetBrush(FVelmaraUITheme::MakeImageBrush(SideTex, FVector2D(16.0f, 48.0f), FVelmaraUITheme::BloodBright()));
 			FrameBorder->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		}
 		else

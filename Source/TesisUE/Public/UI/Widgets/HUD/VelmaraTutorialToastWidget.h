@@ -4,6 +4,8 @@
 #include "CommonActivatableWidget.h"
 #include "CommonInputTypeEnum.h"
 #include "CommonUserWidget.h"
+#include "Components/RichTextBlockDecorator.h"
+#include "Engine/EngineTypes.h"
 #include "VelmaraTutorialToastWidget.generated.h"
 
 class UVelmaraBracketPanel;
@@ -112,11 +114,31 @@ public:
 
 protected:
 	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 	virtual void NativeOnActivated() override;
+	virtual void NativeOnDeactivated() override;
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 	virtual TOptional<FUIInputConfig> GetDesiredInputConfig() const override;
 
 private:
+	void ScheduleForwardPoll();
+	void PollAndForwardOrCleanup();
+	void ClearForwardPollTimer();
+	void ClearBlueprintTutorialProperties();
+	void CleanupBridgeWidget();
+
+	FTimerHandle ForwardPollTimerHandle;
 	bool bForwarded = false;
 	int32 TicksWaited = 0;
+};
+
+UCLASS()
+class TESISUE_API UVelmaraKeycapRichTextDecorator : public URichTextBlockDecorator
+{
+	GENERATED_BODY()
+
+public:
+	UVelmaraKeycapRichTextDecorator(const FObjectInitializer& ObjectInitializer);
+
+	virtual TSharedPtr<ITextDecorator> CreateDecorator(URichTextBlock* InOwner) override;
 };

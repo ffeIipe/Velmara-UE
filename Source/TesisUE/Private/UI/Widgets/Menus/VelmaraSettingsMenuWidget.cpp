@@ -11,6 +11,7 @@
 #include "Components/Overlay.h"
 #include "Components/OverlaySlot.h"
 #include "Components/ScrollBox.h"
+#include "Components/ScrollBoxSlot.h"
 #include "Components/SizeBox.h"
 #include "Components/Spacer.h"
 #include "Components/VerticalBox.h"
@@ -19,6 +20,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Styling/SlateTypes.h"
 #include "UI/Layout/VelmaraPrimaryGameLayout.h"
 #include "UI/Style/VelmaraUITheme.h"
 #include "UI/Widgets/Common/VelmaraBracketPanel.h"
@@ -127,12 +129,41 @@ void UVelmaraSettingsMenuWidget::PopulateSupportedResolutions()
 UVerticalBox* UVelmaraSettingsMenuWidget::CreateScrollPage(UWidgetSwitcher* Switcher)
 {
 	UScrollBox* Scroll = WidgetTree->ConstructWidget<UScrollBox>(UScrollBox::StaticClass());
-	Scroll->SetScrollBarVisibility(ESlateVisibility::Hidden);
+	Scroll->SetScrollBarVisibility(ESlateVisibility::Visible);
+	Scroll->SetAlwaysShowScrollbar(false);
+	Scroll->SetScrollbarThickness(FVector2D(4.0f, 4.0f));
 	Scroll->SetAnimateWheelScrolling(true);
+	Scroll->SetScrollWhenFocusChanges(EScrollWhenFocusChanges::AnimatedScroll);
 	Scroll->SetConsumeMouseWheel(EConsumeMouseWheel::Always);
+	Scroll->SetClipping(EWidgetClipping::ClipToBounds);
+
+	FScrollBarStyle BarStyle;
+	FSlateBrush TrackBrush = FVelmaraUITheme::MakeSolidBrush(FVelmaraUITheme::Ash(0.25f));
+	TrackBrush.ImageSize = FVector2D(4.0f, 4.0f);
+	FSlateBrush EmptySlot;
+	EmptySlot.DrawAs = ESlateBrushDrawType::NoDrawType;
+	FSlateBrush ThumbNormal = FVelmaraUITheme::MakeSolidBrush(FVelmaraUITheme::BoneMuted(0.45f));
+	ThumbNormal.ImageSize = FVector2D(4.0f, 24.0f);
+	FSlateBrush ThumbHovered = FVelmaraUITheme::MakeSolidBrush(FVelmaraUITheme::BloodBright(0.85f));
+	ThumbHovered.ImageSize = FVector2D(4.0f, 24.0f);
+	FSlateBrush ThumbDragged = FVelmaraUITheme::MakeSolidBrush(FVelmaraUITheme::BloodBright(1.0f));
+	ThumbDragged.ImageSize = FVector2D(4.0f, 24.0f);
+
+	BarStyle.SetVerticalBackgroundImage(TrackBrush);
+	BarStyle.SetVerticalTopSlotImage(EmptySlot);
+	BarStyle.SetVerticalBottomSlotImage(EmptySlot);
+	BarStyle.SetNormalThumbImage(ThumbNormal);
+	BarStyle.SetHoveredThumbImage(ThumbHovered);
+	BarStyle.SetDraggedThumbImage(ThumbDragged);
+	BarStyle.SetThickness(4.0f);
+	Scroll->SetWidgetBarStyle(BarStyle);
 
 	UVerticalBox* InnerBox = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass());
-	Scroll->AddChild(InnerBox);
+	if (UScrollBoxSlot* InnerSlot = Cast<UScrollBoxSlot>(Scroll->AddChild(InnerBox)))
+	{
+		InnerSlot->SetHorizontalAlignment(HAlign_Fill);
+		InnerSlot->SetPadding(FMargin(0.0f, 4.0f, 12.0f, 8.0f));
+	}
 	Switcher->AddChild(Scroll);
 	return InnerBox;
 }
@@ -186,9 +217,11 @@ void UVelmaraSettingsMenuWidget::BuildScreenTree()
 	PopulateSupportedResolutions();
 
 	UOverlay* RootOverlay = WidgetTree->ConstructWidget<UOverlay>(UOverlay::StaticClass(), TEXT("SettingsRootOverlay"));
+	RootOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	WidgetTree->RootWidget = RootOverlay;
 
 	UBackgroundBlur* Blur = WidgetTree->ConstructWidget<UBackgroundBlur>(UBackgroundBlur::StaticClass(), TEXT("SettingsBlur"));
+	Blur->SetVisibility(ESlateVisibility::HitTestInvisible);
 	Blur->SetBlurStrength(12.0f);
 	if (UOverlaySlot* BlurSlot = RootOverlay->AddChildToOverlay(Blur))
 	{
@@ -224,6 +257,7 @@ void UVelmaraSettingsMenuWidget::BuildScreenTree()
 	TopCrestSize->SetWidthOverride(34.0f);
 	TopCrestSize->SetHeightOverride(96.0f);
 	UImage* TopCrest = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("SettingsCrest"));
+	TopCrest->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	TopCrest->SetBrush(FVelmaraUITheme::MakeImageBrush(
 		FVelmaraUITheme::LoadTexture(VelmaraUIPaths::OrnCrestVelmara),
 		FVector2D(34.0f, 96.0f),
@@ -241,7 +275,7 @@ void UVelmaraSettingsMenuWidget::BuildScreenTree()
 	{
 		MainSlot->SetHorizontalAlignment(HAlign_Fill);
 		MainSlot->SetVerticalAlignment(VAlign_Fill);
-		MainSlot->SetPadding(FMargin(68.0f, 46.0f, 68.0f, 38.0f));
+		MainSlot->SetPadding(FMargin(68.0f, 40.0f, 68.0f, 32.0f));
 	}
 
 	UCommonTextBlock* HeaderText = WidgetTree->ConstructWidget<UCommonTextBlock>(UCommonTextBlock::StaticClass(), TEXT("SettingsHeader"));
@@ -265,13 +299,15 @@ void UVelmaraSettingsMenuWidget::BuildScreenTree()
 	if (UVerticalBoxSlot* SepSlot = MainVBox->AddChildToVerticalBox(HeadSepSize))
 	{
 		SepSlot->SetHorizontalAlignment(HAlign_Left);
-		SepSlot->SetPadding(FMargin(0.0f, 0.0f, 0.0f, 26.0f));
+		SepSlot->SetPadding(FMargin(0.0f, 0.0f, 0.0f, 18.0f));
 	}
 
 	UGridPanel* ColumnsGrid = WidgetTree->ConstructWidget<UGridPanel>(UGridPanel::StaticClass(), TEXT("SettingsColumnsGrid"));
 	ColumnsGrid->SetColumnFill(0, 0.22f);
 	ColumnsGrid->SetColumnFill(1, 0.50f);
 	ColumnsGrid->SetColumnFill(2, 0.28f);
+	ColumnsGrid->SetRowFill(0, 1.0f);
+	ColumnsGrid->SetClipping(EWidgetClipping::ClipToBounds);
 	if (UVerticalBoxSlot* GridSlot = MainVBox->AddChildToVerticalBox(ColumnsGrid))
 	{
 		GridSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
@@ -315,6 +351,7 @@ void UVelmaraSettingsMenuWidget::BuildScreenTree()
 	}
 
 	CategorySwitcher = WidgetTree->ConstructWidget<UWidgetSwitcher>(UWidgetSwitcher::StaticClass(), TEXT("SettingsCategorySwitcher"));
+	CategorySwitcher->SetClipping(EWidgetClipping::ClipToBounds);
 	if (UGridSlot* CenterCell = ColumnsGrid->AddChildToGrid(CategorySwitcher, 0, 1))
 	{
 		CenterCell->SetHorizontalAlignment(HAlign_Fill);
@@ -341,7 +378,7 @@ void UVelmaraSettingsMenuWidget::BuildScreenTree()
 	{
 		RightCell->SetHorizontalAlignment(HAlign_Fill);
 		RightCell->SetVerticalAlignment(VAlign_Fill);
-		RightCell->SetPadding(FMargin(0.0f, 0.0f, 0.0f, 12.0f));
+		RightCell->SetPadding(FMargin(0.0f, 0.0f, 0.0f, 0.0f));
 	}
 
 	UVerticalBox* DescContent = DescriptionPanel->GetContentBox();
@@ -423,14 +460,15 @@ void UVelmaraSettingsMenuWidget::BuildScreenTree()
 	if (UVerticalBoxSlot* RstSlot = DescContent->AddChildToVerticalBox(ResetDefaultsButton))
 	{
 		RstSlot->SetHorizontalAlignment(HAlign_Fill);
-		RstSlot->SetPadding(FMargin(0.0f, 0.0f, 0.0f, 36.0f));
+		RstSlot->SetPadding(FMargin(0.0f, 0.0f, 0.0f, 28.0f));
 	}
 
 	FooterBar = WidgetTree->ConstructWidget<UVelmaraFooterBar>(UVelmaraFooterBar::StaticClass(), TEXT("SettingsFooterBar"));
+	FooterBar->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	if (UVerticalBoxSlot* FootSlot = MainVBox->AddChildToVerticalBox(FooterBar))
 	{
 		FootSlot->SetHorizontalAlignment(HAlign_Fill);
-		FootSlot->SetPadding(FMargin(0.0f, 16.0f, 0.0f, 0.0f));
+		FootSlot->SetPadding(FMargin(0.0f, 14.0f, 0.0f, 0.0f));
 	}
 
 	RefreshAllFromGameInstance();

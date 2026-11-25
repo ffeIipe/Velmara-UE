@@ -55,9 +55,11 @@ TSharedRef<SWidget> UVelmaraPauseMenuWidget::RebuildWidget()
 void UVelmaraPauseMenuWidget::BuildScreenTree()
 {
 	UOverlay* RootOverlay = WidgetTree->ConstructWidget<UOverlay>(UOverlay::StaticClass(), TEXT("PauseRootOverlay"));
+	RootOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	WidgetTree->RootWidget = RootOverlay;
 
 	UBackgroundBlur* Blur = WidgetTree->ConstructWidget<UBackgroundBlur>(UBackgroundBlur::StaticClass(), TEXT("PauseBlur"));
+	Blur->SetVisibility(ESlateVisibility::HitTestInvisible);
 	Blur->SetBlurStrength(14.0f);
 	if (UOverlaySlot* BlurSlot = RootOverlay->AddChildToOverlay(Blur))
 	{
@@ -66,6 +68,7 @@ void UVelmaraPauseMenuWidget::BuildScreenTree()
 	}
 
 	UBorder* DimBg = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("PauseDimBg"));
+	DimBg->SetVisibility(ESlateVisibility::Visible);
 	DimBg->SetBrush(FVelmaraUITheme::MakeSolidBrush(FVelmaraUITheme::Void(0.70f)));
 	if (UOverlaySlot* DimSlot = RootOverlay->AddChildToOverlay(DimBg))
 	{
@@ -267,6 +270,7 @@ void UVelmaraPauseMenuWidget::BuildScreenTree()
 	}
 
 	FooterBar = WidgetTree->ConstructWidget<UVelmaraFooterBar>(UVelmaraFooterBar::StaticClass(), TEXT("PauseFooterBar"));
+	FooterBar->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	FooterBar->SetActions({
 		FVelmaraFooterAction(TEXT("Confirm"), NSLOCTEXT("VelmaraUI", "FooterSelect", "SELECCIONAR")),
 		FVelmaraFooterAction(TEXT("Back"), NSLOCTEXT("VelmaraUI", "FooterResume", "REANUDAR"))
@@ -343,8 +347,21 @@ void UVelmaraPauseMenuWidget::ApplyPauseState(bool bPaused)
 void UVelmaraPauseMenuWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
-	ApplyPauseState(true);
 	RefreshStatusPanel();
+	ApplyPauseState(true);
+	if (UVelmaraPrimaryGameLayout* Layout = UVelmaraPrimaryGameLayout::Get(this))
+	{
+		Layout->RefreshInputMode();
+	}
+	else if (APlayerController* PC = GetOwningPlayer())
+	{
+		PC->SetShowMouseCursor(true);
+		FInputModeGameAndUI InputMode;
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		InputMode.SetHideCursorDuringCapture(false);
+		InputMode.SetWidgetToFocus(ResumeButton ? ResumeButton->TakeWidget() : TakeWidget());
+		PC->SetInputMode(InputMode);
+	}
 	if (ResumeButton)
 	{
 		ResumeButton->SetKeyboardFocus();
@@ -360,6 +377,19 @@ void UVelmaraPauseMenuWidget::NativeOnDeactivated()
 	if (!bStillHasMenu)
 	{
 		ApplyPauseState(false);
+		if (Layout)
+		{
+			Layout->RefreshInputMode();
+		}
+		else if (APlayerController* PC = GetOwningPlayer())
+		{
+			PC->SetShowMouseCursor(false);
+			PC->SetInputMode(FInputModeGameOnly());
+		}
+	}
+	else if (Layout)
+	{
+		Layout->RefreshInputMode();
 	}
 }
 
