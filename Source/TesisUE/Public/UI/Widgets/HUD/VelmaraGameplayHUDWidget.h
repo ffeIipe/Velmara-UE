@@ -15,6 +15,7 @@ class UImage;
 class UHorizontalBox;
 class UCommonTextBlock;
 class USizeBox;
+class UVelmaraWorldPromptsWidget;
 
 UCLASS()
 class TESISUE_API UVelmaraGameplayHUDWidget : public UPlayerMainWidget
@@ -83,6 +84,12 @@ private:
 	TObjectPtr<UHorizontalBox> PossessionBadgeRow;
 
 	UPROPERTY(Transient)
+	TObjectPtr<UHorizontalBox> BloodSenseBadgeRow;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UCommonTextBlock> BloodSenseBadgeLabel;
+
+	UPROPERTY(Transient)
 	TArray<TObjectPtr<UCommonTextBlock>> SkillHintTexts;
 
 	UPROPERTY(Transient)
@@ -90,6 +97,9 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UCommonTextBlock> BloodCounterText;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UVelmaraWorldPromptsWidget> WorldPromptsLayer;
 
 	TWeakObjectPtr<APawn> BoundPawn;
 	TWeakObjectPtr<UAbilitySystemComponent> BoundASC;

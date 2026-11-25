@@ -7,6 +7,7 @@
 #include "Components/Image.h"
 #include "Components/Overlay.h"
 #include "Components/OverlaySlot.h"
+#include "Components/ProgressBar.h"
 #include "Components/ScaleBox.h"
 #include "Components/SizeBox.h"
 #include "Components/VerticalBox.h"
@@ -146,6 +147,27 @@ void UVelmaraLoadingScreenWidget::BuildLoadingTree()
 	if (UHorizontalBoxSlot* LSlot = SpinnerRow->AddChildToHorizontalBox(LoadingLabel))
 	{
 		LSlot->SetVerticalAlignment(VAlign_Center);
+	}
+
+	USizeBox* ProgressSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), TEXT("LoadingProgressSize"));
+	ProgressSize->SetHeightOverride(3.0f);
+	ProgressSize->SetVisibility(ESlateVisibility::Collapsed);
+	ProgressContainer = ProgressSize;
+
+	ProgressBar = WidgetTree->ConstructWidget<UProgressBar>(UProgressBar::StaticClass(), TEXT("LoadingProgressBar"));
+	FProgressBarStyle BarStyle;
+	BarStyle.SetBackgroundImage(FVelmaraUITheme::MakeSolidBrush(FVelmaraUITheme::Charcoal()));
+	BarStyle.SetFillImage(FVelmaraUITheme::MakeSolidBrush(FLinearColor::White));
+	ProgressBar->SetWidgetStyle(BarStyle);
+	ProgressBar->SetFillColorAndOpacity(FVelmaraUITheme::BloodBright());
+	ProgressBar->SetPercent(0.0f);
+	ProgressSize->SetContent(ProgressBar);
+
+	if (UOverlaySlot* ProgressSlot = RootOverlay->AddChildToOverlay(ProgressSize))
+	{
+		ProgressSlot->SetHorizontalAlignment(HAlign_Fill);
+		ProgressSlot->SetVerticalAlignment(VAlign_Bottom);
+		ProgressSlot->SetPadding(FMargin(64.0f, 0.0f, 64.0f, 28.0f));
 	}
 
 	SelectRandomTip();

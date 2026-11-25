@@ -27,6 +27,9 @@ public:
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
 		const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
+	float GetGrabRange() const { return GrabRange; }
+	AEntity* FindVictim(const AEntity* Self) const;
+
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "BloodSuck")
 	TObjectPtr<UAnimMontage> SuckMontage;
@@ -82,7 +85,6 @@ private:
 	FTimerHandle AttachmentTimer;
 	FTimerHandle BloodPulseTimer;
 
-	AEntity* FindVictim(const AEntity* Self) const;
 	void SetVictimFrozen(bool bFrozen) const;
 	void TickAttachment();
 	void EmitBloodPulse() const;

@@ -26,6 +26,8 @@
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "Player/CustomPlayerController.h"
+#include "Subsystems/BloodMarkSubsystem.h"
+#include "Subsystems/SpectralObjectsSubsystem.h"
 #include "UI/Style/VelmaraUITheme.h"
 
 UVelmaraGameplayHUDWidget::UVelmaraGameplayHUDWidget(const FObjectInitializer& ObjectInitializer)
@@ -286,6 +288,32 @@ void UVelmaraGameplayHUDWidget::BuildHUDTree()
 		PosVSlot->SetPadding(FMargin(28.0f, 2.0f, 0.0f, 0.0f));
 	}
 
+	BloodSenseBadgeRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("HUDBloodSenseBadge"));
+	BloodSenseBadgeRow->SetVisibility(ESlateVisibility::Collapsed);
+	USizeBox* BloodSenseIconSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
+	BloodSenseIconSize->SetWidthOverride(16.0f);
+	BloodSenseIconSize->SetHeightOverride(16.0f);
+	UImage* BloodSenseIcon = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
+	BloodSenseIcon->SetBrush(FVelmaraUITheme::MakeImageBrush(
+		FVelmaraUITheme::LoadTexture(VelmaraUIPaths::IconStatBlood),
+		FVector2D(16.0f, 16.0f),
+		FVelmaraUITheme::BloodBright()));
+	BloodSenseIconSize->SetContent(BloodSenseIcon);
+	if (UHorizontalBoxSlot* BSISlot = BloodSenseBadgeRow->AddChildToHorizontalBox(BloodSenseIconSize))
+	{
+		BSISlot->SetVerticalAlignment(VAlign_Center);
+		BSISlot->SetPadding(FMargin(2.0f, 0.0f, 10.0f, 0.0f));
+	}
+	BloodSenseBadgeLabel = WidgetTree->ConstructWidget<UCommonTextBlock>(UCommonTextBlock::StaticClass());
+	BloodSenseBadgeLabel->SetText(NSLOCTEXT("VelmaraUI", "HUDBloodSenseAvailable", "POSESIÓN DISPONIBLE"));
+	BloodSenseBadgeLabel->SetFont(FVelmaraUITheme::GetDisplayFont(12, 190));
+	BloodSenseBadgeLabel->SetColorAndOpacity(FSlateColor(FVelmaraUITheme::BloodBright()));
+	BloodSenseBadgeRow->AddChildToHorizontalBox(BloodSenseBadgeLabel)->SetVerticalAlignment(VAlign_Center);
+	if (UVerticalBoxSlot* BloodSenseVSlot = VitalsVBox->AddChildToVerticalBox(BloodSenseBadgeRow))
+	{
+		BloodSenseVSlot->SetHorizontalAlignment(HAlign_Left);
+		BloodSenseVSlot->SetPadding(FMargin(28.0f, 2.0f, 0.0f, 0.0f));
+	}
 	UHorizontalBox* LoadoutRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("HUDLoadoutRow"));
 	if (UOverlaySlot* LoadSlot = RootOverlay->AddChildToOverlay(LoadoutRow))
 	{
@@ -816,11 +844,46 @@ void UVelmaraGameplayHUDWidget::NativeTick(const FGeometry& MyGeometry, float In
 			BindToPlayerPawn(CurrentPawn);
 		}
 
+		const ACustomPlayerController* CustomPC = Cast<ACustomPlayerController>(PC);
+		const bool bPossessing = CustomPC && CustomPC->IsPossessing();
+
 		if (PossessionBadgeRow)
 		{
-			const ACustomPlayerController* CustomPC = Cast<ACustomPlayerController>(PC);
-			const bool bPossessing = CustomPC && CustomPC->IsPossessing();
 			PossessionBadgeRow->SetVisibility(bPossessing ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+		}
+
+		if (BloodSenseBadgeRow && BloodSenseBadgeLabel)
+		{
+			bool bShowBadge = false;
+			if (!bPossessing && GetWorld())
+			{
+				const UBloodMarkSubsystem* BloodMarks = GetWorld()->GetSubsystem<UBloodMarkSubsystem>();
+				const USpectralObjectsSubsystem* SpectralObjects = GetWorld()->GetSubsystem<USpectralObjectsSubsystem>();
+
+				if (BloodMarks && BloodMarks->GetMarkedEnemyCount() > 0)
+				{
+					bool bEnoughEnergy = true;
+					if (const UAbilitySystemComponent* ASC = BoundASC.Get())
+					{
+						const FGameplayAttribute EnergyAttribute = UVelmaraAttributeSet::GetEnergyAttribute();
+						const float MinEnergy = CustomPC ? CustomPC->MinEnergyToStartPossession : 0.f;
+						bEnoughEnergy = !ASC->HasAttributeSetForAttribute(EnergyAttribute) || ASC->GetNumericAttribute(EnergyAttribute) >= MinEnergy;
+					}
+
+					BloodSenseBadgeLabel->SetText(bEnoughEnergy
+						? NSLOCTEXT("VelmaraUI", "HUDBloodSenseAvailable", "POSESIÓN DISPONIBLE")
+						: NSLOCTEXT("VelmaraUI", "HUDBloodSenseMarked", "PRESAS MARCADAS"));
+					BloodSenseBadgeLabel->SetColorAndOpacity(FSlateColor(bEnoughEnergy ? FVelmaraUITheme::BloodBright() : FVelmaraUITheme::Blood()));
+					bShowBadge = true;
+				}
+				else if (SpectralObjects && SpectralObjects->GetRevealedObjectCount() > 0)
+				{
+					BloodSenseBadgeLabel->SetText(NSLOCTEXT("VelmaraUI", "HUDSpectralResonance", "VISIÓN ESPECTRAL"));
+					BloodSenseBadgeLabel->SetColorAndOpacity(FSlateColor(FVelmaraUITheme::Spectral()));
+					bShowBadge = true;
+				}
+			}
+			BloodSenseBadgeRow->SetVisibility(bShowBadge ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 		}
 
 		if (SunlightBadgeRow && CurrentPawn)

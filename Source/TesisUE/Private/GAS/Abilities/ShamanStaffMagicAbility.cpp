@@ -30,6 +30,7 @@ namespace ShamanStaffMagic
 	constexpr float AIProjectileCollisionRadius = 24.f;
 	constexpr float SpawnCheckOriginHeightOffset = 40.f;
 	constexpr float WallPullbackOffset = 2.f;
+	constexpr float MinPlayerRecoveryAfterFire = 0.1f;
 
 	bool TrySetCharacterWantsToStrafe(AActor* Avatar, const bool bNewValue, bool& OutPreviousValue)
 	{
@@ -196,6 +197,12 @@ void UShamanStaffMagicAbility::ActivateAbility(const FGameplayAbilitySpecHandle 
 	{
 		StartTelegraph(WindupDuration);
 	}
+	else
+	{
+		UAbilityTask_WaitDelay* RecoveryTask = UAbilityTask_WaitDelay::WaitDelay(this, FMath::Max(PlayerCooldown, WindupDuration + ShamanStaffMagic::MinPlayerRecoveryAfterFire));
+		RecoveryTask->OnFinish.AddDynamic(this, &UShamanStaffMagicAbility::HandlePlayerCastRecovered);
+		RecoveryTask->ReadyForActivation();
+	}
 
 	if (CastMontage)
 	{
@@ -313,6 +320,22 @@ void UShamanStaffMagicAbility::FireProjectile()
 void UShamanStaffMagicAbility::HandleMontageEnded()
 {
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+}
+
+void UShamanStaffMagicAbility::HandlePlayerCastRecovered()
+{
+	const FGameplayAbilitySpec* Spec = GetCurrentAbilitySpec();
+	const bool bRepeatCast = Spec && Spec->InputPressed && IsPlayerControlledAvatar(CurrentActorInfo);
+	UAbilitySystemComponent* AbilitySystem = GetAbilitySystemComponentFromActorInfo();
+	const FGameplayAbilitySpecHandle SpecHandle = CurrentSpecHandle;
+
+	NextPlayerCastTime = 0.0;
+	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+
+	if (bRepeatCast && AbilitySystem)
+	{
+		AbilitySystem->TryActivateAbility(SpecHandle);
+	}
 }
 
 void UShamanStaffMagicAbility::StartTelegraph(const float ChargeDuration)

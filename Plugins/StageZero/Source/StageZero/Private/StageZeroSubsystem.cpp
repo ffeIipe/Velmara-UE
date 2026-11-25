@@ -2568,6 +2568,11 @@ void UStageZeroSubsystem::StartWarmupWithAssets(const TArray<FSoftObjectPath>& M
     WarmupResult = EStageZeroWarmupResult::Running;
     WarmupProgress = 0.0f;
     WarmupStartTimeSeconds = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
+    if (!bMinimumDisplaySecondsOverrideSet)
+    {
+        const UStageZeroProjectSettings* DisplaySettings = GetSettings();
+        MinimumDisplaySeconds = DisplaySettings ? FMath::Max(0.0f, DisplaySettings->WarmupMinimumDisplaySeconds) : 0.5f;
+    }
     CompletedMaps = 0;
     if (bShouldSpawnWidget)
     {

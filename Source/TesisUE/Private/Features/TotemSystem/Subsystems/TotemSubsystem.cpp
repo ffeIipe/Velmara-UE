@@ -31,3 +31,15 @@ void UTotemSubsystem::NotifyEntityDied(AActor* DeadActor)
 		}
 	}
 }
+
+void UTotemSubsystem::GetRegisteredTotems(TArray<UTotemChargeComponent*>& OutTotems) const
+{
+	OutTotems.Reset();
+	for (const TWeakObjectPtr<UTotemChargeComponent>& Totem : Totems)
+	{
+		if (UTotemChargeComponent* Comp = Totem.Get())
+		{
+			OutTotems.Add(Comp);
+		}
+	}
+}

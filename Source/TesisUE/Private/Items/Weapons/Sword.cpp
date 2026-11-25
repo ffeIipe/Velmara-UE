@@ -232,13 +232,13 @@ void ASword::ApplyJuggle(AActor* Target)
 	AEntity* TargetEntity = Cast<AEntity>(Target);
 	if (TargetEntity && TargetEntity->IsLaunchable() && (bLaunch || TargetEntity->IsInAir()))
 	{
-		TargetEntity->StartJuggle();
+		TargetEntity->StartJuggle(bLaunch ? -1.f : TargetEntity->AirComboJuggleDuration);
 	}
 
 	AEntity* OwnerEntity = Cast<AEntity>(GetOwner());
 	if (OwnerEntity && OwnerEntity->IsInAir())
 	{
-		OwnerEntity->StartJuggle();
+		OwnerEntity->StartAttackHover();
 	}
 }
 

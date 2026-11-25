@@ -88,7 +88,7 @@ protected:
 	float PlayerProjectileSpeed = 1800.f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Shaman|Player", meta = (ClampMin = "0"))
-	float PlayerCooldown = 0.5f;
+	float PlayerCooldown = 1.f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Shaman|Player", meta = (ClampMin = "0"))
 	float PlayerEnergyCost = 5.f;
@@ -111,6 +111,9 @@ private:
 
 	UFUNCTION()
 	void HandleMontageEnded();
+
+	UFUNCTION()
+	void HandlePlayerCastRecovered();
 
 	UFUNCTION()
 	void PlayTell();

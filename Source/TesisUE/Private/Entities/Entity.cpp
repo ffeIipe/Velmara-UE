@@ -4,7 +4,11 @@
 #include "AbilitySystemComponent.h"
 #include "GenericTeamAgentInterface.h"
 #include "MotionWarpingComponent.h"
+#include "Animation/AnimInstance.h"
+#include "Animation/AnimMontage.h"
 #include "Camera/CameraComponent.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Components/TargetingComponent.h"
 #include "Features/SaveSystem/Data/SaveTypes.h"
 #include "DataAssets/EntityData.h"
@@ -128,6 +132,24 @@ void AEntity::OnConstruction(const FTransform& Transform)
 	Super::OnConstruction(Transform);
 	
 	InitializeComponentsData();
+}
+
+void AEntity::ResetForPoolSpawn()
+{
+	const AEntity* DefaultEntity = GetClass()->GetDefaultObject<AEntity>();
+	USkeletalMeshComponent* EntityMesh = GetMesh();
+	if (!EntityMesh) return;
+
+	EntityMesh->AttachToComponent(GetCapsuleComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+	EntityMesh->SetRelativeTransform(DefaultEntity->GetMesh()->GetRelativeTransform(), false, nullptr, ETeleportType::TeleportPhysics);
+	SetActorScale3D(DefaultEntity->GetRootComponent()->GetRelativeScale3D());
+	SetActorRotation(FRotator(0.f, GetActorRotation().Yaw, 0.f));
+
+	UAnimInstance* AnimInstance = EntityMesh->GetAnimInstance();
+	if (EntityData && EntityData->SpawnMontage && AnimInstance)
+	{
+		AnimInstance->Montage_Play(EntityData->SpawnMontage);
+	}
 }
 
 void AEntity::GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const
@@ -653,6 +675,7 @@ void AEntity::StartJuggle(const float HoverDuration)
 	if (!Movement || !IsAlive()) return;
 
 	JuggleRemaining = HoverDuration > 0.f ? HoverDuration : DefaultJuggleDuration;
+	bJuggleEndsWithAbility = false;
 
 	if (!bJuggled)
 	{
@@ -664,6 +687,16 @@ void AEntity::StartJuggle(const float HoverDuration)
 	Movement->GravityScale = 0.f;
 	Movement->Velocity = FVector::ZeroVector;
 	Movement->SetMovementMode(MOVE_Falling);
+}
+
+void AEntity::StartAttackHover()
+{
+	const UGameplayAbility* AttackAbility = AbilitySystemComponent ? AbilitySystemComponent->GetAnimatingAbility() : nullptr;
+	if (!AttackAbility) return;
+
+	StartJuggle();
+	bJuggleEndsWithAbility = true;
+	JuggleSustainAbility = AttackAbility;
 }
 
 void AEntity::OnDamageReceived()
@@ -683,8 +716,11 @@ void AEntity::UpdateJuggle()
 		return;
 	}
 
+	const bool bSustainEnded = bJuggleEndsWithAbility && AbilitySystemComponent
+		&& AbilitySystemComponent->GetAnimatingAbility() != JuggleSustainAbility.Get();
+
 	JuggleRemaining -= KnockbackUpdateInterval;
-	if (JuggleRemaining <= 0.f)
+	if (JuggleRemaining <= 0.f || bSustainEnded)
 	{
 		EndJuggle();
 		return;

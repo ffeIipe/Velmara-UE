@@ -59,7 +59,12 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
 	TObjectPtr<UEntityData> EntityData;
 
+	FTimerHandle PossessionRecoveryTimer;
+
 	virtual void GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const override;
+
+	UFUNCTION(BlueprintCallable, Category = "Pool")
+	void ResetForPoolSpawn();
 
 	UFUNCTION(BlueprintCallable)
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
@@ -178,6 +183,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Combat|Juggle")
 	void StartJuggle(float HoverDuration = -1.f);
 
+	void StartAttackHover();
+
 	UFUNCTION(BlueprintCallable, Category = "Combat|Juggle")
 	void EndJuggle();
 
@@ -190,11 +197,18 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Combat|Juggle", meta = (ClampMin = "0.05", Units = "s"))
 	float AirHitStunDuration = 0.5f;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Combat|Juggle", meta = (ClampMin = "0.1", Units = "s"))
+	float AirComboJuggleDuration = 1.2f;
+
 	void OnDamageReceived();
 
 	FTimerHandle JuggleTimerHandle;
 
 	bool bJuggled = false;
+
+	bool bJuggleEndsWithAbility = false;
+
+	TWeakObjectPtr<const UGameplayAbility> JuggleSustainAbility;
 
 	float JuggleRemaining = 0.f;
 

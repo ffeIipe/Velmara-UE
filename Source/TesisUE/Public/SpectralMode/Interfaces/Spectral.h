@@ -23,4 +23,10 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void DeactivateVisibility();
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void OnSpectralResonancePulse();
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void OnSpectralStabilityChanged(float NormalizedStability, bool bIsWarning);
 };

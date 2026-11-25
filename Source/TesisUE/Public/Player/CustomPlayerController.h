@@ -11,9 +11,11 @@ class UInputMappingContext;
 class UInputData;
 class UUserWidget;
 class USoundMix;
+class AActor;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPossessionStartedEvent, APawn*, PossessedHost);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPossessionEndedEvent, APawn*, ReleasedHost, float, SunGraceDuration);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPossessionHoverChangedEvent, AActor*, TargetActor, bool, bIsHovered);
 
 UCLASS()
 class TESISUE_API ACustomPlayerController : public APlayerController, public IGenericTeamAgentInterface
@@ -46,6 +48,9 @@ public:
 	UFUNCTION(BlueprintPure, Category = "GAS|Possession")
 	APawn* GetOriginalBody() const { return OriginalBody; }
 
+	UFUNCTION(BlueprintPure, Category = "GAS|Possession")
+	bool CanPossessActor(const AActor* Candidate) const;
+
 	UFUNCTION(BlueprintPure, Category = "Possession")
 	bool IsOriginalBodyProtected() const;
 
@@ -76,6 +81,29 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Possession", meta = (ClampMin = "0.0"))
 	float EmergeSearchRadius = 250.f;
 
+	UPROPERTY(BlueprintAssignable, Category = "Possession")
+	FOnPossessionHoverChangedEvent OnPossessionHoverChanged;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS|Possession")
+	bool bRequireBloodMarkForEnemyPossession = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS|Possession", meta = (ClampMin = "0.0"))
+	float MinEnergyToStartPossession = 5.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS|Possession", meta = (ClampMin = "0.0"))
+	float PossessionHoverTraceLength = 1500.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS|Possession", meta = (ClampMin = "1.0"))
+	float PossessionHoverTraceRadius = 30.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS|Possession", meta = (ClampMin = "0.05"))
+	float PossessionHoverTickInterval = 0.1f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Possession")
+	bool bEnablePassiveEnergyRegen = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Possession", meta = (ClampMin = "0.0"))
+	float PassiveEnergyRegenPerSecond = 1.5f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Possession")
 	bool bEnableShadowEnergyRegen = true;
 
@@ -136,6 +164,10 @@ private:
 
 	void ReleaseHost(APawn* Host);
 
+	void PlayHostPainReaction(APawn* Host);
+
+	void EndHostPainReaction();
+
 	void TickPossession();
 
 	void ProtectOriginalBody();
@@ -148,12 +180,21 @@ private:
 
 	void TickShadowEnergyRegen();
 
+	void TickPossessionHover();
+
+	void ClearPossessionHover();
+
+	void NotifyPossessionHover(AActor* Target, bool bIsHovered);
+
 	TWeakObjectPtr<AController> HostAIController;
 	TWeakObjectPtr<APawn> LastReleasedHost;
 	FGenericTeamId HostTeamId;
 	FTimerHandle PossessionTickTimer;
+	FTimerHandle HostPainTimer;
 	FTimerHandle ShadowEnergyRegenTimer;
 	FTimerHandle EmergeVerifyTimer;
+	FTimerHandle PossessionHoverTimer;
+	TWeakObjectPtr<AActor> CurrentHoveredPossessable;
 	FVector LastKnownHostLocation = FVector::ZeroVector;
 	bool bHasLastKnownHostLocation = false;
 	bool bOriginalBodyProtected = false;

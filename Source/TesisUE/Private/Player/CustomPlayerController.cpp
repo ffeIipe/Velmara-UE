@@ -5,8 +5,10 @@
 #include "AbilitySystemInterface.h"
 #include "NavigationSystem.h"
 #include "TimerManager.h"
+#include "Animation/AnimMontage.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/CapsuleComponent.h"
+#include "DataAssets/EntityData.h"
 #include "DataAssets/InputData.h"
 #include "Engine/World.h"
 #include "Entities/Entity.h"
@@ -14,6 +16,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "Features/BossSystem/Subsystems/SunlightExposureSubsystem.h"
 #include "Features/TotemSystem/Core/TotemChargeComponent.h"
+#include "Subsystems/BloodMarkSubsystem.h"
 #include "GAS/VelmaraAbilityInputID.h"
 #include "GAS/VelmaraAttributeSet.h"
 #include "GameFramework/Character.h"
@@ -36,6 +39,12 @@ namespace
         const FGameplayAttribute HealthAttribute = UVelmaraAttributeSet::GetHealthAttribute();
         return ASC && ASC->HasAttributeSetForAttribute(HealthAttribute) && ASC->GetNumericAttribute(HealthAttribute) <= 0.f;
     }
+
+    float PlayReactionMontage(ACharacter* Character, UAnimMontage* Montage)
+    {
+        const float Length = Character->PlayAnimMontage(Montage);
+        return Length > 0.f && Montage->RateScale > 0.f ? Length / Montage->RateScale : 0.f;
+    }
 }
 
 
@@ -56,7 +65,7 @@ bool ACustomPlayerController::PerformPossession(APawn* NewPawn)
 {
     if (!NewPawn || NewPawn == GetPawn()) return false;
 
-    if (!UTotemChargeComponent::CanActorBePossessed(NewPawn)) return false;
+    if (!CanPossessActor(NewPawn)) return false;
 
     APawn* PreviousPawn = GetPawn();
     if (!OriginalBody)
@@ -77,6 +86,8 @@ bool ACustomPlayerController::PerformPossession(APawn* NewPawn)
         RestoreOriginalBody(ReleasedHost);
     }
 
+    GetWorldTimerManager().ClearTimer(HostPainTimer);
+
     UnPossess();
 
     Possess(NewPawn);
@@ -93,6 +104,12 @@ bool ACustomPlayerController::PerformPossession(APawn* NewPawn)
 
     if (!bReturningToOriginalBody)
     {
+        ClearPossessionHover();
+        if (UBloodMarkSubsystem* BloodMarks = GetWorld() ? GetWorld()->GetSubsystem<UBloodMarkSubsystem>() : nullptr)
+        {
+            BloodMarks->ClearMarkForActor(NewPawn);
+        }
+
         GetWorldTimerManager().ClearTimer(EmergeVerifyTimer);
         ProtectOriginalBody();
         HostAIController = NewPawnPreviousController;
@@ -102,6 +119,7 @@ bool ACustomPlayerController::PerformPossession(APawn* NewPawn)
         bHasLastKnownHostLocation = true;
         GetWorldTimerManager().SetTimer(PossessionTickTimer, this, &ACustomPlayerController::TickPossession, PossessionTickInterval, true);
         OnPossessionStarted.Broadcast(NewPawn);
+        PlayHostPainReaction(NewPawn);
     }
     else
     {
@@ -141,16 +159,36 @@ void ACustomPlayerController::ReleaseHost(APawn* Host)
         return;
     }
 
+    const float RecoveryDuration = HostEntity->EntityData ? PlayReactionMontage(HostEntity, HostEntity->EntityData->ReleasedMontage) : 0.f;
+
     TWeakObjectPtr<AEntity> WeakHost = HostEntity;
-    FTimerHandle StunTimer;
-    GetWorldTimerManager().SetTimer(StunTimer, [WeakHost]()
+    GetWorldTimerManager().SetTimer(HostEntity->PossessionRecoveryTimer, [WeakHost]()
     {
         AEntity* Entity = WeakHost.Get();
         if (Entity && !IsEntityDead(Entity) && !Entity->GetController())
         {
             Entity->SpawnDefaultController();
         }
-    }, FMath::Max(UnpossessStunDuration, 0.01f), false);
+    }, RecoveryDuration > 0.f ? RecoveryDuration : FMath::Max(UnpossessStunDuration, 0.01f), false);
+}
+
+void ACustomPlayerController::PlayHostPainReaction(APawn* Host)
+{
+    AEntity* HostEntity = Cast<AEntity>(Host);
+    if (!HostEntity || !HostEntity->EntityData) return;
+
+    HostEntity->GetCharacterMovement()->StopMovementImmediately();
+
+    const float PainDuration = PlayReactionMontage(HostEntity, HostEntity->EntityData->PossessedMontage);
+    if (PainDuration <= 0.f) return;
+
+    SetIgnoreMoveInput(true);
+    GetWorldTimerManager().SetTimer(HostPainTimer, this, &ACustomPlayerController::EndHostPainReaction, PainDuration, false);
+}
+
+void ACustomPlayerController::EndHostPainReaction()
+{
+    SetIgnoreMoveInput(false);
 }
 
 void ACustomPlayerController::TickPossession()
@@ -586,7 +624,12 @@ void ACustomPlayerController::VerifyOriginalBodyEmergeLocation()
 
 void ACustomPlayerController::TickShadowEnergyRegen()
 {
-    if (!bEnableShadowEnergyRegen || IsPossessing() || !OriginalBody) return;
+    if (!OriginalBody && !IsPossessing())
+    {
+        OriginalBody = GetPawn();
+    }
+
+    if (IsPossessing() || !OriginalBody) return;
 
     const AEntity* OriginalEntity = Cast<AEntity>(OriginalBody);
     if (!OriginalEntity || !OriginalEntity->IsAlive()) return;
@@ -594,13 +637,148 @@ void ACustomPlayerController::TickShadowEnergyRegen()
     UWorld* World = GetWorld();
     if (!World) return;
 
-    USunlightExposureSubsystem* SunSubsystem = World->GetSubsystem<USunlightExposureSubsystem>();
-    if (!SunSubsystem || !SunSubsystem->IsInShadowDuringSunHazard(OriginalBody)) return;
+    float RegenRate = bEnablePassiveEnergyRegen ? PassiveEnergyRegenPerSecond : 0.f;
 
-    const float EffectiveInterval = FMath::Max(ShadowEnergyRegenInterval, 0.05f);
-    RestoreOriginalBodyEnergy(ShadowEnergyRegenPerSecond * EffectiveInterval);
+    if (bEnableShadowEnergyRegen)
+    {
+        const USunlightExposureSubsystem* SunSubsystem = World->GetSubsystem<USunlightExposureSubsystem>();
+        if (SunSubsystem && SunSubsystem->IsInShadowDuringSunHazard(OriginalBody))
+        {
+            RegenRate = FMath::Max(RegenRate, ShadowEnergyRegenPerSecond);
+        }
+    }
+
+    if (RegenRate > 0.f)
+    {
+        const float EffectiveInterval = FMath::Max(ShadowEnergyRegenInterval, 0.05f);
+        RestoreOriginalBodyEnergy(RegenRate * EffectiveInterval);
+    }
 }
 
+bool ACustomPlayerController::CanPossessActor(const AActor* Candidate) const
+{
+    if (!Candidate || Candidate == GetPawn()) return false;
+
+    if (Candidate == OriginalBody) return true;
+
+    if (!UTotemChargeComponent::CanActorBePossessed(Candidate)) return false;
+
+    if (const AEntity* CandidateEntity = Cast<AEntity>(Candidate))
+    {
+        if (IsEntityDead(CandidateEntity) || CandidateEntity->IsPlayerControlled()) return false;
+    }
+
+    const AActor* BodyActor = OriginalBody ? static_cast<const AActor*>(OriginalBody) : static_cast<const AActor*>(GetPawn());
+    if (const IAbilitySystemInterface* BodyASI = Cast<IAbilitySystemInterface>(BodyActor))
+    {
+        if (const UAbilitySystemComponent* BodyASC = BodyASI->GetAbilitySystemComponent())
+        {
+            const FGameplayAttribute EnergyAttribute = UVelmaraAttributeSet::GetEnergyAttribute();
+            if (BodyASC->HasAttributeSetForAttribute(EnergyAttribute) && BodyASC->GetNumericAttribute(EnergyAttribute) < MinEnergyToStartPossession)
+            {
+                return false;
+            }
+        }
+    }
+
+    if (bRequireBloodMarkForEnemyPossession && Cast<AEntity>(Candidate) != nullptr && !Candidate->FindComponentByClass<UTotemChargeComponent>())
+    {
+        bool bMarked = false;
+        if (const UWorld* World = GetWorld())
+        {
+            if (const UBloodMarkSubsystem* BloodMarks = World->GetSubsystem<UBloodMarkSubsystem>())
+            {
+                bMarked = BloodMarks->IsActorBloodMarked(Candidate);
+            }
+        }
+        if (!bMarked) return false;
+    }
+
+    return true;
+}
+
+void ACustomPlayerController::TickPossessionHover()
+{
+    UWorld* World = GetWorld();
+    APawn* ControlledPawn = GetPawn();
+    if (!World || !ControlledPawn || !IsLocalController())
+    {
+        ClearPossessionHover();
+        return;
+    }
+
+    FVector ViewLocation;
+    FRotator ViewRotation;
+    GetPlayerViewPoint(ViewLocation, ViewRotation);
+    const FVector ViewForward = ViewRotation.Vector();
+
+    const FVector Start = ControlledPawn->GetActorLocation() + ViewForward;
+    const FVector End = ViewLocation + ViewForward * PossessionHoverTraceLength;
+
+    FCollisionQueryParams Params(SCENE_QUERY_STAT(PossessionHover), false);
+    Params.AddIgnoredActor(ControlledPawn);
+    if (OriginalBody)
+    {
+        Params.AddIgnoredActor(OriginalBody);
+    }
+
+    FHitResult Hit;
+    const bool bHit = World->SweepSingleByChannel(Hit, Start, End, FQuat::Identity, ECC_GameTraceChannel6, FCollisionShape::MakeSphere(FMath::Max(PossessionHoverTraceRadius, 1.f)), Params);
+
+    AActor* NewHovered = nullptr;
+    if (bHit)
+    {
+        AActor* HitActor = Hit.GetActor();
+        if (HitActor && CanPossessActor(HitActor) && HitActor->FindFunction(TEXT("OnHoveredPossession")))
+        {
+            NewHovered = HitActor;
+        }
+    }
+
+    AActor* OldHovered = CurrentHoveredPossessable.Get();
+    if (NewHovered != OldHovered)
+    {
+        if (OldHovered)
+        {
+            NotifyPossessionHover(OldHovered, false);
+        }
+        CurrentHoveredPossessable = NewHovered;
+        if (NewHovered)
+        {
+            NotifyPossessionHover(NewHovered, true);
+        }
+    }
+}
+
+void ACustomPlayerController::ClearPossessionHover()
+{
+    if (AActor* Old = CurrentHoveredPossessable.Get())
+    {
+        NotifyPossessionHover(Old, false);
+    }
+    CurrentHoveredPossessable.Reset();
+}
+
+void ACustomPlayerController::NotifyPossessionHover(AActor* Target, const bool bIsHovered)
+{
+    if (!IsValid(Target)) return;
+
+    if (UFunction* HoverFunction = Target->FindFunction(TEXT("OnHoveredPossession")))
+    {
+        if (HoverFunction->NumParms == 1)
+        {
+            if (FBoolProperty* BoolParam = CastField<FBoolProperty>(HoverFunction->PropertyLink))
+            {
+                uint8* Params = static_cast<uint8*>(FMemory_Alloca(HoverFunction->ParmsSize));
+                FMemory::Memzero(Params, HoverFunction->ParmsSize);
+                BoolParam->SetPropertyValue_InContainer(Params, bIsHovered);
+                Target->ProcessEvent(HoverFunction, Params);
+            }
+        }
+    }
+
+    OnPossessionHoverChanged.Broadcast(Target, bIsHovered);
+}
 void ACustomPlayerController::BeginPlay()
 {
     Super::BeginPlay();
@@ -617,6 +795,9 @@ void ACustomPlayerController::BeginPlay()
     if (IsLocalController())
     {
         UVelmaraPrimaryGameLayout::GetOrCreate(this);
+
+        const float HoverInterval = FMath::Max(PossessionHoverTickInterval, 0.05f);
+        GetWorldTimerManager().SetTimer(PossessionHoverTimer, this, &ACustomPlayerController::TickPossessionHover, HoverInterval, true);
     }
 
     if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
@@ -633,12 +814,16 @@ void ACustomPlayerController::BeginPlay()
 
 void ACustomPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+    ClearPossessionHover();
+
     if (UWorld* World = GetWorld())
     {
         FTimerManager& TimerManager = World->GetTimerManager();
         TimerManager.ClearTimer(PossessionTickTimer);
+        TimerManager.ClearTimer(HostPainTimer);
         TimerManager.ClearTimer(ShadowEnergyRegenTimer);
         TimerManager.ClearTimer(EmergeVerifyTimer);
+        TimerManager.ClearTimer(PossessionHoverTimer);
 
         if (bOriginalBodyProtected && OriginalBody)
         {
@@ -768,6 +953,8 @@ ETeamAttitude::Type ACustomPlayerController::GetTeamAttitudeTowards(const AActor
 
 void ACustomPlayerController::AbilityInputTagPressed(EVelmaraAbilityInputID InputId)
 {
+    if (InputId != EVelmaraAbilityInputID::Possess && GetWorldTimerManager().IsTimerActive(HostPainTimer)) return;
+
     if (APawn* ControlledPawn = GetPawn())
     {
         if (IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(ControlledPawn))

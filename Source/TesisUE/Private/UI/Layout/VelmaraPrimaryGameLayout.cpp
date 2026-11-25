@@ -17,6 +17,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "UI/Style/VelmaraUITheme.h"
 #include "UI/Widgets/HUD/VelmaraTutorialToastWidget.h"
+#include "UI/Widgets/HUD/VelmaraWorldPromptsWidget.h"
 
 TMap<TWeakObjectPtr<ULocalPlayer>, TWeakObjectPtr<UVelmaraPrimaryGameLayout>> UVelmaraPrimaryGameLayout::ActiveLayouts;
 
@@ -98,6 +99,14 @@ void UVelmaraPrimaryGameLayout::BuildLayoutTree()
 	UOverlay* RootOverlay = WidgetTree->ConstructWidget<UOverlay>(UOverlay::StaticClass(), TEXT("PrimaryLayoutRoot"));
 	RootOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	WidgetTree->RootWidget = RootOverlay;
+
+	UVelmaraWorldPromptsWidget* WorldPrompts = WidgetTree->ConstructWidget<UVelmaraWorldPromptsWidget>(UVelmaraWorldPromptsWidget::StaticClass(), TEXT("PrimaryWorldPromptsLayer"));
+	WorldPrompts->SetVisibility(ESlateVisibility::HitTestInvisible);
+	if (UOverlaySlot* PromptsSlot = RootOverlay->AddChildToOverlay(WorldPrompts))
+	{
+		PromptsSlot->SetHorizontalAlignment(HAlign_Fill);
+		PromptsSlot->SetVerticalAlignment(VAlign_Fill);
+	}
 
 	HUDLayer = WidgetTree->ConstructWidget<UOverlay>(UOverlay::StaticClass(), TEXT("HUDLayer"));
 	HUDLayer->SetVisibility(ESlateVisibility::SelfHitTestInvisible);

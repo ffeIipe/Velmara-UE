@@ -113,23 +113,16 @@ void USaveGameSubsystem::LoadGame(int32 SlotIndex)
 		GameInstance->ActiveSaveSlotIndex = CurrentSlotIndex;
 	}
 
-	const FString SavedLevelName = CurrentSaveGame->CurrentLevelName;
-	const FString CurrentLevelName = UGameplayStatics::GetCurrentLevelName(GetWorld(), true);
+	const FString LevelToOpen = CurrentSaveGame->CurrentLevelName.IsEmpty()
+		? UGameplayStatics::GetCurrentLevelName(GetWorld(), true)
+		: CurrentSaveGame->CurrentLevelName;
 
-	if (CurrentLevelName.Equals(SavedLevelName) || SavedLevelName.IsEmpty())
+	if (UVelmaraGameInstance* GameInstance = Cast<UVelmaraGameInstance>(GetGameInstance()))
 	{
-		RestoreCurrentLevelState();
-		OnGameLoaded.Broadcast(true);
+		GameInstance->ShowLoadingScreen();
 	}
-	else
-	{
-		if (UVelmaraGameInstance* GameInstance = Cast<UVelmaraGameInstance>(GetGameInstance()))
-		{
-			GameInstance->ShowLoadingScreen();
-		}
-		bRestoreOnNextLevel = true;
-		UGameplayStatics::OpenLevel(this, FName(*SavedLevelName));
-	}
+	bRestoreOnNextLevel = true;
+	UGameplayStatics::OpenLevel(this, FName(*LevelToOpen));
 }
 
 void USaveGameSubsystem::RestorePendingLevelState()
@@ -138,6 +131,7 @@ void USaveGameSubsystem::RestorePendingLevelState()
 
 	bRestoreOnNextLevel = false;
 	RestoreCurrentLevelState();
+	OnGameLoaded.Broadcast(true);
 }
 
 void USaveGameSubsystem::CreateNewGame(int32 SlotIndex, const FString MapName)

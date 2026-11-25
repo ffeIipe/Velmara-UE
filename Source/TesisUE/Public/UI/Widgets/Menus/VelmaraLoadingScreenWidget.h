@@ -1,14 +1,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Blueprint/UserWidget.h"
+#include "StageZeroLoadingWidget.h"
 #include "VelmaraLoadingScreenWidget.generated.h"
 
 class UImage;
 class UCommonTextBlock;
 
 UCLASS()
-class TESISUE_API UVelmaraLoadingScreenWidget : public UUserWidget
+class TESISUE_API UVelmaraLoadingScreenWidget : public UStageZeroLoadingWidget
 {
 	GENERATED_BODY()
 

@@ -19,6 +19,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Totem")
 	void NotifyEntityDied(AActor* DeadActor);
 
+	void GetRegisteredTotems(TArray<UTotemChargeComponent*>& OutTotems) const;
+
 private:
 	TArray<TWeakObjectPtr<UTotemChargeComponent>> Totems;
 };

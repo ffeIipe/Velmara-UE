@@ -120,21 +120,23 @@ void UVelmaraMainMenuWidget::BuildScreenTree()
 	}
 
 	USizeBox* LogoSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), TEXT("MainMenuLogoSize"));
-	LogoSize->SetWidthOverride(440.0f);
-	LogoSize->SetHeightOverride(168.0f);
-	UScaleBox* LogoScale = WidgetTree->ConstructWidget<UScaleBox>(UScaleBox::StaticClass(), TEXT("MainMenuLogoScale"));
-	LogoScale->SetStretch(EStretch::ScaleToFit);
+	const float LogoWidth = 420.0f;
+	float LogoHeight = 180.0f;
 	LogoImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("MainMenuLogoImg"));
 	if (UTexture2D* LogoTex = FVelmaraUITheme::LoadVelmaraLogo())
 	{
-		LogoImage->SetBrush(FVelmaraUITheme::MakeImageBrush(LogoTex, FVector2D(LogoTex->GetSizeX(), LogoTex->GetSizeY()), FLinearColor::White));
+		const float TexW = static_cast<float>(FMath::Max(1, LogoTex->GetSizeX()));
+		const float TexH = static_cast<float>(FMath::Max(1, LogoTex->GetSizeY()));
+		LogoHeight = LogoWidth * (TexH / TexW);
+		LogoImage->SetBrush(FVelmaraUITheme::MakeImageBrush(LogoTex, FVector2D(LogoWidth, LogoHeight), FLinearColor::White));
 	}
-	LogoScale->SetContent(LogoImage);
-	LogoSize->SetContent(LogoScale);
+	LogoSize->SetWidthOverride(LogoWidth);
+	LogoSize->SetHeightOverride(LogoHeight);
+	LogoSize->SetContent(LogoImage);
 	if (UVerticalBoxSlot* LogoSlot = LeftColumn->AddChildToVerticalBox(LogoSize))
 	{
 		LogoSlot->SetHorizontalAlignment(HAlign_Left);
-		LogoSlot->SetPadding(FMargin(0.0f, 0.0f, 0.0f, 10.0f));
+		LogoSlot->SetPadding(FMargin(10.0f, 0.0f, 0.0f, 10.0f));
 	}
 
 	USizeBox* SepSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), TEXT("MainMenuSepSize"));

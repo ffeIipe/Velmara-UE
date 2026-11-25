@@ -8,6 +8,7 @@
 class UVelmaraGameplayAbility;
 class UGameplayEffect;
 class UInputAction;
+class UAnimMontage;
 class UNiagaraSystem;
 
 USTRUCT(BlueprintType)
@@ -159,4 +160,13 @@ public:
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Entity|Unarmed")
     float UnarmedDamage;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Entity|Spawn")
+    TObjectPtr<UAnimMontage> SpawnMontage;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Entity|Possession")
+    TObjectPtr<UAnimMontage> PossessedMontage;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Entity|Possession")
+    TObjectPtr<UAnimMontage> ReleasedMontage;
 };
