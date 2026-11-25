@@ -208,6 +208,7 @@ void UVelmaraAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCal
                 DeathPayload.Instigator = Data.EffectSpec.GetContext().GetInstigator();
                 DeathPayload.Target = GetOwningActor();
                 DeathPayload.InstigatorTags.AddTag(DeathReason);
+                DeathPayload.InstigatorTags.AppendTags(DeathTagContainer);
 
                 if (bWasAlive)
                 {

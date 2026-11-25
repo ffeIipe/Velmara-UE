@@ -26,6 +26,7 @@
 #include "GAS/VelmaraGameplayTags.h"
 #include "Interfaces/Weapon/WeaponInterface.h"
 #include "Items/OrbBase.h"
+#include "PhysicsEngine/BodyInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "Subsystems/OrbsPoolManager.h"
 #include "Serialization/ObjectAndNameAsStringProxyArchive.h"
@@ -140,6 +141,16 @@ void AEntity::ResetForPoolSpawn()
 	USkeletalMeshComponent* EntityMesh = GetMesh();
 	if (!EntityMesh) return;
 
+	bDying = false;
+	GetWorldTimerManager().ClearTimer(DeathRagdollTimerHandle);
+	StopKnockback();
+	GetCapsuleComponent()->SetCollisionResponseToChannels(DefaultEntity->GetCapsuleComponent()->GetCollisionResponseToChannels());
+	GetCharacterMovement()->SetDefaultMovementMode();
+	if (UAnimInstance* CurrentAnimInstance = EntityMesh->GetAnimInstance())
+	{
+		CurrentAnimInstance->Montage_Stop(0.f);
+	}
+
 	EntityMesh->AttachToComponent(GetCapsuleComponent(), FAttachmentTransformRules::KeepRelativeTransform);
 	EntityMesh->SetRelativeTransform(DefaultEntity->GetMesh()->GetRelativeTransform(), false, nullptr, ETeleportType::TeleportPhysics);
 	SetActorScale3D(DefaultEntity->GetRootComponent()->GetRelativeScale3D());
@@ -230,6 +241,65 @@ void AEntity::ReceiveDamage_Implementation(FGameplayEventData DamagePayload)
 void AEntity::MortalDamage_Implementation(FGameplayEventData DeathPayload)
 {
 	IDamageable::MortalDamage_Implementation(DeathPayload);
+}
+
+bool AEntity::TryStartAnimatedDeath(const FGameplayEventData& DeathPayload)
+{
+	if (bDying) return true;
+	if (!FrontHitDeath.Animation || !BackHitDeath.Animation) return false;
+
+	bDying = true;
+	StopKnockback();
+	EndJuggle();
+
+	const AActor* Attacker = DeathPayload.Instigator.Get();
+	const FVector AttackerLocation = Attacker ? Attacker->GetActorLocation() : GetActorLocation() + GetActorForwardVector();
+	const bool bHitFromFront = FVector::DotProduct(AttackerLocation - GetActorLocation(), GetActorForwardVector()) >= 0.f;
+	const FEntityDeathAnim& Death = bHitFromFront ? FrontHitDeath : BackHitDeath;
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (GetCharacterMovement()->IsFalling() || !AnimInstance
+		|| !AnimInstance->PlaySlotAnimationAsDynamicMontage(Death.Animation, DeathSlotName, 0.15f, 0.f, Death.PlayRate, 1, -1.f, Death.StartTime))
+	{
+		StartDeathRagdoll();
+		return true;
+	}
+
+	GetCharacterMovement()->StopMovementImmediately();
+	GetCapsuleComponent()->SetCollisionResponseToAllChannels(ECR_Ignore);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block);
+
+	if (DeathPayload.InstigatorTags.HasAny(HeavyDeathTags))
+	{
+		BeginKnockback(AttackerLocation, HeavyDeathPushDistance, HeavyDeathPushDuration, nullptr);
+	}
+
+	const float RagdollDelay = FMath::Max((Death.RagdollTime - Death.StartTime) / Death.PlayRate, KINDA_SMALL_NUMBER);
+	GetWorldTimerManager().SetTimer(DeathRagdollTimerHandle, this, &AEntity::StartDeathRagdoll, RagdollDelay, false);
+	return true;
+}
+
+void AEntity::StartDeathRagdoll()
+{
+	StopKnockback();
+	GetCharacterMovement()->DisableMovement();
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	USkeletalMeshComponent* EntityMesh = GetMesh();
+	EntityMesh->SetCollisionProfileName(TEXT("Ragdoll"));
+	EntityMesh->SetSimulatePhysics(true);
+
+	for (FBodyInstance* Body : EntityMesh->Bodies)
+	{
+		if (!Body || !Body->IsValidBodyInstance()) continue;
+
+		Body->LinearDamping = RagdollLinearDamping;
+		Body->AngularDamping = RagdollAngularDamping;
+		Body->UpdateDampingProperties();
+		Body->SetMaxDepenetrationVelocity(RagdollMaxSpeed);
+		Body->SetLinearVelocity(Body->GetUnrealWorldVelocity().GetClampedToMaxSize(RagdollMaxSpeed), false);
+	}
 }
 
 void AEntity::SpawnDeathOrbs()
@@ -460,7 +530,7 @@ void AEntity::GiveDefaultAbilities()
 
 bool AEntity::IsAlive() const
 {
-	if (!AbilitySystemComponent) return false;
+	if (!AbilitySystemComponent || bDying) return false;
 
 	const bool bIsNotMarkedDead = !AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("State.Dead"));
 
@@ -634,6 +704,11 @@ void AEntity::ApplyKnockback(const FVector& AttackerLocation, const FWeaponKnock
 	if (bKnockbackResistant || Knockback.Distance <= 0.f) return;
 	if (!IsAlive() || IsBlocking() || IsShielded() || GetCharacterMovement()->IsFalling()) return;
 
+	BeginKnockback(AttackerLocation, Knockback.Distance, Knockback.Duration, Knockback.ProgressCurve);
+}
+
+void AEntity::BeginKnockback(const FVector& AttackerLocation, const float Distance, const float Duration, UCurveFloat* ProgressCurve)
+{
 	FVector Direction = (GetActorLocation() - AttackerLocation).GetSafeNormal2D();
 	if (Direction.IsNearlyZero())
 	{
@@ -641,9 +716,9 @@ void AEntity::ApplyKnockback(const FVector& AttackerLocation, const FWeaponKnock
 	}
 
 	KnockbackDirection = Direction;
-	KnockbackDistance = Knockback.Distance;
-	KnockbackDuration = FMath::Max(Knockback.Duration, KINDA_SMALL_NUMBER);
-	KnockbackCurve = Knockback.ProgressCurve;
+	KnockbackDistance = Distance;
+	KnockbackDuration = FMath::Max(Duration, KINDA_SMALL_NUMBER);
+	KnockbackCurve = ProgressCurve;
 	KnockbackElapsed = 0.f;
 
 	GetWorldTimerManager().SetTimer(KnockbackTimerHandle, this, &AEntity::UpdateKnockback, KnockbackUpdateInterval, true);
@@ -658,7 +733,7 @@ void AEntity::UpdateKnockback()
 	const float Step = EvaluateKnockbackProgress(Alpha) - EvaluateKnockbackProgress(PreviousAlpha);
 	AddActorWorldOffset(KnockbackDirection * KnockbackDistance * Step, true);
 
-	if (Alpha >= 1.f || !IsAlive() || GetCharacterMovement()->IsFalling())
+	if (Alpha >= 1.f || GetCharacterMovement()->IsFalling())
 	{
 		StopKnockback();
 	}

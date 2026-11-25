@@ -21,20 +21,6 @@ class TESISUE_API UShamanStaffMagicAbility : public UVelmaraGameplayAbility
 public:
 	UShamanStaffMagicAbility();
 
-	virtual bool CheckCooldown(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
-		FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
-
-	virtual void ApplyCooldown(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
-		const FGameplayAbilityActivationInfo ActivationInfo) const override;
-
-	virtual float GetCooldownTimeRemaining(const FGameplayAbilityActorInfo* ActorInfo) const override;
-
-	virtual bool CheckCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
-		FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
-
-	virtual void ApplyCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
-		const FGameplayAbilityActivationInfo ActivationInfo) const override;
-
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
 		const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 
@@ -87,12 +73,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Shaman|Player", meta = (ClampMin = "0"))
 	float PlayerProjectileSpeed = 1800.f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Shaman|Player", meta = (ClampMin = "0"))
-	float PlayerCooldown = 1.f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Shaman|Player", meta = (ClampMin = "0"))
-	float PlayerEnergyCost = 5.f;
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Shaman|Player")
 	bool bPlayerHomingOnLock = true;
 
@@ -131,10 +111,6 @@ private:
 
 	void StopPlayerCastRotation();
 
-	bool IsPlayerControlledAvatar(const FGameplayAbilityActorInfo* ActorInfo) const;
-
-	UAbilitySystemComponent* GetPlayerEnergyASC(const FGameplayAbilityActorInfo* ActorInfo) const;
-
 	bool IsLockingTarget(const AActor* Avatar) const;
 
 	AActor* FindLockedTarget(const AActor* Avatar) const;
@@ -148,8 +124,6 @@ private:
 	FVector GetStaffTipLocation(const AActor* Avatar) const;
 
 	FVector GetSafeSpawnLocation(const AActor* Avatar, float ProbeRadius) const;
-
-	mutable double NextPlayerCastTime = 0.0;
 
 	bool bActivatedByPlayer = false;
 

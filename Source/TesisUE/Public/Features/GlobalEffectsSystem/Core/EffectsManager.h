@@ -10,7 +10,7 @@
 #include "EffectsManager.generated.h"
 
 class UCameraShakeBase;
-class UCameraComponent;
+class UChargeZoomCameraModifier;
 
 UCLASS()
 class TESISUE_API UEffectsManager : public UWorldSubsystem, public FTickableGameObject, public IEffectManagerProvider
@@ -27,6 +27,12 @@ public:
 	void CameraZoom(FGameplayTag CameraZoomTag);
 
 	UFUNCTION(BlueprintCallable)
+	void BeginHeldCameraZoom(FGameplayTag CameraZoomTag, float ZoomInDuration, UObject* Source);
+
+	UFUNCTION(BlueprintCallable)
+	void EndHeldCameraZoom(const UObject* Source);
+
+	UFUNCTION(BlueprintCallable)
 	void HitStop(FGameplayTag HitStopTag);
 
 	UFUNCTION(BlueprintCallable)
@@ -37,8 +43,6 @@ private:
 
 	virtual void Deinitialize() override;
 	
-	virtual void OnWorldBeginPlay(UWorld& InWorld) override;
-
 	virtual void Tick(float DeltaTime) override;
 
 	virtual ETickableTickType GetTickableTickType() const override { return ETickableTickType::Conditional; }
@@ -50,17 +54,8 @@ private:
 	virtual bool IsTickable() const override;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UCameraComponent> CameraComponent;
-
-	UPROPERTY(Transient)
-	TObjectPtr<ACameraActor> FollowCamera;
-	
-	UPROPERTY(Transient)
 	TObjectPtr<UEffectsManagerData> Data;
 	
-	UPROPERTY()
-	FZoomEffectParameters ZoomEffectParams;
-
 	UPROPERTY()
 	FTimeWarpEffectParameters TimeWarpEffectParams;
 
@@ -70,4 +65,6 @@ private:
 	bool bHasActiveTickableEffects;
 
 	void UpdateActiveTickableEffectsStatus();
+
+	UChargeZoomCameraModifier* FindOrAddZoomModifier() const;
 };

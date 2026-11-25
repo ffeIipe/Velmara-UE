@@ -37,7 +37,8 @@ namespace
     {
         const UAbilitySystemComponent* ASC = Entity ? Entity->GetAbilitySystemComponent() : nullptr;
         const FGameplayAttribute HealthAttribute = UVelmaraAttributeSet::GetHealthAttribute();
-        return ASC && ASC->HasAttributeSetForAttribute(HealthAttribute) && ASC->GetNumericAttribute(HealthAttribute) <= 0.f;
+        return ASC && ASC->HasAttributeSetForAttribute(HealthAttribute) && ASC->GetNumericAttribute(UVelmaraAttributeSet::GetMaxHealthAttribute()) > 0.f
+            && ASC->GetNumericAttribute(HealthAttribute) <= 0.f;
     }
 
     float PlayReactionMontage(ACharacter* Character, UAnimMontage* Montage)

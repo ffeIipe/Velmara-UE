@@ -431,6 +431,7 @@ void UBossSummonComponent::SpawnMinion(FVector Location, const TWeakObjectPtr<AA
 		if (UTotemChargeComponent* ChargeComp = Minion->FindComponentByClass<UTotemChargeComponent>())
 		{
 			ChargeComp->SetRequiresCharge(false);
+			ChargeComp->ActivatePossession(nullptr);
 		}
 	}
 

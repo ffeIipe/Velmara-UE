@@ -67,30 +67,6 @@ struct FEffectProgressParameters
 };
 
 USTRUCT()
-struct FZoomEffectParameters : public FEffectProgressParameters
-{
-    GENERATED_BODY()
-
-    UPROPERTY()
-    float InitialFOV;
-
-    UPROPERTY()
-    float TargetFOV;
-
-    FZoomEffectParameters()
-        : InitialFOV(90.0f)
-        , TargetFOV(0.0f)
-    {}
-
-    void StartZoom(UCurveFloat* InCurveAsset, const float InDuration, const float InInitialFOV)
-    {
-        Start(InDuration);
-    	Curve = InCurveAsset;
-        InitialFOV = InInitialFOV;
-    }
-};
-
-USTRUCT()
 struct FTimeWarpEffectParameters : public FEffectProgressParameters
 {
 	GENERATED_BODY()
@@ -198,6 +174,12 @@ struct FCameraZoomType : public FEffectBaseType
 {
 	GENERATED_BODY()
 	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects", meta=(ClampMin="0.0", ClampMax="60.0"))
+	float FOVOffset = 12.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects", meta=(ClampMin="0.0"))
+	float ReleaseDuration = 0.15f;
+
 	FCameraZoomType() : FEffectBaseType(nullptr, 0.0f) {}
 
 	FCameraZoomType(UCurveFloat* CurveAsset, const float Duration) : FEffectBaseType(CurveAsset, Duration) {}

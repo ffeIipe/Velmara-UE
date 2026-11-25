@@ -26,11 +26,6 @@ void UTotemChargeComponent::BeginPlay()
 		TotemSubsystem->RegisterTotem(this);
 	}
 
-	if (APawn* OwnerPawn = Cast<APawn>(GetOwner()))
-	{
-		OwnerPawn->ReceiveControllerChangedDelegate.AddDynamic(this, &UTotemChargeComponent::HandleOwnerControllerChanged);
-	}
-
 	GetWorld()->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
 		RefreshPossessionTraceResponse();
@@ -48,11 +43,6 @@ void UTotemChargeComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 		}
 	}
 
-	if (APawn* OwnerPawn = Cast<APawn>(GetOwner()))
-	{
-		OwnerPawn->ReceiveControllerChangedDelegate.RemoveDynamic(this, &UTotemChargeComponent::HandleOwnerControllerChanged);
-	}
-
 	Super::EndPlay(EndPlayReason);
 }
 
@@ -62,7 +52,7 @@ bool UTotemChargeComponent::CanActorBePossessed(const AActor* Actor)
 
 	const UTotemChargeComponent* ChargeComponent = Actor->FindComponentByClass<UTotemChargeComponent>();
 
-	return !ChargeComponent || ChargeComponent->IsCharged();
+	return !ChargeComponent || ChargeComponent->IsActivated();
 }
 
 bool UTotemChargeComponent::IsCharged() const
@@ -175,11 +165,22 @@ void UTotemChargeComponent::NotifyChargeChanged(const bool bWasCharged)
 	}
 }
 
-void UTotemChargeComponent::HandleOwnerControllerChanged(APawn* Pawn, AController* OldController, AController* NewController)
+void UTotemChargeComponent::ActivatePossession(UMaterialInterface* OverlayMaterial)
 {
-	if (bConsumeChargeOnPossession && NewController && NewController->IsPlayerController())
+	if (!IsCharged() || !GetOwner()) return;
+
+	bActivated = true;
+
+	if (!OverlayMaterial) return;
+
+	TArray<UMeshComponent*> Meshes;
+	GetOwner()->GetComponents<UMeshComponent>(Meshes);
+
+	for (UMeshComponent* Mesh : Meshes)
 	{
-		ConsumeCharge();
+		if (Mesh->IsA<UWidgetComponent>()) continue;
+
+		Mesh->SetOverlayMaterial(OverlayMaterial);
 	}
 }
 

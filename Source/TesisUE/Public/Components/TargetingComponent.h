@@ -4,6 +4,7 @@
 #include "Components/ActorComponent.h"
 #include "TargetingComponent.generated.h"
 
+class ACharacter;
 class AEntity;
 class IWeaponInterface;
 struct FTargetingData;
@@ -65,6 +66,9 @@ public:
     UPROPERTY(BlueprintReadWrite, Category = "Targeting")
     float TargetingLostRadius = 2000.f;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Targeting", meta = (ClampMin = "0"))
+    float LostLineOfSightGraceTime = 1.f;
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Targeting|SoftLock", meta = (ClampMin = "1", ClampMax = "180"))
     float SoftLockHalfAngle = 45.f;
 
@@ -90,6 +94,11 @@ protected:
 private:
     UFUNCTION()
     void HandleOwnerControllerChanged(APawn* Pawn, AController* OldController, AController* NewController);
+
+    bool HasLineOfSight(const AActor* Target) const;
+    void ReplaceOccludedTarget();
+
+    float OccludedTime = 0.f;
 
     UPROPERTY()
     TObjectPtr<ACharacter> OwnerCharacter;

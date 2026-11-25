@@ -1,8 +1,7 @@
 #include "Features/GlobalEffectsSystem/Core/EffectsManager.h"
 
-#include "EngineUtils.h"
-#include "Camera/CameraActor.h"
-#include "Camera/CameraComponent.h"
+#include "Camera/PlayerCameraManager.h"
+#include "Features/GlobalEffectsSystem/Core/ChargeZoomCameraModifier.h"
 #include "Features/GlobalEffectsSystem/Core/EffectsTags.h"
 #include "Features/GlobalEffectsSystem/Data/EffectsManagerData.h"
 #include "Features/GlobalEffectsSystem/Settings/EffectsManagerSettings.h"
@@ -40,27 +39,8 @@ void UEffectsManager::Deinitialize()
 	Data = nullptr;
 }
 
-void UEffectsManager::OnWorldBeginPlay(UWorld& InWorld)
-{
-	Super::OnWorldBeginPlay(InWorld);
-
-	for (TActorIterator<ACameraActor> It(GetWorld()); It; ++It)
-	{
-		FollowCamera = *It;
-		CameraComponent = FollowCamera->GetCameraComponent();
-		break;
-	}
-}
-
 void UEffectsManager::Tick(const float DeltaTime)
 {
-	
-	if (ZoomEffectParams.bIsActive && CameraComponent)
-	{
-		const float Alpha = ZoomEffectParams.GetAlpha(DeltaTime);
-		CameraComponent->SetFieldOfView(FMath::Lerp(ZoomEffectParams.InitialFOV, ZoomEffectParams.TargetFOV, Alpha));
-	}
-
 	if (HitStopEffectParams.bIsActive)
 	{
 		if (const UWorld* World = GetWorld())
@@ -152,15 +132,53 @@ void UEffectsManager::CameraShake(const FGameplayTag EffectTag, const FVector& E
 
 void UEffectsManager::CameraZoom(const FGameplayTag CameraZoomTag)
 {
-	if (!CameraComponent || ZoomEffectParams.bIsActive || !Data) return;
+	const FCameraZoomType* Config = Data ? Data->CameraZooms.Find(CameraZoomTag) : nullptr;
+	if (!Config) return;
 
-	if (!CameraComponent || ZoomEffectParams.bIsActive || !Data) return;
-
-	if (const FCameraZoomType* FoundConfig = Data->CameraZooms.Find(CameraZoomTag))
+	if (UChargeZoomCameraModifier* Modifier = FindOrAddZoomModifier())
 	{
-		ZoomEffectParams.StartZoom(FoundConfig->Curve, FoundConfig->Duration, CameraComponent->FieldOfView);
-		UpdateActiveTickableEffectsStatus();
+		Modifier->StartZoom(*Config, Config->Duration, nullptr);
 	}
+}
+
+void UEffectsManager::BeginHeldCameraZoom(const FGameplayTag CameraZoomTag, const float ZoomInDuration, UObject* Source)
+{
+	if (!Source) return;
+
+	const FCameraZoomType* Config = Data ? Data->CameraZooms.Find(CameraZoomTag) : nullptr;
+	if (!Config)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BeginHeldCameraZoom: No camera zoom configured for %s"), *CameraZoomTag.ToString());
+		return;
+	}
+
+	if (UChargeZoomCameraModifier* Modifier = FindOrAddZoomModifier())
+	{
+		Modifier->StartZoom(*Config, ZoomInDuration, Source);
+	}
+}
+
+void UEffectsManager::EndHeldCameraZoom(const UObject* Source)
+{
+	if (UChargeZoomCameraModifier* Modifier = FindOrAddZoomModifier())
+	{
+		Modifier->ReleaseZoom(Source);
+	}
+}
+
+UChargeZoomCameraModifier* UEffectsManager::FindOrAddZoomModifier() const
+{
+	const UWorld* World = GetWorld();
+	const APlayerController* PlayerController = World ? World->GetFirstPlayerController() : nullptr;
+	APlayerCameraManager* CameraManager = PlayerController ? PlayerController->PlayerCameraManager.Get() : nullptr;
+	if (!CameraManager) return nullptr;
+
+	if (UCameraModifier* Existing = CameraManager->FindCameraModifierByClass(UChargeZoomCameraModifier::StaticClass()))
+	{
+		return Cast<UChargeZoomCameraModifier>(Existing);
+	}
+
+	return Cast<UChargeZoomCameraModifier>(CameraManager->AddNewCameraModifier(UChargeZoomCameraModifier::StaticClass()));
 }
 
 void UEffectsManager::HitStop(const FGameplayTag HitStopTag)
@@ -187,5 +205,5 @@ void UEffectsManager::TimeWarp(const FGameplayTag TimeWarpTag)
 
 void UEffectsManager::UpdateActiveTickableEffectsStatus()
 {
-	bHasActiveTickableEffects = ZoomEffectParams.bIsActive || TimeWarpEffectParams.bIsActive || HitStopEffectParams.bIsActive;
+	bHasActiveTickableEffects = TimeWarpEffectParams.bIsActive || HitStopEffectParams.bIsActive;
 }

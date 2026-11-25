@@ -5,6 +5,7 @@
 
 #include "AbilitySystemInterface.h"
 #include "GameplayTagAssetInterface.h"
+#include "Abilities/GameplayAbilityTypes.h"
 #include "GenericTeamAgentInterface.h"
 #include "Features/SaveSystem/Interfaces/SaveInterface.h"
 #include "Interfaces/Damageable.h"
@@ -21,6 +22,7 @@ struct FHitReactDefinition;
 struct FWeaponKnockback;
 class UWeaponData;
 class UCurveFloat;
+class UMaterialInstanceDynamic;
 struct FInputActionValue;
 class UVelmaraAttributeSet;
 class UInputMappingContext;
@@ -40,6 +42,24 @@ struct FEntityOrbDrop
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "1"))
 	int32 Count = 1;
+};
+
+USTRUCT(BlueprintType)
+struct FEntityDeathAnim
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TObjectPtr<UAnimSequenceBase> Animation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0", Units = "s"))
+	float StartTime = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0", Units = "s"))
+	float RagdollTime = 1.5f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0.1"))
+	float PlayRate = 1.f;
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEntityDead, AEntity*, EntityDead);
@@ -123,6 +143,9 @@ public:
 	FOnEntityDead OnDead;
 
 	void NotifyDeathToWorld();
+
+	UFUNCTION(BlueprintCallable, Category = "Death")
+	bool TryStartAnimatedDeath(const FGameplayEventData& DeathPayload);
 
 	UFUNCTION(BlueprintCallable, Category = "Entity Flag")
 	bool IsAlive() const;
@@ -235,6 +258,8 @@ public:
 	UPROPERTY()
 	TObjectPtr<UCurveFloat> KnockbackCurve;
 
+	void BeginKnockback(const FVector& AttackerLocation, float Distance, float Duration, UCurveFloat* ProgressCurve);
+
 	void UpdateKnockback();
 
 	void StopKnockback();
@@ -264,6 +289,39 @@ protected:
 	TArray<FEntityOrbDrop> DeathOrbDrops;
 
 	void SpawnDeathOrbs();
+
+	UPROPERTY(EditDefaultsOnly, Category = "Death")
+	FEntityDeathAnim FrontHitDeath;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Death")
+	FEntityDeathAnim BackHitDeath;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Death")
+	FName DeathSlotName = TEXT("DefaultSlot");
+
+	UPROPERTY(EditDefaultsOnly, Category = "Death")
+	FGameplayTagContainer HeavyDeathTags;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Death", meta = (ClampMin = "0", Units = "cm"))
+	float HeavyDeathPushDistance = 70.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Death", meta = (ClampMin = "0.02", Units = "s"))
+	float HeavyDeathPushDuration = 0.3f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Death|Ragdoll", meta = (ClampMin = "0"))
+	float RagdollLinearDamping = 0.3f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Death|Ragdoll", meta = (ClampMin = "0"))
+	float RagdollAngularDamping = 8.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Death|Ragdoll", meta = (ClampMin = "0"))
+	float RagdollMaxSpeed = 250.f;
+
+	bool bDying = false;
+
+	FTimerHandle DeathRagdollTimerHandle;
+
+	void StartDeathRagdoll();
 
 	UFUNCTION(BlueprintCallable)
 	virtual void InitializeAttributeSet();

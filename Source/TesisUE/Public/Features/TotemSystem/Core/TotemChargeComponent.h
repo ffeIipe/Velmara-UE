@@ -6,6 +6,7 @@
 #include "TotemChargeComponent.generated.h"
 
 class AOrbBase;
+class UMaterialInterface;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTotemEnemyAbsorbedSignature, AActor*, DeadEnemy);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnTotemChargeChangedSignature, int32, CurrentKills, int32, KillsToCharge);
@@ -27,6 +28,12 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Totem | Charge")
 	bool IsCharged() const;
+
+	UFUNCTION(BlueprintPure, Category = "Totem | Possession")
+	bool IsActivated() const { return bActivated && IsCharged(); }
+
+	UFUNCTION(BlueprintCallable, Category = "Totem | Possession")
+	void ActivatePossession(UMaterialInterface* OverlayMaterial);
 
 	UFUNCTION(BlueprintPure, Category = "Totem | Charge")
 	int32 GetCurrentKills() const { return CurrentKills; }
@@ -85,9 +92,6 @@ protected:
 	bool bStartCharged = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Totem | Charge", meta = (EditCondition = "bRequiresCharge"))
-	bool bConsumeChargeOnPossession = true;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Totem | Charge", meta = (EditCondition = "bRequiresCharge"))
 	bool bOnlyCountEnemies = true;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Totem | Visuals", meta = (EditCondition = "bRequiresCharge"))
@@ -103,9 +107,6 @@ protected:
 	FName ChargeMaterialParameter = FName("ChargePercent");
 
 private:
-	UFUNCTION()
-	void HandleOwnerControllerChanged(APawn* Pawn, AController* OldController, AController* NewController);
-
 	void SetCurrentKills(int32 NewKills);
 
 	void NotifyChargeChanged(bool bWasCharged);
@@ -122,6 +123,8 @@ private:
 	int32 CurrentKills = 0;
 
 	int32 PendingOrbs = 0;
+
+	bool bActivated = false;
 
 	TMap<TWeakObjectPtr<UPrimitiveComponent>, TEnumAsByte<ECollisionResponse>> CachedTraceResponses;
 };

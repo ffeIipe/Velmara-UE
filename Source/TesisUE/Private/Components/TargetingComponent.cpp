@@ -1,6 +1,8 @@
 #include "Components/TargetingComponent.h"
 #include "Curves/CurveFloat.h"
+#include "Engine/World.h"
 #include "Entities/Entity.h"
+#include "TimerManager.h"
 #include "Features/TotemSystem/Core/TotemChargeComponent.h"
 #include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
@@ -80,11 +82,56 @@ void UTargetingComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
     {
         UE_LOG(LogTemp, Warning, TEXT("[UTargetingComponent] Target perdido por distancia. Distancia actual: %f, Radio máximo: %f"), FMath::Sqrt(DistSq), TargetingLostRadius);
         DisableLock();
+        return;
     }
-    else
+
+    OccludedTime = HasLineOfSight(CurrentTarget) ? 0.f : OccludedTime + DeltaTime;
+    if (OccludedTime > LostLineOfSightGraceTime)
     {
-        RotateTowardsTarget(CurrentTarget);
+        ReplaceOccludedTarget();
+        if (!CurrentTarget) return;
     }
+
+    RotateTowardsTarget(CurrentTarget);
+}
+
+void UTargetingComponent::ReplaceOccludedTarget()
+{
+    OccludedTime = 0.f;
+    CombatTargets = GetTargets(ActiveLockRange);
+    CombatTargets.Remove(CurrentTarget);
+
+    if (!SelectNearestTarget(CombatTargets))
+    {
+        DisableLock();
+    }
+}
+
+bool UTargetingComponent::HasLineOfSight(const AActor* Target) const
+{
+    const APawn* OwnerPawn = Cast<APawn>(GetOwner());
+    if (!OwnerPawn || !Target) return false;
+
+    TArray<AActor*> ActorsToIgnore;
+    OwnerPawn->GetAttachedActors(ActorsToIgnore, true, true);
+    Target->GetAttachedActors(ActorsToIgnore, false, true);
+
+    FCollisionQueryParams Params(SCENE_QUERY_STAT(TargetingLineOfSight), false, OwnerPawn);
+    Params.AddIgnoredActor(Target);
+    Params.AddIgnoredActors(ActorsToIgnore);
+
+    FCollisionResponseParams ResponseParams;
+    ResponseParams.CollisionResponse.SetResponse(ECC_Pawn, ECR_Ignore);
+    ResponseParams.CollisionResponse.SetResponse(ECC_PhysicsBody, ECR_Ignore);
+
+    const FVector Start = OwnerPawn->GetPawnViewLocation();
+    const auto IsClearTo = [&](const FVector& End)
+    {
+        return !GetWorld()->LineTraceTestByChannel(Start, End, ECC_Visibility, Params, ResponseParams);
+    };
+
+    const APawn* TargetPawn = Cast<APawn>(Target);
+    return IsClearTo(Target->GetActorLocation()) || (TargetPawn && IsClearTo(TargetPawn->GetPawnViewLocation()));
 }
 
 void UTargetingComponent::HandleTargetDeath(AEntity* DeadEntity)
@@ -314,7 +361,10 @@ TArray<AActor*> UTargetingComponent::GetTargets(const float Radius) const
                 bIsAlive ? TEXT("True") : TEXT("False"), 
                 bIsHostile ? TEXT("True") : TEXT("False"));
 
-            if (bIsAlive && bIsHostile && !TargetEntity->IsHidden() && !TargetEntity->FindComponentByClass<UTotemChargeComponent>())
+            const bool bIsHeldLock = bIsLocking && TargetEntity == CurrentTarget;
+
+            if (bIsAlive && bIsHostile && !TargetEntity->IsHidden() && !TargetEntity->FindComponentByClass<UTotemChargeComponent>()
+                && (bIsHeldLock || HasLineOfSight(TargetEntity)))
             {
                 ValidTargets.Add(TargetEntity);
             }

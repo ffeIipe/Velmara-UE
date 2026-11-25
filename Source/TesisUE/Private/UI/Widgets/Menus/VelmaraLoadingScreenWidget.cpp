@@ -13,10 +13,39 @@
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
 #include "UI/Style/VelmaraUITheme.h"
+#include "Framework/Application/IInputProcessor.h"
+#include "Framework/Application/SlateApplication.h"
+#include "Kismet/GameplayStatics.h"
+
+namespace
+{
+	constexpr float SettleSecondsBeforePause = 0.5f;
+	constexpr float MaxSettleStepSeconds = 1.0f / 30.0f;
+
+	class FLoadingScreenInputBlocker : public IInputProcessor
+	{
+	public:
+		virtual void Tick(const float DeltaTime, FSlateApplication& SlateApp, TSharedRef<ICursor> Cursor) override {}
+		virtual bool HandleKeyDownEvent(FSlateApplication& SlateApp, const FKeyEvent& InKeyEvent) override { return true; }
+		virtual bool HandleKeyUpEvent(FSlateApplication& SlateApp, const FKeyEvent& InKeyEvent) override { return true; }
+		virtual bool HandleAnalogInputEvent(FSlateApplication& SlateApp, const FAnalogInputEvent& InAnalogInputEvent) override { return true; }
+		virtual bool HandleMouseMoveEvent(FSlateApplication& SlateApp, const FPointerEvent& MouseEvent) override { return true; }
+		virtual bool HandleMouseButtonDownEvent(FSlateApplication& SlateApp, const FPointerEvent& MouseEvent) override { return true; }
+		virtual bool HandleMouseButtonUpEvent(FSlateApplication& SlateApp, const FPointerEvent& MouseEvent) override { return true; }
+		virtual bool HandleMouseButtonDoubleClickEvent(FSlateApplication& SlateApp, const FPointerEvent& MouseEvent) override { return true; }
+		virtual bool HandleMouseWheelOrGestureEvent(FSlateApplication& SlateApp, const FPointerEvent& InWheelEvent, const FPointerEvent* InGestureEvent) override { return true; }
+	};
+}
 
 UVelmaraLoadingScreenWidget::UVelmaraLoadingScreenWidget(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
+}
+
+UVelmaraBootLoadingScreenWidget::UVelmaraBootLoadingScreenWidget(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
+	bFreezesGame = false;
 }
 
 TSharedRef<SWidget> UVelmaraLoadingScreenWidget::RebuildWidget()
@@ -32,6 +61,64 @@ void UVelmaraLoadingScreenWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 	SelectRandomTip();
+
+	if (bFreezesGame && !IsDesignTime())
+	{
+		SettleElapsedSeconds = 0.0f;
+		BlockInput();
+	}
+}
+
+void UVelmaraLoadingScreenWidget::NativeDestruct()
+{
+	UnblockInput();
+
+	if (bPausedGame)
+	{
+		UGameplayStatics::SetGamePaused(this, false);
+		bPausedGame = false;
+	}
+
+	Super::NativeDestruct();
+}
+
+void UVelmaraLoadingScreenWidget::BlockInput()
+{
+	if (InputBlocker || !FSlateApplication::IsInitialized())
+	{
+		return;
+	}
+
+	if (APlayerController* PC = GetOwningPlayer())
+	{
+		PC->FlushPressedKeys();
+	}
+
+	InputBlocker = MakeShared<FLoadingScreenInputBlocker>();
+	FSlateApplication::Get().RegisterInputPreProcessor(InputBlocker, 0);
+}
+
+void UVelmaraLoadingScreenWidget::UnblockInput()
+{
+	if (InputBlocker && FSlateApplication::IsInitialized())
+	{
+		FSlateApplication::Get().UnregisterInputPreProcessor(InputBlocker);
+	}
+	InputBlocker.Reset();
+}
+
+void UVelmaraLoadingScreenWidget::PauseGameOnceSettled(float DeltaTime)
+{
+	if (bPausedGame || !InputBlocker)
+	{
+		return;
+	}
+
+	SettleElapsedSeconds += FMath::Min(DeltaTime, MaxSettleStepSeconds);
+	if (SettleElapsedSeconds >= SettleSecondsBeforePause && !UGameplayStatics::IsGamePaused(this))
+	{
+		bPausedGame = UGameplayStatics::SetGamePaused(this, true);
+	}
 }
 
 void UVelmaraLoadingScreenWidget::BuildLoadingTree()
@@ -196,6 +283,8 @@ void UVelmaraLoadingScreenWidget::SelectRandomTip()
 void UVelmaraLoadingScreenWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
+
+	PauseGameOnceSettled(InDeltaTime);
 
 	if (SpinnerImage)
 	{

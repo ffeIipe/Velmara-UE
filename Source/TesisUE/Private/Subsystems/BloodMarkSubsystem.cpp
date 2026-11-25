@@ -6,6 +6,7 @@
 #include "TimerManager.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Entities/Entity.h"
+#include "Features/TotemSystem/Core/TotemChargeComponent.h"
 #include "GAS/VelmaraAttributeSet.h"
 #include "GAS/VelmaraGameplayTags.h"
 #include "Kismet/GameplayStatics.h"
@@ -19,6 +20,15 @@ void UBloodMarkSubsystem::MarkEnemiesInRange(const FVector& Origin, const float 
 	for (TActorIterator<AEntity> It(GetWorld()); It; ++It)
 	{
 		AEntity* Entity = *It;
+		if (UTotemChargeComponent* Totem = Entity->FindComponentByClass<UTotemChargeComponent>())
+		{
+			if (FVector::DistSquared(Entity->GetActorLocation(), Origin) <= FMath::Square(Radius))
+			{
+				Totem->ActivatePossession(OverlayMaterial);
+			}
+			continue;
+		}
+
 		UAbilitySystemComponent* ASC = Entity->GetAbilitySystemComponent();
 		if (!ASC || !IsEnemyOfPlayer(Entity)) continue;
 		if (ASC->GetNumericAttribute(UVelmaraAttributeSet::GetHealthAttribute()) <= 0.f) continue;

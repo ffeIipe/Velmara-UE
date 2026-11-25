@@ -4,6 +4,7 @@
 #include "GAS/VelmaraGameplayAbility.h"
 #include "SkeletonMageBlinkAbility.generated.h"
 
+class UNiagaraComponent;
 class UNiagaraSystem;
 class USoundBase;
 
@@ -37,6 +38,15 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blink", meta = (ClampMin = "0"))
 	float VanishDuration = 0.6f;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blink|Player", meta = (ClampMin = "100"))
+	float PlayerBlinkRange = 1200.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blink|Player", meta = (ClampMin = "50"))
+	float PlayerVerticalReach = 600.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blink|Player")
+	TObjectPtr<UNiagaraSystem> AimMarkerEffect;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Blink|Feedback")
 	TObjectPtr<UNiagaraSystem> VanishEffect;
 
@@ -50,6 +60,19 @@ private:
 	UFUNCTION()
 	void Reappear();
 
+	UFUNCTION()
+	void ReleaseAim(float TimeHeld);
+
+	void StartAiming();
+
+	void UpdateAim();
+
+	void StopAiming();
+
+	void VanishThenReappear();
+
+	bool FindAimedDestination(FVector& OutLocation) const;
+
 	void SetVanished(bool bVanish);
 
 	AActor* FindTarget(const AActor* Avatar) const;
@@ -61,4 +84,15 @@ private:
 	TWeakObjectPtr<AActor> BlinkTarget;
 
 	bool bVanished = false;
+
+	bool bAiming = false;
+
+	bool bHasAimedDestination = false;
+
+	bool bFrozeMovement = false;
+
+	FTimerHandle AimTimer;
+
+	UPROPERTY()
+	TObjectPtr<UNiagaraComponent> AimMarker;
 };
