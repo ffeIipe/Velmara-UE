@@ -16,14 +16,195 @@
 #include "Components/VerticalBoxSlot.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
+#include "Framework/Text/ITextDecorator.h"
+#include "Framework/Text/TextLayout.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
+#include "TimerManager.h"
 #include "UI/Layout/VelmaraPrimaryGameLayout.h"
 #include "UI/Style/VelmaraUITheme.h"
 #include "UI/Widgets/Common/VelmaraBracketPanel.h"
 #include "UObject/UnrealType.h"
+#include "Widgets/CommonActivatableWidgetContainer.h"
+#include "Widgets/Layout/SBorder.h"
+#include "Widgets/Layout/SBox.h"
+#include "Widgets/SCompoundWidget.h"
+#include "Widgets/Text/STextBlock.h"
+
+namespace
+{
+	class SVelmaraInlineKeycap : public SCompoundWidget
+	{
+	public:
+		SLATE_BEGIN_ARGS(SVelmaraInlineKeycap) {}
+			SLATE_ARGUMENT(FString, KeyLabel)
+		SLATE_END_ARGS()
+
+		void Construct(const FArguments& InArgs)
+		{
+			KeycapBrush = FSlateBrush();
+			KeycapBrush.DrawAs = ESlateBrushDrawType::RoundedBox;
+			KeycapBrush.TintColor = FSlateColor(FVelmaraUITheme::Void(0.92f));
+			KeycapBrush.OutlineSettings.CornerRadii = FVector4(0.0f, 0.0f, 0.0f, 0.0f);
+			KeycapBrush.OutlineSettings.RoundingType = ESlateBrushRoundingType::FixedRadius;
+			KeycapBrush.OutlineSettings.Width = 1.0f;
+			KeycapBrush.OutlineSettings.Color = FSlateColor(FVelmaraUITheme::BoneMuted(0.85f));
+			KeycapBrush.OutlineSettings.bUseBrushTransparency = false;
+
+			ChildSlot
+			[
+				SNew(SBox)
+				.Padding(FMargin(3.0f, 0.0f, 3.0f, 0.0f))
+				.VAlign(VAlign_Center)
+				[
+					SNew(SBox)
+					.MinDesiredWidth(28.0f)
+					.HeightOverride(28.0f)
+					[
+						SNew(SBorder)
+						.BorderImage(&KeycapBrush)
+						.Padding(FMargin(7.0f, 0.0f, 7.0f, 0.0f))
+						.HAlign(HAlign_Center)
+						.VAlign(VAlign_Center)
+						[
+							SNew(STextBlock)
+							.Text(FText::FromString(InArgs._KeyLabel))
+							.Font(FVelmaraUITheme::GetDisplayFont(15, 60))
+							.ColorAndOpacity(FSlateColor(FVelmaraUITheme::Bone()))
+							.Justification(ETextJustify::Center)
+						]
+					]
+				]
+			];
+		}
+
+	private:
+		FSlateBrush KeycapBrush;
+	};
+
+	class FVelmaraKeycapRichTextDecorator : public FRichTextDecorator
+	{
+	public:
+		FVelmaraKeycapRichTextDecorator(URichTextBlock* InOwner)
+			: FRichTextDecorator(InOwner)
+		{
+		}
+
+		virtual bool Supports(const FTextRunParseResults& RunParseResult, const FString& Text) const override
+		{
+			return RunParseResult.Name.Equals(TEXT("Key"), ESearchCase::IgnoreCase)
+				|| RunParseResult.Name.Equals(TEXT("Keycap"), ESearchCase::IgnoreCase);
+		}
+
+	protected:
+		virtual TSharedPtr<SWidget> CreateDecoratorWidget(const FTextRunInfo& RunInfo, const FTextBlockStyle& DefaultTextStyle) const override
+		{
+			FString Label = RunInfo.Content.ToString().TrimStartAndEnd();
+			if (Label.StartsWith(TEXT("[")) && Label.EndsWith(TEXT("]")) && Label.Len() >= 2)
+			{
+				Label = Label.Mid(1, Label.Len() - 2).TrimStartAndEnd();
+			}
+			if (Label.IsEmpty())
+			{
+				return TSharedPtr<SWidget>();
+			}
+			return SNew(SVelmaraInlineKeycap).KeyLabel(Label.ToUpper());
+		}
+	};
+
+	FString ResolveKeyLabelFromImageId(const FString& RawId, bool bGamepad)
+	{
+		FString CleanId = RawId.TrimStartAndEnd();
+		CleanId.ReplaceInline(TEXT("\""), TEXT(""));
+		CleanId.ReplaceInline(TEXT("'"), TEXT(""));
+		CleanId = CleanId.TrimStartAndEnd();
+		if (CleanId.IsEmpty())
+		{
+			return FString();
+		}
+
+		if (CleanId.Equals(TEXT("F_Key"), ESearchCase::IgnoreCase))
+		{
+			return bGamepad ? TEXT("RB") : TEXT("F");
+		}
+		if (CleanId.Equals(TEXT("E_Key"), ESearchCase::IgnoreCase))
+		{
+			return bGamepad ? TEXT("A") : TEXT("E");
+		}
+		if (CleanId.Equals(TEXT("Q_Key"), ESearchCase::IgnoreCase))
+		{
+			return bGamepad ? TEXT("LB") : TEXT("Q");
+		}
+		if (CleanId.Equals(TEXT("R_Key"), ESearchCase::IgnoreCase))
+		{
+			return bGamepad ? TEXT("Y") : TEXT("R");
+		}
+		if (CleanId.Equals(TEXT("W_Key"), ESearchCase::IgnoreCase))
+		{
+			return bGamepad ? TEXT("LS") : TEXT("W");
+		}
+		if (CleanId.Equals(TEXT("A_Key"), ESearchCase::IgnoreCase))
+		{
+			return bGamepad ? TEXT("LS") : TEXT("A");
+		}
+		if (CleanId.Equals(TEXT("S_Key"), ESearchCase::IgnoreCase))
+		{
+			return bGamepad ? TEXT("LS") : TEXT("S");
+		}
+		if (CleanId.Equals(TEXT("D_Key"), ESearchCase::IgnoreCase))
+		{
+			return bGamepad ? TEXT("LS") : TEXT("D");
+		}
+		if (CleanId.Equals(TEXT("CTRL_Key"), ESearchCase::IgnoreCase) || CleanId.Equals(TEXT("Crtl_Key"), ESearchCase::IgnoreCase))
+		{
+			return bGamepad ? TEXT("B") : TEXT("CTRL");
+		}
+		if (CleanId.Equals(TEXT("SHIFT_Key"), ESearchCase::IgnoreCase))
+		{
+			return bGamepad ? TEXT("B") : TEXT("SHIFT");
+		}
+		if (CleanId.Equals(TEXT("SPACE_Key"), ESearchCase::IgnoreCase))
+		{
+			return bGamepad ? TEXT("A") : TEXT("ESPACIO");
+		}
+		if (CleanId.Equals(TEXT("TAB_Key"), ESearchCase::IgnoreCase))
+		{
+			return bGamepad ? TEXT("VIEW") : TEXT("TAB");
+		}
+		if (CleanId.Equals(TEXT("ESC_Key"), ESearchCase::IgnoreCase))
+		{
+			return bGamepad ? TEXT("MENU") : TEXT("ESC");
+		}
+		if (CleanId.Equals(TEXT("LMB_Key"), ESearchCase::IgnoreCase))
+		{
+			return bGamepad ? TEXT("X") : TEXT("CLIC IZQ");
+		}
+		if (CleanId.Equals(TEXT("RMB_Key"), ESearchCase::IgnoreCase))
+		{
+			return bGamepad ? TEXT("LT") : TEXT("CLIC DER");
+		}
+
+		if (CleanId.EndsWith(TEXT("_Key"), ESearchCase::IgnoreCase))
+		{
+			CleanId = CleanId.Left(CleanId.Len() - 4);
+		}
+		CleanId.ReplaceInline(TEXT("_"), TEXT(" "));
+		CleanId = CleanId.TrimStartAndEnd();
+		return CleanId.ToUpper();
+	}
+}
 
 TMap<TWeakObjectPtr<ULocalPlayer>, TWeakObjectPtr<UVelmaraTutorialToastWidget>> UVelmaraTutorialToastWidget::ActiveToastWidgets;
+
+UVelmaraKeycapRichTextDecorator::UVelmaraKeycapRichTextDecorator(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
+}
+
+TSharedPtr<ITextDecorator> UVelmaraKeycapRichTextDecorator::CreateDecorator(URichTextBlock* InOwner)
+{
+	return MakeShareable(new FVelmaraKeycapRichTextDecorator(InOwner));
+}
 
 UVelmaraTutorialToastWidget::UVelmaraTutorialToastWidget(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -94,7 +275,7 @@ TSharedRef<SWidget> UVelmaraTutorialToastWidget::RebuildWidget()
 void UVelmaraTutorialToastWidget::BuildToastTree()
 {
 	UOverlay* RootOverlay = WidgetTree->ConstructWidget<UOverlay>(UOverlay::StaticClass(), TEXT("TutorialToastRoot"));
-	RootOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	RootOverlay->SetVisibility(ESlateVisibility::HitTestInvisible);
 	WidgetTree->RootWidget = RootOverlay;
 
 	ToastCardWrapper = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), TEXT("ToastCardWrapper"));
@@ -183,6 +364,7 @@ void UVelmaraTutorialToastWidget::BuildToastTree()
 	{
 		RichBodyText->SetTextStyleSet(StyleSet);
 	}
+	RichBodyText->SetDecorators({ UVelmaraKeycapRichTextDecorator::StaticClass() });
 	RichBodyText->SetAutoWrapText(true);
 	if (UVerticalBoxSlot* BodySlot = ContentBox->AddChildToVerticalBox(RichBodyText))
 	{
@@ -220,6 +402,7 @@ void UVelmaraTutorialToastWidget::BuildToastTree()
 void UVelmaraTutorialToastWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+	SetVisibility(ESlateVisibility::HitTestInvisible);
 
 	if (ULocalPlayer* LP = GetOwningLocalPlayer())
 	{
@@ -270,7 +453,7 @@ void UVelmaraTutorialToastWidget::EnqueuePages(const TArray<FVelmaraTutorialPage
 		bShowingToast = true;
 		if (ToastCardWrapper)
 		{
-			ToastCardWrapper->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			ToastCardWrapper->SetVisibility(ESlateVisibility::HitTestInvisible);
 		}
 		DisplayPage(0);
 	}
@@ -418,9 +601,81 @@ FText UVelmaraTutorialToastWidget::FormatRichBodyForCurrentInput(const FText& Ra
 	}
 
 	FString Body = RawBody.ToString();
+
+	int32 SearchPos = 0;
+	while (SearchPos < Body.Len())
+	{
+		const int32 ImgStart = Body.Find(TEXT("<img"), ESearchCase::IgnoreCase, ESearchDir::FromStart, SearchPos);
+		if (ImgStart == INDEX_NONE)
+		{
+			break;
+		}
+
+		const int32 TagEnd = Body.Find(TEXT(">"), ESearchCase::CaseSensitive, ESearchDir::FromStart, ImgStart);
+		if (TagEnd == INDEX_NONE)
+		{
+			break;
+		}
+
+		int32 ReplaceEnd = TagEnd + 1;
+		if (Body.Mid(ReplaceEnd, 3).Equals(TEXT("</>"), ESearchCase::CaseSensitive))
+		{
+			ReplaceEnd += 3;
+		}
+
+		const FString TagSlice = Body.Mid(ImgStart, TagEnd - ImgStart + 1);
+		const int32 IdAttrIdx = TagSlice.Find(TEXT("id="), ESearchCase::IgnoreCase, ESearchDir::FromStart, 4);
+		FString KeyLabel;
+		if (IdAttrIdx != INDEX_NONE)
+		{
+			int32 ValIdx = IdAttrIdx + 3;
+			while (ValIdx < TagSlice.Len() && FChar::IsWhitespace(TagSlice[ValIdx]))
+			{
+				++ValIdx;
+			}
+
+			FString RawId;
+			if (ValIdx < TagSlice.Len() && (TagSlice[ValIdx] == TCHAR('"') || TagSlice[ValIdx] == TCHAR('\'')))
+			{
+				const TCHAR QuoteChar = TagSlice[ValIdx];
+				++ValIdx;
+				const int32 CloseQuoteIdx = TagSlice.Find(FString::Chr(QuoteChar), ESearchCase::CaseSensitive, ESearchDir::FromStart, ValIdx);
+				if (CloseQuoteIdx != INDEX_NONE)
+				{
+					RawId = TagSlice.Mid(ValIdx, CloseQuoteIdx - ValIdx);
+				}
+			}
+			else
+			{
+				int32 ValEnd = ValIdx;
+				while (ValEnd < TagSlice.Len()
+					&& !FChar::IsWhitespace(TagSlice[ValEnd])
+					&& TagSlice[ValEnd] != TCHAR('/')
+					&& TagSlice[ValEnd] != TCHAR('>'))
+				{
+					++ValEnd;
+				}
+				RawId = TagSlice.Mid(ValIdx, ValEnd - ValIdx);
+			}
+
+			KeyLabel = ResolveKeyLabelFromImageId(RawId, bGamepad);
+		}
+
+		if (!KeyLabel.IsEmpty())
+		{
+			const FString Replacement = FString::Printf(TEXT("<Key>%s</>"), *KeyLabel);
+			Body = Body.Left(ImgStart) + Replacement + Body.Mid(ReplaceEnd);
+			SearchPos = ImgStart + Replacement.Len();
+		}
+		else
+		{
+			SearchPos = ReplaceEnd;
+		}
+	}
+
 	auto ReplaceToken = [&](const TCHAR* Token, const TCHAR* KbmStr, const TCHAR* PadStr)
 	{
-		const FString Replacement = FString::Printf(TEXT("<Key>[%s]</>"), bGamepad ? PadStr : KbmStr);
+		const FString Replacement = FString::Printf(TEXT("<Key>%s</>"), bGamepad ? PadStr : KbmStr);
 		Body.ReplaceInline(Token, *Replacement, ESearchCase::IgnoreCase);
 	};
 
@@ -432,8 +687,15 @@ FText UVelmaraTutorialToastWidget::FormatRichBodyForCurrentInput(const FText& Ra
 	ReplaceToken(TEXT("{Jump}"), TEXT("ESPACIO"), TEXT("A"));
 	ReplaceToken(TEXT("{Inventory}"), TEXT("I"), TEXT("VIEW"));
 	ReplaceToken(TEXT("[E]"), TEXT("E"), TEXT("A"));
-	ReplaceToken(TEXT("Press E"), TEXT("E"), TEXT("A"));
-	ReplaceToken(TEXT("Presiona E"), TEXT("E"), TEXT("A"));
+	ReplaceToken(TEXT("[F]"), TEXT("F"), TEXT("RB"));
+	ReplaceToken(TEXT("[Q]"), TEXT("Q"), TEXT("LB"));
+	ReplaceToken(TEXT("[R]"), TEXT("R"), TEXT("Y"));
+	ReplaceToken(TEXT("[CTRL]"), TEXT("CTRL"), TEXT("B"));
+	ReplaceToken(TEXT("[SHIFT]"), TEXT("SHIFT"), TEXT("B"));
+	ReplaceToken(TEXT("[TAB]"), TEXT("TAB"), TEXT("VIEW"));
+
+	Body.ReplaceInline(TEXT("Press E"), *FString::Printf(TEXT("Press <Key>%s</>"), bGamepad ? TEXT("A") : TEXT("E")), ESearchCase::IgnoreCase);
+	Body.ReplaceInline(TEXT("Presiona E"), *FString::Printf(TEXT("Presiona <Key>%s</>"), bGamepad ? TEXT("A") : TEXT("E")), ESearchCase::IgnoreCase);
 
 	return FText::FromString(Body);
 }
@@ -501,44 +763,66 @@ UVelmaraLegacyPromptBridgeWidget::UVelmaraLegacyPromptBridgeWidget(const FObject
 {
 	bIsBackHandler = false;
 	bAutoActivate = false;
+	bSupportsActivationFocus = false;
 }
 
 TOptional<FUIInputConfig> UVelmaraLegacyPromptBridgeWidget::GetDesiredInputConfig() const
 {
-	return FUIInputConfig(ECommonInputMode::Game, EMouseCaptureMode::CapturePermanently, false);
+	return FUIInputConfig(ECommonInputMode::Game, EMouseCaptureMode::CapturePermanently, true);
 }
 
 void UVelmaraLegacyPromptBridgeWidget::ForwardPagesToToast(const TArray<FVelmaraTutorialPage>& Pages)
 {
-	if (Pages.Num() == 0)
+	if (bForwarded || Pages.Num() == 0)
 	{
 		return;
 	}
+
 	bForwarded = true;
-	UGameplayStatics::SetGamePaused(GetWorld(), false);
+	ClearForwardPollTimer();
 	UVelmaraTutorialToastWidget::ShowTutorialPages(this, Pages);
-	DeactivateWidget();
-	RemoveFromParent();
-	if (UVelmaraPrimaryGameLayout* Layout = UVelmaraPrimaryGameLayout::Get(this))
-	{
-		Layout->RefreshInputMode();
-	}
+	CleanupBridgeWidget();
 }
 
 void UVelmaraLegacyPromptBridgeWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
-	SetVisibility(ESlateVisibility::Collapsed);
-	UGameplayStatics::SetGamePaused(GetWorld(), false);
+	SetVisibility(ESlateVisibility::HitTestInvisible);
+	SetRenderOpacity(0.0f);
 	ExtractAndForwardFromBlueprintProperties();
+	if (!bForwarded)
+	{
+		ScheduleForwardPoll();
+	}
+}
+
+void UVelmaraLegacyPromptBridgeWidget::NativeDestruct()
+{
+	ClearForwardPollTimer();
+	Super::NativeDestruct();
 }
 
 void UVelmaraLegacyPromptBridgeWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
-	SetVisibility(ESlateVisibility::Collapsed);
-	UGameplayStatics::SetGamePaused(GetWorld(), false);
+	bForwarded = false;
+	TicksWaited = 0;
+	SetVisibility(ESlateVisibility::HitTestInvisible);
+	SetRenderOpacity(0.0f);
 	ExtractAndForwardFromBlueprintProperties();
+	if (!bForwarded)
+	{
+		ScheduleForwardPoll();
+	}
+}
+
+void UVelmaraLegacyPromptBridgeWidget::NativeOnDeactivated()
+{
+	ClearForwardPollTimer();
+	ClearBlueprintTutorialProperties();
+	bForwarded = false;
+	TicksWaited = 0;
+	Super::NativeOnDeactivated();
 }
 
 void UVelmaraLegacyPromptBridgeWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
@@ -547,15 +831,105 @@ void UVelmaraLegacyPromptBridgeWidget::NativeTick(const FGeometry& MyGeometry, f
 
 	if (!bForwarded)
 	{
-		ExtractAndForwardFromBlueprintProperties();
-		++TicksWaited;
-		if (TicksWaited >= 4)
+		const UWorld* World = GetWorld();
+		if (!World || !World->GetTimerManager().IsTimerActive(ForwardPollTimerHandle))
 		{
-			UGameplayStatics::SetGamePaused(GetWorld(), false);
+			PollAndForwardOrCleanup();
+		}
+	}
+}
+
+void UVelmaraLegacyPromptBridgeWidget::ScheduleForwardPoll()
+{
+	if (bForwarded)
+	{
+		return;
+	}
+
+	if (UWorld* World = GetWorld())
+	{
+		if (!World->GetTimerManager().IsTimerActive(ForwardPollTimerHandle))
+		{
+			World->GetTimerManager().SetTimer(ForwardPollTimerHandle, this, &UVelmaraLegacyPromptBridgeWidget::PollAndForwardOrCleanup, 0.05f, true, 0.0f);
+		}
+	}
+}
+
+void UVelmaraLegacyPromptBridgeWidget::PollAndForwardOrCleanup()
+{
+	if (bForwarded)
+	{
+		ClearForwardPollTimer();
+		return;
+	}
+
+	ExtractAndForwardFromBlueprintProperties();
+	if (!bForwarded)
+	{
+		++TicksWaited;
+		if (TicksWaited >= 10)
+		{
+			CleanupBridgeWidget();
+		}
+	}
+}
+
+void UVelmaraLegacyPromptBridgeWidget::ClearForwardPollTimer()
+{
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(ForwardPollTimerHandle);
+	}
+}
+
+void UVelmaraLegacyPromptBridgeWidget::ClearBlueprintTutorialProperties()
+{
+	for (TFieldIterator<FArrayProperty> It(GetClass()); It; ++It)
+	{
+		FArrayProperty* ArrayProp = *It;
+		if (!ArrayProp || !ArrayProp->GetName().Contains(TEXT("Tutorial"), ESearchCase::IgnoreCase))
+		{
+			continue;
+		}
+
+		FScriptArrayHelper ArrayHelper(ArrayProp, ArrayProp->ContainerPtrToValuePtr<void>(this));
+		ArrayHelper.EmptyValues();
+	}
+}
+
+void UVelmaraLegacyPromptBridgeWidget::CleanupBridgeWidget()
+{
+	ClearForwardPollTimer();
+	ClearBlueprintTutorialProperties();
+	SetVisibility(ESlateVisibility::Collapsed);
+
+	if (UVelmaraPrimaryGameLayout* Layout = UVelmaraPrimaryGameLayout::Get(this))
+	{
+		if (UCommonActivatableWidgetStack* MenuStack = Layout->GetMenuStack())
+		{
+			MenuStack->RemoveWidget(*this);
+		}
+		if (IsActivated())
+		{
 			DeactivateWidget();
+		}
+		if (IsInViewport() || GetParent() != nullptr)
+		{
+			RemoveFromParent();
+		}
+		Layout->RefreshInputMode();
+	}
+	else
+	{
+		DeactivateWidget();
+		if (IsInViewport() || GetParent() != nullptr)
+		{
 			RemoveFromParent();
 		}
 	}
+
+	bForwarded = false;
+	TicksWaited = 0;
 }
 
 void UVelmaraLegacyPromptBridgeWidget::ExtractAndForwardFromBlueprintProperties()

@@ -226,7 +226,15 @@ FSlateBrush FVelmaraUITheme::MakeBoxBrush(UTexture2D* Texture, const FMargin& Ma
 
 FSlateBrush FVelmaraUITheme::MakeOptionRowBrush(const FLinearColor& Tint)
 {
-	return MakeBorderBrush(LoadTexture(VelmaraUIPaths::FrameOptionRow), FMargin(0.10156f, 0.125f, 0.10156f, 0.125f), Tint, 0.5f);
+	FSlateBrush Brush;
+	Brush.DrawAs = ESlateBrushDrawType::RoundedBox;
+	Brush.TintColor = FSlateColor(FLinearColor::Transparent);
+	Brush.OutlineSettings.CornerRadii = FVector4(0.0f, 0.0f, 0.0f, 0.0f);
+	Brush.OutlineSettings.RoundingType = ESlateBrushRoundingType::FixedRadius;
+	Brush.OutlineSettings.Width = 1.0f;
+	Brush.OutlineSettings.Color = FSlateColor(Tint);
+	Brush.OutlineSettings.bUseBrushTransparency = false;
+	return Brush;
 }
 
 FSlateBrush FVelmaraUITheme::MakeBracketsPanelBrush(const FLinearColor& Tint)

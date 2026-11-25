@@ -64,16 +64,19 @@ void APlayerMainHUD::TogglePauseMenu()
 		return;
 	}
 
-	if (UCommonActivatableWidgetStack* MenuStack = Layout->GetMenuStack())
+	if (Layout->HasActiveMenu())
 	{
-		if (UCommonActivatableWidget* ActiveMenu = MenuStack->GetActiveWidget())
+		if (UCommonActivatableWidgetStack* MenuStack = Layout->GetMenuStack())
 		{
-			if (ActiveMenu->IsA<UVelmaraMainMenuWidget>())
+			if (UCommonActivatableWidget* ActiveMenu = MenuStack->GetActiveWidget())
 			{
+				if (ActiveMenu->IsA<UVelmaraMainMenuWidget>())
+				{
+					return;
+				}
+				ActiveMenu->DeactivateWidget();
 				return;
 			}
-			ActiveMenu->DeactivateWidget();
-			return;
 		}
 	}
 

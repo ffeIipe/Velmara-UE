@@ -110,6 +110,7 @@ protected:
 private:
 	void BuildLayoutTree();
 	void HandleDisplayedWidgetChanged(UCommonActivatableWidget* DisplayedWidget);
+	bool IsInteractiveMenuWidget(const UCommonActivatableWidget* Widget) const;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UOverlay> HUDLayer;

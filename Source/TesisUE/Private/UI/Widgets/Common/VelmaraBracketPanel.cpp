@@ -11,6 +11,95 @@
 #include "Components/VerticalBox.h"
 #include "UI/Style/VelmaraUITheme.h"
 
+static void RebuildProceduralBrackets(UWidgetTree* WidgetTree, UOverlay* ProceduralLayer, bool bUseMinimalBrackets)
+{
+	if (!WidgetTree || !ProceduralLayer)
+	{
+		return;
+	}
+
+	ProceduralLayer->ClearChildren();
+
+	constexpr float Inset = 6.0f;
+	constexpr float Thickness = 1.5f;
+	const float ArmLen = bUseMinimalBrackets ? 22.0f : 30.0f;
+	constexpr float DiamondSize = 6.0f;
+	constexpr float DiamondInset = Inset - (DiamondSize - Thickness) * 0.5f;
+	const FSlateBrush BarBrush = FVelmaraUITheme::MakeSolidBrush(FVelmaraUITheme::Bone(0.88f));
+	const FSlateBrush DiamondBrush = FVelmaraUITheme::MakeImageBrush(
+		FVelmaraUITheme::LoadTexture(VelmaraUIPaths::MarkerDiamondSolid),
+		FVector2D(DiamondSize, DiamondSize),
+		FVelmaraUITheme::Bone(0.95f));
+
+	UBorder* PerimeterBorder = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass());
+	PerimeterBorder->SetVisibility(ESlateVisibility::HitTestInvisible);
+	PerimeterBorder->SetPadding(FMargin(0.0f));
+	PerimeterBorder->SetBrush(FVelmaraUITheme::MakeOptionRowBrush(FVelmaraUITheme::Ash(0.28f)));
+	if (UOverlaySlot* PerimeterSlot = ProceduralLayer->AddChildToOverlay(PerimeterBorder))
+	{
+		PerimeterSlot->SetHorizontalAlignment(HAlign_Fill);
+		PerimeterSlot->SetVerticalAlignment(VAlign_Fill);
+		PerimeterSlot->SetPadding(FMargin(Inset));
+	}
+
+	auto AddBar = [&](float Width, float Height, EHorizontalAlignment HAlign, EVerticalAlignment VAlign, const FMargin& Pad)
+	{
+		USizeBox* BarSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
+		BarSize->SetWidthOverride(Width);
+		BarSize->SetHeightOverride(Height);
+		BarSize->SetVisibility(ESlateVisibility::HitTestInvisible);
+
+		UBorder* BarBorder = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass());
+		BarBorder->SetPadding(FMargin(0.0f));
+		BarBorder->SetBrush(BarBrush);
+		BarBorder->SetVisibility(ESlateVisibility::HitTestInvisible);
+		BarSize->SetContent(BarBorder);
+
+		if (UOverlaySlot* BarSlot = ProceduralLayer->AddChildToOverlay(BarSize))
+		{
+			BarSlot->SetHorizontalAlignment(HAlign);
+			BarSlot->SetVerticalAlignment(VAlign);
+			BarSlot->SetPadding(Pad);
+		}
+	};
+
+	auto AddCornerDiamond = [&](EHorizontalAlignment HAlign, EVerticalAlignment VAlign, const FMargin& Pad)
+	{
+		USizeBox* DiamondBox = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
+		DiamondBox->SetWidthOverride(DiamondSize);
+		DiamondBox->SetHeightOverride(DiamondSize);
+		DiamondBox->SetVisibility(ESlateVisibility::HitTestInvisible);
+
+		UImage* DiamondImg = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
+		DiamondImg->SetBrush(DiamondBrush);
+		DiamondImg->SetVisibility(ESlateVisibility::HitTestInvisible);
+		DiamondBox->SetContent(DiamondImg);
+
+		if (UOverlaySlot* DiamondSlot = ProceduralLayer->AddChildToOverlay(DiamondBox))
+		{
+			DiamondSlot->SetHorizontalAlignment(HAlign);
+			DiamondSlot->SetVerticalAlignment(VAlign);
+			DiamondSlot->SetPadding(Pad);
+		}
+	};
+
+	AddBar(ArmLen, Thickness, HAlign_Left, VAlign_Top, FMargin(Inset, Inset, 0.0f, 0.0f));
+	AddBar(Thickness, ArmLen, HAlign_Left, VAlign_Top, FMargin(Inset, Inset, 0.0f, 0.0f));
+	AddCornerDiamond(HAlign_Left, VAlign_Top, FMargin(DiamondInset, DiamondInset, 0.0f, 0.0f));
+
+	AddBar(ArmLen, Thickness, HAlign_Right, VAlign_Top, FMargin(0.0f, Inset, Inset, 0.0f));
+	AddBar(Thickness, ArmLen, HAlign_Right, VAlign_Top, FMargin(0.0f, Inset, Inset, 0.0f));
+	AddCornerDiamond(HAlign_Right, VAlign_Top, FMargin(0.0f, DiamondInset, DiamondInset, 0.0f));
+
+	AddBar(ArmLen, Thickness, HAlign_Left, VAlign_Bottom, FMargin(Inset, 0.0f, 0.0f, Inset));
+	AddBar(Thickness, ArmLen, HAlign_Left, VAlign_Bottom, FMargin(Inset, 0.0f, 0.0f, Inset));
+	AddCornerDiamond(HAlign_Left, VAlign_Bottom, FMargin(DiamondInset, 0.0f, 0.0f, DiamondInset));
+
+	AddBar(ArmLen, Thickness, HAlign_Right, VAlign_Bottom, FMargin(0.0f, 0.0f, Inset, Inset));
+	AddBar(Thickness, ArmLen, HAlign_Right, VAlign_Bottom, FMargin(0.0f, 0.0f, Inset, Inset));
+	AddCornerDiamond(HAlign_Right, VAlign_Bottom, FMargin(0.0f, 0.0f, DiamondInset, DiamondInset));
+}
+
 UVelmaraBracketPanel::UVelmaraBracketPanel(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
@@ -56,27 +145,36 @@ void UVelmaraBracketPanel::BuildPanelTree()
 	}
 
 	BracketFrame = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("BracketFrameImage"));
-	BracketFrame->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	BracketFrame->SetVisibility(ESlateVisibility::Collapsed);
 	if (UOverlaySlot* FrameSlot = RootOverlay->AddChildToOverlay(BracketFrame))
 	{
 		FrameSlot->SetHorizontalAlignment(HAlign_Fill);
 		FrameSlot->SetVerticalAlignment(VAlign_Fill);
 	}
 
+	UOverlay* ProceduralLayer = WidgetTree->ConstructWidget<UOverlay>(UOverlay::StaticClass(), TEXT("BracketProceduralLayer"));
+	ProceduralLayer->SetVisibility(ESlateVisibility::HitTestInvisible);
+	if (UOverlaySlot* ProceduralSlot = RootOverlay->AddChildToOverlay(ProceduralLayer))
+	{
+		ProceduralSlot->SetHorizontalAlignment(HAlign_Fill);
+		ProceduralSlot->SetVerticalAlignment(VAlign_Fill);
+	}
+
 	USizeBox* TopStarSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), TEXT("BracketTopStarSize"));
-	TopStarSize->SetWidthOverride(22.0f);
-	TopStarSize->SetHeightOverride(22.0f);
+	TopStarSize->SetWidthOverride(12.0f);
+	TopStarSize->SetHeightOverride(12.0f);
 	TopStarImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("BracketTopStar"));
 	TopStarImage->SetBrush(FVelmaraUITheme::MakeImageBrush(
 		FVelmaraUITheme::LoadTexture(VelmaraUIPaths::OrnRowStar),
-		FVector2D(22.0f, 22.0f),
+		FVector2D(12.0f, 12.0f),
 		FVelmaraUITheme::Bone()));
+	TopStarImage->SetVisibility(ESlateVisibility::HitTestInvisible);
 	TopStarSize->SetContent(TopStarImage);
 	if (UOverlaySlot* StarSlot = RootOverlay->AddChildToOverlay(TopStarSize))
 	{
 		StarSlot->SetHorizontalAlignment(HAlign_Center);
 		StarSlot->SetVerticalAlignment(VAlign_Top);
-		StarSlot->SetPadding(FMargin(0.0f, -10.0f, 0.0f, 0.0f));
+		StarSlot->SetPadding(FMargin(0.0f, 0.0f, 0.0f, 0.0f));
 	}
 
 	ContentBox = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("BracketContentBox"));
@@ -175,9 +273,12 @@ void UVelmaraBracketPanel::RefreshStyle()
 	}
 	if (BracketFrame)
 	{
-		BracketFrame->SetBrush(bUseMinimalBrackets
-			? FVelmaraUITheme::MakeBracketsMinimalBrush(FVelmaraUITheme::Bone())
-			: FVelmaraUITheme::MakeBracketsPanelBrush(FVelmaraUITheme::Bone()));
+		BracketFrame->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	if (WidgetTree)
+	{
+		UOverlay* ProceduralLayer = Cast<UOverlay>(WidgetTree->FindWidget(TEXT("BracketProceduralLayer")));
+		RebuildProceduralBrackets(WidgetTree, ProceduralLayer, bUseMinimalBrackets);
 	}
 	if (SignatureRow)
 	{
@@ -185,6 +286,6 @@ void UVelmaraBracketPanel::RefreshStyle()
 	}
 	if (TopStarImage)
 	{
-		TopStarImage->SetVisibility(bShowTopStar ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+		TopStarImage->SetVisibility(bShowTopStar ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 	}
 }

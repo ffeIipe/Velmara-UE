@@ -858,12 +858,15 @@ void ACustomPlayerController::TogglePauseMenu()
         {
             return;
         }
-        if (UCommonActivatableWidgetStack* MenuStack = Layout->GetMenuStack())
+        if (Layout->HasActiveMenu())
         {
-            if (UCommonActivatableWidget* ActiveMenu = MenuStack->GetActiveWidget())
+            if (UCommonActivatableWidgetStack* MenuStack = Layout->GetMenuStack())
             {
-                ActiveMenu->DeactivateWidget();
-                return;
+                if (UCommonActivatableWidget* ActiveMenu = MenuStack->GetActiveWidget())
+                {
+                    ActiveMenu->DeactivateWidget();
+                    return;
+                }
             }
         }
         Layout->PushMenuWidget<UVelmaraPauseMenuWidget>(UVelmaraPauseMenuWidget::StaticClass());

@@ -85,7 +85,7 @@ void UVelmaraSettingCarouselRow::BuildRowTree()
 	{
 		GridSlot->SetHorizontalAlignment(HAlign_Fill);
 		GridSlot->SetVerticalAlignment(VAlign_Fill);
-		GridSlot->SetPadding(FMargin(20.0f, 6.0f, 20.0f, 6.0f));
+		GridSlot->SetPadding(FMargin(28.0f, 6.0f, 20.0f, 6.0f));
 	}
 
 	UHorizontalBox* LeftBox = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("CarouselLeftBox"));
@@ -93,17 +93,6 @@ void UVelmaraSettingCarouselRow::BuildRowTree()
 	{
 		LeftCell->SetHorizontalAlignment(HAlign_Fill);
 		LeftCell->SetVerticalAlignment(VAlign_Center);
-	}
-
-	USizeBox* LeftChevSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), TEXT("LeftChevSize"));
-	LeftChevSize->SetWidthOverride(10.0f);
-	LeftChevSize->SetHeightOverride(14.0f);
-	LeftDecorativeChevron = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("LeftDecoChev"));
-	LeftChevSize->SetContent(LeftDecorativeChevron);
-	if (UHorizontalBoxSlot* ChevSlot = LeftBox->AddChildToHorizontalBox(LeftChevSize))
-	{
-		ChevSlot->SetVerticalAlignment(VAlign_Center);
-		ChevSlot->SetPadding(FMargin(0.0f, 0.0f, 12.0f, 0.0f));
 	}
 
 	LabelText = WidgetTree->ConstructWidget<UCommonTextBlock>(UCommonTextBlock::StaticClass(), TEXT("CarouselLabel"));
@@ -130,7 +119,7 @@ void UVelmaraSettingCarouselRow::BuildRowTree()
 	PrevWrap->SetHorizontalAlignment(HAlign_Center);
 	PrevWrap->SetVerticalAlignment(VAlign_Center);
 	USizeBox* PrevArrowBox = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), TEXT("PrevArrowBox"));
-	PrevArrowBox->SetWidthOverride(12.0f);
+	PrevArrowBox->SetWidthOverride(13.0f);
 	PrevArrowBox->SetHeightOverride(18.0f);
 	PrevArrow = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("PrevArrowImg"));
 	PrevArrowBox->SetContent(PrevArrow);
@@ -160,7 +149,7 @@ void UVelmaraSettingCarouselRow::BuildRowTree()
 	NextWrap->SetHorizontalAlignment(HAlign_Center);
 	NextWrap->SetVerticalAlignment(VAlign_Center);
 	USizeBox* NextArrowBox = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), TEXT("NextArrowBox"));
-	NextArrowBox->SetWidthOverride(12.0f);
+	NextArrowBox->SetWidthOverride(13.0f);
 	NextArrowBox->SetHeightOverride(18.0f);
 	NextArrow = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("NextArrowImg"));
 	NextArrowBox->SetContent(NextArrow);
@@ -172,8 +161,8 @@ void UVelmaraSettingCarouselRow::BuildRowTree()
 	}
 
 	USizeBox* StarBox = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), TEXT("BottomStarBox"));
-	StarBox->SetWidthOverride(14.0f);
-	StarBox->SetHeightOverride(14.0f);
+	StarBox->SetWidthOverride(12.0f);
+	StarBox->SetHeightOverride(12.0f);
 	BottomStar = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("BottomStarImg"));
 	BottomStar->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	StarBox->SetContent(BottomStar);
@@ -288,7 +277,7 @@ void UVelmaraSettingCarouselRow::UpdateVisualState()
 
 	const bool bFocused = IsVisuallyFocused();
 
-	SolidBackdrop->SetBrush(FVelmaraUITheme::MakeSolidBrush(bFocused ? FVelmaraUITheme::BloodDried(0.45f) : FVelmaraUITheme::Charcoal(0.70f)));
+	SolidBackdrop->SetBrush(FVelmaraUITheme::MakeSolidBrush(bFocused ? FVelmaraUITheme::BloodDried(0.38f) : FVelmaraUITheme::Void(0.72f)));
 	FrameBorder->SetBrush(FVelmaraUITheme::MakeOptionRowBrush(bFocused ? FVelmaraUITheme::BloodBright() : FVelmaraUITheme::Ash()));
 
 	if (FocusGradient)
@@ -296,7 +285,7 @@ void UVelmaraSettingCarouselRow::UpdateVisualState()
 		if (bFocused)
 		{
 			UTexture2D* GradTex = FVelmaraUITheme::LoadTexture(VelmaraUIPaths::GradHFadeLeftToRight);
-			FocusGradient->SetBrush(FVelmaraUITheme::MakeImageBrush(GradTex, FVector2D(512.0f, 8.0f), FVelmaraUITheme::Blood(0.55f)));
+			FocusGradient->SetBrush(FVelmaraUITheme::MakeImageBrush(GradTex, FVector2D(16.0f, 8.0f), FVelmaraUITheme::Blood(0.32f)));
 			FocusGradient->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		}
 		else
@@ -315,23 +304,19 @@ void UVelmaraSettingCarouselRow::UpdateVisualState()
 	const bool bCanPrev = Options.Num() > 1 && (bWrapAround || SelectedIndex > 0);
 	const bool bCanNext = Options.Num() > 1 && (bWrapAround || SelectedIndex < Options.Num() - 1);
 
-	if (LeftDecorativeChevron)
-	{
-		LeftDecorativeChevron->SetBrush(FVelmaraUITheme::MakeImageBrush(ChevL, FVector2D(10.0f, 14.0f), bFocused ? FVelmaraUITheme::BloodBright() : FVelmaraUITheme::Ash()));
-	}
 	if (PrevArrow)
 	{
 		const FLinearColor PrevColor = !bCanPrev ? FVelmaraUITheme::Ash(0.35f) : (bFocused ? FVelmaraUITheme::BloodBright() : FVelmaraUITheme::BoneMuted());
-		PrevArrow->SetBrush(FVelmaraUITheme::MakeImageBrush(ChevL, FVector2D(12.0f, 18.0f), PrevColor));
+		PrevArrow->SetBrush(FVelmaraUITheme::MakeImageBrush(ChevL, FVector2D(13.0f, 18.0f), PrevColor));
 	}
 	if (NextArrow)
 	{
 		const FLinearColor NextColor = !bCanNext ? FVelmaraUITheme::Ash(0.35f) : (bFocused ? FVelmaraUITheme::BloodBright() : FVelmaraUITheme::BoneMuted());
-		NextArrow->SetBrush(FVelmaraUITheme::MakeImageBrush(ChevR, FVector2D(12.0f, 18.0f), NextColor));
+		NextArrow->SetBrush(FVelmaraUITheme::MakeImageBrush(ChevR, FVector2D(13.0f, 18.0f), NextColor));
 	}
 	if (BottomStar)
 	{
-		BottomStar->SetBrush(FVelmaraUITheme::MakeImageBrush(StarTex, FVector2D(14.0f, 14.0f), bFocused ? FVelmaraUITheme::Bone() : FVelmaraUITheme::BoneMuted(0.75f)));
+		BottomStar->SetBrush(FVelmaraUITheme::MakeImageBrush(StarTex, FVector2D(12.0f, 12.0f), bFocused ? FVelmaraUITheme::Bone() : FVelmaraUITheme::BoneMuted(0.65f)));
 	}
 }
 
