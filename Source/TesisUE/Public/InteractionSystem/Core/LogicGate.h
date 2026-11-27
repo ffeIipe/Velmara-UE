@@ -17,7 +17,7 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	UPROPERTY(EditAnywhere, Category = "Debug")
-	bool bDebugConnections = true;
+	bool bDebugConnections = false;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	FName RestoredSaveID;

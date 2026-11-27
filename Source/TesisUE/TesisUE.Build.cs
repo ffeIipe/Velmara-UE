@@ -52,6 +52,9 @@ public class TesisUE : ModuleRules
 			{
 				"FractureEngine",
 				"DataflowCore",
+				"ClothingSystemRuntimeCommon",
+				"ClothingSystemRuntimeInterface",
+				"ClothingSystemEditorInterface",
 				"AssetRegistry"
 			});
 		}

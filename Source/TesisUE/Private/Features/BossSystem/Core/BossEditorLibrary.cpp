@@ -5,6 +5,14 @@
 
 #if WITH_EDITOR
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "ClothingAsset.h"
+#include "ClothingAssetFactoryInterface.h"
+#include "ClothingSystemEditorInterfaceModule.h"
+#include "Engine/SkeletalMesh.h"
+#include "Modules/ModuleManager.h"
+#include "PhysicsEngine/PhysicsAsset.h"
+#include "PointWeightMap.h"
+#include "Rendering/SkeletalMeshModel.h"
 #include "Dataflow/DataflowSelection.h"
 #include "FractureEngineFracturing.h"
 #include "GeometryCollection/GeometryCollection.h"
@@ -63,5 +71,74 @@ UGeometryCollection* UBossEditorLibrary::FractureMeshToGeometryCollection(UStati
 	return Collection;
 #else
 	return nullptr;
+#endif
+}
+
+bool UBossEditorLibrary::SetupClothFromSections(USkeletalMesh* Mesh, const FName SimulationSlot, const FName RenderSlot,
+	UPhysicsAsset* PhysicsAsset, const float PinnedHeight, const float FreeHeight, const float FreeMaxDistance)
+{
+#if WITH_EDITOR
+	if (!Mesh || !Mesh->GetImportedModel() || !Mesh->GetImportedModel()->LODModels.IsValidIndex(0)) return false;
+
+	FSkeletalMeshLODModel& LodModel = Mesh->GetImportedModel()->LODModels[0];
+	const auto FindSection = [Mesh, &LodModel](const FName Slot)
+	{
+		return LodModel.Sections.IndexOfByPredicate([Mesh, Slot](const FSkelMeshSection& Section)
+		{
+			return Mesh->GetMaterials().IsValidIndex(Section.MaterialIndex)
+				&& Mesh->GetMaterials()[Section.MaterialIndex].MaterialSlotName == Slot;
+		});
+	};
+
+	const int32 SimulationSection = FindSection(SimulationSlot);
+	const int32 RenderSection = FindSection(RenderSlot);
+	if (SimulationSection == INDEX_NONE || RenderSection == INDEX_NONE || LodModel.Sections[RenderSection].HasClothingData()) return false;
+
+	Mesh->Modify();
+	FScopedSkeletalMeshPostEditChange ScopedPostEditChange(Mesh);
+
+	FSkeletalMeshClothBuildParams Params;
+	Params.LodIndex = 0;
+	Params.SourceSection = SimulationSection;
+	Params.AssetName = RenderSlot.ToString() + TEXT("Clothing");
+	Params.PhysicsAsset = PhysicsAsset;
+	Params.bRemoveFromMesh = true;
+
+	FClothingSystemEditorInterfaceModule& ClothingModule =
+		FModuleManager::LoadModuleChecked<FClothingSystemEditorInterfaceModule>("ClothingSystemEditorInterface");
+	UClothingAssetCommon* Asset = Cast<UClothingAssetCommon>(ClothingModule.GetClothingAssetFactory()->CreateFromSkeletalMesh(Mesh, Params));
+	if (!Asset || Asset->LodData.IsEmpty()) return false;
+
+	Mesh->AddClothingAsset(Asset);
+
+	FClothLODDataCommon& ClothLod = Asset->LodData[0];
+	ClothLod.PointWeightMaps.RemoveAll([](const FPointWeightMap& Map)
+	{
+		return Map.CurrentTarget == static_cast<uint8>(EWeightMapTargetCommon::MaxDistance);
+	});
+
+	FPointWeightMap& MaxDistances = ClothLod.PointWeightMaps.AddDefaulted_GetRef();
+	MaxDistances.Initialize(ClothLod.PhysicalMeshData.Vertices.Num());
+	MaxDistances.CurrentTarget = static_cast<uint8>(EWeightMapTargetCommon::MaxDistance);
+	MaxDistances.bEnabled = true;
+	for (int32 Index = 0; Index < ClothLod.PhysicalMeshData.Vertices.Num(); ++Index)
+	{
+		const float Looseness = FMath::GetRangePct(PinnedHeight, FreeHeight, ClothLod.PhysicalMeshData.Vertices[Index].Z);
+		MaxDistances.Values[Index] = FreeMaxDistance * FMath::Clamp(Looseness, 0.f, 1.f);
+	}
+	Asset->ApplyParameterMasks(true);
+
+	if (!Asset->BindToSkeletalMesh(Mesh, 0, RenderSection, 0)) return false;
+
+	FSkelMeshSourceSectionUserData& UserData =
+		LodModel.UserSectionsData.FindOrAdd(LodModel.Sections[RenderSection].OriginalDataSectionIndex);
+	UserData.CorrespondClothAssetIndex = static_cast<int16>(Mesh->GetMeshClothingAssets().Find(Asset));
+	UserData.ClothingData.AssetGuid = Asset->GetAssetGuid();
+	UserData.ClothingData.AssetLodIndex = 0;
+
+	Mesh->MarkPackageDirty();
+	return true;
+#else
+	return false;
 #endif
 }

@@ -64,6 +64,12 @@ void AEntity::BeginPlay()
 	{
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 
+		if (!AbilitySystemComponent->GetSet<UVelmaraAttributeSet>())
+		{
+			AttributeSet = NewObject<UVelmaraAttributeSet>(this);
+			AbilitySystemComponent->AddAttributeSetSubobject(AttributeSet);
+		}
+
 		GiveDefaultAbilities();
 		InitializeAttributeSet();
 	}

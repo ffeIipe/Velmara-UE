@@ -133,5 +133,5 @@ void ALogicGate::BroadcastToTargets(const bool bActive)
 	HandleTimerActivation(false);
 	GetWorld()->GetTimerManager().ClearTimer(DeactivationTimerHandle);
 	
-	if (bActive) DrawDebugString(GetWorld(), GetActorLocation(), "GATE OPEN", nullptr, FColor::Green, 2.0f);
+	if (bActive && bDebugConnections) DrawDebugString(GetWorld(), GetActorLocation(), "GATE OPEN", nullptr, FColor::Green, 2.0f);
 }
