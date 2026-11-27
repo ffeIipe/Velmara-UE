@@ -28,6 +28,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GAS/VelmaraAttributeSet.h"
 #include "GAS/VelmaraGameplayTags.h"
+#include "InteractionSystem/Interfaces/SignalReceiver.h"
 #include "GenericPool/Core/ActorPoolSubsystem.h"
 #include "HUD/PaladinBossHealthBar.h"
 #include "Interfaces/Damageable.h"
@@ -204,6 +205,19 @@ void USolarBossBrainComponent::StartEncounter()
 	if (Mode == ESolarBossMode::Inactive)
 	{
 		SetMode(ESolarBossMode::BullyMelee);
+	}
+
+	SignalEncounterListeners(true);
+}
+
+void USolarBossBrainComponent::SignalEncounterListeners(const bool bActive) const
+{
+	for (AActor* Listener : EncounterListeners)
+	{
+		if (IsValid(Listener) && Listener->Implements<USignalReceiver>())
+		{
+			ISignalReceiver::Execute_ReceiveSignal(Listener, bActive, GetOwner());
+		}
 	}
 }
 
@@ -1209,6 +1223,7 @@ void USolarBossBrainComponent::HandleDeath()
 	bTimedSuperArmor = false;
 
 	SetMode(ESolarBossMode::Dead);
+	SignalEncounterListeners(false);
 	CleanupMinions();
 
 	if (Config->bCloseShaftsOnDeath)

@@ -37,6 +37,7 @@ TSharedRef<SWidget> UVelmaraSettingSliderRow::RebuildWidget()
 	{
 		BuildRowTree();
 	}
+	FVelmaraUITheme::ApplyButtonSounds(*this, false);
 	return Super::RebuildWidget();
 }
 

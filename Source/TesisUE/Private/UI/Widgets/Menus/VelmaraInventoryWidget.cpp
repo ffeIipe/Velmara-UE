@@ -62,6 +62,7 @@ TSharedRef<SWidget> UVelmaraItemSlotButton::RebuildWidget()
 	{
 		BuildSlotTree();
 	}
+	FVelmaraUITheme::ApplyButtonSounds(*this);
 	return Super::RebuildWidget();
 }
 

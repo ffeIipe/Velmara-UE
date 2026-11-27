@@ -1,6 +1,8 @@
 #include "Features/TotemSystem/Core/TotemChargeComponent.h"
 
 #include "GenericTeamAgentInterface.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraSystem.h"
 #include "Components/MeshComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Entities/Entity.h"
@@ -169,7 +171,13 @@ void UTotemChargeComponent::ActivatePossession(UMaterialInterface* OverlayMateri
 {
 	if (!IsCharged() || !GetOwner()) return;
 
+	const bool bWasActivated = bActivated;
 	bActivated = true;
+
+	if (!bWasActivated && ActivationEffect)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, ActivationEffect, GetOwner()->GetActorLocation());
+	}
 
 	if (!OverlayMaterial) return;
 

@@ -11,6 +11,7 @@ class UCommand;
 class UBoxComponent;
 class UComboNode;
 class UWeaponUpgradeComponent;
+class UNiagaraComponent;
 
 UCLASS()
 class TESISUE_API ASword : public AWeapon
@@ -56,6 +57,11 @@ protected:
        const FHitResult& SweepResult);
 
     void ApplyJuggle(AActor* Target);
+
+    void UpdateBladeTrail(TObjectPtr<UNiagaraComponent>& Trail, USceneComponent* TraceStart, const USceneComponent* TraceEnd, bool bActive);
+
+    UPROPERTY(Transient)
+    TObjectPtr<UNiagaraComponent> BladeTrail;
 
     void TraceAndApplyHits(UPrimitiveComponent* OverlappedComponent, const USceneComponent* TraceStart, const USceneComponent* TraceEnd);
 

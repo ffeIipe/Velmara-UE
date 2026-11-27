@@ -45,6 +45,7 @@ namespace
 		Style.SetDisabled(Empty);
 		Style.SetNormalPadding(FMargin(0.0f));
 		Style.SetPressedPadding(FMargin(0.0f));
+		FVelmaraUITheme::ApplyButtonSounds(Style);
 		return Style;
 	}
 }

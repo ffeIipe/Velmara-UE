@@ -4,6 +4,10 @@
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemInterface.h"
 #include "NavigationSystem.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraSystem.h"
+#include "UObject/ConstructorHelpers.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "TimerManager.h"
 #include "Animation/AnimMontage.h"
 #include "Blueprint/UserWidget.h"
@@ -60,6 +64,18 @@ ACustomPlayerController::ACustomPlayerController()
     OriginalBody = nullptr;
     
     TeamId = FGenericTeamId(2);
+
+    static ConstructorHelpers::FObjectFinder<UNiagaraSystem> EnterEffectFinder(TEXT("/Game/VFX/Velmara/Possession/NS_Possess_Enter.NS_Possess_Enter"));
+    if (EnterEffectFinder.Succeeded())
+    {
+        PossessionEnterEffect = EnterEffectFinder.Object;
+    }
+
+    static ConstructorHelpers::FObjectFinder<UNiagaraSystem> ExitEffectFinder(TEXT("/Game/VFX/Velmara/Possession/NS_Possess_Exit.NS_Possess_Exit"));
+    if (ExitEffectFinder.Succeeded())
+    {
+        PossessionExitEffect = ExitEffectFinder.Object;
+    }
 }
 
 bool ACustomPlayerController::PerformPossession(APawn* NewPawn)
@@ -120,6 +136,14 @@ bool ACustomPlayerController::PerformPossession(APawn* NewPawn)
         bHasLastKnownHostLocation = true;
         GetWorldTimerManager().SetTimer(PossessionTickTimer, this, &ACustomPlayerController::TickPossession, PossessionTickInterval, true);
         OnPossessionStarted.Broadcast(NewPawn);
+        if (PossessionEnterEffect)
+        {
+            if (USkeletalMeshComponent* HostMesh = NewPawn->FindComponentByClass<USkeletalMeshComponent>())
+            {
+                UNiagaraFunctionLibrary::SpawnSystemAttached(PossessionEnterEffect, HostMesh, NAME_None, FVector::ZeroVector,
+                    FRotator::ZeroRotator, EAttachLocation::SnapToTarget, true);
+            }
+        }
         PlayHostPainReaction(NewPawn);
     }
     else
@@ -130,6 +154,10 @@ bool ACustomPlayerController::PerformPossession(APawn* NewPawn)
         if (bWasPossessingHost)
         {
             OnPossessionEnded.Broadcast(ReleasedHost, PostPossessionSunGraceDuration);
+            if (PossessionExitEffect && OriginalBody)
+            {
+                UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, PossessionExitEffect, OriginalBody->GetActorLocation());
+            }
         }
     }
 

@@ -3,6 +3,8 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "AIController.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraSystem.h"
 #include "GAS/VelmaraAttributeSet.h"
 #include "BrainComponent.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
@@ -39,6 +41,13 @@ UBloodSuckAbility::UBloodSuckAbility()
 
 	static ConstructorHelpers::FClassFinder<AOrbBase> DefaultBloodOrb(TEXT("/Game/Blueprints/Items/Orbs/BP_Orb_Blood"));
 	BloodOrbClass = DefaultBloodOrb.Class;
+
+	static ConstructorHelpers::FObjectFinder<UNiagaraSystem> DefaultLungeEffect(
+		TEXT("/Game/VFX/Velmara/BloodSuck/NS_BloodSuck_Lunge.NS_BloodSuck_Lunge"));
+	if (DefaultLungeEffect.Succeeded())
+	{
+		LungeEffect = DefaultLungeEffect.Object;
+	}
 }
 
 bool UBloodSuckAbility::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
@@ -92,6 +101,12 @@ void UBloodSuckAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	LungeStartRotation = FRotator(0.f, Self->GetRootComponent()->GetRelativeRotation().Yaw, 0.f);
 	LungeStartTime = GetWorld()->GetTimeSeconds();
 	TickAttachment();
+
+	if (LungeEffect)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAttached(LungeEffect, Self->GetMesh(), TEXT("spine_03"), FVector::ZeroVector,
+			FRotator::ZeroRotator, EAttachLocation::SnapToTarget, true);
+	}
 
 	if (BloodPulseCount > 0)
 	{

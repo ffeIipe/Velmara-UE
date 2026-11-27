@@ -7,6 +7,7 @@
 
 class AOrbBase;
 class UMaterialInterface;
+class UNiagaraSystem;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTotemEnemyAbsorbedSignature, AActor*, DeadEnemy);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnTotemChargeChangedSignature, int32, CurrentKills, int32, KillsToCharge);
@@ -96,6 +97,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Totem | Visuals", meta = (EditCondition = "bRequiresCharge"))
 	TSubclassOf<AOrbBase> AbsorbOrbClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Totem | Visuals")
+	TObjectPtr<UNiagaraSystem> ActivationEffect;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Totem | Possession")
 	bool bIgnorePossessionTraceWhileUncharged = true;

@@ -8,6 +8,7 @@ class UAnimMontage;
 class UGameplayEffect;
 class AEntity;
 class AOrbBase;
+class UNiagaraSystem;
 
 UCLASS()
 class TESISUE_API UBloodSuckAbility : public UVelmaraGameplayAbility
@@ -69,6 +70,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "BloodSuck|Feedback")
 	TSubclassOf<AOrbBase> BloodOrbClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "BloodSuck|Feedback")
+	TObjectPtr<UNiagaraSystem> LungeEffect;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "BloodSuck|Feedback", meta = (ClampMin = "0"))
 	int32 BloodPulseCount = 6;

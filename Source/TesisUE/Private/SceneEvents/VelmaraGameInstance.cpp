@@ -1,4 +1,5 @@
 #include "SceneEvents/VelmaraGameInstance.h"
+#include "Framework/Application/SlateApplication.h"
 #include "AudioModulationStatics.h"
 #include "Blueprint/UserWidget.h"
 #include "Features/GlobalEffectsSystem/Core/EffectsManager.h"
@@ -35,6 +36,18 @@ void UVelmaraGameInstance::Init()
 	LoadAudioAssets();
 	LoadGameSettings();
 
+	if (FSlateApplication::IsInitialized())
+	{
+		FocusChangingHandle = FSlateApplication::Get().OnFocusChanging().AddWeakLambda(this,
+			[](const FFocusEvent& FocusEvent, const FWeakWidgetPath&, const TSharedPtr<SWidget>&, const FWidgetPath&, const TSharedPtr<SWidget>&)
+			{
+				if (FocusEvent.GetCause() == EFocusCause::Navigation)
+				{
+					FVelmaraUITheme::PlayHoverSound();
+				}
+			});
+	}
+
 	PostLoadMapHandle = FCoreUObjectDelegates::PostLoadMapWithWorld.AddUObject(this, &UVelmaraGameInstance::HandlePostLoadMapWithWorld);
 
 	const FWorldContext* Context = GetWorldContext();
@@ -52,6 +65,11 @@ void UVelmaraGameInstance::Shutdown()
 	{
 		FCoreUObjectDelegates::PostLoadMapWithWorld.Remove(PostLoadMapHandle);
 		PostLoadMapHandle.Reset();
+	}
+	if (FocusChangingHandle.IsValid() && FSlateApplication::IsInitialized())
+	{
+		FSlateApplication::Get().OnFocusChanging().Remove(FocusChangingHandle);
+		FocusChangingHandle.Reset();
 	}
 	Super::Shutdown();
 }

@@ -54,6 +54,7 @@ TSharedRef<SWidget> UVelmaraShopRowButton::RebuildWidget()
 	{
 		BuildRowTree();
 	}
+	FVelmaraUITheme::ApplyButtonSounds(*this);
 	return Super::RebuildWidget();
 }
 

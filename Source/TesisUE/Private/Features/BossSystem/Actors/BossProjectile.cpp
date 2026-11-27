@@ -52,7 +52,7 @@ ABossProjectile::ABossProjectile()
 		Effect->SetAsset(TrailFinder.Object);
 	}
 
-	static ConstructorHelpers::FObjectFinder<UNiagaraSystem> ImpactFinder(TEXT("/Game/SlashTrail_SoftTofu/Niagara/Dark/NS_Hit_Dark_Once.NS_Hit_Dark_Once"));
+	static ConstructorHelpers::FObjectFinder<UNiagaraSystem> ImpactFinder(TEXT("/Game/VFX/Boss/NS_Hit_Solar_Once.NS_Hit_Solar_Once"));
 	if (ImpactFinder.Succeeded())
 	{
 		ImpactEffect = ImpactFinder.Object;

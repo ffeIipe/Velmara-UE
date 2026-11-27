@@ -66,6 +66,10 @@ void ADualSword::ApplyCollision()
 
 	WeaponDamageBox->SetCollisionEnabled(bRightActive ? CollisionState : ECollisionEnabled::NoCollision);
 	OffHandDamageBox->SetCollisionEnabled(bLeftActive ? CollisionState : ECollisionEnabled::NoCollision);
+
+	const bool bCollisionOn = CollisionState != ECollisionEnabled::NoCollision;
+	UpdateBladeTrail(BladeTrail, BoxTraceStart, BoxTraceEnd, bRightActive && bCollisionOn);
+	UpdateBladeTrail(OffHandBladeTrail, OffHandTraceStart, OffHandTraceEnd, bLeftActive && bCollisionOn);
 }
 
 void ADualSword::EnableVisuals()

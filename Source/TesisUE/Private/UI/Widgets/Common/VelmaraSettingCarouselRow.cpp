@@ -35,6 +35,7 @@ TSharedRef<SWidget> UVelmaraSettingCarouselRow::RebuildWidget()
 	{
 		BuildRowTree();
 	}
+	FVelmaraUITheme::ApplyButtonSounds(*this, false);
 	return Super::RebuildWidget();
 }
 
@@ -240,6 +241,7 @@ void UVelmaraSettingCarouselRow::StepOption(int32 Delta)
 	if (TargetIndex != SelectedIndex)
 	{
 		SelectedIndex = TargetIndex;
+		FVelmaraUITheme::PlayClickSound();
 		UpdateValueDisplay();
 		UpdateVisualState();
 		OnSelectionChanged.Broadcast(SelectedIndex);

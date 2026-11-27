@@ -35,6 +35,7 @@ TSharedRef<SWidget> UVelmaraSaveSlotCardWidget::RebuildWidget()
 	{
 		BuildCardTree();
 	}
+	FVelmaraUITheme::ApplyButtonSounds(*this);
 	return Super::RebuildWidget();
 }
 

@@ -39,6 +39,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Solar Boss")
 	TObjectPtr<USolarBossConfigDataAsset> Config;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Solar Boss")
+	TArray<TObjectPtr<AActor>> EncounterListeners;
+
 	UPROPERTY(BlueprintAssignable, Category = "Solar Boss")
 	FOnSolarBossModeChanged OnModeChanged;
 
@@ -100,6 +103,7 @@ private:
 	void HandleHealthChanged(const FOnAttributeChangeData& Data);
 	void ProcessPendingHit();
 	void HandleDeath();
+	void SignalEncounterListeners(bool bActive) const;
 	void SetMode(ESolarBossMode NewMode);
 	void ApplyWalkSpeed();
 	void TickAfterWalkSpeedWritersAndBeforeMovement();

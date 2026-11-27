@@ -409,6 +409,7 @@ private:
 	TObjectPtr<USoundClass> UISoundClass;
 
 	FDelegateHandle PostLoadMapHandle;
+	FDelegateHandle FocusChangingHandle;
 
 	FString ActiveGameLanguageCode = TEXT("es");
 };

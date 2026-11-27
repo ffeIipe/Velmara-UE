@@ -6,6 +6,7 @@
 #include "SwordData.generated.h"
 
 class UComboNode;
+class UNiagaraSystem;
 
 UCLASS(BlueprintType)
 class TESISUE_API USwordData : public UWeaponData
@@ -24,4 +25,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Instanced, Category = "Skill")
 	UComboNode* SkillAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "VFX")
+	TObjectPtr<UNiagaraSystem> BladeTrailEffect;
 };

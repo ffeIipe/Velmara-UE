@@ -3,6 +3,9 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemInterface.h"
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraSystem.h"
 #include "Components/BoxComponent.h"
 #include "Components/SphereComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -252,6 +255,35 @@ void ASword::SetWeaponCollisionEnabled(const ECollisionEnabled::Type CollisionEn
 	Super::SetWeaponCollisionEnabled(CollisionEnabled);
 
 	WeaponDamageBox->SetCollisionEnabled(CollisionEnabled);
+
+	UpdateBladeTrail(BladeTrail, BoxTraceStart, BoxTraceEnd, CollisionEnabled != ECollisionEnabled::NoCollision);
+}
+
+void ASword::UpdateBladeTrail(TObjectPtr<UNiagaraComponent>& Trail, USceneComponent* TraceStart, const USceneComponent* TraceEnd, const bool bActive)
+{
+	const USwordData* TrailSource = GetBaseSwordData();
+	if (!TrailSource || !TrailSource->BladeTrailEffect || !TraceStart || !TraceEnd) return;
+
+	if (!Trail)
+	{
+		if (!bActive) return;
+
+		Trail = UNiagaraFunctionLibrary::SpawnSystemAttached(TrailSource->BladeTrailEffect, TraceStart, NAME_None, FVector::ZeroVector,
+			FRotator::ZeroRotator, EAttachLocation::SnapToTarget, false, false);
+		if (!Trail) return;
+	}
+
+	if (!bActive)
+	{
+		Trail->Deactivate();
+		return;
+	}
+
+	const FVector TipLocal = TraceStart->GetComponentTransform().InverseTransformPosition(TraceEnd->GetComponentLocation());
+	Trail->SetRelativeLocationAndRotation(TipLocal * 0.5f, TipLocal.Rotation());
+	Trail->SetVariableFloat(FName("BladeLength"), TipLocal.Size());
+	Trail->SetVariableVec3(FName("BladeTipLocal"), TipLocal);
+	Trail->Activate(true);
 }
 
 void ASword::RefreshComboUnlocks()

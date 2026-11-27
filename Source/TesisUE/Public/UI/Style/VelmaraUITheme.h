@@ -8,6 +8,9 @@ class UTexture2D;
 class UFont;
 class UDataTable;
 class UCommonUIInputData;
+class UCommonButtonBase;
+class USoundBase;
+struct FButtonStyle;
 
 namespace VelmaraUIPaths
 {
@@ -109,6 +112,8 @@ namespace VelmaraUIPaths
 	inline constexpr const TCHAR* IconWeaponScythe = TEXT("/Game/UI/Textures/Icons/T_UI_Icon_Weapon_Scythe.T_UI_Icon_Weapon_Scythe");
 	inline constexpr const TCHAR* IconWeaponFlintlock = TEXT("/Game/UI/Textures/Icons/T_UI_Icon_Weapon_Flintlock.T_UI_Icon_Weapon_Flintlock");
 
+	inline constexpr const TCHAR* SoundMenuHover = TEXT("/Game/Audio/Pato/MetaSounds/UI/MS_MenuHover.MS_MenuHover");
+	inline constexpr const TCHAR* SoundMenuClick = TEXT("/Game/Audio/Pato/MetaSounds/UI/MS_MenuClick.MS_MenuClick");
 	inline constexpr const TCHAR* AudioBusMaster = TEXT("/Game/Audio/Pato/Modulation/ControlBusses/CB_Master_Vol.CB_Master_Vol");
 	inline constexpr const TCHAR* AudioBusMusic = TEXT("/Game/Audio/Pato/Modulation/ControlBusses/CB_Music_Vol.CB_Music_Vol");
 	inline constexpr const TCHAR* AudioBusSFX = TEXT("/Game/Audio/Pato/Modulation/ControlBusses/CB_SFX_Vol.CB_SFX_Vol");
@@ -149,6 +154,11 @@ struct TESISUE_API FVelmaraUITheme
 
 	static UTexture2D* LoadTexture(const TCHAR* AssetPath);
 	static UTexture2D* LoadVelmaraLogo();
+
+	static void ApplyButtonSounds(UCommonButtonBase& Button, bool bWithClick = true);
+	static void ApplyButtonSounds(FButtonStyle& Style);
+	static void PlayHoverSound();
+	static void PlayClickSound();
 	static UDataTable* LoadInputActionsTable();
 	static UDataTable* LoadRichTextStyleSet();
 	static UDataTable* LoadShopItemDataTable();

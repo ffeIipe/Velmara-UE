@@ -35,6 +35,7 @@ TSharedRef<SWidget> UVelmaraButtonBase::RebuildWidget()
 	{
 		BuildButtonTree();
 	}
+	FVelmaraUITheme::ApplyButtonSounds(*this);
 	return Super::RebuildWidget();
 }
 

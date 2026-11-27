@@ -3,9 +3,33 @@
 #include "Engine/Font.h"
 #include "Engine/Texture2D.h"
 #include "Styling/CoreStyle.h"
+#include "Styling/SlateTypes.h"
+#include "CommonButtonBase.h"
+#include "Framework/Application/SlateApplication.h"
+#include "Sound/SoundBase.h"
 
 namespace
 {
+	USoundBase* LoadSound(const TCHAR* AssetPath)
+	{
+		return LoadObject<USoundBase>(nullptr, AssetPath);
+	}
+
+	FSlateSound MakeSlateSound(const TCHAR* AssetPath)
+	{
+		FSlateSound Sound;
+		Sound.SetResourceObject(LoadSound(AssetPath));
+		return Sound;
+	}
+
+	void PlaySlateSound(const TCHAR* AssetPath)
+	{
+		if (FSlateApplication::IsInitialized())
+		{
+			FSlateApplication::Get().PlaySound(MakeSlateSound(AssetPath));
+		}
+	}
+
 	FLinearColor FromHex(uint8 R, uint8 G, uint8 B, float Alpha)
 	{
 		FLinearColor Linear = FLinearColor::FromSRGBColor(FColor(R, G, B, 255));
@@ -25,6 +49,31 @@ FLinearColor FVelmaraUITheme::BloodDried(float Alpha) { return FromHex(0x4A, 0x0
 FLinearColor FVelmaraUITheme::Shield(float Alpha) { return FromHex(0xB8, 0xC0, 0xC4, Alpha); }
 FLinearColor FVelmaraUITheme::Spectral(float Alpha) { return FromHex(0x8F, 0x86, 0xA8, Alpha); }
 FLinearColor FVelmaraUITheme::Sunlight(float Alpha) { return FromHex(0xD9, 0xA4, 0x41, Alpha); }
+
+void FVelmaraUITheme::ApplyButtonSounds(UCommonButtonBase& Button, bool bWithClick)
+{
+	Button.SetHoveredSoundOverride(LoadSound(VelmaraUIPaths::SoundMenuHover));
+	if (bWithClick)
+	{
+		Button.SetPressedSoundOverride(LoadSound(VelmaraUIPaths::SoundMenuClick));
+	}
+}
+
+void FVelmaraUITheme::ApplyButtonSounds(FButtonStyle& Style)
+{
+	Style.SetHoveredSound(MakeSlateSound(VelmaraUIPaths::SoundMenuHover));
+	Style.SetPressedSound(MakeSlateSound(VelmaraUIPaths::SoundMenuClick));
+}
+
+void FVelmaraUITheme::PlayHoverSound()
+{
+	PlaySlateSound(VelmaraUIPaths::SoundMenuHover);
+}
+
+void FVelmaraUITheme::PlayClickSound()
+{
+	PlaySlateSound(VelmaraUIPaths::SoundMenuClick);
+}
 
 FLinearColor FVelmaraUITheme::WithAlpha(const FLinearColor& Color, float Alpha)
 {

@@ -89,6 +89,7 @@ namespace UpgradeUIStyle
 		Style.SetDisabled(Empty);
 		Style.SetNormalPadding(FMargin(0.f));
 		Style.SetPressedPadding(FMargin(0.f));
+		FVelmaraUITheme::ApplyButtonSounds(Style);
 		return Style;
 	}
 
@@ -102,6 +103,7 @@ namespace UpgradeUIStyle
 		Style.SetDisabled(MakeSharpBrush(Colors::Locked(), FVelmaraUITheme::Ash(0.5f), 1.f));
 		Style.SetNormalPadding(FMargin(14.f, 6.f));
 		Style.SetPressedPadding(FMargin(14.f, 7.f, 14.f, 5.f));
+		FVelmaraUITheme::ApplyButtonSounds(Style);
 		return Style;
 	}
 

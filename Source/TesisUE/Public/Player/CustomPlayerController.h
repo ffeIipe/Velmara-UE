@@ -12,6 +12,7 @@ class UInputData;
 class UUserWidget;
 class USoundMix;
 class AActor;
+class UNiagaraSystem;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPossessionStartedEvent, APawn*, PossessedHost);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPossessionEndedEvent, APawn*, ReleasedHost, float, SunGraceDuration);
@@ -65,6 +66,12 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Possession")
 	FOnPossessionEndedEvent OnPossessionEnded;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Possession|VFX")
+	TObjectPtr<UNiagaraSystem> PossessionEnterEffect;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Possession|VFX")
+	TObjectPtr<UNiagaraSystem> PossessionExitEffect;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS|Possession")
 	float PossessionEnergyDrainPerSecond = 5.f;
