@@ -282,8 +282,11 @@ void UVelmaraButtonBase::UpdateVisualState()
 	}
 	else if (Variant == EVelmaraButtonVariant::HexAction)
 	{
-		SolidBackdrop->SetBrush(FVelmaraUITheme::MakeSolidBrush(bActive ? FVelmaraUITheme::BloodDried(0.50f) : FVelmaraUITheme::Void(0.75f)));
-		FrameBorder->SetBrush(FVelmaraUITheme::MakeHexButtonBrush(bActive ? FVelmaraUITheme::BloodBright() : FVelmaraUITheme::Ash()));
+		const FLinearColor OutlineColor = !bEnabled
+			? FVelmaraUITheme::Ash(0.25f)
+			: (bActive ? FVelmaraUITheme::BloodBright(0.95f) : FVelmaraUITheme::BoneMuted(0.45f));
+		SolidBackdrop->SetBrush(FVelmaraUITheme::MakeSolidBrush(bActive ? FVelmaraUITheme::BloodDried(0.38f) : FVelmaraUITheme::Void(0.72f)));
+		FrameBorder->SetBrush(FVelmaraUITheme::MakeOptionRowBrush(OutlineColor));
 		FrameBorder->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		TopHairline->SetVisibility(ESlateVisibility::Collapsed);
 		BottomHairline->SetVisibility(ESlateVisibility::Collapsed);
